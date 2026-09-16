@@ -49,13 +49,13 @@ export function Step03Ocean({ formState, options, onSelect, onForceVenueSwitch }
               type="button"
               onClick={() => handleSelect(opt.value)}
               disabled={isPending}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+              className={`w-full flex items-center gap-3 p-3 rounded-[5px] border transition-all text-left ${
                 isSelected
                   ? 'border-[#5AC3E7] bg-amber-50'
-                  : 'border-gray-100 hover:border-gray-200'
+                  : 'border-[#DCD7C6] hover:border-[#DCD7C6]'
               } ${isPending ? 'opacity-50' : ''}`}
             >
-              <span className="text-sm font-medium text-gray-800">
+              <span className="text-sm font-medium text-[#10263B]">
                 {opt.label || opt.value}
               </span>
               {isSelected && (
@@ -68,7 +68,7 @@ export function Step03Ocean({ formState, options, onSelect, onForceVenueSwitch }
 
       {/* Risk state badge */}
       {risk && (
-        <div className={`p-3 rounded-xl ${RISK_STYLES[risk].bg}`}>
+        <div className={`p-3 rounded-[5px] ${RISK_STYLES[risk].bg}`}>
           <div className="flex items-center gap-2">
             <span className={`text-sm font-semibold ${RISK_STYLES[risk].text}`}>
               {RISK_STYLES[risk].label}

@@ -1089,10 +1089,12 @@ function CoursesTab({
         type="button"
         onClick={() => !isLocked && openLesson(c.id)}
         disabled={isLocked}
-        className={`w-full text-left rounded-[5px] border border-gray-100 bg-[#F7F9FA] p-3.5 transition-all shadow-sm ${
+        className={`w-full text-left rounded-[5px] border border-[#DCD7C6] bg-[#F7F9FA] p-3.5 transition-all shadow-sm ${
           isLocked ? 'opacity-45 cursor-not-allowed' : 'hover:border-[#00D2FF]/40'
         }`}
-        style={{ borderLeft: `3px solid ${isCompleted ? '#06D6A0' : isInProgress ? '#00D2FF' : accent}` }}
+        // Barra de estado por dentro (inset): un borde izquierdo sobre esquinas
+        // redondeadas se veía como una "línea curva" (Marcelo 2026-09-16).
+        style={{ boxShadow: `inset 3px 0 0 ${isCompleted ? '#06D6A0' : isInProgress ? '#00D2FF' : accent}` }}
       >
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0 flex-1 flex items-center gap-2.5">

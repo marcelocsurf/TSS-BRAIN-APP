@@ -169,10 +169,10 @@ export default function NewCampPage() {
 
       <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* Service Template */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 space-y-3">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Service</h3>
           <select value={form.template_id} onChange={e => setForm(f => ({ ...f, template_id: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm">
             <option value="">Select service...</option>
             {templates.map(t => (
               <option key={t.id} value={t.id}>
@@ -185,7 +185,7 @@ export default function NewCampPage() {
           </select>
           {selectedTemplate && (
             <>
-              <p className="text-xs text-gray-500">{selectedTemplate.description}</p>
+              <p className="text-xs text-[#55666E]">{selectedTemplate.description}</p>
               <div className="flex flex-wrap gap-2">
                 {selectedTemplate.service_kind && (
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 uppercase font-mono tracking-wider">
@@ -198,7 +198,7 @@ export default function NewCampPage() {
                   </span>
                 )}
                 {selectedTemplate.duration_days && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EDF3F5] text-[#55666E]">
                     {selectedTemplate.duration_days} day{selectedTemplate.duration_days > 1 ? 's' : ''}
                   </span>
                 )}
@@ -208,9 +208,9 @@ export default function NewCampPage() {
 
           {/* Custom-template inline overrides */}
           {selectedTemplate?.is_custom && (
-            <div className="mt-2 grid grid-cols-2 gap-2 pt-2 border-t border-gray-100">
+            <div className="mt-2 grid grid-cols-2 gap-2 pt-2 border-t border-[#DCD7C6]">
               <div>
-                <label className="block text-[10px] text-gray-500 mb-1">Capacity</label>
+                <label className="block text-[10px] text-[#55666E] mb-1">Capacity</label>
                 <input
                   type="number"
                   min={1}
@@ -219,11 +219,11 @@ export default function NewCampPage() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, capacity_override: parseInt(e.target.value, 10) || 1 }))
                   }
-                  className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm"
+                  className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded text-sm"
                 />
               </div>
               <div>
-                <label className="block text-[10px] text-gray-500 mb-1">Duration (days)</label>
+                <label className="block text-[10px] text-[#55666E] mb-1">Duration (days)</label>
                 <input
                   type="number"
                   min={1}
@@ -232,7 +232,7 @@ export default function NewCampPage() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, duration_override: parseInt(e.target.value, 10) || 1 }))
                   }
-                  className="w-full px-2 py-1.5 border border-gray-200 rounded text-sm"
+                  className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded text-sm"
                 />
               </div>
             </div>
@@ -240,19 +240,19 @@ export default function NewCampPage() {
         </div>
 
         {/* Details */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 space-y-3">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Details</h3>
           <input type="text" placeholder="Service name (optional)" value={form.camp_name}
             onChange={e => setForm(f => ({ ...f, camp_name: e.target.value }))}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
 
           {/* Head Coach */}
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Head Coach</label>
+            <label className="block text-xs text-[#55666E] mb-1">Head Coach</label>
             <select
               value={form.head_coach_id}
               onChange={e => setForm(f => ({ ...f, head_coach_id: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
             >
               <option value="">Select head coach...</option>
               {coaches
@@ -268,25 +268,25 @@ export default function NewCampPage() {
           {/* ── Dates: smart per service type ── */}
           {isSingleDay ? (
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Date</label>
+              <label className="block text-xs text-[#55666E] mb-1">Date</label>
               <input type="date" value={form.start_date}
                 onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <p className="text-[10px] text-gray-400 mt-1">
+                className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
+              <p className="text-[10px] text-[#55666E] mt-1">
                 {isLesson ? 'Individual lesson' : 'Single-day service'} — runs on this date.
               </p>
             </div>
           ) : isCamp ? (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Start date</label>
+                <label className="block text-xs text-[#55666E] mb-1">Start date</label>
                 <input type="date" value={form.start_date}
                   onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                  className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">End date (auto)</label>
-                <div className="w-full px-3 py-2 border border-gray-100 bg-gray-50 rounded-lg text-sm text-gray-500">
+                <label className="block text-xs text-[#55666E] mb-1">End date (auto)</label>
+                <div className="w-full px-3 py-2 border border-[#DCD7C6] bg-[#F7F9FA] rounded-lg text-sm text-[#55666E]">
                   {derivedEndDate || '—'}
                 </div>
               </div>
@@ -294,35 +294,35 @@ export default function NewCampPage() {
           ) : (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Start</label>
+                <label className="block text-xs text-[#55666E] mb-1">Start</label>
                 <input type="date" value={form.start_date}
                   onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                  className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">End</label>
+                <label className="block text-xs text-[#55666E] mb-1">End</label>
                 <input type="date" value={form.end_date}
                   onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                  className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
               </div>
             </div>
           )}
 
           {/* ── Time — compact inline pickers ── */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500 shrink-0">Time</span>
+            <span className="text-xs text-[#55666E] shrink-0">Time</span>
             <input
               type="time"
               value={form.start_time}
               onChange={e => setForm(f => ({ ...f, start_time: e.target.value }))}
-              className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm"
+              className="flex-1 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm"
             />
-            <span className="text-xs text-gray-400">to</span>
+            <span className="text-xs text-[#55666E]">to</span>
             <input
               type="time"
               value={form.end_time}
               onChange={e => setForm(f => ({ ...f, end_time: e.target.value }))}
-              className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm"
+              className="flex-1 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm"
             />
           </div>
 
@@ -337,7 +337,7 @@ export default function NewCampPage() {
             {(['group', 'individual'] as const).map(m => (
               <button key={m} type="button" onClick={() => setForm(f => ({ ...f, modality: m }))}
                 className={`flex-1 py-2 text-xs rounded-lg border capitalize ${
-                  form.modality === m ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'border-gray-200 text-gray-600'
+                  form.modality === m ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'border-[#DCD7C6] text-[#55666E]'
                 }`}>
                 {m}
               </button>
@@ -346,7 +346,7 @@ export default function NewCampPage() {
         </div>
 
         {/* Students */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
               Participants ({form.student_ids.length}
@@ -363,7 +363,7 @@ export default function NewCampPage() {
             value={studentSearch}
             onChange={e => setStudentSearch(e.target.value)}
             placeholder="Search students by name…"
-            className="w-full mb-3 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+            className="w-full mb-3 px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
           />
           <div className="space-y-1 max-h-60 overflow-y-auto">
             {students
@@ -386,7 +386,7 @@ export default function NewCampPage() {
                       ? 'bg-blue-50 border border-blue-200'
                       : atCapacity
                       ? 'opacity-30 cursor-not-allowed border border-transparent'
-                      : 'hover:bg-gray-50 border border-transparent'
+                      : 'hover:bg-[#F7F9FA] border border-transparent'
                   }`}>
                   <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-bold"
                     style={{ backgroundColor: BELT_DISPLAY[s.belt_level]?.color || '#999' }}>
@@ -394,7 +394,7 @@ export default function NewCampPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm truncate">{s.first_name} {s.last_name}</p>
-                    <p className="text-[10px] text-gray-400">{BELT_DISPLAY[s.belt_level]?.levelName}</p>
+                    <p className="text-[10px] text-[#55666E]">{BELT_DISPLAY[s.belt_level]?.levelName}</p>
                   </div>
                   {isSelected && <span className="text-blue-600 text-xs">&#10003;</span>}
                 </button>
@@ -407,7 +407,7 @@ export default function NewCampPage() {
 
         <div className="flex gap-3">
           <button type="button" onClick={() => router.back()}
-            className="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600">Cancel</button>
+            className="flex-1 py-2.5 border border-[#DCD7C6] rounded-lg text-sm text-[#55666E]">Cancel</button>
           <button type="submit" disabled={loading}
             className="flex-1 py-2.5 bg-[var(--tss-navy)] text-white rounded-lg text-sm font-medium disabled:opacity-50">
             {loading ? 'Creating...' : 'Create Service'}

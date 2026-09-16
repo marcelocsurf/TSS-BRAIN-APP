@@ -85,14 +85,14 @@ export function EnrollmentPaymentControl({
   const saleChip = () => {
     if (saleType === 'courtesy') return <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">Courtesy</span>;
     if (saleType === 'discount') return <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200">Disc.</span>;
-    if (saleType === 'full') return <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200">Full</span>;
+    if (saleType === 'full') return <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-[#EDF3F5] text-[#55666E] border border-[#DCD7C6]">Full</span>;
     return null;
   };
 
   return (
     <div className="relative shrink-0 flex items-center gap-1">
       {amountCents != null && amountCents > 0 && (
-        <span className="text-[10px] font-semibold text-gray-500">${(amountCents / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
+        <span className="text-[10px] font-semibold text-[#55666E]">${(amountCents / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })}</span>
       )}
       {saleChip()}
 
@@ -119,11 +119,11 @@ export function EnrollmentPaymentControl({
       )}
 
       {payOpen && !isPaid && (
-        <div className="absolute right-0 top-7 z-30 w-52 rounded-xl border border-gray-200 bg-white shadow-lg p-3 space-y-1.5">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">How was it paid?</p>
+        <div className="absolute right-0 top-7 z-30 w-52 rounded-[5px] border border-[#DCD7C6] bg-[#F7F9FA] shadow-lg p-3 space-y-1.5">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">How was it paid?</p>
           {([['cash', '💵 Cash'], ['card', '💳 Card'], ['transfer', '🏦 Transfer']] as const).map(([v, l]) => (
             <button key={v} type="button" disabled={pending} onClick={() => markPaid(v)}
-              className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[var(--tss-navy)] bg-gray-50 hover:bg-gray-100 disabled:opacity-50">
+              className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[var(--tss-navy)] bg-[#F7F9FA] hover:bg-[#EDF3F5] disabled:opacity-50">
               {l}
             </button>
           ))}
@@ -132,29 +132,29 @@ export function EnrollmentPaymentControl({
               value={room}
               onChange={(e) => setRoom(e.target.value)}
               placeholder="Room #"
-              className="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
+              className="w-20 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs"
             />
             <button type="button" disabled={pending || !room.trim()} onClick={() => markPaid(`room:${room.trim()}`)}
               className="flex-1 px-2 py-1.5 rounded-lg text-xs font-semibold bg-[var(--tss-navy)] text-white disabled:opacity-40">
               🏨 Charge to room
             </button>
           </div>
-          <button type="button" onClick={() => setPayOpen(false)} className="w-full py-1 rounded-lg text-[11px] text-gray-400 hover:bg-gray-50">Cancel</button>
+          <button type="button" onClick={() => setPayOpen(false)} className="w-full py-1 rounded-lg text-[11px] text-[#55666E] hover:bg-[#F7F9FA]">Cancel</button>
         </div>
       )}
 
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="p-1 rounded-md text-gray-300 hover:text-[var(--tss-navy)] hover:bg-gray-100"
+        className="p-1 rounded-md text-[#B8B1A0] hover:text-[var(--tss-navy)] hover:bg-[#EDF3F5]"
         title="Edit sale (amount, discount, courtesy)"
       >
         <Pencil size={12} />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-7 z-30 w-60 rounded-xl border border-gray-200 bg-white shadow-lg p-3 space-y-2">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Seat sale</p>
+        <div className="absolute right-0 top-7 z-30 w-60 rounded-[5px] border border-[#DCD7C6] bg-[#F7F9FA] shadow-lg p-3 space-y-2">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Seat sale</p>
           <div className="flex gap-1">
             {([['full', 'Full'], ['discount', 'Discount'], ['courtesy', 'Courtesy']] as const).map(([v, l]) => (
               <button
@@ -165,14 +165,14 @@ export function EnrollmentPaymentControl({
                   if (v === 'courtesy') setAmount('0');
                   if (v === 'full' && listPriceCents != null) setAmount(String(listPriceCents / 100));
                 }}
-                className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold border ${type === v ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'bg-white text-gray-600 border-gray-200'}`}
+                className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold border ${type === v ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6]'}`}
               >
                 {l}
               </button>
             ))}
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-gray-400 text-sm">$</span>
+            <span className="text-[#55666E] text-sm">$</span>
             <input
               type="number"
               min={0}
@@ -181,25 +181,25 @@ export function EnrollmentPaymentControl({
               onChange={(e) => setAmount(e.target.value)}
               disabled={type === 'courtesy' || (type === 'full' && listPriceCents != null)}
               placeholder="Sold for…"
-              className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm disabled:bg-gray-50 disabled:text-gray-400"
+              className="flex-1 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm disabled:bg-[#F7F9FA] disabled:text-[#55666E]"
             />
           </div>
           {type === 'discount' && listPriceCents != null && (
-            <p className="text-[10px] text-gray-400">List price: ${(listPriceCents / 100).toLocaleString('en-US')}</p>
+            <p className="text-[10px] text-[#55666E]">List price: ${(listPriceCents / 100).toLocaleString('en-US')}</p>
           )}
           {type !== 'full' && (
             <input
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               placeholder={type === 'courtesy' ? 'Why courtesy? (e.g. influencer, staff)' : 'Discount reason (e.g. returning, promo)'}
-              className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
+              className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs"
             />
           )}
           <div className="flex gap-1.5">
             <button type="button" disabled={pending} onClick={saveSale} className="flex-1 py-1.5 rounded-lg bg-[var(--tss-navy)] text-white text-xs font-bold disabled:opacity-50">
               {pending ? 'Saving…' : 'Save'}
             </button>
-            <button type="button" onClick={() => setOpen(false)} className="px-3 py-1.5 rounded-lg text-xs text-gray-500 hover:bg-gray-100">Cancel</button>
+            <button type="button" onClick={() => setOpen(false)} className="px-3 py-1.5 rounded-lg text-xs text-[#55666E] hover:bg-[#EDF3F5]">Cancel</button>
           </div>
         </div>
       )}

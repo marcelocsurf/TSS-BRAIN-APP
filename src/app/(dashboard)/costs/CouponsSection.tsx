@@ -33,23 +33,23 @@ export function CouponsSection({ coupons, academySlug, templates }: {
   return (
     <div className="space-y-4">
       {/* ── Coupons ── */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4 shadow-sm">
         <p className="text-sm font-bold text-[var(--tss-navy)]">Class coupons</p>
-        <p className="text-[11px] text-gray-500 mb-3">
+        <p className="text-[11px] text-[#55666E] mb-3">
           Codes people enter when signing up by QR. <strong>100% = free</strong> (courtesy, auto-settled); anything else is a discount. Rotate by deactivating and creating a new one.
         </p>
 
         <div className="flex flex-wrap items-center gap-1.5 mb-3">
           <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="CODE (e.g. GUEST-S30)"
-            className="flex-1 min-w-32 px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono" />
-          <span className="inline-flex items-center gap-1 text-sm text-gray-500">
+            className="flex-1 min-w-32 px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm font-mono" />
+          <span className="inline-flex items-center gap-1 text-sm text-[#55666E]">
             <input type="number" min={1} max={100} value={pct} onChange={(e) => setPct(e.target.value)}
-              className="w-16 px-2 py-2 border border-gray-200 rounded-lg text-sm text-right" />%
+              className="w-16 px-2 py-2 border border-[#DCD7C6] rounded-lg text-sm text-right" />%
           </span>
           <input type="date" value={expires} onChange={(e) => setExpires(e.target.value)} title="Expiry (optional)"
-            className="px-2 py-2 border border-gray-200 rounded-lg text-xs text-gray-500" />
+            className="px-2 py-2 border border-[#DCD7C6] rounded-lg text-xs text-[#55666E]" />
           <input type="number" min={1} value={maxUses} onChange={(e) => setMaxUses(e.target.value)} placeholder="Max uses"
-            className="w-20 px-2 py-2 border border-gray-200 rounded-lg text-xs" />
+            className="w-20 px-2 py-2 border border-[#DCD7C6] rounded-lg text-xs" />
           <button type="button" disabled={pending || !code.trim()}
             onClick={() => start(async () => {
               const r = await saveCoupon({ code, percent_off: parseInt(pct, 10) || 50, expires_on: expires || null, max_uses: maxUses ? parseInt(maxUses, 10) : null });
@@ -63,7 +63,7 @@ export function CouponsSection({ coupons, academySlug, templates }: {
         </div>
 
         {coupons.length === 0 ? (
-          <p className="text-[12px] text-gray-400">No coupons yet.</p>
+          <p className="text-[12px] text-[#55666E]">No coupons yet.</p>
         ) : (
           <div className="divide-y divide-gray-50">
             {coupons.map((c) => (
@@ -74,19 +74,19 @@ export function CouponsSection({ coupons, academySlug, templates }: {
                       {c.percent_off >= 100 ? 'FREE' : `−${c.percent_off}%`}
                     </span>
                   </p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-[10px] text-[#55666E]">
                     {c.uses} use{c.uses === 1 ? '' : 's'}{c.max_uses ? ` / ${c.max_uses}` : ''}{c.expires_on ? ` · expires ${c.expires_on}` : ''}
                   </p>
                 </div>
                 <div className="shrink-0 flex items-center gap-1.5">
                   <button type="button" disabled={pending}
                     onClick={() => start(async () => { await toggleCoupon(c.id, !c.active); router.refresh(); })}
-                    className={`text-[10px] font-bold rounded-full px-2.5 py-1 ${c.active ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                    className={`text-[10px] font-bold rounded-full px-2.5 py-1 ${c.active ? 'bg-emerald-50 text-emerald-700' : 'bg-[#EDF3F5] text-[#55666E]'}`}>
                     {c.active ? 'Active' : 'Off'}
                   </button>
                   <button type="button" disabled={pending}
                     onClick={() => { if (confirm(`Delete coupon ${c.code}?`)) start(async () => { await deleteCoupon(c.id); router.refresh(); }); }}
-                    className="p-1 text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
+                    className="p-1 text-[#B8B1A0] hover:text-red-500"><Trash2 size={13} /></button>
                 </div>
               </div>
             ))}
@@ -96,19 +96,19 @@ export function CouponsSection({ coupons, academySlug, templates }: {
 
       {/* ── QR links ── */}
       {academySlug && (
-        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4 shadow-sm">
           <p className="text-sm font-bold text-[var(--tss-navy)] inline-flex items-center gap-1.5"><QrCode size={15} /> Class signup QRs</p>
-          <p className="text-[11px] text-gray-500 mb-3">Print once — each QR is permanent. The general one lists every upcoming class; per-class QRs filter to that class only.</p>
+          <p className="text-[11px] text-[#55666E] mb-3">Print once — each QR is permanent. The general one lists every upcoming class; per-class QRs filter to that class only.</p>
           <div className="space-y-1.5">
             {[{ id: '', template_name: '🌊 ALL CLASSES (general QR)' }, ...classTemplates].map((t) => {
               const url = joinUrl(t.id || undefined);
               return (
-                <div key={t.id || 'all'} className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2">
+                <div key={t.id || 'all'} className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-[12px] font-semibold text-[var(--tss-navy)] min-w-0 truncate">{t.template_name}</p>
                     <div className="shrink-0 flex items-center gap-1.5">
                       <button type="button" onClick={() => { navigator.clipboard?.writeText(url); }}
-                        className="text-[10px] font-bold text-gray-500 hover:text-[var(--tss-navy)] px-2 py-1 rounded bg-white border border-gray-200">Copy link</button>
+                        className="text-[10px] font-bold text-[#55666E] hover:text-[var(--tss-navy)] px-2 py-1 rounded bg-[#F7F9FA] border border-[#DCD7C6]">Copy link</button>
                       <button type="button" onClick={() => setShowQr(showQr === (t.id || 'all') ? null : (t.id || 'all'))}
                         className="text-[10px] font-bold text-white px-2 py-1 rounded bg-[var(--tss-navy)]">QR</button>
                     </div>
@@ -116,8 +116,8 @@ export function CouponsSection({ coupons, academySlug, templates }: {
                   {showQr === (t.id || 'all') && (
                     <div className="mt-2 text-center">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={qrImg(url)} alt={`QR ${t.template_name}`} className="mx-auto w-44 h-44 rounded-lg border border-gray-200 bg-white" />
-                      <p className="text-[9px] text-gray-400 mt-1 break-all">{url}</p>
+                      <img src={qrImg(url)} alt={`QR ${t.template_name}`} className="mx-auto w-44 h-44 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA]" />
+                      <p className="text-[9px] text-[#55666E] mt-1 break-all">{url}</p>
                       <a href={qrImg(url)} target="_blank" rel="noreferrer" className="inline-block mt-1 text-[10px] font-bold text-[var(--tss-cyan-text,#0090B0)] underline">Open full size to print</a>
                     </div>
                   )}

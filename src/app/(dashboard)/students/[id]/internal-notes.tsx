@@ -22,7 +22,7 @@ export function InternalNotesCard({ studentId, notes }: { studentId: string; not
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-red-100 shadow-sm overflow-hidden">
       <div className="px-4 py-3 border-b border-red-50 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-red-500 inline-flex items-center gap-1.5">
           <Lock size={13} strokeWidth={1.75} />
@@ -37,7 +37,7 @@ export function InternalNotesCard({ studentId, notes }: { studentId: string; not
           rows={3}
           onBlur={() => { if ((notes || '') !== value) void handleSave(); }}
           placeholder="Private notes — behavior, attitude, your real read. Saves itself when you leave the field."
-          className="w-full px-3 py-2 border border-red-100 bg-red-50 rounded-lg text-sm resize-none text-gray-700 focus:outline-none focus:ring-1 focus:ring-red-200"
+          className="w-full px-3 py-2 border border-red-100 bg-red-50 rounded-lg text-sm resize-none text-[#10263B] focus:outline-none focus:ring-1 focus:ring-red-200"
         />
         <button
           onClick={handleSave}

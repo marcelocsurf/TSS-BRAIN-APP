@@ -11,7 +11,7 @@ const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono,
 
 function Sec({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}>
+    <div className="rounded-lg p-4" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.09)' }}>
       <p className="font-bold text-[14px]" style={{ color: '#f0f7fa' }}>{icon} {title}</p>
       <div className="mt-1.5 space-y-1.5 text-[12.5px] leading-relaxed" style={{ color: '#b8cad8' }}>{children}</div>
     </div>
@@ -58,7 +58,7 @@ export function SpecialistGuide({ roleKey, onClose }: { roleKey: string; onClose
           <Li k="+ Agendar acá">Cada día futuro tiene su botón para agendar una cita <strong style={{ color: '#eaf4fa' }}>anclada a esa fecha</strong>, sin salir de la vista — ves la carga del día y agendás encima con criterio. Los días pasados no lo muestran.</Li>
         </Sec>
 
-        <div className="rounded-2xl p-3.5" style={{ background: 'rgba(155,123,255,.09)', border: '1px solid rgba(155,123,255,.4)' }}>
+        <div className="rounded-lg p-3.5" style={{ background: 'rgba(155,123,255,.09)', border: '1px solid rgba(155,123,255,.4)' }}>
           <p className="text-[9px] mb-1" style={{ ...F_M, color: '#B9A5FF' }}>La regla de oro</p>
           <p className="text-[12.5px] leading-relaxed" style={{ color: '#b8cad8' }}>
             <strong style={{ color: '#eaf4fa' }}>💬 El muro del equipo lo lee TODO el equipo — incluido el atleta.</strong> Es el hilo

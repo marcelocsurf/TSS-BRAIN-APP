@@ -94,7 +94,7 @@ export default async function BillingPage({ searchParams }: Props) {
         <div>
           <p
             className="text-[10px] tracking-[0.22em] text-[var(--tss-cyan,#5AC3E7)] uppercase mb-1 font-semibold"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             The Surf Sequence · Admin
           </p>
@@ -104,7 +104,7 @@ export default async function BillingPage({ searchParams }: Props) {
           >
             Course Billing — {fmtMonthLabel(yearMonth)}
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-[#55666E] mt-1">
             {grandTotalCount} course grant{grandTotalCount === 1 ? '' : 's'} ·{' '}
             ${(grandTotalCents / 100).toFixed(2)} total billable
           </p>
@@ -114,7 +114,7 @@ export default async function BillingPage({ searchParams }: Props) {
       </div>
 
       {academyRows.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center text-sm text-gray-500">
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] p-8 text-center text-sm text-[#55666E]">
           No course grants in this month.
         </div>
       ) : (
@@ -122,11 +122,11 @@ export default async function BillingPage({ searchParams }: Props) {
           {academyRows.map((acc) => (
             <div
               key={acc.academy_id ?? 'direct'}
-              className={`bg-white rounded-2xl border ${
-                acc.academy_id ? 'border-gray-100' : 'border-[var(--tss-cyan,#5AC3E7)]/50'
+              className={`bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border ${
+                acc.academy_id ? 'border-[#DCD7C6]' : 'border-[var(--tss-cyan,#5AC3E7)]/50'
               } shadow-sm overflow-hidden`}
             >
-              <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+              <div className="px-5 py-3 border-b border-[#DCD7C6] flex items-center justify-between">
                 <div>
                   <h2
                     className="text-base font-bold text-[var(--tss-navy)]"
@@ -136,15 +136,15 @@ export default async function BillingPage({ searchParams }: Props) {
                     {!acc.academy_id && (
                       <span
                         className="ml-2 text-[9px] uppercase tracking-wider bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)] px-2 py-0.5 rounded-full font-semibold"
-                        style={{ fontFamily: 'DM Mono, monospace' }}
+                        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                       >
                         TSS revenue
                       </span>
                     )}
                   </h2>
                   <p
-                    className="text-[10px] text-gray-400 uppercase tracking-wider mt-0.5"
-                    style={{ fontFamily: 'DM Mono, monospace' }}
+                    className="text-[10px] text-[#55666E] uppercase tracking-wider mt-0.5"
+                    style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                   >
                     {acc.total_count} grant{acc.total_count === 1 ? '' : 's'}
                     {acc.total_revoked > 0 && ` · ${acc.total_revoked} revoked`}
@@ -166,12 +166,12 @@ export default async function BillingPage({ searchParams }: Props) {
                       className="px-5 py-2.5 flex items-center justify-between gap-3"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-800 truncate">
+                        <p className="text-sm font-medium text-[#10263B] truncate">
                           {course?.label ?? courseKey}
                         </p>
                         <p
-                          className="text-[10px] text-gray-400 mt-0.5"
-                          style={{ fontFamily: 'DM Mono, monospace' }}
+                          className="text-[10px] text-[#55666E] mt-0.5"
+                          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                         >
                           {Object.entries(row.sources)
                             .map(([s, n]) => `${s}:${n}`)
@@ -183,8 +183,8 @@ export default async function BillingPage({ searchParams }: Props) {
                           {row.count} ×
                         </p>
                         <p
-                          className="text-xs text-gray-500"
-                          style={{ fontFamily: 'DM Mono, monospace' }}
+                          className="text-xs text-[#55666E]"
+                          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                         >
                           ${(row.cents / 100).toFixed(2)}
                         </p>
@@ -198,7 +198,7 @@ export default async function BillingPage({ searchParams }: Props) {
         </div>
       )}
 
-      <p className="text-[10px] text-gray-400 italic px-1">
+      <p className="text-[10px] text-[#55666E] italic px-1">
         Revoked grants are not counted in the billable totals.
         academy_id is snapshotted at grant time so future student moves
         don&apos;t rewrite historical invoices.

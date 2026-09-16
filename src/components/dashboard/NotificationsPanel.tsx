@@ -28,7 +28,7 @@ export function NotificationsPanel({ notifications }: { notifications: AppNotifi
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="relative inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-[var(--tss-navy)] shadow-sm hover:border-gray-300"
+          className="relative inline-flex items-center gap-2 rounded-[5px] border border-[#DCD7C6] bg-[#F7F9FA] px-3 py-2 text-sm text-[var(--tss-navy)] shadow-sm hover:border-[#DCD7C6]"
         >
           <Bell size={16} className="text-[var(--tss-cyan)]" />
           <span className="hidden sm:inline">Notificaciones</span>
@@ -43,15 +43,15 @@ export function NotificationsPanel({ notifications }: { notifications: AppNotifi
           <>
             {/* click-outside backdrop */}
             <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-            <div className="absolute right-0 mt-2 w-80 max-w-[90vw] z-50 bg-white rounded-2xl border border-gray-100 shadow-xl overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-gray-100 flex items-center justify-between">
+            <div className="absolute right-0 mt-2 w-80 max-w-[90vw] z-50 bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] shadow-xl overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-[#DCD7C6] flex items-center justify-between">
                 <span className="text-sm font-semibold text-[var(--tss-navy)]">Notificaciones</span>
                 {unread.length > 0 && (
                   <button
                     type="button"
                     onClick={markAll}
                     disabled={pending}
-                    className="text-[11px] text-gray-500 hover:text-[var(--tss-navy)] inline-flex items-center gap-1 disabled:opacity-50"
+                    className="text-[11px] text-[#55666E] hover:text-[var(--tss-navy)] inline-flex items-center gap-1 disabled:opacity-50"
                   >
                     <Check size={12} /> Marcar leídas
                   </button>
@@ -64,9 +64,9 @@ export function NotificationsPanel({ notifications }: { notifications: AppNotifi
                       <div className="flex items-start gap-2">
                         {!n.read_at && <span className="w-2 h-2 rounded-full bg-[var(--tss-cyan)] shrink-0 mt-1.5" />}
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-800 leading-snug">{n.title}</p>
-                          {n.body && <p className="text-xs text-gray-500 mt-0.5 leading-snug">{n.body}</p>}
-                          <p className="text-[12px] text-gray-400 mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                          <p className="text-sm font-medium text-[#10263B] leading-snug">{n.title}</p>
+                          {n.body && <p className="text-xs text-[#55666E] mt-0.5 leading-snug">{n.body}</p>}
+                          <p className="text-[12px] text-[#55666E] mt-1">{new Date(n.created_at).toLocaleString()}</p>
                         </div>
                       </div>
                     </div>
@@ -74,7 +74,7 @@ export function NotificationsPanel({ notifications }: { notifications: AppNotifi
                   return (
                     <li key={n.id}>
                       {n.link ? (
-                        <Link href={n.link} onClick={() => setOpen(false)} className="block hover:bg-gray-50">{inner}</Link>
+                        <Link href={n.link} onClick={() => setOpen(false)} className="block hover:bg-[#F7F9FA]">{inner}</Link>
                       ) : inner}
                     </li>
                   );

@@ -119,7 +119,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
             : `${form.first_name} ${form.last_name} has been added as ${form.role}.`}
         </p>
         {!emailSent && (
-          <div className="mt-4 mx-auto max-w-md bg-amber-50 border border-amber-200 rounded-xl p-3 text-left">
+          <div className="mt-4 mx-auto max-w-md bg-amber-50 border border-amber-200 rounded-[5px] p-3 text-left">
             <p className="text-xs font-semibold text-amber-800">
               \u26a0 Invite email did NOT send
             </p>
@@ -150,45 +150,45 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
       </div>
 
       {/* Basic Info */}
-      <div className="bg-white rounded-xl border border-[var(--tss-gray-100)] p-5 space-y-4 shadow-sm">
+      <div className="bg-[#F7F9FA] rounded-[5px] border border-[var(--tss-gray-100)] p-5 space-y-4 shadow-sm">
         <p className="text-xs tracking-widest text-[var(--tss-gray-500)] uppercase" style={{ fontFamily: 'var(--font-mono)' }}>Basic Information</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-1 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>First Name *</label>
             <input type="text" value={form.first_name} onChange={e => set('first_name', e.target.value)}
               placeholder="Carlos"
-              className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
+              className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
           </div>
           <div>
             <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-1 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Last Name *</label>
             <input type="text" value={form.last_name} onChange={e => set('last_name', e.target.value)}
               placeholder="Santamaria"
-              className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
+              className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
           </div>
         </div>
         <div>
           <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-1 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Email *</label>
           <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
             placeholder="coach@purosurf.com"
-            className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
+            className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
         </div>
         <div>
           <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-1 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Phone *</label>
           <input type="text" value={form.phone} onChange={e => set('phone', e.target.value)}
             placeholder="+503 7000 0000"
-            className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
+            className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
         </div>
         <div>
           <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-1 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Languages *</label>
           <input type="text" value={form.languages} onChange={e => set('languages', e.target.value)}
             placeholder="e.g. Spanish, English"
-            className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
+            className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
         </div>
       </div>
 
       {/* Academy (platform admin only) */}
       {isPlatformAdmin && academies.length > 0 && (
-        <div className="bg-white rounded-xl border border-[var(--tss-gray-100)] p-5 space-y-3 shadow-sm">
+        <div className="bg-[#F7F9FA] rounded-[5px] border border-[var(--tss-gray-100)] p-5 space-y-3 shadow-sm">
           <p className="text-xs tracking-widest text-[var(--tss-gray-500)] uppercase" style={{ fontFamily: 'var(--font-mono)' }}>Academy</p>
           <p className="text-xs text-[var(--tss-gray-500)]">
             Which academy does this coach belong to? Only platform admin can pick across academies.
@@ -199,7 +199,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
                 key={a.id}
                 type="button"
                 onClick={() => set('academy_id', a.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-[5px] border text-left transition-all ${
                   form.academy_id === a.id
                     ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm'
                     : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
@@ -216,7 +216,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
       )}
 
       {/* Role & Permissions */}
-      <div className="bg-white rounded-xl border border-[var(--tss-gray-100)] p-5 space-y-4 shadow-sm">
+      <div className="bg-[#F7F9FA] rounded-[5px] border border-[var(--tss-gray-100)] p-5 space-y-4 shadow-sm">
         <p className="text-xs tracking-widest text-[var(--tss-gray-500)] uppercase" style={{ fontFamily: 'var(--font-mono)' }}>System Role</p>
 
         {/* Team member type — drives which portal they get */}
@@ -224,21 +224,21 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
           <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-2 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Team member type *</label>
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={() => { set('portal_category', 'coaching'); if (form.role === 'assistant') set('role', 'coach'); }}
-              className={`flex flex-col items-start px-4 py-3 rounded-xl border text-left transition-all ${
+              className={`flex flex-col items-start px-4 py-3 rounded-[5px] border text-left transition-all ${
                 form.portal_category === 'coaching' ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm' : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
               }`}>
               <span className="text-sm font-semibold">Coaching team</span>
               <span className={`text-xs mt-0.5 ${form.portal_category === 'coaching' ? 'text-white/70' : 'text-[var(--tss-gray-500)]'}`}>Coach / coordinator / assistant</span>
             </button>
             <button type="button" onClick={() => { set('portal_category', 'support'); set('role', 'assistant'); }}
-              className={`flex flex-col items-start px-4 py-3 rounded-xl border text-left transition-all ${
+              className={`flex flex-col items-start px-4 py-3 rounded-[5px] border text-left transition-all ${
                 form.portal_category === 'support' ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm' : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
               }`}>
               <span className="text-sm font-semibold">Support staff</span>
               <span className={`text-xs mt-0.5 ${form.portal_category === 'support' ? 'text-white/70' : 'text-[var(--tss-gray-500)]'}`}>Photographer, seller, driver…</span>
             </button>
             <button type="button" onClick={() => { set('portal_category', 'manager'); set('role', 'assistant'); }}
-              className={`flex-1 rounded-xl border px-3 py-2.5 text-left transition-all ${
+              className={`flex-1 rounded-[5px] border px-3 py-2.5 text-left transition-all ${
                 form.portal_category === 'manager' ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm' : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
               }`}>
               <span className="block text-sm font-semibold">Manager</span>
@@ -252,7 +252,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
             <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-2 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Job title *</label>
             <input type="text" value={form.job_title} onChange={e => set('job_title', e.target.value)}
               placeholder="e.g. Photographer, Videographer, Seller"
-              className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
+              className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
             <p className="text-xs text-[var(--tss-gray-500)] mt-1.5">They get a portal with their tasks + assigned services. Coaching tabs are hidden.</p>
 
             <label className="flex items-start gap-2.5 mt-3 cursor-pointer">
@@ -271,7 +271,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
           <div className="space-y-2">
             {ROLES.map(r => (
               <button key={r.value} type="button" onClick={() => set('role', r.value)}
-                className={`w-full flex flex-col items-start px-4 py-3 rounded-xl border text-left transition-all ${
+                className={`w-full flex flex-col items-start px-4 py-3 rounded-[5px] border text-left transition-all ${
                   form.role === r.value
                     ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm'
                     : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
@@ -289,7 +289,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
           <div className="space-y-1.5">
             {BELT_PERMISSIONS.map(b => (
               <button key={b.value} type="button" onClick={() => set('max_belt_permission', b.value)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl border text-left transition-all ${
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-[5px] border text-left transition-all ${
                   form.max_belt_permission === b.value
                     ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)]/5'
                     : 'border-[var(--tss-gray-100)] hover:border-[var(--tss-gray-300)]'
@@ -308,7 +308,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
           <div className="grid grid-cols-2 gap-2">
             {CERT_LEVELS.map(c => (
               <button key={c.value} type="button" onClick={() => set('certification_level', c.value)}
-                className={`px-3 py-2 text-xs rounded-xl border text-left transition-all ${
+                className={`px-3 py-2 text-xs rounded-[5px] border text-left transition-all ${
                   form.certification_level === c.value
                     ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm'
                     : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
@@ -336,7 +336,7 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
               { value: 'nutricionista', label: '🥗 Nutricionista' },
             ].map((s) => (
               <button key={s.value || 'none'} type="button" onClick={() => set('specialist_role', s.value)}
-                className={`px-3 py-2 text-xs rounded-xl border text-left transition-all ${
+                className={`px-3 py-2 text-xs rounded-[5px] border text-left transition-all ${
                   form.specialist_role === s.value
                     ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white shadow-sm'
                     : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)]'
@@ -355,32 +355,32 @@ export function AddCoachForm({ academies, defaultAcademyId, isPlatformAdmin }: A
       </div>
 
       {/* Optional */}
-      <div className="bg-white rounded-xl border border-[var(--tss-gray-100)] p-5 space-y-4 shadow-sm">
+      <div className="bg-[#F7F9FA] rounded-[5px] border border-[var(--tss-gray-100)] p-5 space-y-4 shadow-sm">
         <p className="text-xs tracking-widest text-[var(--tss-gray-500)] uppercase" style={{ fontFamily: 'var(--font-mono)' }}>Optional</p>
         <div>
           <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-1 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Specialty Area</label>
           <input type="text" value={form.specialty_area} onChange={e => set('specialty_area', e.target.value)}
             placeholder="e.g. Competition, Beginners, Barrel riding"
-            className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
+            className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent" />
         </div>
         <div>
           <label className="block text-xs font-medium text-[var(--tss-gray-700)] mb-1 uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>Internal Notes</label>
           <textarea value={form.internal_notes} onChange={e => set('internal_notes', e.target.value)}
             placeholder="Notes visible only to admin..."
             rows={3}
-            className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent resize-none" />
+            className="w-full px-3 py-2 border border-[var(--tss-gray-200)] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent resize-none" />
         </div>
       </div>
 
-      {error && <p className="text-sm text-[var(--tss-danger)] bg-red-50 p-3 rounded-xl">{error}</p>}
+      {error && <p className="text-sm text-[var(--tss-danger)] bg-red-50 p-3 rounded-[5px]">{error}</p>}
 
       <div className="flex gap-3">
         <button onClick={() => router.push('/coaches')}
-          className="flex-1 py-3 border border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] text-sm rounded-xl hover:bg-[var(--tss-gray-50)] transition-all">
+          className="flex-1 py-3 border border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] text-sm rounded-[5px] hover:bg-[#F7F9FA] transition-all">
           Cancel
         </button>
         <button onClick={handleSubmit} disabled={loading}
-          className="flex-1 py-3 bg-[var(--tss-navy)] text-white text-sm font-semibold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all shadow-sm">
+          className="flex-1 py-3 bg-[var(--tss-navy)] text-white text-sm font-semibold rounded-[5px] hover:brightness-110 disabled:opacity-50 transition-all shadow-sm">
           {loading ? 'Creating...' : 'Create Coach'}
         </button>
       </div>

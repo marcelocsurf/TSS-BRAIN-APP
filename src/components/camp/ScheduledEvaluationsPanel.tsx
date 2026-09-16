@@ -153,11 +153,11 @@ export function ScheduledEvaluationsPanel({
   const completedEvals = scheduledEvals.filter((e) => e.completed);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
+    <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#DCD7C6] flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Scheduled Evaluations</h3>
-          <p className="text-[10px] text-gray-400">
+          <p className="text-[10px] text-[#55666E]">
             {pendingEvals.length} pending &middot; {completedEvals.length} completed
           </p>
         </div>
@@ -182,14 +182,14 @@ export function ScheduledEvaluationsPanel({
 
       {/* Schedule form */}
       {showForm && (
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 space-y-3">
+        <div className="px-4 py-3 border-b border-[#DCD7C6] bg-[#F7F9FA] space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>Day</label>
+              <label className="block text-[10px] text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>Day</label>
               <select
                 value={selectedDay}
                 onChange={(e) => setSelectedDay(parseInt(e.target.value))}
-                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
+                className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
               >
                 {Array.from({ length: totalDays }, (_, i) => i + 1).map((d) => (
                   <option key={d} value={d}>Day {d}</option>
@@ -197,11 +197,11 @@ export function ScheduledEvaluationsPanel({
               </select>
             </div>
             <div>
-              <label className="block text-[10px] text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>Type</label>
+              <label className="block text-[10px] text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>Type</label>
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
+                className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
               >
                 {EVAL_TYPE_OPTIONS.map((et) => (
                   <option key={et.value} value={et.value}>{et.label}</option>
@@ -212,7 +212,7 @@ export function ScheduledEvaluationsPanel({
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] text-gray-500" style={{ fontFamily: 'var(--font-mono)' }}>Students</label>
+              <label className="text-[10px] text-[#55666E]" style={{ fontFamily: 'var(--font-mono)' }}>Students</label>
               <button
                 type="button"
                 onClick={toggleAll}
@@ -233,7 +233,7 @@ export function ScheduledEvaluationsPanel({
                     className={`px-2 py-1 text-[10px] rounded-lg border transition-colors ${
                       isSelected
                         ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]'
-                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                        : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6] hover:bg-[#F7F9FA]'
                     }`}
                   >
                     {s.first_name} {s.last_name?.[0]}.
@@ -247,7 +247,7 @@ export function ScheduledEvaluationsPanel({
             type="button"
             onClick={handleSchedule}
             disabled={loading || selectedStudents.length === 0}
-            className="w-full py-2 bg-[var(--tss-navy)] text-white rounded-xl text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50"
+            className="w-full py-2 bg-[var(--tss-navy)] text-white rounded-[5px] text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50"
           >
             {loading ? 'Scheduling...' : `Schedule for ${selectedStudents.length} student${selectedStudents.length !== 1 ? 's' : ''}`}
           </button>
@@ -256,7 +256,7 @@ export function ScheduledEvaluationsPanel({
 
       {/* Scheduled list */}
       {scheduledEvals.length === 0 ? (
-        <p className="px-4 py-6 text-xs text-gray-400 text-center">No evaluations scheduled yet.</p>
+        <p className="px-4 py-6 text-xs text-[#55666E] text-center">No evaluations scheduled yet.</p>
       ) : (
         <div className="divide-y divide-gray-50">
           {scheduledEvals.map((ev) => (
@@ -264,10 +264,10 @@ export function ScheduledEvaluationsPanel({
               <div className="flex items-center gap-2">
                 <span className={`w-2 h-2 rounded-full ${ev.completed ? 'bg-green-400' : 'bg-amber-400'}`} />
                 <div>
-                  <p className="text-xs text-gray-800">
+                  <p className="text-xs text-[#10263B]">
                     {ev.students?.first_name} {ev.students?.last_name}
                   </p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-[10px] text-[#55666E]">
                     Day {ev.scheduled_day} &middot; {EVAL_TYPE_LABELS[ev.evaluation_type] || ev.evaluation_type}
                     {ev.completed && ev.coaches && (
                       <span> &middot; by {ev.coaches.display_name}</span>
@@ -287,7 +287,7 @@ export function ScheduledEvaluationsPanel({
                     value={completionNotes}
                     onChange={(e) => setCompletionNotes(e.target.value)}
                     placeholder="Notes..."
-                    className="px-2 py-1 border border-gray-200 rounded-lg text-[10px] w-24 focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
+                    className="px-2 py-1 border border-[#DCD7C6] rounded-lg text-[10px] w-24 focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
                   />
                   <button
                     type="button"
@@ -300,7 +300,7 @@ export function ScheduledEvaluationsPanel({
                   <button
                     type="button"
                     onClick={() => setCompletingId(null)}
-                    className="px-2 py-1 text-[10px] text-gray-400 hover:text-gray-600"
+                    className="px-2 py-1 text-[10px] text-[#55666E] hover:text-[#55666E]"
                   >
                     X
                   </button>

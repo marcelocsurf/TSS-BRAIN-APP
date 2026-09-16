@@ -110,7 +110,7 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
     <button
       type="button"
       onClick={() => setPanelOpen(true)}
-      className="group relative block w-full text-left rounded-xl border border-black/5 shadow-sm overflow-hidden hover:shadow-md transition-all"
+      className="group relative block w-full text-left rounded-[5px] border border-black/5 shadow-sm overflow-hidden hover:shadow-md transition-all"
       style={{ backgroundColor, borderLeft: `4px solid ${accentColor}` }}
     >
       <div className={compact ? 'p-2.5' : 'p-3'}>
@@ -120,7 +120,7 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
               className={`text-[9px] uppercase tracking-wider truncate ${
                 onDark ? 'text-white/85' : 'text-black/55'
               }`}
-              style={{ fontFamily: 'DM Mono, monospace' }}
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
             >
               {level} · {kind === 'surf_camp' ? 'CAMP' : kind === 'surf_lesson' ? 'LESSON' : 'CUSTOM'}
             </p>
@@ -161,7 +161,7 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
                   className={`text-[10px] mt-0.5 ${
                     onDark ? 'text-white/90' : 'text-black/65'
                   }`}
-                  style={{ fontFamily: 'DM Mono, monospace' }}
+                  style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                 >
                   {parts.join(' · ')}
                 </p>
@@ -186,7 +186,7 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
                     : state === 'reserved'
                     ? 'bg-amber-400 ring-1 ring-amber-600/40'
                     : onDark
-                    ? 'bg-white/25 ring-1 ring-white/40'
+                    ? 'bg-[#F7F9FA]/25 ring-1 ring-white/40'
                     : 'bg-black/10 ring-1 ring-black/20'
                 }`}
               />
@@ -200,7 +200,7 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
                 ? 'text-white/85'
                 : 'text-black/55'
             }`}
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             {enrolled}/{capacity}
             {reservedCount > 0 ? ` · ${reservedCount} unpaid` : ''}
@@ -214,7 +214,7 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
           {camp.head_coach_status === 'rejected' && (
             <div className="flex items-center gap-1 truncate">
               <AlertTriangle size={11} strokeWidth={2.5} className="text-amber-600 shrink-0" />
-              <p className="text-[10px] font-semibold truncate text-amber-700" style={{ fontFamily: 'DM Mono, monospace' }}>
+              <p className="text-[10px] font-semibold truncate text-amber-700" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
                 Head coach declined — reassign
               </p>
             </div>
@@ -231,7 +231,7 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
                 className={`text-[10px] truncate ${
                   onDark ? 'text-white/90' : 'text-black/70'
                 }`}
-                style={{ fontFamily: 'DM Mono, monospace' }}
+                style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
               >
                 {coachName}
               </p>
@@ -245,7 +245,7 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
               />
               <p
                 className="text-[10px] font-semibold truncate text-amber-700"
-                style={{ fontFamily: 'DM Mono, monospace' }}
+                style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
               >
                 No coach assigned
               </p>

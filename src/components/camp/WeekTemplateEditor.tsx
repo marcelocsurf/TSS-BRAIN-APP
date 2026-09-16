@@ -160,11 +160,11 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
 
   return (
     <form onSubmit={submit} className="max-w-2xl mx-auto space-y-4">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5 space-y-3">
         <div>
           <label
-            className="block text-xs font-medium text-gray-500 mb-1"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            className="block text-xs font-medium text-[#55666E] mb-1"
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             Name
           </label>
@@ -173,14 +173,14 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Standard Surf Week"
-            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm"
             required
           />
         </div>
         <div>
           <label
-            className="block text-xs font-medium text-gray-500 mb-1"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            className="block text-xs font-medium text-[#55666E] mb-1"
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             Description (optional)
           </label>
@@ -189,12 +189,12 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
             placeholder="High-season weekly rhythm: 3 camps + 5 lessons + 2 surfskate"
-            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm resize-none"
           />
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5 space-y-3">
         <div className="flex items-center justify-between">
           <h3
             className="text-sm font-bold text-[var(--tss-navy)]"
@@ -212,13 +212,13 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
         </div>
 
         {slots.length === 0 ? (
-          <p className="text-xs text-gray-400 italic text-center py-4">
+          <p className="text-xs text-[#55666E] italic text-center py-4">
             No slots yet. Add one slot per service you want this week template to stamp.
           </p>
         ) : (
           <div className="space-y-2">
             {slots.map((slot, i) => (
-              <div key={i} className="bg-gray-50 rounded-xl p-3 space-y-2.5">
+              <div key={i} className="bg-[#F7F9FA] rounded-[5px] p-3 space-y-2.5">
                 {/* Day chips — pick one or many */}
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {WEEKDAYS.map((d, idx) => {
@@ -231,7 +231,7 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
                         className={`w-9 py-1 text-[11px] rounded-lg border transition-colors ${
                           on
                             ? 'bg-[var(--tss-navy)] text-white border-transparent'
-                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                            : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6] hover:border-[#55666E]'
                         }`}
                       >
                         {d}
@@ -252,7 +252,7 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
                   <select
                     value={slot.service_template_id}
                     onChange={(e) => updateSlot(i, { service_template_id: e.target.value })}
-                    className="col-span-6 px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
+                    className="col-span-6 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA]"
                     required
                   >
                     <option value="">— Pick service —</option>
@@ -267,13 +267,13 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
                     type="time"
                     value={slot.scheduled_time}
                     onChange={(e) => updateSlot(i, { scheduled_time: e.target.value })}
-                    className="col-span-3 px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
+                    className="col-span-3 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA]"
                     placeholder="Time"
                   />
                   <select
                     value={slot.default_head_coach_id}
                     onChange={(e) => updateSlot(i, { default_head_coach_id: e.target.value })}
-                    className="col-span-3 px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
+                    className="col-span-3 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA]"
                   >
                     <option value="">No coach</option>
                     {coaches.map((c) => (
@@ -284,7 +284,7 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
                   </select>
                 </div>
                 {slot.weekdays.length > 1 && (
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-[10px] text-[#55666E]">
                     Creates {slot.weekdays.length} services — one per selected day.
                   </p>
                 )}
@@ -295,7 +295,7 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl px-3 py-2">
+        <div className="bg-red-50 border border-red-200 text-red-700 text-xs rounded-[5px] px-3 py-2">
           {error}
         </div>
       )}
@@ -304,7 +304,7 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
         <button
           type="submit"
           disabled={pending}
-          className="flex-1 py-2 bg-[var(--tss-navy)] text-white text-sm font-semibold rounded-xl disabled:opacity-50"
+          className="flex-1 py-2 bg-[var(--tss-navy)] text-white text-sm font-semibold rounded-[5px] disabled:opacity-50"
         >
           {pending ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Create week template'}
         </button>
@@ -313,7 +313,7 @@ export function WeekTemplateEditor({ mode, initial, campTemplates, coaches }: Pr
             type="button"
             onClick={deleteIt}
             disabled={pending}
-            className="inline-flex items-center gap-1 px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded-xl disabled:opacity-50"
+            className="inline-flex items-center gap-1 px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded-[5px] disabled:opacity-50"
           >
             <Trash2 size={13} strokeWidth={1.75} />
             Delete

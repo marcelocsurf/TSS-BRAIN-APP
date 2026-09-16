@@ -84,7 +84,7 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-4 pb-32">
       {/* ── Header card ── */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
+      <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4">
         <div className="flex items-center gap-3">
           <div
             className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0"
@@ -115,7 +115,7 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
               <span
                 className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider ${
                   isClosed
-                    ? 'bg-gray-100 text-gray-600'
+                    ? 'bg-[#EDF3F5] text-[#55666E]'
                     : isRunning
                     ? 'bg-emerald-50 text-emerald-700'
                     : 'bg-amber-50 text-amber-700'
@@ -130,7 +130,7 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
 
       {/* ── Session header fields (date, venue) ── */}
       {!isClosed && (
-        <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+        <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4 space-y-3">
           <FieldRow
             label="Date"
             value={session.session_date}
@@ -163,14 +163,14 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
       )}
 
       {/* ── Plan blocks ── */}
-      <div className="bg-white rounded-xl border border-gray-100">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+      <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6]">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#DCD7C6]">
           <div>
             <h3 className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
               <Target size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
               Session Plan
             </h3>
-            <p className="text-[11px] text-gray-500 mt-0.5">
+            <p className="text-[11px] text-[#55666E] mt-0.5">
               {blocks.length} block{blocks.length !== 1 ? 's' : ''} ·{' '}
               <strong>{session.total_planned_minutes} min planned</strong>
               {isClosed && session.total_actual_minutes != null && (
@@ -181,7 +181,7 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
         </div>
         <div className="p-3 space-y-2">
           {blocks.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">
+            <p className="text-sm text-[#55666E] text-center py-6">
               No blocks yet. Tap <strong>+ Add Block</strong> to build the plan.
             </p>
           ) : (
@@ -232,7 +232,7 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
             <button
               type="button"
               onClick={() => setShowAdd(true)}
-              className="w-full mt-2 py-3 border-2 border-dashed border-gray-200 hover:border-gray-400 rounded-xl text-sm text-gray-600"
+              className="w-full mt-2 py-3 border-2 border-dashed border-[#DCD7C6] hover:border-[#55666E] rounded-[5px] text-sm text-[#55666E]"
             >
               + Add Block
             </button>
@@ -242,7 +242,7 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
 
       {/* ── Common (warm-up + mental hack) ── */}
       {!isClosed && (
-        <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+        <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4 space-y-3">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
             <Waves size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
             Common (whole session)
@@ -280,7 +280,7 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
 
       {/* ── Closed-state report ── */}
       {isClosed && (
-        <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+        <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4 space-y-3">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
             <ClipboardList size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
             Final Report
@@ -292,12 +292,12 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
       )}
 
       {error && (
-        <p className="text-sm text-red-600 bg-red-50 p-3 rounded-xl">{error}</p>
+        <p className="text-sm text-red-600 bg-red-50 p-3 rounded-[5px]">{error}</p>
       )}
 
       {/* ── Sticky footer CTA ── */}
       {!isClosed && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 z-30">
+        <div className="fixed bottom-0 left-0 right-0 bg-[#F7F9FA] border-t border-[#DCD7C6] p-3 z-30">
           <div className="max-w-2xl mx-auto">
             {isPlanned ? (
               <button
@@ -311,7 +311,7 @@ export function PlanEditor({ session: initialSession, blocks: initialBlocks }: P
                     }).catch((e) => setError(e.message))
                   )
                 }
-                className="w-full py-3 rounded-xl text-white text-sm font-semibold disabled:opacity-40"
+                className="w-full py-3 rounded-[5px] text-white text-sm font-semibold disabled:opacity-40"
                 style={{ background: BRAND.colors.navy }}
               >
                 {blocks.length === 0
@@ -408,14 +408,14 @@ function PlanNextModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
+      <div className="bg-[#F7F9FA] rounded-t-2xl sm:rounded-lg w-full max-w-md max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
         {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-100 text-center">
+        <div className="px-4 py-3 border-b border-[#DCD7C6] text-center">
           <p className="text-2xl mb-1">🤙</p>
           <h2 className="text-sm font-semibold text-[var(--tss-navy)]">
             Session closed. Plan the next one?
           </h2>
-          <p className="text-[11px] text-gray-500 mt-1">
+          <p className="text-[11px] text-[#55666E] mt-1">
             Pre-load a session for {studentName} so they see what's coming.
           </p>
         </div>
@@ -423,14 +423,14 @@ function PlanNextModal({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
               📅 Date
             </label>
             <input
               type="date"
               value={nextDate}
               onChange={(e) => setNextDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
             />
           </div>
 
@@ -442,9 +442,9 @@ function PlanNextModal({
                 onChange={(e) => setCopyBlocks(e.target.checked)}
                 className="mt-0.5"
               />
-              <div className="text-[12px] text-gray-700">
+              <div className="text-[12px] text-[#10263B]">
                 <p className="font-medium">Copy the same blocks</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">
+                <p className="text-[10px] text-[#55666E] mt-0.5">
                   Reuse the drills + missions you ran today as the starting
                   point for next session. You can edit them after.
                 </p>
@@ -460,9 +460,9 @@ function PlanNextModal({
                 onChange={(e) => setCopyCommon(e.target.checked)}
                 className="mt-0.5"
               />
-              <div className="text-[12px] text-gray-700">
+              <div className="text-[12px] text-[#10263B]">
                 <p className="font-medium">Copy warm-up & mental hack</p>
-                <p className="text-[10px] text-gray-500 mt-0.5">
+                <p className="text-[10px] text-[#55666E] mt-0.5">
                   Use the same common setup as today's session.
                 </p>
               </div>
@@ -475,11 +475,11 @@ function PlanNextModal({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-100 p-3 flex gap-2">
+        <div className="border-t border-[#DCD7C6] p-3 flex gap-2">
           <button
             type="button"
             onClick={onSkip}
-            className="flex-1 py-2.5 rounded-lg border border-gray-200 text-sm text-gray-600"
+            className="flex-1 py-2.5 rounded-lg border border-[#DCD7C6] text-sm text-[#55666E]"
           >
             Skip
           </button>
@@ -531,7 +531,7 @@ function FieldRow({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+      <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
         {label}
       </label>
       <input
@@ -540,7 +540,7 @@ function FieldRow({
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 disabled:opacity-50"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-gray-400 disabled:opacity-50"
       />
     </div>
   );
@@ -550,8 +550,8 @@ function ReportRow({ label, value }: { label: string; value: string | null }) {
   if (!value) return null;
   return (
     <div>
-      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{label}</p>
-      <p className="text-sm text-gray-700 leading-relaxed mt-0.5 whitespace-pre-wrap">{value}</p>
+      <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">{label}</p>
+      <p className="text-sm text-[#10263B] leading-relaxed mt-0.5 whitespace-pre-wrap">{value}</p>
     </div>
   );
 }
@@ -599,27 +599,27 @@ function BlockCard({
       ? 'bg-amber-50 border-amber-200'
       : block.status === 'not_yet'
       ? 'bg-rose-50 border-rose-200'
-      : 'bg-white border-gray-100';
+      : 'bg-[#F7F9FA] border-[#DCD7C6]';
 
   return (
-    <div className={`rounded-xl border ${statusBg} overflow-hidden`}>
+    <div className={`rounded-[5px] border ${statusBg} overflow-hidden`}>
       {/* Top row */}
       <div className="flex items-center gap-2 p-3">
-        <span className="text-[10px] font-mono text-gray-400 w-6 text-center shrink-0">
+        <span className="text-[10px] font-mono text-[#55666E] w-6 text-center shrink-0">
           #{index + 1}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-gray-800 truncate">
-            {block.step_id ? <span className="text-[10px] font-mono text-gray-400 mr-1">{block.step_id}</span> : null}
+          <p className="text-sm font-medium text-[#10263B] truncate">
+            {block.step_id ? <span className="text-[10px] font-mono text-[#55666E] mr-1">{block.step_id}</span> : null}
             {block.drill_id || 'Custom block'}
           </p>
           {block.objective_text && (
-            <p className="text-[11px] text-gray-500 italic truncate">
+            <p className="text-[11px] text-[#55666E] italic truncate">
               ⮕ {block.objective_text}
             </p>
           )}
         </div>
-        <span className="text-[11px] text-gray-500 shrink-0 font-medium">
+        <span className="text-[11px] text-[#55666E] shrink-0 font-medium">
           {block.duration_minutes}m
         </span>
         {editable && (
@@ -634,7 +634,7 @@ function BlockCard({
           <button
             type="button"
             onClick={() => setExpanded((e) => !e)}
-            className="text-[10px] font-mono text-gray-400 hover:text-gray-700 px-2"
+            className="text-[10px] font-mono text-[#55666E] hover:text-[#10263B] px-2"
           >
             {expanded ? 'hide' : runnable ? 'score' : 'detail'}
           </button>
@@ -643,9 +643,9 @@ function BlockCard({
 
       {/* Edit panel (planned mode) */}
       {editable && expanded && (
-        <div className="px-3 pb-3 space-y-2 border-t border-gray-100">
+        <div className="px-3 pb-3 space-y-2 border-t border-[#DCD7C6]">
           <div>
-            <p className="text-[10px] font-mono text-gray-400 mt-2 mb-1">Duration (min)</p>
+            <p className="text-[10px] font-mono text-[#55666E] mt-2 mb-1">Duration (min)</p>
             <div className="flex gap-2">
               {[10, 15, 20, 30].map((m) => (
                 <button
@@ -656,7 +656,7 @@ function BlockCard({
                     onSave({ duration_minutes: m });
                   }}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${
-                    duration === m ? 'border-transparent text-white' : 'border-gray-200 text-gray-600'
+                    duration === m ? 'border-transparent text-white' : 'border-[#DCD7C6] text-[#55666E]'
                   }`}
                   style={duration === m ? { background: BRAND.colors.navy } : {}}
                 >
@@ -666,14 +666,14 @@ function BlockCard({
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-mono text-gray-400 mb-1">Objective</p>
+            <p className="text-[10px] font-mono text-[#55666E] mb-1">Objective</p>
             <textarea
               value={objective}
               onChange={(e) => setObjective(e.target.value)}
               onBlur={() => onSave({ objective_text: objective })}
               rows={2}
               placeholder="What does the student need to do today?"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none"
             />
           </div>
         </div>
@@ -681,8 +681,8 @@ function BlockCard({
 
       {/* Scoring panel (running mode) */}
       {runnable && expanded && (
-        <div className="px-3 pb-3 space-y-2 border-t border-gray-100">
-          <p className="text-[10px] font-mono text-gray-400 mt-2">Score this block</p>
+        <div className="px-3 pb-3 space-y-2 border-t border-[#DCD7C6]">
+          <p className="text-[10px] font-mono text-[#55666E] mt-2">Score this block</p>
           <div className="grid grid-cols-3 gap-2">
             <ScoreBtn
               label="Got it"
@@ -707,14 +707,14 @@ function BlockCard({
             />
           </div>
           <div>
-            <p className="text-[10px] font-mono text-gray-400 mb-1 mt-2">Notes (optional)</p>
+            <p className="text-[10px] font-mono text-[#55666E] mb-1 mt-2">Notes (optional)</p>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               onBlur={() => block.status && onScore(block.status, notes)}
               rows={2}
               placeholder="What did you observe?"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none"
             />
           </div>
         </div>
@@ -722,16 +722,16 @@ function BlockCard({
 
       {/* Read-only detail (closed mode) */}
       {readOnly && expanded && (
-        <div className="px-3 pb-3 space-y-2 border-t border-gray-100 text-xs text-gray-700">
+        <div className="px-3 pb-3 space-y-2 border-t border-[#DCD7C6] text-xs text-[#10263B]">
           {block.objective_text && (
             <div>
-              <p className="text-[10px] font-mono text-gray-400 mt-2">Objective</p>
+              <p className="text-[10px] font-mono text-[#55666E] mt-2">Objective</p>
               <p>{block.objective_text}</p>
             </div>
           )}
           {block.coach_notes && (
             <div>
-              <p className="text-[10px] font-mono text-gray-400">Notes</p>
+              <p className="text-[10px] font-mono text-[#55666E]">Notes</p>
               <p className="whitespace-pre-wrap">{block.coach_notes}</p>
             </div>
           )}
@@ -755,7 +755,7 @@ function IconBtn({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="w-7 h-7 flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 disabled:opacity-30 text-sm"
+      className="w-7 h-7 flex items-center justify-center rounded text-[#55666E] hover:bg-[#EDF3F5] disabled:opacity-30 text-sm"
     >
       {children}
     </button>
@@ -827,7 +827,7 @@ function CloseSessionButton({
         type="button"
         disabled={!allScored || pending}
         onClick={() => setShowForm(true)}
-        className="w-full py-3 rounded-xl text-white text-sm font-semibold disabled:opacity-40"
+        className="w-full py-3 rounded-[5px] text-white text-sm font-semibold disabled:opacity-40"
         style={{ background: BRAND.colors.navy }}
       >
         {!allScored
@@ -844,39 +844,39 @@ function CloseSessionButton({
         placeholder="General coach feedback (optional)"
         value={coachFeedback}
         onChange={(e) => setCoachFeedback(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none"
       />
       <textarea
         rows={2}
         placeholder="Homework — what to practice between now and next session"
         value={homework}
         onChange={(e) => setHomework(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none"
       />
       <textarea
         rows={2}
         placeholder="What's next — focus for next session"
         value={whatsNext}
         onChange={(e) => setWhatsNext(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none"
       />
       <div className="flex items-center gap-2">
-        <span className="text-[11px] text-gray-500">Actual duration</span>
+        <span className="text-[11px] text-[#55666E]">Actual duration</span>
         <input
           type="number"
           min={1}
           max={300}
           value={actualMin}
           onChange={(e) => setActualMin(e.target.value)}
-          className="w-20 px-2 py-1.5 border border-gray-200 rounded text-sm"
+          className="w-20 px-2 py-1.5 border border-[#DCD7C6] rounded text-sm"
         />
-        <span className="text-[11px] text-gray-500">min</span>
+        <span className="text-[11px] text-[#55666E]">min</span>
       </div>
       <div className="flex gap-2 pt-1">
         <button
           type="button"
           onClick={() => setShowForm(false)}
-          className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-gray-600"
+          className="flex-1 py-2 rounded-lg border border-[#DCD7C6] text-sm text-[#55666E]"
         >
           Cancel
         </button>

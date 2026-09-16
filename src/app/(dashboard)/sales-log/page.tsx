@@ -19,7 +19,7 @@ const SOURCE_LABEL: Record<string, string> = {
 const SOURCE_STYLE: Record<string, string> = {
   manual: 'bg-blue-50 text-blue-700',
   auto_on_camp_enrol: 'bg-emerald-50 text-emerald-700',
-  auto_on_intake: 'bg-gray-100 text-gray-600',
+  auto_on_intake: 'bg-[#EDF3F5] text-[#55666E]',
   direct_purchase: 'bg-purple-50 text-purple-700',
   override: 'bg-amber-50 text-amber-700',
   access_code: 'bg-cyan-50 text-cyan-700',
@@ -50,37 +50,37 @@ export default async function SalesLogPage() {
           <h1 className="text-xl font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
             Course Sales Log
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-[#55666E] mt-1">
             Every course granted — date, channel, student and price. {me.is_platform_admin ? 'All academies.' : 'Your academy.'}
           </p>
         </div>
         <a
           href="/sales-log/export"
-          className="inline-flex items-center gap-2 px-3.5 py-2 bg-[var(--tss-navy)] text-white rounded-xl text-sm font-semibold hover:opacity-90 shrink-0"
+          className="inline-flex items-center gap-2 px-3.5 py-2 bg-[var(--tss-navy)] text-white rounded-[5px] text-sm font-semibold hover:opacity-90 shrink-0"
         >
           <Download size={15} strokeWidth={1.9} /> CSV
         </a>
       </div>
 
       <div className="flex gap-3">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Active grants</p>
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm px-4 py-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Active grants</p>
           <p className="text-2xl font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>{activeRows.length}</p>
         </div>
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Billable total</p>
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm px-4 py-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Billable total</p>
           <p className="text-2xl font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>USD {(totalCents / 100).toFixed(2)}</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
         {rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-gray-400 italic">No course grants yet.</p>
+          <p className="px-4 py-6 text-sm text-[#55666E] italic">No course grants yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left border-b border-gray-100 text-[10px] font-mono uppercase tracking-wider text-gray-400">
+                <tr className="text-left border-b border-[#DCD7C6] text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
                   <th className="px-4 py-2.5 font-semibold">Date</th>
                   <th className="px-4 py-2.5 font-semibold">Student</th>
                   <th className="px-4 py-2.5 font-semibold">Course</th>
@@ -92,18 +92,18 @@ export default async function SalesLogPage() {
               <tbody className="divide-y divide-gray-50">
                 {rows.map((r) => (
                   <tr key={r.id} className={r.revoked_at ? 'opacity-40 line-through' : ''}>
-                    <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">
+                    <td className="px-4 py-2.5 text-[#55666E] whitespace-nowrap">
                       {new Date(r.granted_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </td>
                     <td className="px-4 py-2.5 font-medium text-[var(--tss-navy)]">{r.student_name}</td>
-                    <td className="px-4 py-2.5 text-gray-700">{courseLabel(r.course_key)}</td>
+                    <td className="px-4 py-2.5 text-[#10263B]">{courseLabel(r.course_key)}</td>
                     <td className="px-4 py-2.5">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${SOURCE_STYLE[r.source] || 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${SOURCE_STYLE[r.source] || 'bg-[#EDF3F5] text-[#55666E]'}`}>
                         {SOURCE_LABEL[r.source] || r.source}
                       </span>
                     </td>
-                    {me.is_platform_admin && <td className="px-4 py-2.5 text-gray-600">{r.academy_name}</td>}
-                    <td className="px-4 py-2.5 text-right text-gray-700 whitespace-nowrap">
+                    {me.is_platform_admin && <td className="px-4 py-2.5 text-[#55666E]">{r.academy_name}</td>}
+                    <td className="px-4 py-2.5 text-right text-[#10263B] whitespace-nowrap">
                       {r.billable ? money(r.price_cents, r.currency) : 'Free'}
                     </td>
                   </tr>

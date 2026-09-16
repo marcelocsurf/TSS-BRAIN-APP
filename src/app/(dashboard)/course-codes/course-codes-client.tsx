@@ -150,20 +150,20 @@ export function CourseCodesClient({
     <div className="space-y-6">
       {/* ── Course Grants — Billing (platform admin only) ── */}
       {isPlatformAdmin && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div className="bg-[#F7F9FA] rounded-[5px] shadow-sm border border-[#DCD7C6] p-5">
           <h2 className="font-bold text-base mb-1 text-[var(--tss-navy)]">
             Course Grants — Billing
           </h2>
-          <p className="text-xs text-gray-500 mb-3">
+          <p className="text-xs text-[#55666E] mb-3">
             Billable course activations counted per academy.
           </p>
           {grantBilling.length === 0 ? (
-            <p className="text-sm text-gray-500">No course grants recorded yet.</p>
+            <p className="text-sm text-[#55666E]">No course grants recorded yet.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
+                  <tr className="text-left text-xs text-[#55666E] border-b border-[#DCD7C6]">
                     <th className="pb-2 pr-4 font-medium">Academy</th>
                     <th className="pb-2 px-3 font-medium text-right">Total Grants</th>
                     <th className="pb-2 pl-3 font-medium text-right">This Month</th>
@@ -189,12 +189,12 @@ export function CourseCodesClient({
       )}
 
       {/* ── Generate Batch ── */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+      <div className="bg-[#F7F9FA] rounded-[5px] shadow-sm border border-[#DCD7C6] p-5">
         <h2 className="font-bold text-base mb-4 text-[var(--tss-navy)]">Generate Code Batch</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
           <div className="sm:col-span-2">
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-[#10263B] mb-1">
               Batch Label <span className="text-red-500">*</span>
             </label>
             <input
@@ -202,29 +202,29 @@ export function CourseCodesClient({
               value={batchLabel}
               onChange={(e) => setBatchLabel(e.target.value)}
               placeholder="White Belt Mayo 2026"
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">Quantity (1–50)</label>
+            <label className="block text-xs font-medium text-[#10263B] mb-1">Quantity (1–50)</label>
             <input
               type="number"
               value={quantity}
               min={1}
               max={50}
               onChange={(e) => setQuantity(Math.min(50, Math.max(1, Number(e.target.value))))}
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
             />
           </div>
         </div>
 
         <div className="mb-4">
-          <label className="block text-xs font-medium text-gray-700 mb-1">Product Type</label>
+          <label className="block text-xs font-medium text-[#10263B] mb-1">Product Type</label>
           <select
             value={productType}
             onChange={(e) => setProductType(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
+            className="px-3 py-2 border border-[#DCD7C6] rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
           >
             {PRODUCT_TYPES.map((p) => (
               <option key={p.value} value={p.value}>
@@ -235,14 +235,14 @@ export function CourseCodesClient({
         </div>
 
         <div className="mb-4">
-          <label className="block text-xs font-medium text-gray-700 mb-1">Expira en (días) — opcional</label>
+          <label className="block text-xs font-medium text-[#10263B] mb-1">Expira en (días) — opcional</label>
           <input
             type="number"
             value={expiresInDays}
             min={1}
             onChange={(e) => setExpiresInDays(e.target.value)}
             placeholder="ej. 90 · vacío = sin vencimiento"
-            className="w-full sm:w-64 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
+            className="w-full sm:w-64 px-3 py-2 border border-[#DCD7C6] rounded text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
           />
         </div>
 
@@ -269,13 +269,13 @@ export function CourseCodesClient({
             </div>
             <div className="space-y-1.5 max-h-64 overflow-y-auto">
               {generatedBatch.map((code) => (
-                <div key={code} className="flex items-center gap-2 bg-white border border-green-200 rounded px-3 py-1.5">
+                <div key={code} className="flex items-center gap-2 bg-[#F7F9FA] border border-green-200 rounded px-3 py-1.5">
                   <code className="flex-1 font-mono text-sm font-bold tracking-wider break-all">{shareText(code, productType)}</code>
                   <CopyButton text={shareText(code, productType)} label={productType === 'one_wave' ? 'Copy link' : 'Copy'} />
                 </div>
               ))}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-[#55666E] mt-2">
               Share these codes with students. Each code can only be used once.
             </p>
           </div>
@@ -284,12 +284,12 @@ export function CourseCodesClient({
 
       {/* ── Platform Admin Stats Bar ── */}
       {isPlatformAdmin && usage.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+        <div className="bg-[#F7F9FA] rounded-[5px] shadow-sm border border-[#DCD7C6] p-5">
           <h2 className="font-bold text-base mb-3 text-[var(--tss-navy)]">Usage by Academy</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
+                <tr className="text-left text-xs text-[#55666E] border-b border-[#DCD7C6]">
                   <th className="pb-2 pr-4 font-medium">Academy</th>
                   <th className="pb-2 px-3 font-medium text-right">Total</th>
                   <th className="pb-2 px-3 font-medium text-right">Redeemed</th>
@@ -314,9 +314,9 @@ export function CourseCodesClient({
       )}
 
       {/* ── Code List ── */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-[#F7F9FA] rounded-[5px] shadow-sm border border-[#DCD7C6] overflow-hidden">
         {/* Filter tabs */}
-        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-4">
+        <div className="px-4 py-3 bg-[#F7F9FA] border-b border-[#DCD7C6] flex items-center gap-4">
           <h2 className="font-bold text-base mr-auto">Codes</h2>
           {(['all', 'pending', 'redeemed'] as FilterTab[]).map((tab) => (
             <button
@@ -325,7 +325,7 @@ export function CourseCodesClient({
               className={`text-xs font-medium px-3 py-1 rounded-full transition-colors ${
                 filter === tab
                   ? 'bg-[var(--tss-navy)] text-white'
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                  : 'bg-[#DCD7C6] text-[#55666E] hover:bg-[#DCD7C6]'
               }`}
             >
               {tab === 'all' ? `All (${codes.length})` : tab === 'pending' ? `Pending (${pendingCount})` : `Redeemed (${redeemedCount})`}
@@ -334,7 +334,7 @@ export function CourseCodesClient({
         </div>
 
         {filteredCodes.length === 0 ? (
-          <div className="px-4 py-8 text-center text-sm text-gray-500">
+          <div className="px-4 py-8 text-center text-sm text-[#55666E]">
             {codes.length === 0
               ? 'No codes yet. Generate your first batch above.'
               : 'No codes match this filter.'}
@@ -343,7 +343,7 @@ export function CourseCodesClient({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-xs text-gray-500 border-b border-gray-100 bg-gray-50">
+                <tr className="text-left text-xs text-[#55666E] border-b border-[#DCD7C6] bg-[#F7F9FA]">
                   <th className="px-4 py-2 font-medium">Code</th>
                   <th className="px-3 py-2 font-medium hidden md:table-cell">Batch</th>
                   <th className="px-3 py-2 font-medium hidden sm:table-cell">Product</th>
@@ -357,14 +357,14 @@ export function CourseCodesClient({
                 {filteredCodes.map((c) => {
                   const isRedeemed = !!c.used_by;
                   return (
-                    <tr key={c.code} className="hover:bg-gray-50 transition-colors">
+                    <tr key={c.code} className="hover:bg-[#F7F9FA] transition-colors">
                       <td className="px-4 py-2.5">
                         <code className="font-mono text-xs font-bold tracking-wider">{c.code}</code>
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-500 hidden md:table-cell">
+                      <td className="px-3 py-2.5 text-xs text-[#55666E] hidden md:table-cell">
                         {c.batch_label || '—'}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-600 hidden sm:table-cell capitalize">
+                      <td className="px-3 py-2.5 text-xs text-[#55666E] hidden sm:table-cell capitalize">
                         {c.product_type.replace('_', ' ')}
                       </td>
                       <td className="px-3 py-2.5">
@@ -373,17 +373,17 @@ export function CourseCodesClient({
                             Redeemed
                           </span>
                         ) : (
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+                          <span className="text-xs bg-[#EDF3F5] text-[#55666E] px-2 py-0.5 rounded-full font-medium">
                             Pending
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-600 hidden md:table-cell">
+                      <td className="px-3 py-2.5 text-xs text-[#55666E] hidden md:table-cell">
                         {c.students
                           ? `${c.students.first_name} ${c.students.last_name}`
                           : '—'}
                       </td>
-                      <td className="px-3 py-2.5 text-xs text-gray-400 hidden lg:table-cell">
+                      <td className="px-3 py-2.5 text-xs text-[#55666E] hidden lg:table-cell">
                         {displayDate(c.created_at)}
                       </td>
                       <td className="px-4 py-2.5">

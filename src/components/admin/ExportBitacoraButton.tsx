@@ -41,7 +41,7 @@ export function ExportBitacoraButton() {
         type="button"
         onClick={handleExport}
         disabled={loading}
-        className="flex items-center gap-2 px-3.5 py-2 bg-[var(--tss-navy)] text-white rounded-xl text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+        className="flex items-center gap-2 px-3.5 py-2 bg-[var(--tss-navy)] text-white rounded-[5px] text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
       >
         {loading ? (
           <>
@@ -54,7 +54,7 @@ export function ExportBitacoraButton() {
         )}
       </button>
       {error && <p className="text-xs text-red-600">{error}</p>}
-      <p className="text-[10px] text-gray-400">ZIP · CSV + JSON · alumnos, coaches, sesiones, evaluaciones</p>
+      <p className="text-[10px] text-[#55666E]">ZIP · CSV + JSON · alumnos, coaches, sesiones, evaluaciones</p>
     </div>
   );
 }

@@ -40,7 +40,7 @@ export function TemplateActions({ templateId, templateName }: Props) {
     <div className="flex items-center gap-1">
       <a
         href={`/camps/templates/${templateId}/edit`}
-        className="px-2 py-1 text-[10px] text-gray-500 hover:text-[var(--tss-navy)] hover:bg-gray-100 rounded-lg transition-colors"
+        className="px-2 py-1 text-[10px] text-[#55666E] hover:text-[var(--tss-navy)] hover:bg-[#EDF3F5] rounded-lg transition-colors"
       >
         Edit
       </a>
@@ -48,7 +48,7 @@ export function TemplateActions({ templateId, templateName }: Props) {
         type="button"
         onClick={handleDuplicate}
         disabled={loading === 'duplicate'}
-        className="px-2 py-1 text-[10px] text-gray-500 hover:text-[var(--tss-gold)] hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+        className="px-2 py-1 text-[10px] text-[#55666E] hover:text-[var(--tss-gold)] hover:bg-[#EDF3F5] rounded-lg transition-colors disabled:opacity-50"
       >
         {loading === 'duplicate' ? '...' : 'Duplicate'}
       </button>

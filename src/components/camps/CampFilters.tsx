@@ -58,32 +58,32 @@ export function CampFilters({ templates }: Props) {
   const active = !!(kind || level || minOpen || anchor);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 mb-3 bg-white rounded-xl border border-gray-100 px-3 py-2">
+    <div className="flex flex-wrap items-center gap-2 mb-3 bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] px-3 py-2">
       <span
-        className="text-[10px] uppercase tracking-wider text-gray-400 inline-flex items-center gap-1"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        className="text-[10px] uppercase tracking-wider text-[#55666E] inline-flex items-center gap-1"
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       >
         <Filter size={11} strokeWidth={1.75} />
         Filter
       </span>
 
       <label
-        className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-gray-500"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider text-[#55666E]"
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       >
         Go to date
         <input
           type="date"
           value={anchor}
           onChange={(e) => setDate(e.target.value)}
-          className="px-2 py-1 text-xs border border-gray-200 rounded-md bg-white text-gray-700 normal-case"
+          className="px-2 py-1 text-xs border border-[#DCD7C6] rounded-md bg-[#F7F9FA] text-[#10263B] normal-case"
         />
       </label>
 
       <select
         value={kind}
         onChange={(e) => setParam('kind', e.target.value)}
-        className="px-2 py-1 text-xs border border-gray-200 rounded-md bg-white"
+        className="px-2 py-1 text-xs border border-[#DCD7C6] rounded-md bg-[#F7F9FA]"
       >
         <option value="">All types</option>
         <option value="surf_camp">Surf Camp</option>
@@ -94,7 +94,7 @@ export function CampFilters({ templates }: Props) {
       <select
         value={level}
         onChange={(e) => setParam('level', e.target.value)}
-        className="px-2 py-1 text-xs border border-gray-200 rounded-md bg-white"
+        className="px-2 py-1 text-xs border border-[#DCD7C6] rounded-md bg-[#F7F9FA]"
       >
         <option value="">All levels</option>
         {levels.map((l) => (
@@ -107,7 +107,7 @@ export function CampFilters({ templates }: Props) {
       <select
         value={minOpen}
         onChange={(e) => setParam('minOpen', e.target.value)}
-        className="px-2 py-1 text-xs border border-gray-200 rounded-md bg-white"
+        className="px-2 py-1 text-xs border border-[#DCD7C6] rounded-md bg-[#F7F9FA]"
       >
         <option value="">Any availability</option>
         <option value="1">≥ 1 spot open</option>
@@ -119,7 +119,7 @@ export function CampFilters({ templates }: Props) {
         <button
           type="button"
           onClick={clearAll}
-          className="text-[10px] inline-flex items-center gap-1 text-gray-500 hover:text-red-600 transition-colors px-2 py-1"
+          className="text-[10px] inline-flex items-center gap-1 text-[#55666E] hover:text-red-600 transition-colors px-2 py-1"
         >
           <X size={10} strokeWidth={2} />
           Clear

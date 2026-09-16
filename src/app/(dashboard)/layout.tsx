@@ -182,7 +182,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20 md:pb-0" style={{ paddingLeft: '0' }}>
+    <div className="min-h-screen bg-[#F7F9FA] pb-20 md:pb-0" style={{ paddingLeft: '0' }}>
       {actAsAcademyName && <ActAsBanner academyName={actAsAcademyName} />}
 
       {/* Desktop sidebar */}
@@ -237,7 +237,7 @@ export default async function DashboardLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-white/8 hover:text-white transition-all border-l-2 border-transparent hover:border-[var(--tss-cyan)]"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/70 hover:bg-[#F7F9FA]/8 hover:text-white transition-all border-l-2 border-transparent hover:border-[var(--tss-cyan)]"
                 >
                   <item.Icon size={16} strokeWidth={1.75} className="opacity-70" />
                   <span style={{ fontFamily: 'var(--font-body)' }}>{item.label}</span>
@@ -265,7 +265,7 @@ export default async function DashboardLayout({
                 alt={academyName || 'Academy'}
                 className="max-h-9 w-auto object-contain shrink-0"
               />
-              <span className="h-5 w-px bg-white/20 shrink-0" />
+              <span className="h-5 w-px bg-[#F7F9FA]/20 shrink-0" />
               {/* The Surf Sequence lineage logo — always present. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -300,7 +300,7 @@ export default async function DashboardLayout({
       </div>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-[var(--tss-gray-200)] flex justify-around py-2.5 z-40 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
+      <nav className="md:hidden fixed bottom-0 inset-x-0 bg-[#F7F9FA] border-t border-[var(--tss-gray-200)] flex justify-around py-2.5 z-40 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
         {visibleNav.map((item) => (
           <Link
             key={item.href}

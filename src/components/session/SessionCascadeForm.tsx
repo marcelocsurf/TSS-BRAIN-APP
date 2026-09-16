@@ -542,7 +542,7 @@ export function SessionCascadeForm({
     : null;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#F7F9FA]">
       {/* Progress */}
       <CascadeProgress currentStep={state.currentStep} isWaterVenue={state.isWaterVenue} />
 
@@ -587,19 +587,19 @@ export function SessionCascadeForm({
 
       {/* Error */}
       {saveError && (
-        <div className="mx-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+        <div className="mx-4 mb-4 p-3 bg-red-50 border border-red-200 rounded-[5px]">
           <p className="text-sm text-[var(--tss-danger)]">{saveError}</p>
         </div>
       )}
 
       {/* Navigation (not shown on step 22 or plan review — they have own buttons) */}
       {state.currentStep < 22 && !showPlanReview && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-[var(--tss-gray-100)] px-4 py-3 flex gap-3 max-w-lg mx-auto shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
+        <div className="fixed bottom-0 left-0 right-0 bg-[#F7F9FA] border-t border-[var(--tss-gray-100)] px-4 py-3 flex gap-3 max-w-lg mx-auto shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
           {state.currentStep > 1 && (
             <button
               type="button"
               onClick={goBack}
-              className="flex-1 py-3 rounded-xl border border-[var(--tss-gray-200)] text-sm font-medium text-[var(--tss-gray-700)] hover:bg-[var(--tss-gray-50)] transition-all"
+              className="flex-1 py-3 rounded-[5px] border border-[var(--tss-gray-200)] text-sm font-medium text-[var(--tss-gray-700)] hover:bg-[#F7F9FA] transition-all"
             >
               Back
             </button>
@@ -615,7 +615,7 @@ export function SessionCascadeForm({
               }
             }}
             disabled={!canAdvance() || isPending}
-            className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex-1 py-3 rounded-[5px] text-sm font-semibold transition-all ${
               canAdvance() && !isPending
                 ? 'bg-[var(--tss-navy)] text-white hover:brightness-110 active:scale-[0.98] shadow-md'
                 : 'bg-[var(--tss-gray-200)] text-[var(--tss-gray-500)] cursor-not-allowed'

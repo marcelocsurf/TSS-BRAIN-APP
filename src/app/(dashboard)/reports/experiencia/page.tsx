@@ -15,7 +15,7 @@ export const revalidate = 0;
 // el equipo de servicio actúe el mismo día.
 
 const scoreColor = (v: number | null) =>
-  v == null ? 'text-gray-400' : v >= 4.5 ? 'text-emerald-600' : v >= 3.5 ? 'text-amber-600' : 'text-rose-600';
+  v == null ? 'text-[#55666E]' : v >= 4.5 ? 'text-emerald-600' : v >= 3.5 ? 'text-amber-600' : 'text-rose-600';
 
 export default async function ExperienceReportPage({
   searchParams,
@@ -33,11 +33,11 @@ export default async function ExperienceReportPage({
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
       <header className="space-y-1">
-        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-700">
+        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-[#55666E] hover:text-[#10263B]">
           <ArrowLeft size={12} /> Reportes
         </Link>
         <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Experiencia del camp</h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-[#55666E]">
           Lo que el cliente dice de la EXPERIENCIA (no de la clase): instalaciones, equipo, transporte, comunicación y value for money.
         </p>
       </header>
@@ -60,7 +60,7 @@ export default async function ExperienceReportPage({
             <ReportCard title={`Alertas · ${data.alerts.length} respuestas con score bajo (≤3★ o NPS ≤6)`} icon={AlertTriangle}>
               <div className="space-y-2">
                 {data.alerts.slice(0, 8).map((a) => (
-                  <div key={a.id} className="rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2">
+                  <div key={a.id} className="rounded-[5px] border border-rose-100 bg-rose-50/60 px-3 py-2">
                     <p className="text-xs font-semibold text-rose-800">
                       {a.studentName}{a.campName ? ` · ${a.campName}` : ''} · {a.date}
                     </p>
@@ -71,11 +71,11 @@ export default async function ExperienceReportPage({
                         ...(a.nps != null && a.nps <= 6 ? [`NPS ${a.nps}`] : []),
                       ].join(' · ')}
                     </p>
-                    {a.comment && <p className="text-[11px] text-gray-600 mt-1 italic">“{a.comment}”</p>}
+                    {a.comment && <p className="text-[11px] text-[#55666E] mt-1 italic">“{a.comment}”</p>}
                   </div>
                 ))}
                 {data.alerts.length > 8 && (
-                  <p className="text-[11px] text-gray-500">…y {data.alerts.length - 8} más en el CSV.</p>
+                  <p className="text-[11px] text-[#55666E]">…y {data.alerts.length - 8} más en el CSV.</p>
                 )}
               </div>
             </ReportCard>
@@ -85,7 +85,7 @@ export default async function ExperienceReportPage({
           <ReportCard title="Por dimensión" icon={Smile}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#F7F9FA]">
                   <tr>
                     <Th>Dimensión</Th>
                     <Th align="right">Promedio</Th>
@@ -101,13 +101,13 @@ export default async function ExperienceReportPage({
                     const delta = cur.avg != null && prev.avg != null ? Math.round((cur.avg - prev.avg) * 10) / 10 : null;
                     return (
                       <tr key={c}>
-                        <Td><span className="font-medium text-gray-800">{data.labels[c]}</span></Td>
+                        <Td><span className="font-medium text-[#10263B]">{data.labels[c]}</span></Td>
                         <Td align="right"><span className={`font-semibold ${scoreColor(cur.avg)}`}>{cur.avg != null ? `${cur.avg.toFixed(1)} ★` : '—'}</span></Td>
                         <Td align="right" mono>{cur.n || '—'}</Td>
                         <Td align="right" mono>{prev.avg != null ? prev.avg.toFixed(1) : '—'}</Td>
                         <Td align="right">
-                          {delta == null ? <span className="text-gray-400">—</span> : (
-                            <span className={`font-semibold ${delta > 0 ? 'text-emerald-600' : delta < 0 ? 'text-rose-600' : 'text-gray-500'}`}>
+                          {delta == null ? <span className="text-[#55666E]">—</span> : (
+                            <span className={`font-semibold ${delta > 0 ? 'text-emerald-600' : delta < 0 ? 'text-rose-600' : 'text-[#55666E]'}`}>
                               {delta > 0 ? `▲ +${delta.toFixed(1)}` : delta < 0 ? `▼ ${delta.toFixed(1)}` : '='}
                             </span>
                           )}
@@ -124,7 +124,7 @@ export default async function ExperienceReportPage({
           <ReportCard title="Por camp" icon={Smile}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#F7F9FA]">
                   <tr>
                     <Th>Camp</Th>
                     <Th align="right">Inicio</Th>
@@ -137,7 +137,7 @@ export default async function ExperienceReportPage({
                 <tbody className="divide-y divide-gray-50">
                   {data.camps.map((c) => (
                     <tr key={`${c.campName}-${c.startDate}`}>
-                      <Td><span className="font-medium text-gray-800">{c.campName}</span></Td>
+                      <Td><span className="font-medium text-[#10263B]">{c.campName}</span></Td>
                       <Td align="right" mono>{c.startDate ?? '—'}</Td>
                       <Td align="right" mono>{c.n}</Td>
                       <Td align="right"><span className={`font-semibold ${scoreColor(c.overall)}`}>{c.overall != null ? c.overall.toFixed(1) : '—'}</span></Td>
@@ -146,7 +146,7 @@ export default async function ExperienceReportPage({
                     </tr>
                   ))}
                   {data.camps.length === 0 && (
-                    <tr><td colSpan={6} className="text-center py-6 text-xs text-gray-500">Sin respuestas en este rango.</td></tr>
+                    <tr><td colSpan={6} className="text-center py-6 text-xs text-[#55666E]">Sin respuestas en este rango.</td></tr>
                   )}
                 </tbody>
               </table>
@@ -157,18 +157,18 @@ export default async function ExperienceReportPage({
           <ReportCard title="Comentarios recientes" icon={MessageSquare}>
             <div className="space-y-2">
               {data.responses.filter((r) => r.comment).slice(0, 12).map((r) => (
-                <div key={r.id} className="rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-2">
-                  <p className="text-[11px] text-gray-500">{r.studentName}{r.campName ? ` · ${r.campName}` : ''} · {r.date}{r.nps != null ? ` · NPS ${r.nps}` : ''}</p>
-                  <p className="text-sm text-gray-700 mt-0.5">“{r.comment}”</p>
+                <div key={r.id} className="rounded-[5px] border border-[#DCD7C6] bg-[#F7F9FA]/60 px-3 py-2">
+                  <p className="text-[11px] text-[#55666E]">{r.studentName}{r.campName ? ` · ${r.campName}` : ''} · {r.date}{r.nps != null ? ` · NPS ${r.nps}` : ''}</p>
+                  <p className="text-sm text-[#10263B] mt-0.5">“{r.comment}”</p>
                 </div>
               ))}
               {data.responses.filter((r) => r.comment).length === 0 && (
-                <p className="text-xs text-gray-500 text-center py-4">Sin comentarios en este rango.</p>
+                <p className="text-xs text-[#55666E] text-center py-4">Sin comentarios en este rango.</p>
               )}
             </div>
           </ReportCard>
 
-          <p className="text-[11px] text-gray-500">
+          <p className="text-[11px] text-[#55666E]">
             La encuesta se crea al cerrar cada camp y llega como paso 2 del survey de la clase (un solo link). Si el cliente no responde,
             el host puede reenviarla por WhatsApp desde la ficha del alumno en su portal. NPS = % promotores (9-10) − % detractores (0-6).
           </p>

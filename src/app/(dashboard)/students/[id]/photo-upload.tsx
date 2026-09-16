@@ -110,7 +110,7 @@ export function PhotoUpload({ entityId, entityType, currentPhotoUrl, displayName
         </button>
         {photoUrl && (
           <>
-            <span className="text-gray-200 text-xs">·</span>
+            <span className="text-[#DCD7C6] text-xs">·</span>
             <button onClick={handleRemove} className="text-xs text-red-400 hover:underline">
               Remove
             </button>

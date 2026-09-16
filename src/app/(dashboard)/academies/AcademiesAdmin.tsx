@@ -73,16 +73,16 @@ export function AcademiesAdmin({ academies }: { academies: Academy[] }) {
   return (
     <div className="space-y-3">
       {academies.map((a) => (
-        <div key={a.id} className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+        <div key={a.id} className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4 space-y-3">
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="text-base font-bold text-[var(--tss-navy)]">{a.name}</p>
-              <p className="text-[11px] text-gray-500 font-mono">
+              <p className="text-[11px] text-[#55666E] font-mono">
                 {a.slug}
                 {a.country ? ` · ${a.country}` : ''}
               </p>
             </div>
-            <span className="text-[10px] text-gray-400 whitespace-nowrap">
+            <span className="text-[10px] text-[#55666E] whitespace-nowrap">
               {new Date(a.created_at).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -91,15 +91,15 @@ export function AcademiesAdmin({ academies }: { academies: Academy[] }) {
             </span>
           </div>
 
-          <div className="flex items-center justify-between gap-2 border-t border-gray-100 pt-3">
+          <div className="flex items-center justify-between gap-2 border-t border-[#DCD7C6] pt-3">
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wide text-gray-400 font-mono">
+              <p className="text-[10px] uppercase tracking-wide text-[#55666E] font-mono">
                 Coordinator
               </p>
               {a.coordinator_name ? (
                 <p className="text-sm font-semibold text-[var(--tss-navy)] truncate">
                   {a.coordinator_name}{' '}
-                  <span className="text-[11px] text-gray-500 font-normal">
+                  <span className="text-[11px] text-[#55666E] font-normal">
                     · {a.coordinator_email}
                   </span>
                 </p>
@@ -116,7 +116,7 @@ export function AcademiesAdmin({ academies }: { academies: Academy[] }) {
             </button>
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-gray-500">
+          <div className="flex items-center justify-between text-[11px] text-[#55666E]">
             <span className="inline-flex items-center gap-1">
               <Users size={11} strokeWidth={1.75} />
               {a.student_count} students
@@ -154,28 +154,28 @@ export function AcademiesAdmin({ academies }: { academies: Academy[] }) {
       ))}
 
       {adding ? (
-        <div className="bg-white rounded-xl border border-amber-200 p-4 space-y-3">
+        <div className="bg-[#F7F9FA] rounded-[5px] border border-amber-200 p-4 space-y-3">
           <p className="text-sm font-semibold text-[var(--tss-navy)]">New Academy</p>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name (e.g. Bali Surf School)"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
           />
           <input
             type="text"
             value={slug}
             onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
             placeholder="slug (e.g. bali-surf-school)"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm font-mono"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm font-mono"
           />
           <input
             type="text"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             placeholder="Country code (e.g. ID, SV, MX)"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
           />
           {createError && <p className="text-xs text-red-600">{createError}</p>}
           <div className="flex gap-2">
@@ -185,7 +185,7 @@ export function AcademiesAdmin({ academies }: { academies: Academy[] }) {
                 setAdding(false);
                 setCreateError('');
               }}
-              className="px-3 py-2 text-xs text-gray-600 border border-gray-200 rounded-lg"
+              className="px-3 py-2 text-xs text-[#55666E] border border-[#DCD7C6] rounded-lg"
             >
               Cancel
             </button>
@@ -203,7 +203,7 @@ export function AcademiesAdmin({ academies }: { academies: Academy[] }) {
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="w-full py-3 border-2 border-dashed border-gray-200 hover:border-gray-400 rounded-xl text-sm text-gray-600"
+          className="w-full py-3 border-2 border-dashed border-[#DCD7C6] hover:border-[#55666E] rounded-[5px] text-sm text-[#55666E]"
         >
           + New Academy
         </button>
@@ -276,7 +276,7 @@ function AssignCoordinatorForm({
       <p className="text-xs font-semibold text-[var(--tss-navy)]">
         Assign coordinator to {academy.name}
       </p>
-      <p className="text-[11px] text-gray-600">
+      <p className="text-[11px] text-[#55666E]">
         They&apos;ll receive a Supabase invite email. Existing coach? Their record
         will be moved to this academy and promoted to coordinator.
       </p>
@@ -286,14 +286,14 @@ function AssignCoordinatorForm({
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           placeholder="First name"
-          className="px-2 py-1.5 border border-gray-200 rounded text-xs"
+          className="px-2 py-1.5 border border-[#DCD7C6] rounded text-xs"
         />
         <input
           type="text"
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
           placeholder="Last name"
-          className="px-2 py-1.5 border border-gray-200 rounded text-xs"
+          className="px-2 py-1.5 border border-[#DCD7C6] rounded text-xs"
         />
       </div>
       <input
@@ -301,7 +301,7 @@ function AssignCoordinatorForm({
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="email@academy.com"
-        className="w-full px-2 py-1.5 border border-gray-200 rounded text-xs"
+        className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded text-xs"
       />
       <div className="grid grid-cols-2 gap-2">
         <input
@@ -309,14 +309,14 @@ function AssignCoordinatorForm({
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="Phone (optional)"
-          className="px-2 py-1.5 border border-gray-200 rounded text-xs"
+          className="px-2 py-1.5 border border-[#DCD7C6] rounded text-xs"
         />
         <input
           type="text"
           value={languages}
           onChange={(e) => setLanguages(e.target.value)}
           placeholder="Languages (optional)"
-          className="px-2 py-1.5 border border-gray-200 rounded text-xs"
+          className="px-2 py-1.5 border border-[#DCD7C6] rounded text-xs"
         />
       </div>
 
@@ -326,7 +326,7 @@ function AssignCoordinatorForm({
         <button
           type="button"
           onClick={onClose}
-          className="px-2.5 py-1.5 text-[11px] text-gray-600 border border-gray-200 rounded"
+          className="px-2.5 py-1.5 text-[11px] text-[#55666E] border border-[#DCD7C6] rounded"
         >
           Cancel
         </button>

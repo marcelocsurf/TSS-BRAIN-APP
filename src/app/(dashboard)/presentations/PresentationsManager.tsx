@@ -63,32 +63,32 @@ export function PresentationsManager() {
     <div className="max-w-2xl mx-auto space-y-5">
       <div>
         <h1 className="text-xl font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>Presentations</h1>
-        <p className="text-sm text-gray-500 mt-1">Upload PDF decks, then grant them to specific coaches from each coach&apos;s profile.</p>
+        <p className="text-sm text-[#55666E] mt-1">Upload PDF decks, then grant them to specific coaches from each coach&apos;s profile.</p>
       </div>
 
       {/* Upload */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 flex items-center gap-1.5"><Upload size={12} /> New presentation</p>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title — e.g. Inclusive Coaching" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description (optional)" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm" />
-        <label className="flex items-center gap-3 border-2 border-dashed border-gray-200 rounded-lg px-3 py-4 cursor-pointer hover:border-gray-400">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5 space-y-3">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] flex items-center gap-1.5"><Upload size={12} /> New presentation</p>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title — e.g. Inclusive Coaching" className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
+        <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description (optional)" className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
+        <label className="flex items-center gap-3 border-2 border-dashed border-[#DCD7C6] rounded-lg px-3 py-4 cursor-pointer hover:border-[#55666E]">
           <input type="file" accept="application/pdf" className="hidden" onChange={(e) => setFile(e.target.files?.[0] || null)} />
-          <Presentation size={18} className="text-gray-400" />
-          <span className="text-sm text-gray-600">{file ? file.name : 'Choose a PDF…'}</span>
+          <Presentation size={18} className="text-[#55666E]" />
+          <span className="text-sm text-[#55666E]">{file ? file.name : 'Choose a PDF…'}</span>
         </label>
         {error && <p className="text-xs text-red-500">{error}</p>}
         <button onClick={upload} disabled={busy} className="w-full py-2.5 rounded-lg bg-[var(--tss-navy)] text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50">
           {busy ? 'Uploading…' : 'Upload presentation'}
         </button>
-        <p className="text-[11px] text-gray-400">Export your deck as PDF (PowerPoint/Keynote → Export → PDF), then upload it here.</p>
+        <p className="text-[11px] text-[#55666E]">Export your deck as PDF (PowerPoint/Keynote → Export → PDF), then upload it here.</p>
       </div>
 
       {/* Videos por servicio — QR público + portal del vendedor */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-2">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">🎬 Video por servicio (YouTube/Vimeo) — se muestra en el QR público y al vendedor</p>
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5 space-y-2">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">🎬 Video por servicio (YouTube/Vimeo) — se muestra en el QR público y al vendedor</p>
         {templates.map((t) => (
           <div key={t.id} className="flex items-center gap-2">
-            <span className="text-[12px] text-gray-700 w-56 truncate shrink-0">{t.template_name}</span>
+            <span className="text-[12px] text-[#10263B] w-56 truncate shrink-0">{t.template_name}</span>
             <input
               defaultValue={t.video_url ?? ''}
               placeholder="https://youtu.be/…"
@@ -98,7 +98,7 @@ export function PresentationsManager() {
                 const res = await setTemplateVideoUrl(t.id, v || null);
                 if (!res.ok) alert(res.error || 'No se pudo guardar.');
               }}
-              className="flex-1 text-[12px] px-2.5 py-1.5 border border-gray-200 rounded-lg"
+              className="flex-1 text-[12px] px-2.5 py-1.5 border border-[#DCD7C6] rounded-lg"
             />
           </div>
         ))}
@@ -107,24 +107,24 @@ export function PresentationsManager() {
       {/* List */}
       <div className="space-y-2">
         {items.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-6">No presentations yet.</p>
+          <p className="text-sm text-[#55666E] text-center py-6">No presentations yet.</p>
         ) : items.map((r) => (
-          <div key={r.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <div key={r.id} className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[var(--tss-cyan,#5AC3E7)]/15">
                 <Presentation size={16} className="text-[var(--tss-cyan,#5AC3E7)]" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-[var(--tss-navy)] truncate">{r.title}</p>
-                {r.description && <p className="text-[11px] text-gray-500 truncate">{r.description}</p>}
+                {r.description && <p className="text-[11px] text-[#55666E] truncate">{r.description}</p>}
               </div>
               <button onClick={() => remove(r.id, r.title)} className="text-red-400 hover:text-red-600 shrink-0" aria-label="Delete">
                 <Trash2 size={16} />
               </button>
             </div>
             {templates.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-gray-50">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Selling deck for… (sellers see it on those services)</p>
+              <div className="mt-3 pt-3 border-t border-[#DCD7C6]">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">Selling deck for… (sellers see it on those services)</p>
                 <div className="flex flex-wrap gap-1.5">
                   {templates.map((t) => {
                     const on = t.sales_deck_resource_id === r.id;
@@ -132,7 +132,7 @@ export function PresentationsManager() {
                     return (
                       <button key={t.id} onClick={() => toggleDeck(t, r.id)}
                         title={taken ? 'Currently using another deck — click to switch it to this one' : undefined}
-                        className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${on ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : taken ? 'border-dashed border-gray-300 text-gray-400 hover:border-gray-400' : 'border-gray-200 text-gray-600 hover:border-gray-400'}`}>
+                        className={`text-[11px] px-2 py-1 rounded-full border transition-colors ${on ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : taken ? 'border-dashed border-[#DCD7C6] text-[#55666E] hover:border-[#55666E]' : 'border-[#DCD7C6] text-[#55666E] hover:border-[#55666E]'}`}>
                         {on ? '✓ ' : ''}{t.template_name}
                       </button>
                     );

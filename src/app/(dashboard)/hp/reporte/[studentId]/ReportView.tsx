@@ -11,7 +11,7 @@ import { hpAthleteReport, type HPAthleteReport } from '@/lib/actions/hp-cockpit'
 const INK = '#061C2B';
 const CYAN = '#0090B8';
 const GOLD = '#B8862B';
-const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' };
 
 const PILLAR_LABEL: Record<string, { label: string; color: string }> = {
   fisico: { label: 'Físico', color: '#E07A2F' },
@@ -31,13 +31,13 @@ export function ReportView({ studentId }: { studentId: string }) {
   }, [studentId]);
 
   if (err) return <p className="text-sm text-red-600 p-6">{err}</p>;
-  if (!r) return <p className="text-sm text-gray-400 p-6">Generando reporte…</p>;
+  if (!r) return <p className="text-sm text-[#55666E] p-6">Generando reporte…</p>;
 
   return (
-    <div className="max-w-2xl mx-auto bg-white">
+    <div className="max-w-2xl mx-auto bg-[#F7F9FA]">
       {/* Controles — no salen en el PDF */}
       <div className="flex items-center justify-between mb-4 print:hidden">
-        <Link href="/hp" className="text-xs text-gray-500">← Modo HP</Link>
+        <Link href="/hp" className="text-xs text-[#55666E]">← Modo HP</Link>
         <button
           type="button"
           onClick={() => window.print()}
@@ -48,7 +48,7 @@ export function ReportView({ studentId }: { studentId: string }) {
         </button>
       </div>
 
-      <div className="border border-gray-200 rounded-2xl p-6 print:border-0 print:p-0 space-y-5">
+      <div className="border border-[#DCD7C6] rounded-lg p-6 print:border-0 print:p-0 space-y-5">
         {/* Encabezado */}
         <div className="flex items-start justify-between pb-4" style={{ borderBottom: `3px solid ${INK}` }}>
           <div>
@@ -58,7 +58,7 @@ export function ReportView({ studentId }: { studentId: string }) {
             <h1 className="text-[26px] font-extrabold uppercase mt-1" style={{ color: INK, fontStretch: '125%' }}>
               {r.student.name}
             </h1>
-            <p className="text-[12px] text-gray-500 mt-0.5">
+            <p className="text-[12px] text-[#55666E] mt-0.5">
               {r.student.belt ? `Cinturón: ${r.student.belt.replace(/_/g, ' ')}` : ''}
               {r.season ? ` · ${r.season.title}` : ''}
             </p>
@@ -78,7 +78,7 @@ export function ReportView({ studentId }: { studentId: string }) {
         <div>
           <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>Score por pilar</p>
           {r.pillars.length === 0 ? (
-            <p className="text-[12px] text-gray-400 mt-1">Sin evaluaciones registradas todavía.</p>
+            <p className="text-[12px] text-[#55666E] mt-1">Sin evaluaciones registradas todavía.</p>
           ) : (
             <div className="mt-2 space-y-2">
               {r.pillars.map((p) => {
@@ -88,10 +88,10 @@ export function ReportView({ studentId }: { studentId: string }) {
                     <div className="flex items-center justify-between">
                       <p className="text-[13px] font-semibold" style={{ color: INK }}>{meta.label}</p>
                       <p className="text-[14px] font-bold" style={{ ...MONO, color: meta.color }}>
-                        {p.avg.toFixed(1)}/10 <span className="text-[10px] text-gray-400 font-normal">({p.count} eval{p.count === 1 ? '' : 's'})</span>
+                        {p.avg.toFixed(1)}/10 <span className="text-[10px] text-[#55666E] font-normal">({p.count} eval{p.count === 1 ? '' : 's'})</span>
                       </p>
                     </div>
-                    <div className="h-2 rounded-full bg-gray-100 overflow-hidden mt-1">
+                    <div className="h-2 rounded-full bg-[#EDF3F5] overflow-hidden mt-1">
                       <div className="h-full rounded-full" style={{ width: `${p.avg * 10}%`, background: meta.color }} />
                     </div>
                   </div>
@@ -108,7 +108,7 @@ export function ReportView({ studentId }: { studentId: string }) {
         </div>
 
         {/* Programa */}
-        <div className="rounded-xl p-4" style={{ background: '#FDF8EC', border: '1px solid #F0C36D' }}>
+        <div className="rounded-[5px] p-4" style={{ background: '#FDF8EC', border: '1px solid #F0C36D' }}>
           <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GOLD }}>Programa de entreno</p>
           {r.program ? (
             <>
@@ -118,24 +118,24 @@ export function ReportView({ studentId }: { studentId: string }) {
                   {r.program.position} · {r.program.adherence_pct}%
                 </p>
               </div>
-              <div className="h-2 rounded-full bg-white overflow-hidden mt-1.5" style={{ border: '1px solid #F0C36D' }}>
+              <div className="h-2 rounded-full bg-[#F7F9FA] overflow-hidden mt-1.5" style={{ border: '1px solid #F0C36D' }}>
                 <div className="h-full rounded-full" style={{ width: `${r.program.adherence_pct}%`, background: GOLD }} />
               </div>
-              <p className="text-[11px] text-gray-500 mt-1">
+              <p className="text-[11px] text-[#55666E] mt-1">
                 {r.program.days_done}/{r.program.days_total} días completados
                 {r.program.start_date ? ` · desde ${r.program.start_date}` : ''}
               </p>
             </>
           ) : (
-            <p className="text-[12px] text-gray-400 mt-1">Sin programa activo.</p>
+            <p className="text-[12px] text-[#55666E] mt-1">Sin programa activo.</p>
           )}
         </div>
 
         {/* Hábitos + asistencia */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl p-4 border border-gray-200">
+          <div className="rounded-[5px] p-4 border border-[#DCD7C6]">
             <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>Hábitos · últimos 7 días</p>
-            <div className="mt-1.5 space-y-0.5 text-[12px] text-gray-600">
+            <div className="mt-1.5 space-y-0.5 text-[12px] text-[#55666E]">
               <p>Check-ins: <b style={{ color: INK }}>{r.habits.checkins_last7}/7</b></p>
               <p>😴 Sueño prom.: <b style={{ color: INK }}>{r.habits.avg_sleep != null ? `${r.habits.avg_sleep} h` : '—'}</b></p>
               <p>💧 Agua prom.: <b style={{ color: INK }}>{r.habits.avg_water != null ? `${r.habits.avg_water}/8` : '—'}</b></p>
@@ -143,9 +143,9 @@ export function ReportView({ studentId }: { studentId: string }) {
               <p>🍎 Dieta anotada: <b style={{ color: INK }}>{r.habits.nutrition_days} día{r.habits.nutrition_days === 1 ? '' : 's'}</b></p>
             </div>
           </div>
-          <div className="rounded-xl p-4 border border-gray-200">
+          <div className="rounded-[5px] p-4 border border-[#DCD7C6]">
             <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>Competencias y equipo</p>
-            <div className="mt-1.5 space-y-0.5 text-[12px] text-gray-600">
+            <div className="mt-1.5 space-y-0.5 text-[12px] text-[#55666E]">
               <p>🏆 Registradas: <b style={{ color: INK }}>{r.competitions.total}</b></p>
               {r.competitions.next && <p>Próxima: <b style={{ color: INK }}>{r.competitions.next}</b></p>}
               {r.competitions.last && <p>Última: <b style={{ color: INK }}>{r.competitions.last}</b></p>}
@@ -157,7 +157,7 @@ export function ReportView({ studentId }: { studentId: string }) {
         </div>
 
         {r.last_comment && (
-          <div className="rounded-xl p-4 border border-gray-200">
+          <div className="rounded-[5px] p-4 border border-[#DCD7C6]">
             <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>Última voz del atleta</p>
             <p className="text-[13px] italic mt-1" style={{ color: INK }}>«{r.last_comment}»</p>
           </div>

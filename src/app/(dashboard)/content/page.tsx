@@ -117,13 +117,13 @@ export default async function ContentAdminPage({
         >
           Course Content
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-[#55666E] mt-1">
           Manage videos for every lesson, drill, and mission. Paste YouTube or
           Vimeo URLs — they appear instantly on the student portal.
         </p>
         <p
-          className="text-[10px] uppercase tracking-wider text-gray-400 mt-2 inline-flex items-center gap-1.5"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          className="text-[10px] uppercase tracking-wider text-[#55666E] mt-2 inline-flex items-center gap-1.5"
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           <BarChart3 size={11} strokeWidth={1.75} />
           {totalVideos} total videos across {lessons.length + drillsMissions.length} items
@@ -141,9 +141,9 @@ export default async function ContentAdminPage({
               className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
                 isActive
                   ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                  : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6] hover:border-[#DCD7C6]'
               }`}
-              style={{ fontFamily: 'DM Mono, monospace', letterSpacing: '0.04em' }}
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.04em' }}
             >
               {b.label.toUpperCase()}
             </Link>
@@ -376,17 +376,17 @@ function Section({
   const noun = kind === 'step' ? 'have media' : 'have videos';
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#DCD7C6] bg-[#F7F9FA]">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-bold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
               <Icon size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
               {title}
             </h2>
-            <p className="text-[11px] text-gray-500 mt-0.5">{subtitle}</p>
+            <p className="text-[11px] text-[#55666E] mt-0.5">{subtitle}</p>
           </div>
-          <span className="text-[10px] font-mono text-gray-400">
+          <span className="text-[10px] font-mono text-[#55666E]">
             {withVideos}/{items.length} {noun}
           </span>
         </div>
@@ -408,9 +408,9 @@ function ItemRow({ item, kind }: { item: any; kind: 'lesson' | 'drill_mission' |
 
   return (
     <details className="group">
-      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-50">
+      <summary className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-[#F7F9FA]">
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-mono text-gray-400">
+          <p className="text-[10px] font-mono text-[#55666E]">
             {item.id}
             {kind === 'drill_mission' && item.step_id ? ` · ${item.step_id}` : ''}
             {kind === 'drill_mission' && item.block_name ? ` · ${item.block_name}` : ''}
@@ -418,22 +418,22 @@ function ItemRow({ item, kind }: { item: any; kind: 'lesson' | 'drill_mission' |
               ? ` · ${item.course_section.replace('_', ' ')}`
               : ''}
           </p>
-          <p className="text-sm font-medium text-gray-800 truncate">{item.title}</p>
+          <p className="text-sm font-medium text-[#10263B] truncate">{item.title}</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span
             className={`text-[10px] px-2 py-0.5 rounded-full ${
               videoCount > 0
                 ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-gray-100 text-gray-400'
+                : 'bg-[#EDF3F5] text-[#55666E]'
             }`}
           >
             {videoCount} {videoCount === 1 ? noun : `${noun}s`}
           </span>
-          <span className="text-xs text-gray-400 transition group-open:rotate-180">▾</span>
+          <span className="text-xs text-[#55666E] transition group-open:rotate-180">▾</span>
         </div>
       </summary>
-      <div className="px-4 pb-4 bg-gray-50/40">
+      <div className="px-4 pb-4 bg-[#F7F9FA]/40">
         <ContentVideoManager
           videos={item.videos}
           lessonId={kind === 'lesson' ? item.id : undefined}
@@ -452,14 +452,14 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }
     <div className="pt-4">
       <p
         className="text-[10px] uppercase tracking-[0.18em] font-semibold text-[var(--tss-cyan,#5AC3E7)]"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       >
         {title}
       </p>
       {subtitle && (
-        <p className="text-[11px] text-gray-400 mt-0.5">{subtitle}</p>
+        <p className="text-[11px] text-[#55666E] mt-0.5">{subtitle}</p>
       )}
-      <div className="h-px bg-gray-100 mt-2" />
+      <div className="h-px bg-[#EDF3F5] mt-2" />
     </div>
   );
 }

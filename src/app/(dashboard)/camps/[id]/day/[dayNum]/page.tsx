@@ -52,27 +52,27 @@ export default async function CampDayPage({ params }: Props) {
       {hasPrev ? (
         <Link
           href={`/camps/${id}/day/${currentDay - 1}`}
-          className="px-3 py-1.5 text-xs text-[var(--tss-navy)] bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          className="px-3 py-1.5 text-xs text-[var(--tss-navy)] bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg hover:bg-[#F7F9FA] transition-colors"
         >
           &larr; Previous Day
         </Link>
       ) : (
-        <span className="px-3 py-1.5 text-xs text-gray-300 bg-gray-50 border border-gray-100 rounded-lg cursor-not-allowed">
+        <span className="px-3 py-1.5 text-xs text-[#B8B1A0] bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg cursor-not-allowed">
           &larr; Previous Day
         </span>
       )}
-      <span className="text-xs font-medium text-gray-500" style={{ fontFamily: 'var(--font-mono)' }}>
+      <span className="text-xs font-medium text-[#55666E]" style={{ fontFamily: 'var(--font-mono)' }}>
         Day {currentDay} of {totalDays}
       </span>
       {hasNext ? (
         <Link
           href={`/camps/${id}/day/${currentDay + 1}`}
-          className="px-3 py-1.5 text-xs text-[var(--tss-navy)] bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          className="px-3 py-1.5 text-xs text-[var(--tss-navy)] bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg hover:bg-[#F7F9FA] transition-colors"
         >
           Next Day &rarr;
         </Link>
       ) : (
-        <span className="px-3 py-1.5 text-xs text-gray-300 bg-gray-50 border border-gray-100 rounded-lg cursor-not-allowed">
+        <span className="px-3 py-1.5 text-xs text-[#B8B1A0] bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg cursor-not-allowed">
           Next Day &rarr;
         </span>
       )}
@@ -83,7 +83,7 @@ export default async function CampDayPage({ params }: Props) {
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Header */}
       <div>
-        <Link href={`/camps/${id}`} className="text-xs text-gray-400 hover:text-gray-600">← Back to camp</Link>
+        <Link href={`/camps/${id}`} className="text-xs text-[#55666E] hover:text-[#55666E]">← Back to camp</Link>
         <h2
           className="text-2xl font-bold text-[var(--tss-navy)] mt-2 leading-tight"
           style={{ fontFamily: 'var(--font-heading)' }}
@@ -91,7 +91,7 @@ export default async function CampDayPage({ params }: Props) {
           Day {dayNum}
         </h2>
         {dayInfo?.day_goal && (
-          <p className="text-sm text-gray-600 mt-1">{dayInfo.day_goal}</p>
+          <p className="text-sm text-[#55666E] mt-1">{dayInfo.day_goal}</p>
         )}
         {dayInfo?.evaluation_focus && (
           <p className="text-xs text-[var(--tss-gold)] mt-0.5">Focus: {dayInfo.evaluation_focus}</p>
@@ -102,22 +102,22 @@ export default async function CampDayPage({ params }: Props) {
       <DayNav />
 
       {/* Blocks (the shared plan) */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-50">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-[#DCD7C6]">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Session Plan</h3>
         </div>
         {blocks.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-gray-400 text-center">No blocks configured for this day.</p>
+          <p className="px-4 py-6 text-sm text-[#55666E] text-center">No blocks configured for this day.</p>
         ) : (
           <div className="divide-y divide-gray-50">
             {blocks.sort((a: any, b: any) => a.block_order - b.block_order).map((block: any) => (
               <div key={block.id} className="px-4 py-3">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="w-5 h-5 rounded bg-gray-100 text-[10px] font-bold text-gray-500 flex items-center justify-center">
+                  <span className="w-5 h-5 rounded bg-[#EDF3F5] text-[10px] font-bold text-[#55666E] flex items-center justify-center">
                     {block.block_order}
                   </span>
                   {block.pilar && (
-                    <span className="text-[10px] text-gray-400">
+                    <span className="text-[10px] text-[#55666E]">
                       {PILAR_LABELS[block.pilar as Pilar]?.split(' ')[0] || block.pilar}
                     </span>
                   )}
@@ -125,17 +125,17 @@ export default async function CampDayPage({ params }: Props) {
                     <span className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded">Safety</span>
                   )}
                   {block.mission_time && (
-                    <span className="text-[10px] text-gray-400">{block.mission_time}</span>
+                    <span className="text-[10px] text-[#55666E]">{block.mission_time}</span>
                   )}
                 </div>
-                <p className="text-sm text-gray-800">{block.mission}</p>
+                <p className="text-sm text-[#10263B]">{block.mission}</p>
                 {block.pilar_part && (
-                  <p className="text-xs text-gray-500 mt-0.5">{block.pilar_part}</p>
+                  <p className="text-xs text-[#55666E] mt-0.5">{block.pilar_part}</p>
                 )}
                 {block.drill_name && (
                   <p className="text-xs text-[var(--tss-gold)] mt-0.5">{block.drill_name}</p>
                 )}
-                <div className="flex gap-3 mt-1 text-[10px] text-gray-400">
+                <div className="flex gap-3 mt-1 text-[10px] text-[#55666E]">
                   {block.warm_up && <span>WU: {block.warm_up}</span>}
                   {block.mental_hack && <span>Mental: {block.mental_hack}</span>}
                   {block.simulation && <span>Sim: {block.simulation}</span>}
@@ -169,7 +169,7 @@ export default async function CampDayPage({ params }: Props) {
         <div>
           <div className="px-1 mb-2">
             <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Daily Feedback</h3>
-            <p className="text-[10px] text-gray-400">Quick attendance and notes per student for this day</p>
+            <p className="text-[10px] text-[#55666E]">Quick attendance and notes per student for this day</p>
           </div>
           <CampDailyFeedbackForm
             campId={id}
@@ -181,8 +181,8 @@ export default async function CampDayPage({ params }: Props) {
       )}
 
       {/* Participants evaluation status */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-50">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-[#DCD7C6]">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
             Session Evaluation ({existingResults.length}/{participants.length})
           </h3>
@@ -199,9 +199,9 @@ export default async function CampDayPage({ params }: Props) {
                     {p.students?.first_name?.[0]}{p.students?.last_name?.[0]}
                   </div>
                   <div>
-                    <p className="text-sm text-gray-900">{p.students?.first_name} {p.students?.last_name}</p>
+                    <p className="text-sm text-[#10263B]">{p.students?.first_name} {p.students?.last_name}</p>
                     {isEvaluated && result && (
-                      <p className="text-[10px] text-gray-400 capitalize">{result.status?.replace('_',' ')} &middot; Focus {result.focus_rating}/5</p>
+                      <p className="text-[10px] text-[#55666E] capitalize">{result.status?.replace('_',' ')} &middot; Focus {result.focus_rating}/5</p>
                     )}
                   </div>
                 </div>
@@ -219,13 +219,13 @@ export default async function CampDayPage({ params }: Props) {
       {/* Evaluate button */}
       {!allEvaluated && (
         <Link href={`/camps/${id}/day/${dayNum}/results`}
-          className="block w-full text-center py-3 bg-[var(--tss-navy)] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+          className="block w-full text-center py-3 bg-[var(--tss-navy)] text-white rounded-[5px] text-sm font-medium hover:opacity-90 transition-opacity">
           Evaluate Students
         </Link>
       )}
 
       {allEvaluated && (
-        <div className="bg-green-50 rounded-xl p-4 text-center">
+        <div className="bg-green-50 rounded-[5px] p-4 text-center">
           <p className="text-sm text-green-700 font-medium">All students evaluated for Day {dayNum}.</p>
         </div>
       )}

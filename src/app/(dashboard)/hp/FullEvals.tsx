@@ -9,7 +9,7 @@ import { hpListFullEvaluations, hpCreateFullEvaluation, type HPFullEvalRow, type
 import { EVAL_FULL_ITEMS, EVAL_FULL_BLOCKS, EVAL_FULL_TYPES, EVAL_FULL_DISCIPLINES, type FullEvalBlockKey } from '@/lib/constants/hp-eval-full';
 import { elSalvadorToday } from '@/lib/utils/tz';
 
-const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' };
 const CARD = 'rgba(255,255,255,.045)';
 const BORDER = 'rgba(255,255,255,.09)';
 const CYAN = '#00D2FF';
@@ -241,7 +241,7 @@ function FullEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
       <div className="relative">
         <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }} placeholder="Atleta… *" aria-label="Atleta" style={inp} />
         {results.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full rounded-xl overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
+          <div className="absolute z-10 mt-1 w-full rounded-[5px] overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
             {results.map((st) => (
               <button key={st.id} type="button" onClick={() => { setPicked(st); setResults([]); }}
                 className="w-full text-left px-3 py-2 text-[12.5px]" style={{ color: TXT }}>
@@ -275,7 +275,7 @@ function FullEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
         const avg = blockAvg(b.key);
         const n = blockCount(b.key);
         return (
-          <div key={b.key} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
+          <div key={b.key} className="rounded-[5px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
             <button type="button" onClick={() => setOpenBlock(open ? '' : b.key)}
               className="w-full flex items-center justify-between px-3 py-2" style={{ background: 'rgba(255,255,255,.03)' }}>
               <p className="text-[11px] font-bold uppercase tracking-wider" style={{ ...MONO, color: b.color }}>{b.label}</p>
@@ -335,7 +335,7 @@ function FullEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
         );
       })}
 
-      <div className="rounded-xl px-3 py-2 space-y-1.5" style={{ border: `1px solid ${BORDER}`, background: 'rgba(255,209,102,.05)' }}>
+      <div className="rounded-[5px] px-3 py-2 space-y-1.5" style={{ border: `1px solid ${BORDER}`, background: 'rgba(255,209,102,.05)' }}>
         <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GOLD }}>Resumen · 3 fortalezas · 3 a mejorar</p>
         {strengths.map((s, i) => (
           <input key={`s${i}`} value={s} onChange={(e) => setStrengths((a) => a.map((x, j) => (j === i ? e.target.value : x)))} placeholder={`Fortaleza ${i + 1}`} aria-label={`Fortaleza ${i + 1}`} style={inp} />
@@ -345,7 +345,7 @@ function FullEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
         ))}
       </div>
 
-      <div className="rounded-xl px-3 py-2 space-y-1.5" style={{ border: `1px solid ${BORDER}`, background: 'rgba(255,209,102,.05)' }}>
+      <div className="rounded-[5px] px-3 py-2 space-y-1.5" style={{ border: `1px solid ${BORDER}`, background: 'rgba(255,209,102,.05)' }}>
         <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GOLD }}>Diagnóstico y plan</p>
         <textarea value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observación del coach" aria-label="Observación" rows={2} style={inp} />
         <textarea value={rec} onChange={(e) => setRec(e.target.value)} placeholder="Recomendación" aria-label="Recomendación" rows={2} style={inp} />

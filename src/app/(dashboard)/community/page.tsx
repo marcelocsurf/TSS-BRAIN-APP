@@ -24,7 +24,7 @@ export default async function CommunityAdminPage() {
   return (
     <div className="p-4 md:p-6 max-w-4xl">
       <h1 className="text-xl font-bold text-[var(--tss-navy)]">The Lineup · Comunidad</h1>
-      <p className="text-[13px] text-gray-500 mt-1">
+      <p className="text-[13px] text-[#55666E] mt-1">
         Lo que publiques acá les llega a los miembros: al Home como nuevo y a la
         pestaña The Lineup como archivo. La pestaña recién les aparece cuando hay
         algo publicado — cargá 6-8 piezas antes de publicar la primera.

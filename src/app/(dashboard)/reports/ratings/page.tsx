@@ -25,11 +25,11 @@ export default async function RatingsReportPage({
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
       <header className="space-y-1">
-        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600">
+        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-[#55666E] hover:text-[#55666E]">
           <ArrowLeft size={12} /> Reportes
         </Link>
         <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Ratings por coach</h1>
-        <p className="text-sm text-gray-500">Satisfacción del alumno (survey al cierre) por coach que corrió la sesión.</p>
+        <p className="text-sm text-[#55666E]">Satisfacción del alumno (survey al cierre) por coach que corrió la sesión.</p>
       </header>
 
       <ReportControls exportHref="/reports/ratings/export" />
@@ -47,7 +47,7 @@ export default async function RatingsReportPage({
           <ReportCard title="Leaderboard" icon={Star}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#F7F9FA]">
                   <tr>
                     <Th>Coach</Th>
                     {data.isPlatformAdmin && <Th>Academia</Th>}
@@ -63,8 +63,8 @@ export default async function RatingsReportPage({
                 <tbody className="divide-y divide-gray-50">
                   {data.coaches.map((c) => (
                     <tr key={c.coachId}>
-                      <Td><span className="font-medium text-gray-800">{c.name}</span></Td>
-                      {data.isPlatformAdmin && <Td><span className="text-gray-500">{c.academyName || '—'}</span></Td>}
+                      <Td><span className="font-medium text-[#10263B]">{c.name}</span></Td>
+                      {data.isPlatformAdmin && <Td><span className="text-[#55666E]">{c.academyName || '—'}</span></Td>}
                       <Td align="right">
                         <span className={`font-semibold ${c.avg >= 4.5 ? 'text-emerald-600' : c.avg >= 3.5 ? 'text-amber-600' : 'text-rose-600'}`}>
                           {c.avg.toFixed(1)} ★
@@ -79,14 +79,14 @@ export default async function RatingsReportPage({
                     </tr>
                   ))}
                   {data.coaches.length === 0 && (
-                    <tr><td colSpan={data.isPlatformAdmin ? 9 : 8} className="text-center py-6 text-xs text-gray-400">Sin ratings en este rango.</td></tr>
+                    <tr><td colSpan={data.isPlatformAdmin ? 9 : 8} className="text-center py-6 text-xs text-[#55666E]">Sin ratings en este rango.</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
           </ReportCard>
 
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-[#55666E]">
             El rating se atribuye al coach que <strong>cerró</strong> la sesión. En camps de varios días, la encuesta apunta al coach del
             último día. Solo se cuentan respuestas con estrella 1–5.
           </p>

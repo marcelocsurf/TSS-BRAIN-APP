@@ -50,7 +50,7 @@ export default function CampResultsPage() {
     });
   }, [campId, dayNum]);
 
-  if (!data) return <div className="text-center py-12 text-gray-400">Loading...</div>;
+  if (!data) return <div className="text-center py-12 text-[#55666E]">Loading...</div>;
 
   const pendingParticipants = data.participants.filter(
     (p: any) => !saved.has(p.students?.id)
@@ -68,7 +68,7 @@ export default function CampResultsPage() {
         >
           All Students Evaluated
         </h2>
-        <p className="text-sm text-gray-500 mt-2">Day {dayNum} is complete.</p>
+        <p className="text-sm text-[#55666E] mt-2">Day {dayNum} is complete.</p>
         <button onClick={() => router.push(`/camps/${campId}`)}
           className="mt-4 px-6 py-2 bg-[var(--tss-navy)] text-white text-sm rounded-lg hover:opacity-90">
           Back to Camp
@@ -127,11 +127,11 @@ export default function CampResultsPage() {
     <div className="max-w-lg mx-auto">
       {/* Progress */}
       <div className="flex items-center justify-between mb-4">
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-[#55666E]">
           Day {dayNum} · Student {currentIdx + 1} of {pendingParticipants.length} remaining
         </p>
         <button onClick={() => router.push(`/camps/${campId}/day/${dayNum}`)}
-          className="text-xs text-gray-400 hover:text-gray-600">← Back</button>
+          className="text-xs text-[#55666E] hover:text-[#55666E]">← Back</button>
       </div>
 
       {/* Student header */}
@@ -142,7 +142,7 @@ export default function CampResultsPage() {
         </div>
         <div>
           <p className="font-semibold text-[var(--tss-navy)]">{student.first_name} {student.last_name}</p>
-          <p className="text-xs text-gray-500">{belt?.en}</p>
+          <p className="text-xs text-[#55666E]">{belt?.en}</p>
           {student.last_homework && (
             <p className="text-[10px] text-amber-600 mt-0.5">HW: {student.last_homework}</p>
           )}
@@ -150,15 +150,15 @@ export default function CampResultsPage() {
       </div>
 
       {/* Evaluation card */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 space-y-4">
         {/* Status */}
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-2">Status *</label>
+          <label className="block text-xs font-medium text-[#55666E] mb-2">Status *</label>
           <div className="grid grid-cols-4 gap-1">
             {SESSION_STATUS_OPTIONS.map(opt => (
               <button key={opt.value} type="button" onClick={() => setEv('status', opt.value)}
                 className={`py-2 text-xs rounded-lg border ${
-                  ev.status === opt.value ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'border-gray-200 text-gray-600'
+                  ev.status === opt.value ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'border-[#DCD7C6] text-[#55666E]'
                 }`}>{opt.label}</button>
             ))}
           </div>
@@ -167,23 +167,23 @@ export default function CampResultsPage() {
         {/* Ratings */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-2">Focus (1-5) *</label>
+            <label className="block text-xs font-medium text-[#55666E] mb-2">Focus (1-5) *</label>
             <div className="flex gap-1">
               {[1,2,3,4,5].map(n => (
                 <button key={n} type="button" onClick={() => setEv('focus_rating', n)}
                   className={`w-8 h-8 rounded-full border text-xs font-medium ${
-                    ev.focus_rating === n ? 'bg-[var(--tss-gold)] border-[var(--tss-gold)] text-white' : 'border-gray-200 text-gray-500'
+                    ev.focus_rating === n ? 'bg-[var(--tss-gold)] border-[var(--tss-gold)] text-white' : 'border-[#DCD7C6] text-[#55666E]'
                   }`}>{n}</button>
               ))}
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-2">Frustration (1-10) *</label>
+            <label className="block text-xs font-medium text-[#55666E] mb-2">Frustration (1-10) *</label>
             <div className="flex gap-0.5 flex-wrap">
               {[1,2,3,4,5,6,7,8,9,10].map(n => (
                 <button key={n} type="button" onClick={() => setEv('frustration_rating', n)}
                   className={`w-6 h-6 rounded text-[10px] font-medium border ${
-                    ev.frustration_rating === n ? 'bg-red-400 border-red-400 text-white' : 'border-gray-200 text-gray-500'
+                    ev.frustration_rating === n ? 'bg-red-400 border-red-400 text-white' : 'border-[#DCD7C6] text-[#55666E]'
                   }`}>{n}</button>
               ))}
             </div>
@@ -192,19 +192,19 @@ export default function CampResultsPage() {
 
         {/* Text fields */}
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Coach Feedback * (min 10)</label>
+          <label className="block text-xs font-medium text-[#55666E] mb-1">Coach Feedback * (min 10)</label>
           <textarea value={ev.coach_feedback} onChange={e => setEv('coach_feedback', e.target.value)}
-            rows={2} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none" />
+            rows={2} className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">What's Next * (min 5)</label>
+          <label className="block text-xs font-medium text-[#55666E] mb-1">What's Next * (min 5)</label>
           <input type="text" value={ev.whats_next} onChange={e => setEv('whats_next', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Homework * (min 5)</label>
+          <label className="block text-xs font-medium text-[#55666E] mb-1">Homework * (min 5)</label>
           <input type="text" value={ev.homework} onChange={e => setEv('homework', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
         </div>
       </div>
 
@@ -214,7 +214,7 @@ export default function CampResultsPage() {
       <div className="flex gap-3 mt-4">
         {currentIdx > 0 && (
           <button onClick={() => setCurrentIdx(i => i - 1)}
-            className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-600">
+            className="px-4 py-2.5 border border-[#DCD7C6] rounded-lg text-sm text-[#55666E]">
             ← Prev
           </button>
         )}

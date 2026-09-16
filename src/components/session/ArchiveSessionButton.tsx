@@ -39,7 +39,7 @@ export function ArchiveSessionButton({ sessionId, sessionState }: Props) {
         </button>
         <button
           onClick={() => setConfirming(false)}
-          className="text-[10px] px-2 py-1 border border-gray-200 rounded text-gray-500 hover:bg-gray-50"
+          className="text-[10px] px-2 py-1 border border-[#DCD7C6] rounded text-[#55666E] hover:bg-[#F7F9FA]"
         >
           Keep
         </button>

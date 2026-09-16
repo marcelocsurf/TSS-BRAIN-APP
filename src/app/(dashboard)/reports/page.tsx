@@ -47,7 +47,7 @@ export default async function ReportsIndexPage() {
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Reportes</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-[#55666E] mt-1">
           {me.is_platform_admin ? 'Consolidado de todas las academias (elegí una con el switcher).' : 'Reportes de tu academia.'}
         </p>
       </header>
@@ -57,7 +57,7 @@ export default async function ReportsIndexPage() {
           <Link
             key={r.href}
             href={r.href}
-            className="group bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:border-[var(--tss-cyan)] hover:shadow-md transition-all"
+            className="group bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5 hover:border-[var(--tss-cyan)] hover:shadow-md transition-all"
           >
             <div className="flex items-center gap-2 mb-2">
               <r.Icon size={18} className="text-[var(--tss-navy)]" />
@@ -70,7 +70,7 @@ export default async function ReportsIndexPage() {
                 </span>
               )}
             </div>
-            <p className="text-[12px] text-gray-500 leading-relaxed">{r.desc}</p>
+            <p className="text-[12px] text-[#55666E] leading-relaxed">{r.desc}</p>
           </Link>
         ))}
       </div>

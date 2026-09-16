@@ -73,7 +73,7 @@ export function Step01Student({
 
       {/* ── Coach Assignment Section ── */}
       {canAssignCoach ? (
-        <div className="bg-blue-50 rounded-xl p-3 space-y-1">
+        <div className="bg-blue-50 rounded-[5px] p-3 space-y-1">
           <label className="text-xs font-semibold text-blue-800 uppercase tracking-wide">
             Assign Session Coach
           </label>
@@ -83,7 +83,7 @@ export function Step01Student({
               const coach = coaches.find(c => c.id === e.target.value);
               if (coach) onCoachAssigned(coach.id, coach.display_name);
             }}
-            className="w-full p-2 rounded-lg border border-blue-200 text-sm bg-white focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+            className="w-full p-2 rounded-lg border border-blue-200 text-sm bg-[#F7F9FA] focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
           >
             <option value="" disabled>Select a coach...</option>
             {coaches.map((c) => (
@@ -95,9 +95,9 @@ export function Step01Student({
         </div>
       ) : (
         formState.assigned_coach_name && (
-          <div className="bg-gray-50 rounded-xl p-3">
-            <p className="text-xs text-gray-500">
-              Session Coach: <span className="font-medium text-gray-700">{formState.assigned_coach_name}</span>
+          <div className="bg-[#F7F9FA] rounded-[5px] p-3">
+            <p className="text-xs text-[#55666E]">
+              Session Coach: <span className="font-medium text-[#10263B]">{formState.assigned_coach_name}</span>
             </p>
           </div>
         )
@@ -110,11 +110,11 @@ export function Step01Student({
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         autoFocus
-        className="w-full p-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
+        className="w-full p-3 rounded-[5px] border border-[#DCD7C6] text-sm focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
       />
 
       {students.length >= 20 && search.length === 0 && !loadedStudent && (
-        <p className="text-sm text-gray-400 text-center py-4">Type at least 1 letter to search</p>
+        <p className="text-sm text-[#55666E] text-center py-4">Type at least 1 letter to search</p>
       )}
 
       {/* Student list */}
@@ -130,10 +130,10 @@ export function Step01Student({
               type="button"
               onClick={() => handleSelect(s.id)}
               disabled={isPending}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+              className={`w-full flex items-center gap-3 p-3 rounded-[5px] border transition-all text-left ${
                 isSelected
                   ? 'border-[#5AC3E7] bg-amber-50'
-                  : 'border-gray-100 hover:border-gray-200'
+                  : 'border-[#DCD7C6] hover:border-[#DCD7C6]'
               } ${isPending ? 'opacity-50' : ''}`}
             >
               <div
@@ -144,17 +144,17 @@ export function Step01Student({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-gray-800 truncate">
+                  <p className="text-sm font-medium text-[#10263B] truncate">
                     {s.first_name} {s.last_name}
                   </p>
                   {/* Belt color badge */}
                   <span
-                    className="inline-block w-3 h-3 rounded-full shrink-0 border border-gray-300"
+                    className="inline-block w-3 h-3 rounded-full shrink-0 border border-[#DCD7C6]"
                     style={{ backgroundColor: beltColor }}
                     title={belt?.en || s.belt_level}
                   />
                 </div>
-                <p className="text-xs text-gray-400">{belt?.en || s.belt_level}</p>
+                <p className="text-xs text-[#55666E]">{belt?.en || s.belt_level}</p>
               </div>
               {isSelected && (
                 <span className="ml-auto text-[#5AC3E7] text-lg">&#10003;</span>
@@ -163,16 +163,16 @@ export function Step01Student({
           );
         })}
         {search.length >= 1 && filteredStudents.length === 0 && (
-          <p className="text-sm text-gray-400 text-center py-4">No students match &quot;{search}&quot;</p>
+          <p className="text-sm text-[#55666E] text-center py-4">No students match &quot;{search}&quot;</p>
         )}
         {filteredStudents.length > 20 && (
-          <p className="text-xs text-gray-400 text-center py-2">Showing 20 of {filteredStudents.length} — type more to narrow</p>
+          <p className="text-xs text-[#55666E] text-center py-2">Showing 20 of {filteredStudents.length} — type more to narrow</p>
         )}
       </div>
 
       {/* Error display */}
       {loadError && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
+        <div className="p-3 bg-red-50 border border-red-200 rounded-[5px]">
           <p className="text-sm font-semibold text-red-700">Error loading student</p>
           <p className="text-xs text-red-600 mt-1">{loadError}</p>
         </div>
@@ -180,7 +180,7 @@ export function Step01Student({
 
       {/* Waiver warning — soft, does not block session */}
       {waiverMissing && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-[5px]">
           <p className="text-sm font-semibold text-amber-700">
             {'\u26A0\uFE0F'} This student has not signed the waiver yet.
           </p>
@@ -192,23 +192,23 @@ export function Step01Student({
 
       {/* Auto-loaded context */}
       {loadedStudent && (
-        <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Auto-loaded</p>
+        <div className="bg-[#F7F9FA] rounded-[5px] p-4 space-y-2">
+          <p className="text-xs font-medium text-[#55666E] uppercase tracking-wide">Auto-loaded</p>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div>
-              <span className="text-gray-400 text-xs">Belt</span>
+              <span className="text-[#55666E] text-xs">Belt</span>
               <p className="font-medium">{BELT_DISPLAY[loadedStudent.belt_level]?.en}</p>
             </div>
             <div>
-              <span className="text-gray-400 text-xs">Ocean Level</span>
+              <span className="text-[#55666E] text-xs">Ocean Level</span>
               <p className="font-medium">{loadedStudent.ocean_level || '\u2014'}</p>
             </div>
             <div>
-              <span className="text-gray-400 text-xs">Sequence</span>
+              <span className="text-[#55666E] text-xs">Sequence</span>
               <p className="font-medium">#{loadedStudent.current_sequence_number}</p>
             </div>
             <div>
-              <span className="text-gray-400 text-xs">Last Session</span>
+              <span className="text-[#55666E] text-xs">Last Session</span>
               <p className="font-medium">
                 {loadedStudent.last_session_date
                   ? displayDate(loadedStudent.last_session_date)

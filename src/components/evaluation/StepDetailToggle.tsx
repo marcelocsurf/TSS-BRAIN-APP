@@ -89,30 +89,30 @@ export function StepDetailToggle({
       <button
         type="button"
         onClick={toggle}
-        className="inline-flex items-center gap-1 text-[10.5px] text-gray-500 hover:text-gray-800"
+        className="inline-flex items-center gap-1 text-[10.5px] text-[#55666E] hover:text-[#10263B]"
       >
         {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
         {open ? 'Ocultar detalles' : 'Ver detalles'}
       </button>
 
       {open && (
-        <div className="mt-2 rounded-lg border border-gray-200 bg-white p-2.5 space-y-2">
-          {loading && <p className="text-[11px] text-gray-400">Cargando criterios…</p>}
+        <div className="mt-2 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-2.5 space-y-2">
+          {loading && <p className="text-[11px] text-[#55666E]">Cargando criterios…</p>}
           {error && <p className="text-[11px] text-red-600">{error}</p>}
           {ctx && ctx.criteria.length === 0 && (
-            <p className="text-[11px] text-gray-400">Este paso no tiene criterios cargados.</p>
+            <p className="text-[11px] text-[#55666E]">Este paso no tiene criterios cargados.</p>
           )}
           {ctx && ctx.criteria.length > 0 && (
             <>
-              <p className="text-[10px] text-gray-400">
+              <p className="text-[10px] text-[#55666E]">
                 {ctx.pieceTitle ? `Criterios de: ${ctx.pieceTitle}` : 'Criterios del paso'} · marcá solo los que quieras
               </p>
               {ctx.criteria.map((text, i) => {
                 const mine = marks[i] ?? ctx.coachMarks[i]?.result ?? null;
                 const student = ctx.studentMarks[i]?.result ?? null;
                 return (
-                  <div key={i} className="rounded-md border border-gray-100 p-2">
-                    <p className="text-[12px] text-gray-800 leading-snug"><span className="font-bold mr-1">{i + 1}.</span>{text}</p>
+                  <div key={i} className="rounded-md border border-[#DCD7C6] p-2">
+                    <p className="text-[12px] text-[#10263B] leading-snug"><span className="font-bold mr-1">{i + 1}.</span>{text}</p>
                     <div className="mt-1.5 grid grid-cols-3 gap-1">
                       {OPTS.map((o) => {
                         const sel = mine === o.key;
@@ -129,7 +129,7 @@ export function StepDetailToggle({
                         );
                       })}
                     </div>
-                    <p className="mt-1 text-[10px] text-gray-400">
+                    <p className="mt-1 text-[10px] text-[#55666E]">
                       {student ? `El alumno se marcó: ${LABEL[student]}` : 'El alumno todavía no se marcó este criterio.'}
                       {ctx.coachMarks[i] && !marks[i] ? ` · tu última marca: ${LABEL[ctx.coachMarks[i].result]}` : ''}
                     </p>

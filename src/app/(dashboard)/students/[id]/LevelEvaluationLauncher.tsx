@@ -22,14 +22,14 @@ export function LevelEvaluationLauncher({ student, rows, coach }: {
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)}
-        className="w-full rounded-2xl border-2 border-dashed border-cyan-300 bg-cyan-50/40 px-4 py-3 text-left hover:bg-cyan-50">
+        className="w-full rounded-lg border-2 border-dashed border-cyan-300 bg-cyan-50/40 px-4 py-3 text-left hover:bg-cyan-50">
         <p className="text-sm font-semibold text-[var(--tss-navy)]">Level evaluation →</p>
-        <p className="text-[11px] text-gray-500 mt-0.5">The same end-of-camp evaluation, without a camp: sequences with the official star, water autonomy, focus and belt ({target.replace('_belt', '')} if approved).</p>
+        <p className="text-[11px] text-[#55666E] mt-0.5">The same end-of-camp evaluation, without a camp: sequences with the official star, water autonomy, focus and belt ({target.replace('_belt', '')} if approved).</p>
       </button>
     );
   }
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-2">
+    <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-2">
       <FinalCampEvaluation
         token=""
         campInstanceId=""

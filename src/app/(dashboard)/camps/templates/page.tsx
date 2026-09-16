@@ -37,8 +37,8 @@ export default async function CampTemplatesPage() {
             Camp Templates
           </h2>
           <p
-            className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            className="text-[10px] uppercase tracking-wider text-[#55666E] mt-1"
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             {templates.length} template{templates.length !== 1 ? 's' : ''} available
           </p>
@@ -46,14 +46,14 @@ export default async function CampTemplatesPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/camps"
-            className="text-sm text-gray-500 hover:text-gray-700 px-3 py-2 inline-flex items-center gap-1"
+            className="text-sm text-[#55666E] hover:text-[#10263B] px-3 py-2 inline-flex items-center gap-1"
           >
             <ArrowLeft size={14} strokeWidth={1.75} />
             Schedule
           </Link>
           <Link
             href="/camps/templates/new"
-            className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:brightness-110 transition-all shadow-sm"
+            className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-[5px] hover:brightness-110 transition-all shadow-sm"
           >
             + Create Template
           </Link>
@@ -61,7 +61,7 @@ export default async function CampTemplatesPage() {
       </div>
 
       {templates.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-2xl border border-gray-100 text-gray-500">
+        <div className="text-center py-12 bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] text-[#55666E]">
           <p className="text-lg">No templates yet</p>
           <Link href="/camps/templates/new" className="text-sm text-[var(--tss-cyan,#5AC3E7)] hover:underline mt-2 inline-block">
             Create your first camp template
@@ -76,8 +76,8 @@ export default async function CampTemplatesPage() {
             const onDark = isDarkHex(beltHex);
 
             return (
-              <div key={t.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="px-4 py-3 border-b border-gray-100">
+              <div key={t.id} className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+                <div className="px-4 py-3 border-b border-[#DCD7C6]">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -92,15 +92,15 @@ export default async function CampTemplatesPage() {
                         </span>
                       </div>
                       <div
-                        className="flex items-center gap-2 mt-1 text-[10px] text-gray-400 uppercase tracking-wider"
-                        style={{ fontFamily: 'DM Mono, monospace' }}
+                        className="flex items-center gap-2 mt-1 text-[10px] text-[#55666E] uppercase tracking-wider"
+                        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                       >
                         <span>{t.duration_days} days</span>
-                        <span className="text-gray-300">·</span>
+                        <span className="text-[#B8B1A0]">·</span>
                         <span>{totalBlocks} blocks</span>
-                        <span className="text-gray-300">·</span>
+                        <span className="text-[#B8B1A0]">·</span>
                         <span className="capitalize">{t.modality}</span>
-                        <span className="text-gray-300">·</span>
+                        <span className="text-[#B8B1A0]">·</span>
                         <span>{t.delivery_model}</span>
                       </div>
                     </div>
@@ -120,7 +120,7 @@ export default async function CampTemplatesPage() {
                 </div>
 
                 {t.description && (
-                  <p className="px-4 py-2 text-xs text-gray-600">{t.description}</p>
+                  <p className="px-4 py-2 text-xs text-[#55666E]">{t.description}</p>
                 )}
 
                 {/* Days summary */}
@@ -129,7 +129,7 @@ export default async function CampTemplatesPage() {
                     const dayBlocks = detail.blocks.filter((b: any) => b.template_day_id === day.id);
                     return (
                       <div key={day.id} className="mt-2 first:mt-0">
-                        <p className="text-xs font-medium text-gray-700">Day {day.day_number}: {day.day_goal?.slice(0, 80)}</p>
+                        <p className="text-xs font-medium text-[#10263B]">Day {day.day_number}: {day.day_goal?.slice(0, 80)}</p>
                         <div className="flex gap-1 mt-1 flex-wrap">
                           {dayBlocks.map((b: any) => {
                             // Show what the activity actually is — its mission/
@@ -138,7 +138,7 @@ export default async function CampTemplatesPage() {
                               b.mission || b.mission_custom || b.drill_name ||
                               b.drill_custom || b.pilar_part || b.block_type || 'Activity';
                             return (
-                              <span key={b.id} className="text-[10px] bg-gray-50 text-gray-600 px-1.5 py-0.5 rounded">
+                              <span key={b.id} className="text-[10px] bg-[#F7F9FA] text-[#55666E] px-1.5 py-0.5 rounded">
                                 {String(label).slice(0, 32)}
                               </span>
                             );

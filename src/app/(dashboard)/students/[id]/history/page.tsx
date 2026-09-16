@@ -62,7 +62,7 @@ export default async function StudentHistoryPage({ params }: Props) {
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href={`/students/${id}`} className="text-gray-400 hover:text-gray-600 text-sm">
+        <Link href={`/students/${id}`} className="text-[#55666E] hover:text-[#55666E] text-sm">
           ← Back
         </Link>
         <div>
@@ -72,7 +72,7 @@ export default async function StudentHistoryPage({ params }: Props) {
           >
             {student.first_name} {student.last_name}
           </h2>
-          <p className="text-xs text-gray-400">{belt?.en} — Session History</p>
+          <p className="text-xs text-[#55666E]">{belt?.en} — Session History</p>
         </div>
       </div>
 
@@ -84,17 +84,17 @@ export default async function StudentHistoryPage({ params }: Props) {
           { label: 'Avg Focus', value: avgFocus },
           { label: 'Avg Frustration', value: avgFrustration },
         ].map(s => (
-          <div key={s.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 text-center">
+          <div key={s.label} className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-3 text-center">
             <p className="text-xl font-bold text-[var(--tss-navy)]">{s.value}</p>
-            <p className="text-[10px] text-gray-400 mt-0.5">{s.label}</p>
+            <p className="text-[10px] text-[#55666E] mt-0.5">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Session list */}
       {totalSessions === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-          <p className="text-gray-400 text-sm">No sessions recorded yet.</p>
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-8 text-center">
+          <p className="text-[#55666E] text-sm">No sessions recorded yet.</p>
           <Link
             href={`/sessions/new?student=${id}`}
             className="mt-3 inline-block px-4 py-2 bg-[var(--tss-navy)] text-white text-sm rounded-lg"
@@ -114,14 +114,14 @@ export default async function StudentHistoryPage({ params }: Props) {
             const duration = ss?.duration_minutes;
 
             return (
-              <div key={session.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div key={session.id} className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
                 {/* Session header */}
-                <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
+                <div className="px-4 py-3 border-b border-[#DCD7C6] flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-[var(--tss-navy)]">
                       {date ? new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : new Date(session.created_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
-                    <p className="text-xs text-gray-400">{venue}{duration ? ` · ${duration} min` : ''}</p>
+                    <p className="text-xs text-[#55666E]">{venue}{duration ? ` · ${duration} min` : ''}</p>
                   </div>
                   <StatusBadge status={session.status} />
                 </div>
@@ -133,21 +133,21 @@ export default async function StudentHistoryPage({ params }: Props) {
                   <div className="flex gap-4">
                     {session.focus_rating && (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-gray-400">Focus</span>
+                        <span className="text-xs text-[#55666E]">Focus</span>
                         <span className="text-xs font-medium text-[var(--tss-navy)]">{session.focus_rating}/5</span>
                       </div>
                     )}
                     {session.frustration_rating && (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-gray-400">Frustration</span>
+                        <span className="text-xs text-[#55666E]">Frustration</span>
                         <span className="text-xs font-medium text-[var(--tss-navy)]">{session.frustration_rating}/10</span>
                       </div>
                     )}
                   </div>
                   {session.coach_feedback && (
                     <div>
-                      <p className="text-xs text-gray-400 mb-0.5">Feedback</p>
-                      <p className="text-sm text-gray-700">{session.coach_feedback}</p>
+                      <p className="text-xs text-[#55666E] mb-0.5">Feedback</p>
+                      <p className="text-sm text-[#10263B]">{session.coach_feedback}</p>
                     </div>
                   )}
                   {(session as any).internal_notes && (
@@ -156,7 +156,7 @@ export default async function StudentHistoryPage({ params }: Props) {
                         <Lock size={11} strokeWidth={1.75} />
                         Internal Notes
                       </p>
-                      <p className="text-sm text-gray-700">{(session as any).internal_notes}</p>
+                      <p className="text-sm text-[#10263B]">{(session as any).internal_notes}</p>
                     </div>
                   )}
                   {session.homework && (
@@ -190,8 +190,8 @@ function Row({ label, value, highlight }: {
   if (!value) return null;
   return (
     <div className="flex items-start justify-between gap-4">
-      <span className="text-xs text-gray-400 shrink-0">{label}</span>
-      <span className={`text-sm text-right ${highlight ? 'text-[var(--tss-navy)] font-medium' : 'text-gray-700'}`}>
+      <span className="text-xs text-[#55666E] shrink-0">{label}</span>
+      <span className={`text-sm text-right ${highlight ? 'text-[var(--tss-navy)] font-medium' : 'text-[#10263B]'}`}>
         {value}
       </span>
     </div>
@@ -204,11 +204,11 @@ function StatusBadge({ status }: { status: string | null }) {
     mastered: 'bg-green-50 text-green-700',
     competent: 'bg-blue-50 text-blue-700',
     partial: 'bg-amber-50 text-amber-700',
-    not_yet: 'bg-gray-50 text-gray-600',
-    not_achieved: 'bg-gray-50 text-gray-600',
+    not_yet: 'bg-[#F7F9FA] text-[#55666E]',
+    not_achieved: 'bg-[#F7F9FA] text-[#55666E]',
   };
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${styles[status] || 'bg-gray-50 text-gray-600'}`}>
+    <span className={`text-xs px-2 py-0.5 rounded-full capitalize ${styles[status] || 'bg-[#F7F9FA] text-[#55666E]'}`}>
       {status?.replace(/_/g, ' ')}
     </span>
   );

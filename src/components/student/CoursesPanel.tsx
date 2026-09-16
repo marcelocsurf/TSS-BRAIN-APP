@@ -111,13 +111,13 @@ export function CoursesPanel({
     (!intakeComplete && !override && !isDirectPurchase);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
+    <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#DCD7C6] flex items-center justify-between">
         <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Courses</h3>
         {isDirectPurchase && (
           <span
             className="text-[9px] uppercase tracking-wider bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)] px-2 py-0.5 rounded-full font-semibold"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             The Surf Sequence Direct
           </span>
@@ -135,14 +135,14 @@ export function CoursesPanel({
                     {courseLabel(g.course_key)}
                   </span>
                   <span
-                    className="text-[9px] uppercase tracking-wider text-gray-400 shrink-0"
-                    style={{ fontFamily: 'DM Mono, monospace' }}
+                    className="text-[9px] uppercase tracking-wider text-[#55666E] shrink-0"
+                    style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                   >
                     {SOURCE_LABELS[g.source] ?? g.source}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-[#55666E]">
                     {displayDate(g.granted_at)}
                   </span>
                   {isPlatformAdmin && (
@@ -160,17 +160,17 @@ export function CoursesPanel({
             ))}
           </div>
         ) : (
-          <p className="text-xs text-gray-400">No courses granted yet.</p>
+          <p className="text-xs text-[#55666E]">No courses granted yet.</p>
         )}
 
         {/* Pending (earmarked) courses */}
         {visiblePending.length > 0 && (
-          <div className="space-y-1.5 border-t border-gray-50 pt-3">
+          <div className="space-y-1.5 border-t border-[#DCD7C6] pt-3">
             {visiblePending.map((k) => (
               <div key={k} className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <span className="text-amber-500 text-base">&#9203;</span>
-                  <span className="text-sm text-gray-500">{courseLabel(k)}</span>
+                  <span className="text-sm text-[#55666E]">{courseLabel(k)}</span>
                 </div>
                 <span className="text-[10px] text-amber-600">
                   Pending — activates after intake + waiver
@@ -182,19 +182,19 @@ export function CoursesPanel({
 
         {/* Revoked history — shown only to admin for context */}
         {isPlatformAdmin && revokedGrants.length > 0 && (
-          <div className="space-y-1 border-t border-gray-50 pt-3">
+          <div className="space-y-1 border-t border-[#DCD7C6] pt-3">
             <p
-              className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider"
-              style={{ fontFamily: 'DM Mono, monospace' }}
+              className="text-[10px] font-semibold text-[#55666E] uppercase tracking-wider"
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
             >
               Revoked (audit trail)
             </p>
             {revokedGrants.map((g) => (
               <div key={g.id} className="flex items-center justify-between gap-3 opacity-60">
-                <span className="text-xs text-gray-500 line-through">
+                <span className="text-xs text-[#55666E] line-through">
                   {courseLabel(g.course_key)}
                 </span>
-                <span className="text-[10px] text-gray-400">
+                <span className="text-[10px] text-[#55666E]">
                   revoked {g.revoked_at ? displayDate(g.revoked_at) : ''}
                 </span>
               </div>
@@ -204,10 +204,10 @@ export function CoursesPanel({
 
         {/* Grant a course (coordinator/admin only) */}
         {canManage && grantable.length > 0 && (
-          <div className="border-t border-gray-50 pt-3 space-y-2">
+          <div className="border-t border-[#DCD7C6] pt-3 space-y-2">
             <p
-              className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider"
-              style={{ fontFamily: 'DM Mono, monospace' }}
+              className="text-[10px] font-semibold text-[#55666E] uppercase tracking-wider"
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
             >
               Grant a course
             </p>
@@ -216,7 +216,7 @@ export function CoursesPanel({
                 value={selected}
                 onChange={(e) => setSelected(e.target.value)}
                 disabled={busy}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] disabled:opacity-50"
+                className="flex-1 px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] disabled:opacity-50"
               >
                 <option value="">Select a course…</option>
                 {grantable.map((c) => (
@@ -229,7 +229,7 @@ export function CoursesPanel({
                 type="button"
                 onClick={handleGrant}
                 disabled={grantDisabled}
-                className="px-4 py-2 bg-[var(--tss-navy)] text-white rounded-xl text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition-all"
+                className="px-4 py-2 bg-[var(--tss-navy)] text-white rounded-[5px] text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition-all"
               >
                 {busy ? 'Granting…' : 'Grant'}
               </button>
@@ -237,12 +237,12 @@ export function CoursesPanel({
 
             {/* Override toggle — only the platform admin sees it. */}
             {isPlatformAdmin && !isDirectPurchase && !intakeComplete && (
-              <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs text-[#55666E] cursor-pointer">
                 <input
                   type="checkbox"
                   checked={override}
                   onChange={(e) => setOverride(e.target.checked)}
-                  className="rounded border-gray-300"
+                  className="rounded border-[#DCD7C6]"
                 />
                 <span>
                   <strong>Override</strong> — grant without intake+waiver

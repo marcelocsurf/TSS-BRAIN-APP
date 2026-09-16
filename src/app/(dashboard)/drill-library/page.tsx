@@ -18,7 +18,7 @@ export default async function DrillLibraryPage() {
       <h1 className="text-2xl font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
         Drill &amp; Mission Library
       </h1>
-      <p className="text-sm text-gray-500 mt-1 mb-5">
+      <p className="text-sm text-[#55666E] mt-1 mb-5">
         Create, edit and retire drills &amp; missions. Changes appear instantly in the coach tools and the student sequence. Admin only.
       </p>
       <DrillLibraryManager initial={initial} />

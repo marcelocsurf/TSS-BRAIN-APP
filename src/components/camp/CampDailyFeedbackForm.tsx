@@ -147,7 +147,7 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
   };
 
   if (participants.length === 0) {
-    return <p className="text-sm text-gray-400 text-center py-4">No students enrolled.</p>;
+    return <p className="text-sm text-[#55666E] text-center py-4">No students enrolled.</p>;
   }
 
   return (
@@ -161,12 +161,12 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
         const isExpanded = expandedId === student.id;
 
         return (
-          <div key={student.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+          <div key={student.id} className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] overflow-hidden">
             {/* Student row — always visible */}
             <button
               type="button"
               onClick={() => setExpandedId(isExpanded ? null : student.id)}
-              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left"
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#F7F9FA] transition-colors text-left"
             >
               <div
                 className="w-8 h-8 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0"
@@ -175,10 +175,10 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
                 {student.first_name[0]}{student.last_name[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-800 truncate">
+                <p className="text-sm font-medium text-[#10263B] truncate">
                   {student.first_name} {student.last_name}
                 </p>
-                <p className="text-[10px] text-gray-400">
+                <p className="text-[10px] text-[#55666E]">
                   {belt?.en} &middot; {fb.status}
                   {fb.focus_rating > 0 && ` · Focus ${fb.focus_rating}/5`}
                   {fb.effort_rating > 0 && ` · Effort ${fb.effort_rating}/5`}
@@ -189,7 +189,7 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
                   <span className="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full">Saved</span>
                 )}
                 <svg
-                  className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  className={`w-4 h-4 text-[#55666E] transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                   fill="none" viewBox="0 0 24 24" stroke="currentColor"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -199,10 +199,10 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
 
             {/* Expanded feedback form */}
             {isExpanded && (
-              <div className="px-4 pb-4 pt-1 border-t border-gray-50 space-y-3">
+              <div className="px-4 pb-4 pt-1 border-t border-[#DCD7C6] space-y-3">
                 {/* Attendance */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1.5">Attendance</label>
+                  <label className="block text-xs font-medium text-[#55666E] mb-1.5">Attendance</label>
                   <div className="flex gap-2">
                     {ATTENDANCE_OPTIONS.map(opt => (
                       <button
@@ -216,7 +216,7 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
                               : opt.value === 'partial'
                                 ? 'bg-amber-500 text-white border-amber-500'
                                 : 'bg-green-600 text-white border-green-600'
-                            : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                            : 'border-[#DCD7C6] text-[#55666E] hover:bg-[#F7F9FA]'
                         }`}
                       >
                         {opt.icon} {opt.label}
@@ -228,7 +228,7 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
                 {/* Ratings */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1.5">Focus (1-5)</label>
+                    <label className="block text-xs font-medium text-[#55666E] mb-1.5">Focus (1-5)</label>
                     <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map(n => (
                         <button
@@ -238,7 +238,7 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
                           className={`w-8 h-8 rounded-full border text-xs font-medium transition-colors ${
                             fb.focus_rating === n
                               ? 'bg-[var(--tss-gold)] border-[var(--tss-gold)] text-white'
-                              : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                              : 'border-[#DCD7C6] text-[#55666E] hover:bg-[#F7F9FA]'
                           }`}
                         >
                           {n}
@@ -247,7 +247,7 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1.5">Effort (1-5)</label>
+                    <label className="block text-xs font-medium text-[#55666E] mb-1.5">Effort (1-5)</label>
                     <div className="flex gap-1">
                       {[1, 2, 3, 4, 5].map(n => (
                         <button
@@ -257,7 +257,7 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
                           className={`w-8 h-8 rounded-full border text-xs font-medium transition-colors ${
                             fb.effort_rating === n
                               ? 'bg-blue-500 border-blue-500 text-white'
-                              : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                              : 'border-[#DCD7C6] text-[#55666E] hover:bg-[#F7F9FA]'
                           }`}
                         >
                           {n}
@@ -269,32 +269,32 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
 
                 {/* Text fields */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Notes</label>
+                  <label className="block text-xs font-medium text-[#55666E] mb-1">Notes</label>
                   <textarea
                     value={fb.notes}
                     onChange={e => updateFeedback(student.id, 'notes', e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--tss-navy)]"
+                    className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--tss-navy)]"
                     placeholder="General observations..."
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Highlights</label>
+                  <label className="block text-xs font-medium text-[#55666E] mb-1">Highlights</label>
                   <textarea
                     value={fb.highlights}
                     onChange={e => updateFeedback(student.id, 'highlights', e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--tss-navy)]"
+                    className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--tss-navy)]"
                     placeholder="What went well..."
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Areas to Improve</label>
+                  <label className="block text-xs font-medium text-[#55666E] mb-1">Areas to Improve</label>
                   <textarea
                     value={fb.areas_to_improve}
                     onChange={e => updateFeedback(student.id, 'areas_to_improve', e.target.value)}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--tss-navy)]"
+                    className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--tss-navy)]"
                     placeholder="What to work on..."
                   />
                 </div>
@@ -322,7 +322,7 @@ export function CampDailyFeedbackForm({ campId, dayNumber, coachId, participants
         type="button"
         onClick={handleSaveAll}
         disabled={saving}
-        className="w-full py-3 bg-[var(--tss-navy)] text-white rounded-xl text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-30"
+        className="w-full py-3 bg-[var(--tss-navy)] text-white rounded-[5px] text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-30"
       >
         {saving ? 'Saving All...' : 'Save All Feedback'}
       </button>

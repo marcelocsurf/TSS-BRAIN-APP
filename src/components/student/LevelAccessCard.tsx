@@ -14,14 +14,14 @@ export function LevelAccessCard({
   const unlocked = new Set(unlockedKeys);
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-50">
+    <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#DCD7C6]">
         <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
           Practice Library (no billing)
         </h3>
-        <p className="text-[11px] text-gray-500 mt-0.5 leading-snug">
+        <p className="text-[11px] text-[#55666E] mt-0.5 leading-snug">
           Unlocks drills + missions in the portal&apos;s self-training tab.
-          <strong className="text-gray-700"> Granting a Course above auto-unlocks the matching belt here.</strong>
+          <strong className="text-[#10263B]"> Granting a Course above auto-unlocks the matching belt here.</strong>
           {' '}Use this card only when you want to give practice access
           <em> without</em> selling the full course (no academy invoice).
         </p>
@@ -37,8 +37,8 @@ export function LevelAccessCard({
                   className="w-3 h-3 rounded-full shrink-0"
                   style={{ backgroundColor: display.color }}
                 />
-                <span className="text-sm text-gray-700">{display.en}</span>
-                <span className="text-xs text-gray-400">{display.levelName}</span>
+                <span className="text-sm text-[#10263B]">{display.en}</span>
+                <span className="text-xs text-[#55666E]">{display.levelName}</span>
               </div>
               <GrantButton
                 studentId={studentId}
@@ -86,7 +86,7 @@ function GrantButton({
         <button
           onClick={handleRevoke}
           disabled={pending}
-          className="text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1 disabled:opacity-50"
+          className="text-xs text-[#55666E] hover:text-red-500 transition-colors px-2 py-1 disabled:opacity-50"
         >
           {pending ? '...' : 'Revoke'}
         </button>

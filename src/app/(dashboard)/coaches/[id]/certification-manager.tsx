@@ -68,7 +68,7 @@ export function CertificationManager({ coachId, grantedBy, currentCerts }: {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-[10px] font-mono tracking-widest text-gray-400 uppercase mb-3">External Prerequisites</p>
+        <p className="text-[10px] font-mono tracking-widest text-[#55666E] uppercase mb-3">External Prerequisites</p>
         <div className="space-y-2">
           {external.map(cert => (
             <CertRow key={cert.key} cert={cert} active={active.includes(cert.key)}
@@ -79,7 +79,7 @@ export function CertificationManager({ coachId, grantedBy, currentCerts }: {
       </div>
 
       <div>
-        <p className="text-[10px] font-mono tracking-widest text-gray-400 uppercase mb-3">TSS Internal Certification Route</p>
+        <p className="text-[10px] font-mono tracking-widest text-[#55666E] uppercase mb-3">TSS Internal Certification Route</p>
         <div className="space-y-2">
           {tss.map(cert => (
             <CertRow key={cert.key} cert={cert} active={active.includes(cert.key)}
@@ -97,14 +97,14 @@ function CertRow({ cert, active, saving, saved, onToggle }: {
 }) {
   return (
     <div className={`flex items-center justify-between px-4 py-3 rounded-lg border transition-all ${
-      active ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)]/5' : 'border-gray-100 bg-white'
+      active ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)]/5' : 'border-[#DCD7C6] bg-[#F7F9FA]'
     }`}>
       <div>
-        <p className={`text-sm font-medium inline-flex items-center gap-1 ${active ? 'text-[var(--tss-navy)]' : 'text-gray-500'}`}>
+        <p className={`text-sm font-medium inline-flex items-center gap-1 ${active ? 'text-[var(--tss-navy)]' : 'text-[#55666E]'}`}>
           {active && <Check size={13} strokeWidth={2.5} className="text-[var(--tss-cyan,#5AC3E7)]" />}
           {cert.name}
         </p>
-        {cert.desc && <p className="text-xs text-gray-400">{cert.desc}</p>}
+        {cert.desc && <p className="text-xs text-[#55666E]">{cert.desc}</p>}
       </div>
       <button
         onClick={onToggle}

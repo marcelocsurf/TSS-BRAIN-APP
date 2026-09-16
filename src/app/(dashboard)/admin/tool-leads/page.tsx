@@ -14,7 +14,7 @@ export default async function ToolLeadsPage() {
     <div className="max-w-4xl">
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-[var(--tss-navy)] leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>Tool Leads</h2>
-        <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-1" style={{ fontFamily: 'DM Mono, monospace' }}>
+        <p className="text-[10px] uppercase tracking-wider text-[#55666E] mt-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
           Personas que usaron tus herramientas públicas · {leads.length} lead{leads.length === 1 ? '' : 's'}
         </p>
       </div>

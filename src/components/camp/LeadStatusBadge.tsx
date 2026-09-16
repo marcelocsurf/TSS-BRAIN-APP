@@ -58,7 +58,7 @@ export function LeadStatusBadge({ studentId, portalToken, email }: Props) {
           setOpen((o) => !o);
         }}
         className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200 transition-colors"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       >
         <AlertTriangle size={10} strokeWidth={2.5} />
         Intake pending
@@ -66,10 +66,10 @@ export function LeadStatusBadge({ studentId, portalToken, email }: Props) {
 
       {open && (
         <div
-          className="bg-white border border-amber-200 rounded-lg shadow-md p-2 w-56 z-10"
+          className="bg-[#F7F9FA] border border-amber-200 rounded-lg shadow-md p-2 w-56 z-10"
           onClick={(e) => e.stopPropagation()}
         >
-          <p className="text-[10px] text-gray-500 mb-1.5">
+          <p className="text-[10px] text-[#55666E] mb-1.5">
             Send the safety form link so this lead completes waiver + medical info.
           </p>
           <div className="flex items-center gap-1">
@@ -77,7 +77,7 @@ export function LeadStatusBadge({ studentId, portalToken, email }: Props) {
               type="button"
               onClick={copyLink}
               disabled={!url}
-              className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-semibold rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-50"
+              className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1 text-[10px] font-semibold rounded border border-[#DCD7C6] hover:bg-[#F7F9FA] disabled:opacity-50"
             >
               <Copy size={10} strokeWidth={2} />
               {copied ? 'Copied' : 'Copy'}

@@ -48,10 +48,10 @@ export function CampDayManager({ campId, nextDayNumber, nextDate, canUndoLast }:
   };
 
   return (
-    <div className="px-4 py-3 bg-gray-50/60">
+    <div className="px-4 py-3 bg-[#F7F9FA]/60">
       {confirming ? (
         <div className="space-y-2">
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-[#55666E]">
             Add <strong>Day {nextDayNumber}</strong>
             {nextDate ? <> on <strong>{nextDate}</strong></> : null}. The service end date moves with it and
             each seat&apos;s price goes up by one day. Enrollment stays closed.
@@ -69,7 +69,7 @@ export function CampDayManager({ campId, nextDayNumber, nextDate, canUndoLast }:
               type="button"
               onClick={() => setConfirming(false)}
               disabled={busy !== null}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 border border-gray-200"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium text-[#55666E] border border-[#DCD7C6]"
             >
               Cancel
             </button>
@@ -90,7 +90,7 @@ export function CampDayManager({ campId, nextDayNumber, nextDate, canUndoLast }:
               type="button"
               onClick={() => run('undo')}
               disabled={busy !== null}
-              className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 text-xs text-[#55666E] hover:text-[#10263B] disabled:opacity-50"
             >
               <Undo2 size={13} strokeWidth={2} />
               {busy === 'undo' ? 'Removing…' : `Remove day ${nextDayNumber - 1}`}

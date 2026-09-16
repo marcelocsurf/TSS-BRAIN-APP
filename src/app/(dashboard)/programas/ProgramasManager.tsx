@@ -102,7 +102,7 @@ export function ProgramasManager({ initialProgramId }: { initialProgramId?: stri
           <h1 className="text-xl font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
             Programas · Alto Rendimiento
           </h1>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-[#55666E] mt-0.5">
             Mesociclo → microciclos → días → ítems con video. El alumno lo vive en su portal; acá se escribe.
           </p>
         </div>
@@ -113,7 +113,7 @@ export function ProgramasManager({ initialProgramId }: { initialProgramId?: stri
               type="button"
               onClick={() => { setView(v); setEditing(null); if (v === 'catalogo') loadCatalog(); }}
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold ${
-                view === v ? 'bg-[var(--tss-navy)] text-white' : 'bg-white border border-gray-200 text-gray-600'
+                view === v ? 'bg-[var(--tss-navy)] text-white' : 'bg-[#F7F9FA] border border-[#DCD7C6] text-[#55666E]'
               }`}
             >
               {v === 'catalogo' ? 'Catálogo' : v === 'temporadas' ? 'Temporadas' : v === 'competencias' ? 'Competencias' : v === 'asignaciones' ? 'Asignaciones' : v === 'citas' ? 'Citas' : 'Coaches'}
@@ -167,20 +167,20 @@ function CoachesHP() {
   return (
     <div className="space-y-3">
       {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
-      <p className="text-[11px] text-gray-400">
+      <p className="text-[11px] text-[#55666E]">
         La escalera se otorga coach por coach, igual que los niveles L1–L5. <b>Escalón 1 · Seguimiento</b>: ve la
         adherencia y los check-ins de los atletas que le asignes — no crea ni edita programas. Los escalones 2 (autor
         de su equipo) y 3 (catálogo global, solo vos) llegan después.
       </p>
       {coaches.map((c) => (
-        <div key={c.id} className="rounded-2xl bg-white border border-gray-200 p-3.5 flex items-center gap-3 flex-wrap">
+        <div key={c.id} className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-3.5 flex items-center gap-3 flex-wrap">
           <div className="flex-1 min-w-[160px]">
             <p className="text-sm font-semibold text-[var(--tss-navy)]">{c.display_name}</p>
-            <p className="text-[11px] text-gray-400">{c.role}</p>
+            <p className="text-[11px] text-[#55666E]">{c.role}</p>
           </div>
           <span
             className={`text-[11px] font-mono font-semibold px-2.5 py-1 rounded-full ${
-              c.hp_escalon >= 1 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-gray-100 text-gray-400'
+              c.hp_escalon >= 1 ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-[#EDF3F5] text-[#55666E]'
             }`}
           >
             {c.hp_escalon >= 1 ? `ESCALÓN ${c.hp_escalon} · SEGUIMIENTO` : 'SIN ESCALÓN'}
@@ -193,7 +193,7 @@ function CoachesHP() {
               if (!r.ok) setErr(r.error || null);
               else load();
             }}
-            className="rounded-md border border-gray-200 px-1.5 py-1 text-[11px] text-gray-500"
+            className="rounded-md border border-[#DCD7C6] px-1.5 py-1 text-[11px] text-[#55666E]"
             title="Especialidad (para citas y evaluaciones)"
           >
             <option value="">Coach</option>
@@ -205,14 +205,14 @@ function CoachesHP() {
             disabled={busy === c.id}
             onClick={() => setEscalon(c.id, c.hp_escalon >= 1 ? 0 : 1)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-bold disabled:opacity-40 ${
-              c.hp_escalon >= 1 ? 'bg-gray-100 text-gray-600' : 'bg-[var(--tss-navy)] text-white'
+              c.hp_escalon >= 1 ? 'bg-[#EDF3F5] text-[#55666E]' : 'bg-[var(--tss-navy)] text-white'
             }`}
           >
             {c.hp_escalon >= 1 ? 'Quitar Escalón 1' : 'Otorgar Escalón 1'}
           </button>
         </div>
       ))}
-      {coaches.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin coaches.</p>}
+      {coaches.length === 0 && <p className="text-sm text-[#55666E] text-center py-6">Sin coaches.</p>}
     </div>
   );
 }
@@ -253,33 +253,33 @@ function Catalogo({
         <button
           type="button"
           onClick={() => setCreating(true)}
-          className="w-full rounded-2xl border-2 border-dashed border-gray-300 py-3.5 text-sm font-semibold text-gray-500 hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] flex items-center justify-center gap-2"
+          className="w-full rounded-lg border-2 border-dashed border-[#DCD7C6] py-3.5 text-sm font-semibold text-[#55666E] hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] flex items-center justify-center gap-2"
         >
           <Plus size={16} /> Nuevo programa
         </button>
       ) : (
-        <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3">
+        <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-3">
           <input
             autoFocus
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             placeholder="Nombre del programa (de cara al alumno, en inglés)"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            className="w-full rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm"
           />
           {/* Semanas y cinta objetivo: antes las semanas se fijaban en 4 sin
               preguntar y la cinta no tenía dónde guardarse (las 199 plantillas
               HP sí la traen). Pedido de Marcelo 2026-08-25. */}
           <div className="flex items-center gap-2 flex-wrap">
-            <label className="text-[11px] text-gray-500">
+            <label className="text-[11px] text-[#55666E]">
               Microciclos
               <input type="number" min={1} max={24} value={newWeeks}
                 onChange={(e) => setNewWeeks(Math.max(1, Math.min(24, Number(e.target.value) || 1)))}
-                className="ml-1.5 w-16 rounded-lg border border-gray-300 px-2 py-1 text-sm" />
+                className="ml-1.5 w-16 rounded-lg border border-[#DCD7C6] px-2 py-1 text-sm" />
             </label>
-            <label className="text-[11px] text-gray-500">
+            <label className="text-[11px] text-[#55666E]">
               Cinta objetivo
               <select value={newBelt} onChange={(e) => setNewBelt(e.target.value)}
-                className="ml-1.5 rounded-lg border border-gray-300 px-2 py-1 text-xs">
+                className="ml-1.5 rounded-lg border border-[#DCD7C6] px-2 py-1 text-xs">
                 <option value="">— cualquiera —</option>
                 {BELT_PERMISSIONS.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
               </select>
@@ -292,14 +292,14 @@ function Catalogo({
                 type="button"
                 onClick={() => setNewKind(k)}
                 className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
-                  newKind === k ? 'bg-[var(--tss-navy)] text-white' : 'bg-gray-100 text-gray-600'
+                  newKind === k ? 'bg-[var(--tss-navy)] text-white' : 'bg-[#EDF3F5] text-[#55666E]'
                 }`}
               >
                 {k === 'template' ? 'Plantilla — se asigna muchas veces' : 'A medida — para una persona o equipo'}
               </button>
             ))}
             <div className="flex-1" />
-            <button type="button" onClick={() => setCreating(false)} className="text-xs text-gray-400">Cancelar</button>
+            <button type="button" onClick={() => setCreating(false)} className="text-xs text-[#55666E]">Cancelar</button>
             <button
               type="button"
               disabled={busy || !newTitle.trim()}
@@ -315,20 +315,20 @@ function Catalogo({
       {programs.map((p) => (
         <div
           key={p.id}
-          className="rounded-2xl bg-white border border-gray-200 p-4 flex items-center gap-3 flex-wrap"
+          className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 flex items-center gap-3 flex-wrap"
           style={{ borderLeft: '4px solid #B8862B', opacity: p.active ? 1 : 0.55 }}
         >
           <div className="flex-1 min-w-[200px]">
             <p className="text-sm font-bold text-[var(--tss-navy)]">
               {p.title}
-              {!p.active && <span className="ml-2 text-[10px] font-mono uppercase text-gray-400">inactivo</span>}
+              {!p.active && <span className="ml-2 text-[10px] font-mono uppercase text-[#55666E]">inactivo</span>}
             </p>
-            <p className="text-[11px] text-gray-500 mt-0.5">
+            <p className="text-[11px] text-[#55666E] mt-0.5">
               {p.kind === 'template' ? 'Plantilla' : 'A medida'} · {p.weeks} microciclo{p.weeks === 1 ? '' : 's'} · {p.days_count} día{p.days_count === 1 ? '' : 's'}
               {p.for_sale && ' · en venta'}
             </p>
           </div>
-          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${p.active_assignments > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${p.active_assignments > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-[#EDF3F5] text-[#55666E]'}`}>
             <Users size={11} className="inline mr-1 -mt-0.5" />
             {p.active_assignments} activo{p.active_assignments === 1 ? '' : 's'}
           </span>
@@ -348,7 +348,7 @@ function Catalogo({
                 if (!r.ok) setMsg(r.error || null);
                 else onChanged();
               }}
-              className="px-2.5 py-1.5 rounded-lg text-xs bg-gray-100 text-gray-600"
+              className="px-2.5 py-1.5 rounded-lg text-xs bg-[#EDF3F5] text-[#55666E]"
             >
               <Copy size={13} />
             </button>
@@ -359,7 +359,7 @@ function Catalogo({
                 if (!r.ok) setMsg(r.error || null);
                 else { setMsg(null); onChanged(); }
               }}
-              className="px-2.5 py-1.5 rounded-lg text-xs bg-gray-100 text-gray-600"
+              className="px-2.5 py-1.5 rounded-lg text-xs bg-[#EDF3F5] text-[#55666E]"
             >
               {p.active ? 'Desactivar' : 'Activar'}
             </button>
@@ -368,7 +368,7 @@ function Catalogo({
       ))}
 
       {programs.length === 0 && (
-        <p className="text-sm text-gray-400 text-center py-8">Todavía no hay programas.</p>
+        <p className="text-sm text-[#55666E] text-center py-8">Todavía no hay programas.</p>
       )}
     </div>
   );
@@ -397,7 +397,7 @@ function Editor({ programId, videos, onBack }: { programId: string; videos: Vide
     if (detail && week > detail.weeks) setWeek(detail.weeks);
   }, [detail, week]);
 
-  if (!detail) return <p className="text-sm text-gray-400 py-8 text-center">{err ?? 'Cargando…'}</p>;
+  if (!detail) return <p className="text-sm text-[#55666E] py-8 text-center">{err ?? 'Cargando…'}</p>;
 
   const flash = () => { setSavedTick(true); setTimeout(() => setSavedTick(false), 1800); };
   const weekDays = detail.days.filter((d) => d.week_number === week);
@@ -405,7 +405,7 @@ function Editor({ programId, videos, onBack }: { programId: string; videos: Vide
 
   return (
     <div className="space-y-4">
-      <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-[var(--tss-navy)]">
+      <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-xs text-[#55666E] hover:text-[var(--tss-navy)]">
         <ChevronLeft size={13} /> Volver al catálogo
       </button>
 
@@ -437,7 +437,7 @@ function Editor({ programId, videos, onBack }: { programId: string; videos: Vide
             type="button"
             onClick={() => setWeek(w)}
             className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-semibold ${
-              week === w ? 'bg-[var(--tss-navy)] text-white' : 'bg-white border border-gray-200 text-gray-600'
+              week === w ? 'bg-[var(--tss-navy)] text-white' : 'bg-[#F7F9FA] border border-[#DCD7C6] text-[#55666E]'
             }`}
           >
             SEMANA {w}
@@ -466,7 +466,7 @@ function Editor({ programId, videos, onBack }: { programId: string; videos: Vide
           if (!r.ok) setErr(r.error || null);
           else load();
         }}
-        className="w-full rounded-2xl border-2 border-dashed border-gray-300 py-3 text-sm font-semibold text-gray-500 hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] flex items-center justify-center gap-2"
+        className="w-full rounded-lg border-2 border-dashed border-[#DCD7C6] py-3 text-sm font-semibold text-[#55666E] hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] flex items-center justify-center gap-2"
       >
         <Plus size={15} /> Agregar día al microciclo {week}
       </button>
@@ -541,37 +541,37 @@ function MatrizPeriodizacion({ programId, weeks, meta, labels, onSaved, onJump, 
     onSaved();
   };
 
-  const selCls = 'w-full rounded-md border border-gray-200 px-1.5 py-1 text-[11px] bg-white';
-  const inpCls = 'w-full rounded-md border border-gray-200 px-1.5 py-1 text-[11px] bg-white';
+  const selCls = 'w-full rounded-md border border-[#DCD7C6] px-1.5 py-1 text-[11px] bg-[#F7F9FA]';
+  const inpCls = 'w-full rounded-md border border-[#DCD7C6] px-1.5 py-1 text-[11px] bg-[#F7F9FA]';
   const cellW = { minWidth: 148 } as React.CSSProperties;
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-200 overflow-hidden" style={{ borderLeft: '4px solid #B8862B' }}>
+    <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] overflow-hidden" style={{ borderLeft: '4px solid #B8862B' }}>
       <button type="button" onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3">
         <p className="text-[10px] font-mono uppercase tracking-wider font-bold" style={{ color: '#8E6614' }}>
           📊 Matriz de periodización · {weeks} microciclo{weeks === 1 ? '' : 's'}
         </p>
-        <span className="text-xs text-gray-400">{open ? '▴ cerrar' : '▾ abrir'}</span>
+        <span className="text-xs text-[#55666E]">{open ? '▴ cerrar' : '▾ abrir'}</span>
       </button>
 
       {open && (
         <div className="px-4 pb-4">
-          <div className="overflow-x-auto rounded-xl border border-gray-100">
+          <div className="overflow-x-auto rounded-[5px] border border-[#DCD7C6]">
             <table className="border-collapse" style={{ minWidth: weeks * 148 + 130 }}>
               <thead>
                 <tr>
-                  <th className="sticky left-0 bg-white text-left text-[9px] font-mono uppercase tracking-wider text-gray-400 px-2 py-2" style={{ minWidth: 130 }}>Semana</th>
+                  <th className="sticky left-0 bg-[#F7F9FA] text-left text-[9px] font-mono uppercase tracking-wider text-[#55666E] px-2 py-2" style={{ minWidth: 130 }}>Semana</th>
                   {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
                     <th key={w} className="text-center px-2 py-2" style={cellW}>
                       <span className="text-[11px] font-mono font-bold" style={{ color: '#8B5CF6' }}>M{String(w).padStart(2, '0')}</span>
-                      {labels[String(w)] && <span className="block text-[9px] text-gray-400">{labels[String(w)]}</span>}
+                      {labels[String(w)] && <span className="block text-[9px] text-[#55666E]">{labels[String(w)]}</span>}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-t border-gray-100">
-                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-1.5">Fase macro</td>
+                <tr className="border-t border-[#DCD7C6]">
+                  <td className="sticky left-0 bg-[#F7F9FA] text-[9px] font-mono uppercase text-[#55666E] px-2 py-1.5">Fase macro</td>
                   {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
                     <td key={w} className="px-1.5 py-1.5" style={cellW}>
                       <select value={mx[String(w)]?.phase ?? ''} onChange={(e) => upd(w, { phase: e.target.value || null })}
@@ -581,8 +581,8 @@ function MatrizPeriodizacion({ programId, weeks, meta, labels, onSaved, onJump, 
                     </td>
                   ))}
                 </tr>
-                <tr className="border-t border-gray-100">
-                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-1.5">Mesociclo</td>
+                <tr className="border-t border-[#DCD7C6]">
+                  <td className="sticky left-0 bg-[#F7F9FA] text-[9px] font-mono uppercase text-[#55666E] px-2 py-1.5">Mesociclo</td>
                   {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
                     <td key={w} className="px-1.5 py-1.5" style={cellW}>
                       <input value={mx[String(w)]?.mesocycle ?? ''} onChange={(e) => upd(w, { mesocycle: e.target.value || null })}
@@ -590,8 +590,8 @@ function MatrizPeriodizacion({ programId, weeks, meta, labels, onSaved, onJump, 
                     </td>
                   ))}
                 </tr>
-                <tr className="border-t border-gray-100">
-                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-1.5">Tipo de micro</td>
+                <tr className="border-t border-[#DCD7C6]">
+                  <td className="sticky left-0 bg-[#F7F9FA] text-[9px] font-mono uppercase text-[#55666E] px-2 py-1.5">Tipo de micro</td>
                   {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
                     <td key={w} className="px-1.5 py-1.5" style={cellW}>
                       <select value={mx[String(w)]?.type ?? ''} onChange={(e) => upd(w, { type: e.target.value || null })}
@@ -601,8 +601,8 @@ function MatrizPeriodizacion({ programId, weeks, meta, labels, onSaved, onJump, 
                     </td>
                   ))}
                 </tr>
-                <tr className="border-t border-gray-100">
-                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-1.5">Intensidad</td>
+                <tr className="border-t border-[#DCD7C6]">
+                  <td className="sticky left-0 bg-[#F7F9FA] text-[9px] font-mono uppercase text-[#55666E] px-2 py-1.5">Intensidad</td>
                   {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
                     <td key={w} className="px-1.5 py-1.5" style={cellW}>
                       <select value={mx[String(w)]?.intensity ?? ''} onChange={(e) => upd(w, { intensity: e.target.value || null })}
@@ -612,8 +612,8 @@ function MatrizPeriodizacion({ programId, weeks, meta, labels, onSaved, onJump, 
                     </td>
                   ))}
                 </tr>
-                <tr className="border-t border-gray-100">
-                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-1.5">Objetivo (inglés)</td>
+                <tr className="border-t border-[#DCD7C6]">
+                  <td className="sticky left-0 bg-[#F7F9FA] text-[9px] font-mono uppercase text-[#55666E] px-2 py-1.5">Objetivo (inglés)</td>
                   {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
                     <td key={w} className="px-1.5 py-1.5" style={cellW}>
                       <input value={mx[String(w)]?.objective ?? ''} onChange={(e) => upd(w, { objective: e.target.value || null })}
@@ -622,26 +622,26 @@ function MatrizPeriodizacion({ programId, weeks, meta, labels, onSaved, onJump, 
                   ))}
                 </tr>
                 {MX_PILLARS.map((pl) => (
-                  <tr key={pl.key} className="border-t border-gray-100">
-                    <td className="sticky left-0 bg-white text-[9px] font-mono uppercase px-2 py-1.5" style={{ color: pl.color, borderLeft: `3px solid ${pl.color}` }}>{pl.label}</td>
+                  <tr key={pl.key} className="border-t border-[#DCD7C6]">
+                    <td className="sticky left-0 bg-[#F7F9FA] text-[9px] font-mono uppercase px-2 py-1.5" style={{ color: pl.color, borderLeft: `3px solid ${pl.color}` }}>{pl.label}</td>
                     {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
                       <td key={w} className="px-1.5 py-1.5" style={cellW}>
                         <div className="flex items-center gap-1">
                           <input type="number" min={0} max={100}
                             value={mx[String(w)]?.pillars?.[pl.key]?.pct ?? ''}
                             onChange={(e) => updPillar(w, pl.key, { pct: e.target.value === '' ? null : Math.max(0, Math.min(100, Number(e.target.value))) })}
-                            className="w-14 rounded-md border border-gray-200 px-1.5 py-1 text-[11px] bg-white" aria-label={`% ${pl.label} micro ${w}`} />
+                            className="w-14 rounded-md border border-[#DCD7C6] px-1.5 py-1 text-[11px] bg-[#F7F9FA]" aria-label={`% ${pl.label} micro ${w}`} />
                           <span className="text-[10px]" style={{ color: pl.color }}>%</span>
                         </div>
                         <input value={mx[String(w)]?.pillars?.[pl.key]?.obj ?? ''}
                           onChange={(e) => updPillar(w, pl.key, { obj: e.target.value || null })}
-                          placeholder="Objetivo del pilar" className="mt-1 w-full rounded-md border border-gray-100 px-1.5 py-0.5 text-[10px] bg-gray-50" aria-label={`Objetivo ${pl.label} micro ${w}`} />
+                          placeholder="Objetivo del pilar" className="mt-1 w-full rounded-md border border-[#DCD7C6] px-1.5 py-0.5 text-[10px] bg-[#F7F9FA]" aria-label={`Objetivo ${pl.label} micro ${w}`} />
                       </td>
                     ))}
                   </tr>
                 ))}
-                <tr className="border-t-2 border-gray-200">
-                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase font-bold text-gray-600 px-2 py-2">Total %</td>
+                <tr className="border-t-2 border-[#DCD7C6]">
+                  <td className="sticky left-0 bg-[#F7F9FA] text-[9px] font-mono uppercase font-bold text-[#55666E] px-2 py-2">Total %</td>
                   {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => {
                     const t = totalOf(w);
                     return (
@@ -651,8 +651,8 @@ function MatrizPeriodizacion({ programId, weeks, meta, labels, onSaved, onJump, 
                     );
                   })}
                 </tr>
-                <tr className="border-t border-gray-100">
-                  <td className="sticky left-0 bg-white text-[9px] font-mono uppercase text-gray-500 px-2 py-2">Detalle semanal</td>
+                <tr className="border-t border-[#DCD7C6]">
+                  <td className="sticky left-0 bg-[#F7F9FA] text-[9px] font-mono uppercase text-[#55666E] px-2 py-2">Detalle semanal</td>
                   {Array.from({ length: weeks }, (_, i) => i + 1).map((w) => (
                     <td key={w} className="text-center px-1.5 py-2" style={cellW}>
                       <button type="button"
@@ -668,7 +668,7 @@ function MatrizPeriodizacion({ programId, weeks, meta, labels, onSaved, onJump, 
             </table>
           </div>
           <div className="flex items-center justify-between mt-2.5">
-            <p className="text-[10px] text-gray-400">El atleta ve tipo, intensidad y objetivo de su micro en el visor. El % por pilar es tu brújula de planificación.</p>
+            <p className="text-[10px] text-[#55666E]">El atleta ve tipo, intensidad y objetivo de su micro en el visor. El % por pilar es tu brújula de planificación.</p>
             <button type="button" disabled={!dirty || saving} onClick={save}
               className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white disabled:opacity-40 shrink-0">
               {saving ? 'Guardando…' : dirty ? 'Guardar matriz' : 'Sin cambios'}
@@ -729,30 +729,30 @@ function MetaCard({
     <button
       type="button"
       onClick={() => onChange(!value)}
-      className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${value ? 'bg-[var(--tss-navy)] text-white' : 'bg-gray-100 text-gray-400'}`}
+      className={`px-2.5 py-1 rounded-full text-[11px] font-semibold ${value ? 'bg-[var(--tss-navy)] text-white' : 'bg-[#EDF3F5] text-[#55666E]'}`}
     >
       {value ? '✓ ' : ''}{label}
     </button>
   );
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3">
+    <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-3">
       <div className="grid md:grid-cols-2 gap-3">
         <div>
-          <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Nombre (inglés, lo ve el alumno)</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1" />
+          <label className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Nombre (inglés, lo ve el alumno)</label>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm mt-1" />
         </div>
         <div>
-          <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Subtítulo</label>
-          <input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="4 weeks · dryland & paddle" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1" />
+          <label className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Subtítulo</label>
+          <input value={subtitle} onChange={(e) => setSubtitle(e.target.value)} placeholder="4 weeks · dryland & paddle" className="w-full rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm mt-1" />
         </div>
       </div>
       <div className="flex items-center gap-2 flex-wrap">
-        <select value={kind} onChange={(e) => setKind(e.target.value as any)} className="rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs">
+        <select value={kind} onChange={(e) => setKind(e.target.value as any)} className="rounded-lg border border-[#DCD7C6] px-2.5 py-1.5 text-xs">
           <option value="template">Plantilla</option>
           <option value="custom">A medida</option>
         </select>
-        <label className="text-xs text-gray-500 flex items-center gap-1.5">
+        <label className="text-xs text-[#55666E] flex items-center gap-1.5">
           Microciclos
           <input
             type="number"
@@ -760,11 +760,11 @@ function MetaCard({
             max={24}
             value={weeks}
             onChange={(e) => setWeeks(Math.max(1, Math.min(24, Number(e.target.value) || 1)))}
-            className="w-16 rounded-lg border border-gray-300 px-2 py-1.5 text-xs"
+            className="w-16 rounded-lg border border-[#DCD7C6] px-2 py-1.5 text-xs"
           />
         </label>
         <Toggle label="En venta" value={forSale} onChange={setForSale} />
-        <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 ml-2">Check-in pide:</span>
+        <span className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] ml-2">Check-in pide:</span>
         <Toggle label="Agua" value={ck.water} onChange={(v) => setCk({ ...ck, water: v })} />
         <Toggle label="Sueño" value={ck.sleep} onChange={(v) => setCk({ ...ck, sleep: v })} />
         <Toggle label="Energía" value={ck.energy} onChange={(v) => setCk({ ...ck, energy: v })} />
@@ -816,7 +816,7 @@ function DayEditor({
   };
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3" style={{ borderLeft: '3px solid #00A8CC' }}>
+    <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-3" style={{ borderLeft: '3px solid #00A8CC' }}>
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan)] font-bold shrink-0">
           Día {day.day_number}
@@ -825,13 +825,13 @@ function DayEditor({
           value={title}
           onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
           placeholder="Título (inglés)"
-          className="flex-1 min-w-[140px] rounded-lg border border-gray-300 px-2.5 py-1.5 text-sm font-semibold"
+          className="flex-1 min-w-[140px] rounded-lg border border-[#DCD7C6] px-2.5 py-1.5 text-sm font-semibold"
         />
         <input
           value={focus}
           onChange={(e) => { setFocus(e.target.value); setDirty(true); }}
           placeholder="Foco del día (inglés)"
-          className="flex-1 min-w-[140px] rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs"
+          className="flex-1 min-w-[140px] rounded-lg border border-[#DCD7C6] px-2.5 py-1.5 text-xs"
         />
         {dirty && (
           <button type="button" onClick={saveDay} className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--tss-cyan)] text-[var(--tss-navy)]">
@@ -847,7 +847,7 @@ function DayEditor({
             if (!r.ok) setErr(r.error || null);
             else onChanged();
           }}
-          className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50"
+          className="p-1.5 rounded-lg text-[#B8B1A0] hover:text-red-500 hover:bg-red-50"
         >
           <Trash2 size={14} />
         </button>
@@ -962,7 +962,7 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
   };
 
   return (
-    <div className="w-full rounded-xl p-2.5 space-y-1.5" style={{ background: '#FDF8EC', border: '1px solid #F0C36D' }}>
+    <div className="w-full rounded-[5px] p-2.5 space-y-1.5" style={{ background: '#FDF8EC', border: '1px solid #F0C36D' }}>
       <div className="flex items-center gap-1.5 flex-wrap">
         {(['plantillas', 'secuencia', 'drills', 'misiones'] as const).map((k) => (
           <button key={k} type="button" onClick={() => setCat(k)}
@@ -972,8 +972,8 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
           </button>
         ))}
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar… (o STP-035)" autoFocus
-          className="flex-1 min-w-[140px] rounded-lg border border-gray-300 px-2.5 py-1.5 text-xs bg-white" aria-label="Buscar en la biblioteca" />
-        <button type="button" onClick={() => setOpen(false)} className="text-xs text-gray-400 px-1">✕</button>
+          className="flex-1 min-w-[140px] rounded-lg border border-[#DCD7C6] px-2.5 py-1.5 text-xs bg-[#F7F9FA]" aria-label="Buscar en la biblioteca" />
+        <button type="button" onClick={() => setOpen(false)} className="text-xs text-[#55666E] px-1">✕</button>
       </div>
 
       <div className="max-h-56 overflow-y-auto space-y-1">
@@ -989,9 +989,9 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
                 if (!r.ok) { setErr(r.error || null); return; }
                 setOpen(false); onInserted();
               }}
-              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
+              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-[#F7F9FA] border border-[#DCD7C6] hover:border-[#B8862B] disabled:opacity-50">
               <span className="text-[12px] font-medium text-[var(--tss-navy)]">{t.title}</span>
-              <span className="text-[10px] text-gray-400 ml-2">{t.pillar ?? ''}{t.belt && t.belt !== 'all' ? ` · ${t.belt}` : ''} · {t.items_count} ítem{t.items_count === 1 ? '' : 's'}</span>
+              <span className="text-[10px] text-[#55666E] ml-2">{t.pillar ?? ''}{t.belt && t.belt !== 'all' ? ` · ${t.belt}` : ''} · {t.items_count} ítem{t.items_count === 1 ? '' : 's'}</span>
             </button>
           ))}
 
@@ -1006,10 +1006,10 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
                 s.expectation_standard || null,
                 { pillar: 'tecnico' },
               )}
-              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
+              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-[#F7F9FA] border border-[#DCD7C6] hover:border-[#B8862B] disabled:opacity-50">
               <span className="text-[12px] font-medium text-[var(--tss-navy)]">{s.sequence_part || '—'}</span>
-              <span className="text-[10px] text-gray-400 ml-2 uppercase">{s.belt_level ?? ''}{s.step_order != null ? ` · paso ${s.step_order}` : ''}</span>
-              {s.expectation_standard && <span className="block text-[10px] text-gray-400 truncate">{s.expectation_standard}</span>}
+              <span className="text-[10px] text-[#55666E] ml-2 uppercase">{s.belt_level ?? ''}{s.step_order != null ? ` · paso ${s.step_order}` : ''}</span>
+              {s.expectation_standard && <span className="block text-[10px] text-[#55666E] truncate">{s.expectation_standard}</span>}
             </button>
           ))}
 
@@ -1023,10 +1023,10 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
                 [d.goal, d.key_cue ? `Cue: ${d.key_cue}` : null].filter(Boolean).join(String.fromCharCode(10)) || null,
                 { drill_id: d.id, pillar: PILLAR_MAP[(d.related_pilar ?? '').toLowerCase()] ?? null },
               )}
-              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
+              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-[#F7F9FA] border border-[#DCD7C6] hover:border-[#B8862B] disabled:opacity-50">
               <span className="text-[12px] font-medium text-[var(--tss-navy)]">{d.drill_name}</span>
-              <span className="text-[10px] text-gray-400 ml-2 uppercase">{d.related_pilar ?? ''}{d.environment ? ` · ${d.environment}` : ''}</span>
-              {d.goal && <span className="block text-[10px] text-gray-400 truncate">{d.goal}</span>}
+              <span className="text-[10px] text-[#55666E] ml-2 uppercase">{d.related_pilar ?? ''}{d.environment ? ` · ${d.environment}` : ''}</span>
+              {d.goal && <span className="block text-[10px] text-[#55666E] truncate">{d.goal}</span>}
             </button>
           ))}
 
@@ -1042,9 +1042,9 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
                   .filter(Boolean).join(String.fromCharCode(10, 10)) || null,
                 { drill_id: m.id, step_id: (m as any).step_id ?? null, duration_minutes: parseMinutes(m.time_estimate) },
               )}
-              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-white border border-gray-200 hover:border-[#B8862B] disabled:opacity-50">
+              className="w-full text-left rounded-lg px-2.5 py-1.5 bg-[#F7F9FA] border border-[#DCD7C6] hover:border-[#B8862B] disabled:opacity-50">
               <span className="text-[12px] font-medium text-[var(--tss-navy)]">{m.title}</span>
-              <span className="text-[10px] text-gray-400 ml-2 uppercase">
+              <span className="text-[10px] text-[#55666E] ml-2 uppercase">
                 {(m as any).step_id ? <b style={{ color: '#8E6614' }}>{(m as any).step_id}</b> : null}
                 {m.type ? ` · ${m.type}` : ''}{m.belt ? ` · ${m.belt}` : ''}{m.time_estimate ? ` · ${m.time_estimate}` : ''}
               </span>
@@ -1052,10 +1052,10 @@ function LibraryPicker({ dayId, nextOrder, onInserted, setErr }: {
           ))}
 
         {((cat === 'plantillas' && templates.length === 0) || (cat !== 'plantillas' && !lib)) && (
-          <p className="text-[11px] text-gray-400 text-center py-2">Cargando…</p>
+          <p className="text-[11px] text-[#55666E] text-center py-2">Cargando…</p>
         )}
       </div>
-      <p className="text-[10px] text-gray-400">Plantillas insertan su bloque completo · drills y misiones caen como UN ítem editable.</p>
+      <p className="text-[10px] text-[#55666E]">Plantillas insertan su bloque completo · drills y misiones caen como UN ítem editable.</p>
     </div>
   );
 }
@@ -1106,20 +1106,20 @@ function ItemRow({
   };
 
   return (
-    <div className="rounded-xl border border-gray-100 bg-gray-50/50 p-2.5 space-y-2">
+    <div className="rounded-[5px] border border-[#DCD7C6] bg-[#F7F9FA] p-2.5 space-y-2">
       <div className="flex items-center gap-2 flex-wrap">
         {videoUrl ? <Play size={13} className="text-[var(--tss-cyan)] shrink-0" /> : <span className="w-[13px] shrink-0" />}
         <input
           value={title}
           onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
           placeholder="Ejercicio (inglés) — p. ej. Goblet squat"
-          className="flex-1 min-w-[150px] rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-sm"
+          className="flex-1 min-w-[150px] rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] px-2.5 py-1.5 text-sm"
         />
         <input
           value={detail}
           onChange={(e) => { setDetail(e.target.value); setDirty(true); }}
           placeholder="3×10 · follow along"
-          className="w-40 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs"
+          className="w-40 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] px-2.5 py-1.5 text-xs"
         />
       </div>
 
@@ -1134,20 +1134,20 @@ function ItemRow({
           onChange={(e) => { setMins(e.target.value); setDirty(true); }}
           placeholder="min"
           aria-label="Duración en minutos"
-          className="w-20 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs"
+          className="w-20 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] px-2 py-1.5 text-xs"
         />
         <input
           value={stepId}
           onChange={(e) => { setStepId(e.target.value.toUpperCase()); setDirty(true); }}
           placeholder="STP-035"
           aria-label="Paso de la secuencia"
-          className="w-24 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-mono"
+          className="w-24 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] px-2 py-1.5 text-xs font-mono"
         />
         <select
           value={pillar}
           onChange={(e) => { setPillar(e.target.value); setDirty(true); }}
           aria-label="Pilar"
-          className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-[11px] text-gray-600"
+          className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] px-2 py-1.5 text-[11px] text-[#55666E]"
         >
           <option value="">Pilar…</option>
           {['fisico', 'tecnico', 'tactico', 'mental', 'equipment', 'surf'].map((p) => (
@@ -1155,7 +1155,7 @@ function ItemRow({
           ))}
         </select>
         {item.drill_id && (
-          <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-gray-100 text-gray-500" title="Drill/misión de origen">
+          <span className="text-[10px] font-mono px-2 py-1 rounded-md bg-[#EDF3F5] text-[#55666E]" title="Drill/misión de origen">
             {item.drill_id}
           </span>
         )}
@@ -1167,7 +1167,7 @@ function ItemRow({
             const v = videos.find((x) => x.id === e.target.value);
             if (v) { setVideoUrl(v.video_url); setDirty(true); }
           }}
-          className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-[11px] text-gray-500 max-w-[240px]"
+          className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] px-2 py-1.5 text-[11px] text-[#55666E] max-w-[240px]"
         >
           <option value="">🎥 Elegir de tu biblioteca ({videos.length})…</option>
           {videos.map((v) => (
@@ -1178,7 +1178,7 @@ function ItemRow({
           value={videoUrl}
           onChange={(e) => { setVideoUrl(e.target.value); setDirty(true); }}
           placeholder="o pegá un link de YouTube"
-          className="flex-1 min-w-[160px] rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] font-mono"
+          className="flex-1 min-w-[160px] rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] px-2.5 py-1.5 text-[11px] font-mono"
         />
         {dirty && (
           <button
@@ -1191,7 +1191,7 @@ function ItemRow({
           </button>
         )}
         {isNew && onCancel && (
-          <button type="button" onClick={onCancel} className="p-1.5 text-gray-400"><X size={13} /></button>
+          <button type="button" onClick={onCancel} className="p-1.5 text-[#55666E]"><X size={13} /></button>
         )}
         {!isNew && (
           <button
@@ -1203,7 +1203,7 @@ function ItemRow({
               if (!r.ok) setErr(r.error || null);
               else onChanged();
             }}
-            className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50"
+            className="p-1.5 rounded-lg text-[#B8B1A0] hover:text-red-500 hover:bg-red-50"
           >
             <Trash2 size={13} />
           </button>
@@ -1279,27 +1279,27 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
       {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
 
       {/* Asignar */}
-      <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Asignar programa</p>
+      <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Asignar programa</p>
         <div className="flex gap-2 flex-wrap items-start">
           <div className="relative flex-1 min-w-[200px]">
             <input
               value={pickedStudent ? pickedStudent.name : q}
               onChange={(e) => { setPickedStudent(null); setQ(e.target.value); }}
               placeholder="Buscar alumno por nombre o email…"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm"
             />
             {results.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full rounded-xl bg-white border border-gray-200 shadow-lg overflow-hidden">
+              <div className="absolute z-10 mt-1 w-full rounded-[5px] bg-[#F7F9FA] border border-[#DCD7C6] shadow-lg overflow-hidden">
                 {results.map((s) => (
                   <button
                     key={s.id}
                     type="button"
                     onClick={() => { setPickedStudent({ id: s.id, name: s.name }); setResults([]); }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-[#F7F9FA]"
                   >
                     <span className="font-semibold text-[var(--tss-navy)]">{s.name}</span>
-                    <span className="text-[11px] text-gray-400 ml-2">{s.email ?? ''} {s.belt_level ? `· ${String(s.belt_level).replace('_', ' ')}` : ''}</span>
+                    <span className="text-[11px] text-[#55666E] ml-2">{s.email ?? ''} {s.belt_level ? `· ${String(s.belt_level).replace('_', ' ')}` : ''}</span>
                   </button>
                 ))}
               </div>
@@ -1308,7 +1308,7 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
           <select
             value={programId}
             onChange={(e) => setProgramId(e.target.value)}
-            className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm min-w-[180px]"
+            className="rounded-lg border border-[#DCD7C6] px-2.5 py-2 text-sm min-w-[180px]"
           >
             <option value="">Elegir programa…</option>
             {activePrograms.map((p) => (
@@ -1318,7 +1318,7 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
           <select
             value={coachId}
             onChange={(e) => setCoachId(e.target.value)}
-            className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm min-w-[160px]"
+            className="rounded-lg border border-[#DCD7C6] px-2.5 py-2 text-sm min-w-[160px]"
             title="Coach de seguimiento (Escalón 1)"
           >
             <option value="">Sin coach de seguimiento</option>
@@ -1335,7 +1335,7 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
             Asignar →
           </button>
         </div>
-        <p className="text-[11px] text-gray-400">
+        <p className="text-[11px] text-[#55666E]">
           El alumno ve la tarjeta en su Home al instante. Un alumno lleva un programa activo a la vez.
         </p>
       </div>
@@ -1343,10 +1343,10 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
       {/* Lista */}
       <div className="space-y-2">
         {rows.map((a) => (
-          <div key={a.id} className="rounded-2xl bg-white border border-gray-200 p-3.5 flex items-center gap-3 flex-wrap">
+          <div key={a.id} className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-3.5 flex items-center gap-3 flex-wrap">
             <div className="flex-1 min-w-[180px]">
               <p className="text-sm font-semibold text-[var(--tss-navy)]">{a.student_name}</p>
-              <p className="text-[11px] text-gray-500">{a.program_title} · desde {a.start_date}</p>
+              <p className="text-[11px] text-[#55666E]">{a.program_title} · desde {a.start_date}</p>
               <select
                 value={a.coach_id ?? ''}
                 onChange={async (e) => {
@@ -1355,7 +1355,7 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
                   if (!r.ok) setErr(r.error || null);
                   else load();
                 }}
-                className="mt-1 rounded-md border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-500 max-w-[200px]"
+                className="mt-1 rounded-md border border-[#DCD7C6] px-1.5 py-0.5 text-[11px] text-[#55666E] max-w-[200px]"
                 title="Coach de seguimiento"
               >
                 <option value="">Sin coach de seguimiento</option>
@@ -1366,11 +1366,11 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
             </div>
             <div className="text-right">
               <p className="text-sm font-bold text-[var(--tss-navy)]">{a.days_done}/{a.days_total} días</p>
-              <p className="text-[10px] text-gray-400">
+              <p className="text-[10px] text-[#55666E]">
                 {a.last_checkin ? `último check-in ${a.last_checkin}` : 'sin check-ins aún'}
               </p>
             </div>
-            <div className="w-24 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            <div className="w-24 h-1.5 rounded-full bg-[#EDF3F5] overflow-hidden">
               <div
                 className="h-full rounded-full bg-[var(--tss-cyan)]"
                 style={{ width: `${a.days_total > 0 ? Math.round((a.days_done / a.days_total) * 100) : 0}%` }}
@@ -1384,13 +1384,13 @@ function Asignaciones({ programs }: { programs: AdminProgramRow[] }) {
                 if (!r.ok) setErr(r.error || null);
                 else load();
               }}
-              className="text-[11px] text-gray-400 hover:text-red-500"
+              className="text-[11px] text-[#55666E] hover:text-red-500"
             >
               Cancelar
             </button>
           </div>
         ))}
-        {rows.length === 0 && <p className="text-sm text-gray-400 text-center py-6">No hay asignaciones activas.</p>}
+        {rows.length === 0 && <p className="text-sm text-[#55666E] text-center py-6">No hay asignaciones activas.</p>}
       </div>
     </div>
   );
@@ -1476,29 +1476,29 @@ function Citas() {
     <div className="space-y-4">
       {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
 
-      <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Nueva cita</p>
+      <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Nueva cita</p>
         <div className="flex gap-2 flex-wrap items-start">
           <div className="relative flex-1 min-w-[180px]">
             <input
               value={picked ? picked.name : q}
               onChange={(e) => { setPicked(null); setQ(e.target.value); }}
               placeholder="Alumno…"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm"
             />
             {results.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full rounded-xl bg-white border border-gray-200 shadow-lg overflow-hidden">
+              <div className="absolute z-10 mt-1 w-full rounded-[5px] bg-[#F7F9FA] border border-[#DCD7C6] shadow-lg overflow-hidden">
                 {results.map((s) => (
                   <button key={s.id} type="button" onClick={() => { setPicked({ id: s.id, name: s.name }); setResults([]); }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-[#F7F9FA]">
                     <span className="font-semibold text-[var(--tss-navy)]">{s.name}</span>
-                    <span className="text-[11px] text-gray-400 ml-2">{s.email ?? ''}</span>
+                    <span className="text-[11px] text-[#55666E] ml-2">{s.email ?? ''}</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
-          <select value={coachId} onChange={(e) => setCoachId(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm min-w-[170px]">
+          <select value={coachId} onChange={(e) => setCoachId(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2.5 py-2 text-sm min-w-[170px]">
             <option value="">Quién atiende…</option>
             {coaches.map((c) => (
               <option key={c.id} value={c.id}>
@@ -1506,31 +1506,31 @@ function Citas() {
               </option>
             ))}
           </select>
-          <select value={kind} onChange={(e) => setKind(e.target.value as any)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm">
+          <select value={kind} onChange={(e) => setKind(e.target.value as any)} className="rounded-lg border border-[#DCD7C6] px-2.5 py-2 text-sm">
             {KIND_OPTS.map((k) => <option key={k.key} value={k.key}>{k.label}</option>)}
           </select>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm" aria-label="Fecha" />
-          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm" aria-label="Hora" />
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título (opcional, lo ve el alumno — inglés)" className="flex-1 min-w-[180px] rounded-lg border border-gray-300 px-2.5 py-2 text-sm" />
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2.5 py-2 text-sm" aria-label="Fecha" />
+          <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2.5 py-2 text-sm" aria-label="Hora" />
+          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Título (opcional, lo ve el alumno — inglés)" className="flex-1 min-w-[180px] rounded-lg border border-[#DCD7C6] px-2.5 py-2 text-sm" />
           <button type="button" disabled={busy || !picked || !coachId || !date} onClick={create}
             className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white disabled:opacity-40">
             Crear cita →
           </button>
         </div>
-        <p className="text-[11px] text-gray-400">
+        <p className="text-[11px] text-[#55666E]">
           La cita aparece al instante en el Home del alumno (en inglés) y en el portal de quien atiende.
         </p>
       </div>
 
       <div className="space-y-2">
         {rows.map((a) => (
-          <div key={a.id} className="rounded-2xl bg-white border border-gray-200 p-3.5 flex items-center gap-3 flex-wrap"
+          <div key={a.id} className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-3.5 flex items-center gap-3 flex-wrap"
             style={{ opacity: a.status === 'done' ? 0.55 : 1 }}>
             <div className="flex-1 min-w-[180px]">
               <p className="text-sm font-semibold text-[var(--tss-navy)]">
-                {a.student_name} <span className="text-gray-300">→</span> {a.coach_name}
+                {a.student_name} <span className="text-[#B8B1A0]">→</span> {a.coach_name}
               </p>
-              <p className="text-[11px] text-gray-500">
+              <p className="text-[11px] text-[#55666E]">
                 {a.title || KIND_LABEL[a.kind] || a.kind} · {a.appointment_date}{a.appointment_time ? ` · ${a.appointment_time}` : ''}{a.mode ? ` · ${a.mode}` : ''}
                 {a.status === 'done' && ' · ✓ hecha'}
               </p>
@@ -1542,14 +1542,14 @@ function Citas() {
                   ✓ Hecha
                 </button>
                 <button type="button" onClick={async () => { const r = await adminSetAppointmentStatus(a.id, 'cancelled'); if (!r.ok) setErr(r.error || null); else load(); }}
-                  className="text-[11px] text-gray-400 hover:text-red-500">
+                  className="text-[11px] text-[#55666E] hover:text-red-500">
                   Cancelar
                 </button>
               </>
             )}
           </div>
         ))}
-        {rows.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin citas.</p>}
+        {rows.length === 0 && <p className="text-sm text-[#55666E] text-center py-6">Sin citas.</p>}
       </div>
     </div>
   );
@@ -1589,14 +1589,14 @@ function MicroLabel({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 shrink-0">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] shrink-0">
         Nombre del microciclo {week}
       </span>
       <input
         value={value}
         onChange={(e) => { setValue(e.target.value); setDirty(true); }}
         placeholder="Carga · Descarga · Tapering… (opcional, lo ve el alumno)"
-        className="flex-1 min-w-[160px] rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs"
+        className="flex-1 min-w-[160px] rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] px-2.5 py-1.5 text-xs"
       />
       {dirty && (
         <button
@@ -1700,11 +1700,11 @@ function Temporadas() {
       {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
 
       {/* 📖 Manual del PLAN ANUAL — cómo armar el año de un atleta */}
-      <details className="rounded-2xl bg-white border border-gray-200 overflow-hidden">
-        <summary className="cursor-pointer px-4 py-3 text-[12px] font-semibold text-[var(--tss-navy)] hover:bg-gray-50">
+      <details className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] overflow-hidden">
+        <summary className="cursor-pointer px-4 py-3 text-[12px] font-semibold text-[var(--tss-navy)] hover:bg-[#F7F9FA]">
           📖 Cómo armar el AÑO de un atleta (plan anual)
         </summary>
-        <div className="px-4 pb-4 space-y-2 text-[12px] leading-relaxed text-gray-600 border-t border-gray-100 pt-3">
+        <div className="px-4 pb-4 space-y-2 text-[12px] leading-relaxed text-[#55666E] border-t border-[#DCD7C6] pt-3">
           <p><b className="text-[var(--tss-navy)]">1 · Creá la temporada</b> — atleta + título + fechas del año completo (ej. 5 ene → 20 dic). Una sola activa por atleta.</p>
           <p><b className="text-[var(--tss-navy)]">2 · Pintá las fases</b> — General → Específica → Precompetitiva → Competitiva → Transición (+ Recuperación si hay lesión/reposo). A cada fase escribile su <b>objetivo</b> en inglés: el atleta lo lee tal cual en su portal (&quot;Build the training habit…&quot;). La franja anual de arriba se va pintando sola.</p>
           <p><b className="text-[var(--tss-navy)]">3 · Agregá los eventos</b> — competencias, camps y <b>viajes con fecha de fin</b> (quedan como rango ✈️). Marcá <b>&quot;el pico&quot;</b> en LA competencia objetivo: eso activa el contador &quot;N days to peak&quot; del atleta.</p>
@@ -1714,19 +1714,19 @@ function Temporadas() {
         </div>
       </details>
 
-      <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Nueva temporada (macrociclo)</p>
+      <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Nueva temporada (macrociclo)</p>
         <div className="flex gap-2 flex-wrap items-start">
           <div className="relative flex-1 min-w-[180px]">
             <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }}
-              placeholder="Atleta…" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              placeholder="Atleta…" className="w-full rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm" />
             {results.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full rounded-xl bg-white border border-gray-200 shadow-lg overflow-hidden">
+              <div className="absolute z-10 mt-1 w-full rounded-[5px] bg-[#F7F9FA] border border-[#DCD7C6] shadow-lg overflow-hidden">
                 {results.map((st) => (
                   <button key={st.id} type="button" onClick={() => { setPicked({ id: st.id, name: st.name }); setResults([]); }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-[#F7F9FA]">
                     <span className="font-semibold text-[var(--tss-navy)]">{st.name}</span>
-                    <span className="text-[11px] text-gray-400 ml-2">{st.email ?? ''}</span>
+                    <span className="text-[11px] text-[#55666E] ml-2">{st.email ?? ''}</span>
                   </button>
                 ))}
               </div>
@@ -1734,9 +1734,9 @@ function Temporadas() {
           </div>
           <input value={title} onChange={(e) => setTitle(e.target.value)}
             placeholder="Nombre (inglés, lo ve el atleta) — Road to Centroamericanos"
-            className="flex-1 min-w-[220px] rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm" aria-label="Inicio" />
-          <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm" aria-label="Fin" />
+            className="flex-1 min-w-[220px] rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm" />
+          <input type="date" value={start} onChange={(e) => setStart(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2.5 py-2 text-sm" aria-label="Inicio" />
+          <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2.5 py-2 text-sm" aria-label="Fin" />
           <button type="button" disabled={busy || !picked || !title.trim() || !start || !end} onClick={create}
             className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white disabled:opacity-40">
             Crear →
@@ -1747,16 +1747,16 @@ function Temporadas() {
       <div className="space-y-2">
         {rows.map((sn) => (
           <div key={sn.id}
-            className="rounded-2xl bg-white border border-gray-200 p-4 flex items-center gap-3 flex-wrap hover:border-gray-300"
+            className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 flex items-center gap-3 flex-wrap hover:border-[#DCD7C6]"
             style={{ borderLeft: '4px solid #B8862B', opacity: sn.active ? 1 : 0.55 }}>
             <button type="button" onClick={() => setOpenId(sn.id)} className="flex-1 min-w-[200px] text-left">
               <p className="text-sm font-bold text-[var(--tss-navy)]">{sn.title}</p>
-              <p className="text-[11px] text-gray-500 mt-0.5">
+              <p className="text-[11px] text-[#55666E] mt-0.5">
                 {sn.student_name} · {sn.start_date} → {sn.end_date}
                 {sn.head_coach_name ? ` · head coach: ${sn.head_coach_name}` : ' · sin head coach'}
               </p>
             </button>
-            <span className="text-[11px] text-gray-400">
+            <span className="text-[11px] text-[#55666E]">
               {sn.phases_count} fase{sn.phases_count === 1 ? '' : 's'} · {sn.events_count} evento{sn.events_count === 1 ? '' : 's'} · {sn.specialists_count} especialista{sn.specialists_count === 1 ? '' : 's'}
             </span>
             {/* Rollover de macrociclo: sin este botón, "desactivala primero"
@@ -1776,7 +1776,7 @@ function Temporadas() {
             </button>
           </div>
         ))}
-        {rows.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin temporadas todavía.</p>}
+        {rows.length === 0 && <p className="text-sm text-[#55666E] text-center py-6">Sin temporadas todavía.</p>}
       </div>
     </div>
   );
@@ -1805,7 +1805,7 @@ function SeasonEditor({ seasonId, onBack }: { seasonId: string; onBack: () => vo
     });
   }, [seasonId]);
 
-  if (!sn) return <p className="text-sm text-gray-400 py-8 text-center">{err ?? 'Cargando…'}</p>;
+  if (!sn) return <p className="text-sm text-[#55666E] py-8 text-center">{err ?? 'Cargando…'}</p>;
 
   const saveMeta = async () => {
     setErr(null);
@@ -1816,29 +1816,29 @@ function SeasonEditor({ seasonId, onBack }: { seasonId: string; onBack: () => vo
 
   return (
     <div className="space-y-4">
-      <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-[var(--tss-navy)]">
+      <button type="button" onClick={onBack} className="inline-flex items-center gap-1 text-xs text-[#55666E] hover:text-[var(--tss-navy)]">
         <ChevronLeft size={13} /> Volver a temporadas
       </button>
       {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
 
-      <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3">
+      <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <p className="text-sm font-bold text-[var(--tss-navy)]">{sn.title}</p>
-            <p className="text-[11px] text-gray-500">{sn.student_name} · {sn.start_date} → {sn.end_date}</p>
+            <p className="text-[11px] text-[#55666E]">{sn.student_name} · {sn.start_date} → {sn.end_date}</p>
           </div>
         </div>
         <div className="grid md:grid-cols-2 gap-3">
           <div>
-            <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Objetivo del macro (inglés, lo ve el atleta)</label>
+            <label className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Objetivo del macro (inglés, lo ve el atleta)</label>
             <input value={objective} onChange={(e) => { setObjective(e.target.value); setDirtyMeta(true); }}
               placeholder="Gold at Centroamericanos · peak AUG 8"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm mt-1" />
+              className="w-full rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm mt-1" />
           </div>
           <div>
-            <label className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Head coach (monitorea cargas y calibra)</label>
+            <label className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Head coach (monitorea cargas y calibra)</label>
             <select value={headCoach} onChange={(e) => { setHeadCoach(e.target.value); setDirtyMeta(true); }}
-              className="w-full rounded-lg border border-gray-300 px-2.5 py-2 text-sm mt-1">
+              className="w-full rounded-lg border border-[#DCD7C6] px-2.5 py-2 text-sm mt-1">
               <option value="">Sin head coach designado (vos)</option>
               {e1.map((c) => <option key={c.id} value={c.id}>{c.display_name}</option>)}
             </select>
@@ -1852,8 +1852,8 @@ function SeasonEditor({ seasonId, onBack }: { seasonId: string; onBack: () => vo
       </div>
 
       {/* Franja anual */}
-      <div className="rounded-2xl bg-white border border-gray-200 p-4">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Franja anual</p>
+      <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-2">Franja anual</p>
         <div className="relative h-12 rounded-lg overflow-hidden" style={{ background: '#F1F5F9' }}>
           {sn.phases.map((f) => {
             const c = PHASE_COLORS[f.color_key] ?? PHASE_COLORS.general;
@@ -1875,15 +1875,15 @@ function SeasonEditor({ seasonId, onBack }: { seasonId: string; onBack: () => vo
             </div>
           ))}
         </div>
-        {sn.phases.length === 0 && <p className="text-[11px] text-gray-400 mt-2">Agregá fases abajo para ver la franja.</p>}
+        {sn.phases.length === 0 && <p className="text-[11px] text-[#55666E] mt-2">Agregá fases abajo para ver la franja.</p>}
       </div>
 
       <SeasonPhases seasonId={seasonId} phases={sn.phases} onChanged={load} setErr={setErr} />
       <SeasonEvents seasonId={seasonId} events={sn.events} onChanged={load} setErr={setErr} />
 
       {/* Especialistas */}
-      <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-2">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+      <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-2">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
           Especialistas con acceso al plan (agendan sesiones y dejan aportes)
         </p>
         {e1.map((c) => {
@@ -1896,14 +1896,14 @@ function SeasonEditor({ seasonId, onBack }: { seasonId: string; onBack: () => vo
                   if (!r.ok) setErr(r.error || null);
                   else load();
                 }}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold ${on ? 'bg-[var(--tss-navy)] text-white' : 'bg-gray-100 text-gray-500'}`}>
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold ${on ? 'bg-[var(--tss-navy)] text-white' : 'bg-[#EDF3F5] text-[#55666E]'}`}>
                 {on ? '✓ ' : ''}{c.display_name}
               </button>
               {c.hp_specialty && <span className="text-[10px] font-mono uppercase text-amber-700">{c.hp_specialty}</span>}
             </div>
           );
         })}
-        {e1.length === 0 && <p className="text-[11px] text-gray-400">Ningún coach con Escalón 1 todavía — otorgalo en la pestaña Coaches.</p>}
+        {e1.length === 0 && <p className="text-[11px] text-[#55666E]">Ningún coach con Escalón 1 todavía — otorgalo en la pestaña Coaches.</p>}
       </div>
     </div>
   );
@@ -1933,32 +1933,32 @@ function SeasonPhases({ seasonId, phases, onChanged, setErr }: {
   };
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-2">
-      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Fases del macro</p>
+    <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-2">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Fases del macro</p>
       {phases.map((f) => {
         const c = PHASE_COLORS[f.color_key] ?? PHASE_COLORS.general;
         return (
-          <div key={f.id} className="flex items-center gap-2 flex-wrap rounded-xl border border-gray-100 p-2.5" style={{ borderLeft: `3px solid ${c.border}` }}>
+          <div key={f.id} className="flex items-center gap-2 flex-wrap rounded-[5px] border border-[#DCD7C6] p-2.5" style={{ borderLeft: `3px solid ${c.border}` }}>
             <span className="text-xs font-bold" style={{ color: c.text }}>{f.name}</span>
-            <span className="text-[11px] text-gray-500">{f.start_date} → {f.end_date}</span>
-            {f.objective && <span className="text-[11px] text-gray-400">· {f.objective}</span>}
+            <span className="text-[11px] text-[#55666E]">{f.start_date} → {f.end_date}</span>
+            {f.objective && <span className="text-[11px] text-[#55666E]">· {f.objective}</span>}
             <div className="flex-1" />
             <button type="button" onClick={async () => {
               if (!window.confirm(`¿Eliminar la fase «${f.name}»?`)) return;
               const r = await adminDeleteSeasonPhase(f.id);
               if (!r.ok) setErr(r.error || null); else onChanged();
-            }} className="p-1 text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
+            }} className="p-1 text-[#B8B1A0] hover:text-red-500"><Trash2 size={13} /></button>
           </div>
         );
       })}
       <div className="flex gap-2 flex-wrap items-center pt-1">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre (General Prep…)" className="flex-1 min-w-[140px] rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs" />
-        <select value={colorKey} onChange={(e) => setColorKey(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre (General Prep…)" className="flex-1 min-w-[140px] rounded-lg border border-[#DCD7C6] px-2.5 py-1.5 text-xs" />
+        <select value={colorKey} onChange={(e) => setColorKey(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2 py-1.5 text-xs">
           {COLOR_OPTS.map((k) => <option key={k} value={k}>{PHASE_COLORS[k].label}</option>)}
         </select>
-        <input type="date" value={ps} onChange={(e) => setPs(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs" aria-label="Inicio de fase" />
-        <input type="date" value={pe} onChange={(e) => setPe(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs" aria-label="Fin de fase" />
-        <input value={obj} onChange={(e) => setObj(e.target.value)} placeholder="Objetivo (opcional)" className="flex-1 min-w-[120px] rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs" />
+        <input type="date" value={ps} onChange={(e) => setPs(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2 py-1.5 text-xs" aria-label="Inicio de fase" />
+        <input type="date" value={pe} onChange={(e) => setPe(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2 py-1.5 text-xs" aria-label="Fin de fase" />
+        <input value={obj} onChange={(e) => setObj(e.target.value)} placeholder="Objetivo (opcional)" className="flex-1 min-w-[120px] rounded-lg border border-[#DCD7C6] px-2.5 py-1.5 text-xs" />
         <button type="button" disabled={!name.trim() || !ps || !pe} onClick={add}
           className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[var(--tss-cyan)] text-[var(--tss-navy)] disabled:opacity-40">
           + Fase
@@ -1990,33 +1990,33 @@ function SeasonEvents({ seasonId, events, onChanged, setErr }: {
   };
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-2">
-      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Eventos y competencias</p>
+    <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-2">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Eventos y competencias</p>
       {events.map((ev) => (
-        <div key={ev.id} className="flex items-center gap-2 flex-wrap rounded-xl border border-gray-100 p-2.5"
+        <div key={ev.id} className="flex items-center gap-2 flex-wrap rounded-[5px] border border-[#DCD7C6] p-2.5"
           style={{ borderLeft: `3px solid ${ev.is_peak ? '#B8862B' : '#CBD5E1'}` }}>
           <span className="text-sm">{EVENT_ICON[ev.kind] ?? '📍'}</span>
           <span className="text-xs font-bold text-[var(--tss-navy)]">{ev.name}</span>
-          <span className="text-[11px] text-gray-500">{ev.event_date}{ev.end_date ? ` → ${ev.end_date}` : ''}</span>
-          {ev.notes && <span className="text-[11px] text-gray-400">· {ev.notes}</span>}
+          <span className="text-[11px] text-[#55666E]">{ev.event_date}{ev.end_date ? ` → ${ev.end_date}` : ''}</span>
+          {ev.notes && <span className="text-[11px] text-[#55666E]">· {ev.notes}</span>}
           {ev.is_peak && <span className="text-[10px] font-mono font-bold text-amber-700">EL PICO</span>}
           <div className="flex-1" />
           <button type="button" onClick={async () => {
             if (!window.confirm(`¿Eliminar «${ev.name}»?`)) return;
             const r = await adminDeleteSeasonEvent(ev.id);
             if (!r.ok) setErr(r.error || null); else onChanged();
-          }} className="p-1 text-gray-300 hover:text-red-500"><Trash2 size={13} /></button>
+          }} className="p-1 text-[#B8B1A0] hover:text-red-500"><Trash2 size={13} /></button>
         </div>
       ))}
       <div className="flex gap-2 flex-wrap items-center pt-1">
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre (inglés) — Centroamericanos" className="flex-1 min-w-[160px] rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs" />
-        <select value={kind} onChange={(e) => setKind(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre (inglés) — Centroamericanos" className="flex-1 min-w-[160px] rounded-lg border border-[#DCD7C6] px-2.5 py-1.5 text-xs" />
+        <select value={kind} onChange={(e) => setKind(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2 py-1.5 text-xs">
           {KIND_EVENT_OPTS.map((k) => <option key={k} value={k}>{EVENT_ICON[k]} {k}</option>)}
         </select>
-        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs" aria-label="Fecha del evento" />
-        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs" aria-label="Fin (opcional — viajes/camps)" title="Fin (opcional — viajes/camps de varios días)" />
-        <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas (opcional)" className="flex-1 min-w-[110px] rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs" />
-        <label className="text-[11px] text-gray-500 flex items-center gap-1">
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2 py-1.5 text-xs" aria-label="Fecha del evento" />
+        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2 py-1.5 text-xs" aria-label="Fin (opcional — viajes/camps)" title="Fin (opcional — viajes/camps de varios días)" />
+        <input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas (opcional)" className="flex-1 min-w-[110px] rounded-lg border border-[#DCD7C6] px-2.5 py-1.5 text-xs" />
+        <label className="text-[11px] text-[#55666E] flex items-center gap-1">
           <input type="checkbox" checked={peak} onChange={(e) => setPeak(e.target.checked)} /> el pico
         </label>
         <button type="button" disabled={!name.trim() || !date} onClick={add}
@@ -2085,31 +2085,31 @@ function Competencias() {
     <div className="space-y-4">
       {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
 
-      <div className="rounded-2xl bg-white border border-gray-200 p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Nueva competencia (bitácora del atleta)</p>
+      <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-3" style={{ borderLeft: '4px solid #B8862B' }}>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Nueva competencia (bitácora del atleta)</p>
         <div className="flex gap-2 flex-wrap items-start">
           <div className="relative flex-1 min-w-[160px]">
             <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }}
-              placeholder="Atleta…" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              placeholder="Atleta…" className="w-full rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm" />
             {results.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full rounded-xl bg-white border border-gray-200 shadow-lg overflow-hidden">
+              <div className="absolute z-10 mt-1 w-full rounded-[5px] bg-[#F7F9FA] border border-[#DCD7C6] shadow-lg overflow-hidden">
                 {results.map((st) => (
                   <button key={st.id} type="button" onClick={() => { setPicked({ id: st.id, name: st.name }); setResults([]); }}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50">
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-[#F7F9FA]">
                     <span className="font-semibold text-[var(--tss-navy)]">{st.name}</span>
-                    <span className="text-[11px] text-gray-400 ml-2">{st.email ?? ''}</span>
+                    <span className="text-[11px] text-[#55666E] ml-2">{st.email ?? ''}</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del evento"
-            className="flex-1 min-w-[180px] rounded-lg border border-gray-300 px-3 py-2 text-sm" />
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-gray-300 px-2.5 py-2 text-sm" aria-label="Fecha" />
+            className="flex-1 min-w-[180px] rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm" />
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg border border-[#DCD7C6] px-2.5 py-2 text-sm" aria-label="Fecha" />
           <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Lugar"
-            className="w-32 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+            className="w-32 rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm" />
           <input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Categoría"
-            className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+            className="w-28 rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm" />
           <button type="button" disabled={busy || !picked || !name.trim() || !date} onClick={create}
             className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white disabled:opacity-40">
             Crear →
@@ -2122,28 +2122,28 @@ function Competencias() {
           const st = STATUS_LABEL[c.status] ?? STATUS_LABEL.scheduled;
           return (
             <button key={c.id} type="button" onClick={() => setOpenId(c.id)}
-              className="w-full text-left rounded-2xl bg-white border border-gray-200 p-4 flex items-center gap-3 flex-wrap hover:border-gray-300"
+              className="w-full text-left rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 flex items-center gap-3 flex-wrap hover:border-[#DCD7C6]"
               style={{ borderLeft: '4px solid #B8862B' }}>
               <div className="flex-1 min-w-[200px]">
                 <p className="text-sm font-bold text-[var(--tss-navy)]">{c.name}</p>
-                <p className="text-[11px] text-gray-500 mt-0.5">
+                <p className="text-[11px] text-[#55666E] mt-0.5">
                   {c.student_name} · {c.comp_date}
                   {c.location ? ` · ${c.location}` : ''}{c.category ? ` · ${c.category}` : ''}
                 </p>
               </div>
-              <span className="text-[11px] text-gray-400">{c.heats_count} heat{c.heats_count === 1 ? '' : 's'}</span>
+              <span className="text-[11px] text-[#55666E]">{c.heats_count} heat{c.heats_count === 1 ? '' : 's'}</span>
               {c.final_place && <span className="text-[11px] font-bold" style={{ color: '#B8862B' }}>{c.final_place}</span>}
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{ color: st.c, background: st.bg }}>{st.t}</span>
             </button>
           );
         })}
-        {rows.length === 0 && <p className="text-sm text-gray-400 text-center py-6">Sin competencias todavía.</p>}
+        {rows.length === 0 && <p className="text-sm text-[#55666E] text-center py-6">Sin competencias todavía.</p>}
       </div>
 
       {ranking?.current && (
-        <div className="rounded-2xl bg-white border border-gray-200 p-4" style={{ borderLeft: '4px solid #B8862B' }}>
+        <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4" style={{ borderLeft: '4px solid #B8862B' }}>
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
               Ranking semanal · {ranking.current.week_start} → {ranking.current.week_end} (en vivo)
             </p>
             <button type="button" onClick={() => adminGetWeeklyRanking().then((r) => { if (r.ok) setRanking(r); })}
@@ -2155,15 +2155,15 @@ function Competencias() {
                 <p className="text-[12px]" style={{ color: '#0C2231', fontWeight: r.position <= 3 ? 700 : 400 }}>
                   {r.position === 1 ? '🥇' : r.position === 2 ? '🥈' : r.position === 3 ? '🥉' : `${r.position}.`} {r.name}
                 </p>
-                <p className="text-[11px] font-mono text-gray-400">{r.points}</p>
+                <p className="text-[11px] font-mono text-[#55666E]">{r.points}</p>
               </div>
             ))}
           </div>
-          <p className="text-[10px] text-gray-400 mt-2">
+          <p className="text-[10px] text-[#55666E] mt-2">
             Puntos por día: día marcado 30 · check-in 10 · sueño ≤20 · dieta 15 · agua ≤10 · energía ≤5 (fórmula HP). El snapshot de cada semana se guarda solo al cerrar el lunes.
           </p>
           {ranking.last_snapshot && (
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className="text-[10px] text-[#55666E] mt-1">
               Semana pasada ({ranking.last_snapshot.week_start}): {ranking.last_snapshot.rows.slice(0, 3).map((r) => `${r.position === 1 ? '🥇' : r.position === 2 ? '🥈' : '🥉'} ${r.name} (${r.points})`).join(' · ')}
             </p>
           )}
@@ -2193,7 +2193,7 @@ function CompetenciaEditor({ compId, onBack }: { compId: string; onBack: () => v
   });
   useEffect(() => { load(); }, [compId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!comp) return <p className="text-sm text-gray-400 py-6 text-center">{err ?? 'Cargando…'}</p>;
+  if (!comp) return <p className="text-sm text-[#55666E] py-6 text-center">{err ?? 'Cargando…'}</p>;
 
   const act = async (fn: () => Promise<{ ok: boolean; error?: string }>) => {
     setErr(null);
@@ -2204,14 +2204,14 @@ function CompetenciaEditor({ compId, onBack }: { compId: string; onBack: () => v
 
   return (
     <div className="space-y-4">
-      <button type="button" onClick={onBack} className="text-xs text-gray-500">← Volver a competencias</button>
+      <button type="button" onClick={onBack} className="text-xs text-[#55666E]">← Volver a competencias</button>
       {err && <p className="text-xs rounded-lg px-3 py-2 bg-amber-50 border border-amber-200 text-amber-800">{err}</p>}
 
-      <div className="rounded-2xl bg-white border border-gray-200 p-4" style={{ borderLeft: '4px solid #B8862B' }}>
+      <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4" style={{ borderLeft: '4px solid #B8862B' }}>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div>
             <p className="text-base font-bold text-[var(--tss-navy)]">{comp.name}</p>
-            <p className="text-[11.5px] text-gray-500 mt-0.5">
+            <p className="text-[11.5px] text-[#55666E] mt-0.5">
               {comp.student_name} · {comp.comp_date}
               {comp.location ? ` · ${comp.location}` : ''}{comp.category ? ` · ${comp.category}` : ''}
             </p>
@@ -2233,9 +2233,9 @@ function CompetenciaEditor({ compId, onBack }: { compId: string; onBack: () => v
         {comp.status === 'finished' && (
           <div className="mt-3 pt-3 flex gap-2 flex-wrap items-center" style={{ borderTop: '1px solid #F1F5F9' }}>
             <input value={finalPlace} onChange={(e) => setFinalPlace(e.target.value)} placeholder="Resultado final — 3er lugar / Semifinal…"
-              className="flex-1 min-w-[180px] rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              className="flex-1 min-w-[180px] rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm" />
             <input value={finalNotes} onChange={(e) => setFinalNotes(e.target.value)} placeholder="Nota final (inglés — la ve el atleta)"
-              className="flex-1 min-w-[180px] rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+              className="flex-1 min-w-[180px] rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm" />
             <button type="button"
               onClick={() => act(() => adminUpdateCompetition(comp.id, { final_place: finalPlace || null, final_notes: finalNotes || null }))}
               className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white">Guardar resultado</button>
@@ -2247,7 +2247,7 @@ function CompetenciaEditor({ compId, onBack }: { compId: string; onBack: () => v
         {comp.heats.map((h) => {
           const prep: any = h.prep ?? {};
           return (
-            <div key={h.id} className="rounded-2xl bg-white border border-gray-200 p-4">
+            <div key={h.id} className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-sm font-bold text-[var(--tss-navy)]">
                   Heat {h.heat_number}{h.round_name ? ` · ${h.round_name}` : ''}
@@ -2261,20 +2261,20 @@ function CompetenciaEditor({ compId, onBack }: { compId: string; onBack: () => v
                   {h.waves.length === 0 && (
                     <button type="button"
                       onClick={() => { if (confirm(`¿Eliminar el Heat ${h.heat_number}? Si el atleta ya hizo su preparación, se pierde.`)) act(() => adminDeleteHeat(h.id)); }}
-                      className="text-[10px] text-gray-400 hover:text-red-500">Eliminar</button>
+                      className="text-[10px] text-[#55666E] hover:text-red-500">Eliminar</button>
                   )}
                 </div>
               </div>
 
               {(prep.checks?.length || prep.strategy || prep.mantra || prep.lineup) ? (
-                <p className="text-[11px] text-gray-500 mt-1">
+                <p className="text-[11px] text-[#55666E] mt-1">
                   Prep del atleta: {prep.checks?.length ?? 0}/6 checks
                   {prep.lineup ? ` · lineup ${prep.lineup}` : ''}
                   {prep.strategy ? ` · estrategia ${prep.strategy}` : ''}
                   {prep.mantra ? ` · «${prep.mantra}»` : ''}
                 </p>
               ) : (
-                <p className="text-[11px] text-gray-400 mt-1">El atleta todavía no hizo su preparación.</p>
+                <p className="text-[11px] text-[#55666E] mt-1">El atleta todavía no hizo su preparación.</p>
               )}
 
               <div className="mt-2 flex items-center gap-1.5 flex-wrap">
@@ -2295,7 +2295,7 @@ function CompetenciaEditor({ compId, onBack }: { compId: string; onBack: () => v
                     }
                   }}
                   placeholder="ola…" aria-label="Puntaje de la ola"
-                  className="w-16 rounded-lg border border-gray-300 px-2 py-1 text-[12px]" />
+                  className="w-16 rounded-lg border border-[#DCD7C6] px-2 py-1 text-[12px]" />
                 <button type="button"
                   onClick={() => {
                     const v = parseFloat((waveInputs[h.id] ?? '').replace(',', '.'));
@@ -2305,7 +2305,7 @@ function CompetenciaEditor({ compId, onBack }: { compId: string; onBack: () => v
                   + Ola
                 </button>
                 {h.waves.length > 0 && (
-                  <span className="text-[11.5px] ml-1 text-gray-500">
+                  <span className="text-[11.5px] ml-1 text-[#55666E]">
                     Total (2 mejores): <b style={{ color: '#B8862B' }}>{h.heat_total.toFixed(2)}</b>
                   </span>
                 )}
@@ -2317,12 +2317,12 @@ function CompetenciaEditor({ compId, onBack }: { compId: string; onBack: () => v
         })}
       </div>
 
-      <div className="rounded-2xl bg-white border border-dashed border-gray-300 p-4 flex items-center gap-2 flex-wrap">
-        <p className="text-[11px] text-gray-500">Agregar heat:</p>
+      <div className="rounded-lg bg-[#F7F9FA] border border-dashed border-[#DCD7C6] p-4 flex items-center gap-2 flex-wrap">
+        <p className="text-[11px] text-[#55666E]">Agregar heat:</p>
         <input type="number" min={1} max={99} value={newHeatNum} onChange={(e) => setNewHeatNum(Number(e.target.value))}
-          className="w-16 rounded-lg border border-gray-300 px-2 py-1.5 text-sm" aria-label="Número de heat" />
+          className="w-16 rounded-lg border border-[#DCD7C6] px-2 py-1.5 text-sm" aria-label="Número de heat" />
         <input value={newRound} onChange={(e) => setNewRound(e.target.value)} placeholder="Ronda (Round 1 / Semifinal…)"
-          className="flex-1 min-w-[160px] rounded-lg border border-gray-300 px-3 py-1.5 text-sm" />
+          className="flex-1 min-w-[160px] rounded-lg border border-[#DCD7C6] px-3 py-1.5 text-sm" />
         <button type="button" disabled={addingHeat}
           onClick={async () => { setAddingHeat(true); await act(() => adminAddHeat(comp.id, { heatNumber: newHeatNum, roundName: newRound || null })); setAddingHeat(false); }}
           className="px-4 py-1.5 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white disabled:opacity-50">{addingHeat ? '…' : '+ Heat'}</button>
@@ -2342,7 +2342,7 @@ function HeatOutcome({ heat, onSave }: {
 
   if (heat.status === 'done' && !openForm) {
     return (
-      <div className="mt-2 text-[11.5px] text-gray-500">
+      <div className="mt-2 text-[11.5px] text-[#55666E]">
         {heat.what_worked && <p>✓ Funcionó: {heat.what_worked}</p>}
         {heat.what_to_improve && <p>→ Mejorar: {heat.what_to_improve}</p>}
         <button type="button" onClick={() => setOpenForm(true)} className="text-[10px] font-bold mt-1" style={{ color: '#0090B8' }}>Editar resultado</button>
@@ -2371,14 +2371,14 @@ function HeatOutcome({ heat, onSave }: {
         </button>
       </div>
       <input value={worked} onChange={(e) => setWorked(e.target.value)} placeholder="Qué funcionó (inglés — lo ve el atleta)"
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+        className="w-full rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm" />
       <input value={improve} onChange={(e) => setImprove(e.target.value)} placeholder="Qué mejorar (inglés — lo ve el atleta)"
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" />
+        className="w-full rounded-lg border border-[#DCD7C6] px-3 py-2 text-sm" />
       <div className="flex gap-2">
         <button type="button"
           onClick={() => { onSave({ passed, what_worked: worked || null, what_to_improve: improve || null, status: 'done' }); setOpenForm(false); }}
           className="px-4 py-2 rounded-full text-xs font-bold bg-[var(--tss-navy)] text-white">Guardar resultado</button>
-        <button type="button" onClick={() => setOpenForm(false)} className="px-3 text-xs text-gray-400">Cancelar</button>
+        <button type="button" onClick={() => setOpenForm(false)} className="px-3 text-xs text-[#55666E]">Cancelar</button>
       </div>
     </div>
   );

@@ -49,7 +49,7 @@ export function Step16ProgressiveRatings({ formState, ratingScales, onRate }: Pr
     return (
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-[#1A1A2E]">Progressive Ratings</h3>
-        <p className="text-sm text-gray-400 text-center py-4">
+        <p className="text-sm text-[#55666E] text-center py-4">
           No additional ratings for this belt level.
         </p>
       </div>
@@ -59,7 +59,7 @@ export function Step16ProgressiveRatings({ formState, ratingScales, onRate }: Pr
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold text-[#1A1A2E]">Progressive Ratings</h3>
-      <p className="text-xs text-gray-400">
+      <p className="text-xs text-[#55666E]">
         Scales for {beltLevel.replace('_', ' ')}
       </p>
 
@@ -67,8 +67,8 @@ export function Step16ProgressiveRatings({ formState, ratingScales, onRate }: Pr
       {showFrustration && (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">Frustration Level</span>
-            <span className="text-xs text-gray-400">Lower is better</span>
+            <span className="text-sm font-medium text-[#10263B]">Frustration Level</span>
+            <span className="text-xs text-[#55666E]">Lower is better</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {FRUSTRATION_LEVELS.map((level) => {
@@ -78,10 +78,10 @@ export function Step16ProgressiveRatings({ formState, ratingScales, onRate }: Pr
                   key={level.value}
                   type="button"
                   onClick={() => onRate('frustration', level.value)}
-                  className={`flex items-center gap-2 px-3 py-3 rounded-xl border-2 text-left transition-all ${
+                  className={`flex items-center gap-2 px-3 py-3 rounded-[5px] border-2 text-left transition-all ${
                     isSelected
                       ? 'border-[#1A1A2E] bg-[#1A1A2E] text-white shadow-md scale-[1.02]'
-                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                      : 'border-[#DCD7C6] bg-[#F7F9FA] text-[#10263B] hover:border-[#DCD7C6]'
                   }`}
                 >
                   <span className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${level.color}`}>
@@ -106,9 +106,9 @@ export function Step16ProgressiveRatings({ formState, ratingScales, onRate }: Pr
         return (
           <div key={scale.id} className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-700">{scale.label}</span>
+              <span className="text-sm font-medium text-[#10263B]">{scale.label}</span>
               {scale.description && (
-                <span className="text-xs text-gray-400">{scale.description}</span>
+                <span className="text-xs text-[#55666E]">{scale.description}</span>
               )}
             </div>
             <div className="flex justify-center gap-3">
@@ -122,7 +122,7 @@ export function Step16ProgressiveRatings({ formState, ratingScales, onRate }: Pr
                     className={`w-12 h-12 rounded-full text-sm font-bold transition-all ${
                       isSelected
                         ? 'bg-[#1A1A2E] text-white scale-110'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        : 'bg-[#EDF3F5] text-[#55666E] hover:bg-[#DCD7C6]'
                     }`}
                   >
                     {n}

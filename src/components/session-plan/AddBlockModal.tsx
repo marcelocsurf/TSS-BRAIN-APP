@@ -119,14 +119,14 @@ export function AddBlockModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-0 sm:p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
+      <div className="bg-[#F7F9FA] rounded-t-2xl sm:rounded-lg w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#DCD7C6]">
           <h2 className="text-sm font-semibold text-[var(--tss-navy)]">Add Block</h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-700 text-xl leading-none px-2"
+            className="text-[#55666E] hover:text-[#10263B] text-xl leading-none px-2"
           >
             ×
           </button>
@@ -135,12 +135,12 @@ export function AddBlockModal({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {loadingInit ? (
-            <p className="text-sm text-gray-400 text-center py-6">Loading…</p>
+            <p className="text-sm text-[#55666E] text-center py-6">Loading…</p>
           ) : (
             <>
               {/* Duration chips */}
               <div>
-                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">
                   Duration
                 </p>
                 <div className="flex gap-2">
@@ -152,7 +152,7 @@ export function AddBlockModal({
                       className={`flex-1 py-2 rounded-lg text-sm font-medium border transition ${
                         duration === m
                           ? 'border-transparent text-white'
-                          : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                          : 'border-[#DCD7C6] text-[#55666E] hover:border-[#55666E]'
                       }`}
                       style={duration === m ? { background: BRAND.colors.navy } : {}}
                     >
@@ -186,7 +186,7 @@ export function AddBlockModal({
 
               {/* Step picker */}
               <div>
-                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">
                   Or pick part of sequence
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -201,7 +201,7 @@ export function AddBlockModal({
                         className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition ${
                           selected
                             ? 'border-transparent text-white'
-                            : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                            : 'border-[#DCD7C6] text-[#55666E] hover:border-[#55666E]'
                         }`}
                         style={selected ? { background: BRAND.colors.navy } : {}}
                         title={s.title}
@@ -212,7 +212,7 @@ export function AddBlockModal({
                   })}
                 </div>
                 {selectedStep && (
-                  <p className="text-[11px] text-gray-500 mt-2">
+                  <p className="text-[11px] text-[#55666E] mt-2">
                     {allSteps.find((s) => s.id === selectedStep)?.title}
                   </p>
                 )}
@@ -221,13 +221,13 @@ export function AddBlockModal({
               {/* Drills for selected step */}
               {selectedStep && (
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+                  <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">
                     Drills for {selectedStep}
                   </p>
                   {loadingStep ? (
-                    <p className="text-xs text-gray-400 text-center py-3">Loading…</p>
+                    <p className="text-xs text-[#55666E] text-center py-3">Loading…</p>
                   ) : stepDrills.length === 0 ? (
-                    <p className="text-xs text-gray-400 text-center py-3">
+                    <p className="text-xs text-[#55666E] text-center py-3">
                       No drills available for this step yet.
                     </p>
                   ) : (
@@ -275,15 +275,15 @@ function DrillRow({
       className={`flex items-center justify-between gap-2 p-2.5 rounded-lg border ${
         highlight
           ? 'border-amber-200 bg-amber-50/50'
-          : 'border-gray-100 hover:border-gray-300'
+          : 'border-[#DCD7C6] hover:border-[#DCD7C6]'
       } transition`}
     >
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-800 truncate">
-          <span className="text-[10px] font-mono text-gray-400 mr-1">{drill.id}</span>
+        <p className="text-sm font-medium text-[#10263B] truncate">
+          <span className="text-[10px] font-mono text-[#55666E] mr-1">{drill.id}</span>
           {drill.title}
         </p>
-        <p className="text-[11px] text-gray-500 truncate inline-flex items-center gap-1">
+        <p className="text-[11px] text-[#55666E] truncate inline-flex items-center gap-1">
           {drill.type === 'mission' ? (
             <><Waves size={11} strokeWidth={1.75} /> Mission</>
           ) : (
@@ -295,7 +295,7 @@ function DrillRow({
             : ''}
         </p>
         {drill.key_words && drill.key_words.length > 0 && (
-          <p className="text-[10px] text-gray-400 truncate mt-0.5 italic">
+          <p className="text-[10px] text-[#55666E] truncate mt-0.5 italic">
             {drill.key_words.join(' · ')}
           </p>
         )}

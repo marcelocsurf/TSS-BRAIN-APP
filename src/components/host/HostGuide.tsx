@@ -11,9 +11,9 @@ const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono,
 
 function Sec({ icon, title, children }: { icon: string; title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
       <p className="font-bold text-[14px]" style={{ color: INK }}>{icon} {title}</p>
-      <div className="mt-1.5 space-y-1.5 text-[12.5px] leading-relaxed text-gray-600">{children}</div>
+      <div className="mt-1.5 space-y-1.5 text-[12.5px] leading-relaxed text-[#55666E]">{children}</div>
     </div>
   );
 }
@@ -39,49 +39,49 @@ export function HostGuide({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="max-w-md lg:max-w-3xl mx-auto px-4 py-4 space-y-3">
-        <p className="text-[12.5px] text-gray-500 leading-relaxed">
+        <p className="text-[12.5px] text-[#55666E] leading-relaxed">
           Este portal es tu mostrador: atendés clientes, reservás y ves lo que está programado.
           Volvés a esta guía cuando quieras con el botón <strong>📖</strong> de arriba.
         </p>
 
         {/* El proceso de inscripción (Marcelo con Kat, 2026-09-11): un solo
             link, sin mandadera. Va primero porque es la pregunta #1. */}
-        <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,209,102,.16)', border: '1px solid rgba(217,164,6,.45)' }}>
+        <div className="rounded-lg p-3.5" style={{ background: 'rgba(255,209,102,.16)', border: '1px solid rgba(217,164,6,.45)' }}>
           <p className="text-[9px] mb-1" style={{ ...F_M, color: '#7a5c00' }}>El proceso de inscripción · un solo link</p>
-          <p className="text-[12.5px] leading-relaxed text-gray-700">
+          <p className="text-[12.5px] leading-relaxed text-[#10263B]">
             <strong style={{ color: INK }}>1. Interesado, todavía no compra</strong> — mandale el quiz de la web (thesurfsequence.com/quiz). Queda creado con su nivel.<br />
             <strong style={{ color: INK }}>2. Compró</strong> — en AGENDA, <strong>+ Reservar</strong> en su clase o camp. Al terminar te sale <strong>el link de intake</strong>: mandáselo por WhatsApp. Es el único que necesita.<br />
             <strong style={{ color: INK }}>3. Clase de un día</strong> (surf lesson, Discover, skate, ice bath, yoga) — ese link pide solo ficha + waiver.<br />
             <strong style={{ color: INK }}>4. Camp (2 días o más)</strong> — ese mismo link pide ficha + waiver + quiz de nivel + metas. Si ya hizo el quiz en la web, no lo repite.<br />
             <strong style={{ color: INK }}>5. Ya vino antes</strong> — mismo link. Ve &quot;Welcome back&quot;, confirma si cambió algo y listo.
           </p>
-          <p className="text-[11.5px] leading-relaxed text-gray-600 mt-1.5">
+          <p className="text-[11.5px] leading-relaxed text-[#55666E] mt-1.5">
             Nunca mandes el quiz de la web a alguien que ya compró. Si no llenó, lo ves en 👥 CLIENTES con los ✗ de lo que falta.
           </p>
         </div>
 
-        <div className="rounded-2xl p-3.5" style={{ background: 'rgba(6,214,160,.10)', border: '1px solid rgba(6,214,160,.4)' }}>
+        <div className="rounded-lg p-3.5" style={{ background: 'rgba(6,214,160,.10)', border: '1px solid rgba(6,214,160,.4)' }}>
           <p className="text-[9px] mb-1" style={{ ...F_M, color: '#0a7c5d' }}>Tus 4 pestañas de siempre</p>
-          <p className="text-[12.5px] leading-relaxed text-gray-700">
+          <p className="text-[12.5px] leading-relaxed text-[#10263B]">
             <strong style={{ color: INK }}>📣 Disponibilidad</strong> — qué hay programado y dónde queda lugar.<br />
             <strong style={{ color: INK }}>🚐 Transporte</strong> — las vans de los próximos 14 días.<br />
             <strong style={{ color: INK }}>🏛 Espacios</strong> — reservar salas y lugares.<br />
             <strong style={{ color: INK }}>🗓 Agenda</strong> — reservar a un cliente en una clase.
           </p>
-          <p className="text-[11.5px] leading-relaxed text-gray-500 mt-1.5">
+          <p className="text-[11.5px] leading-relaxed text-[#55666E] mt-1.5">
             Asignar instructores, mover o cancelar clases <strong>no es tu trabajo</strong>: eso lo hace coordinación. Si ves algo raro, avisales.
           </p>
         </div>
 
         {/* La confusión #1 del host (Cony, ago 2026): buscar en HOY una clase
             que está más adelante. Se aclara de entrada, antes de todo lo demás. */}
-        <div className="rounded-2xl p-3.5" style={{ background: 'rgba(0,210,255,.09)', border: '1px solid rgba(0,210,255,.35)' }}>
+        <div className="rounded-lg p-3.5" style={{ background: 'rgba(0,210,255,.09)', border: '1px solid rgba(0,210,255,.35)' }}>
           <p className="text-[9px] mb-1" style={{ ...F_M, color: '#0090B0' }}>Lo primero que hay que tener claro</p>
-          <p className="text-[12.5px] leading-relaxed text-gray-700">
+          <p className="text-[12.5px] leading-relaxed text-[#10263B]">
             <strong style={{ color: INK }}>HOY = atender y cobrar</strong> — solo lo que llega en los próximos 7 días.<br />
             <strong style={{ color: INK }}>AGENDA = ver y planear</strong> — cualquier día del año, pasado o futuro.
           </p>
-          <p className="text-[11.5px] leading-relaxed text-gray-500 mt-1.5">
+          <p className="text-[11.5px] leading-relaxed text-[#55666E] mt-1.5">
             Si no encontrás una clase en HOY, no está perdida: es que todavía falta para ella. Buscala en AGENDA con <strong>📅 Ir a</strong>.
           </p>
         </div>

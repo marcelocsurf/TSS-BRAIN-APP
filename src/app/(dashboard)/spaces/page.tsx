@@ -26,15 +26,15 @@ export default async function SpacesPage() {
         <h2 className="text-2xl font-bold text-[var(--tss-navy)] leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
           Espacios
         </h2>
-        <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-1" style={{ fontFamily: 'DM Mono, monospace' }}>
+        <p className="text-[10px] uppercase tracking-wider text-[#55666E] mt-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
           Reserva de espacios de la academia · {spaces.length} espacio{spaces.length === 1 ? '' : 's'}
         </p>
       </div>
 
       {spaces.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <p className="text-sm text-gray-500">Aún no hay espacios en esta academia.</p>
-          {canManage && <p className="text-xs text-gray-400 mt-1">Pedí al admin que los cargue, o se agregan desde aquí (próximamente).</p>}
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] p-8 text-center">
+          <p className="text-sm text-[#55666E]">Aún no hay espacios en esta academia.</p>
+          {canManage && <p className="text-xs text-[#55666E] mt-1">Pedí al admin que los cargue, o se agregan desde aquí (próximamente).</p>}
         </div>
       ) : (
         <SpaceBoard

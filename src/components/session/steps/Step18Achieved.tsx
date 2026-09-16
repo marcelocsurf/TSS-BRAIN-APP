@@ -33,12 +33,12 @@ export function Step18Achieved({ formState, achievementOptions, onChange }: Prop
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-[#1A1A2E]">Achieved</h3>
-      <p className="text-xs text-gray-400">What did the student accomplish during this session?</p>
+      <p className="text-xs text-[#55666E]">What did the student accomplish during this session?</p>
 
       {/* Quick achievement chips */}
       {statusFiltered.length > 0 && (
         <div>
-          <p className="text-xs text-gray-500 mb-2">Quick Add</p>
+          <p className="text-xs text-[#55666E] mb-2">Quick Add</p>
           <div className="flex flex-wrap gap-2">
             {statusFiltered.map((opt) => {
               const chipText = opt.label || opt.value;
@@ -51,7 +51,7 @@ export function Step18Achieved({ formState, achievementOptions, onChange }: Prop
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                     isActive
                       ? 'bg-[#5AC3E7] text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-[#EDF3F5] text-[#55666E] hover:bg-[#DCD7C6]'
                   }`}
                 >
                   {chipText}
@@ -67,7 +67,7 @@ export function Step18Achieved({ formState, achievementOptions, onChange }: Prop
         onChange={(e) => onChange(e.target.value)}
         placeholder="Document what the student accomplished..."
         rows={4}
-        className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
+        className="w-full p-3 rounded-[5px] border border-[#DCD7C6] text-sm resize-none focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
       />
     </div>
   );

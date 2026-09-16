@@ -19,7 +19,7 @@ export default async function WeekTemplatesPage() {
     <div className="max-w-3xl mx-auto">
       <Link
         href="/camps"
-        className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1 mb-3"
+        className="text-sm text-[#55666E] hover:text-[#10263B] inline-flex items-center gap-1 mb-3"
       >
         <ArrowLeft size={14} strokeWidth={1.75} />
         Services
@@ -32,13 +32,13 @@ export default async function WeekTemplatesPage() {
           >
             Week Templates
           </h2>
-          <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-1" style={{ fontFamily: 'DM Mono, monospace' }}>
+          <p className="text-[10px] uppercase tracking-wider text-[#55666E] mt-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
             {list.length} template{list.length !== 1 ? 's' : ''} · stamp a full week of services with one click
           </p>
         </div>
         <Link
           href="/camps/week-templates/new"
-          className="inline-flex items-center gap-1 px-3 py-2 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:opacity-90"
+          className="inline-flex items-center gap-1 px-3 py-2 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-[5px] hover:opacity-90"
         >
           <Plus size={14} strokeWidth={2} />
           New
@@ -46,14 +46,14 @@ export default async function WeekTemplatesPage() {
       </div>
 
       {list.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-          <p className="text-sm text-gray-500 mb-2">No week templates yet.</p>
-          <p className="text-xs text-gray-400 leading-relaxed mb-4">
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] p-8 text-center">
+          <p className="text-sm text-[#55666E] mb-2">No week templates yet.</p>
+          <p className="text-xs text-[#55666E] leading-relaxed mb-4">
             A week template lets you stamp a full weekly rhythm — e.g. "3 camps + 5 lessons + 2 surfskate" — onto any week of the calendar in one click.
           </p>
           <Link
             href="/camps/week-templates/new"
-            className="inline-flex items-center gap-1 px-4 py-2 bg-[var(--tss-navy)] text-white text-sm rounded-xl"
+            className="inline-flex items-center gap-1 px-4 py-2 bg-[var(--tss-navy)] text-white text-sm rounded-[5px]"
           >
             Create the first one
           </Link>
@@ -64,16 +64,16 @@ export default async function WeekTemplatesPage() {
             <Link
               key={wt.id}
               href={`/camps/week-templates/${wt.id}/edit`}
-              className="block bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors"
+              className="block bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="text-base font-semibold text-[var(--tss-navy)]">{wt.name}</h3>
                   {wt.description && (
-                    <p className="text-xs text-gray-500 mt-0.5">{wt.description}</p>
+                    <p className="text-xs text-[#55666E] mt-0.5">{wt.description}</p>
                   )}
                 </div>
-                <span className="text-[10px] font-mono text-gray-400 shrink-0">
+                <span className="text-[10px] font-mono text-[#55666E] shrink-0">
                   {wt.slots.length} slot{wt.slots.length !== 1 ? 's' : ''}
                 </span>
               </div>
@@ -81,8 +81,8 @@ export default async function WeekTemplatesPage() {
                 {wt.slots.map((s) => (
                   <span
                     key={s.id}
-                    className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md border border-gray-200 text-gray-700"
-                    style={{ fontFamily: 'DM Mono, monospace', backgroundColor: s.camp_templates?.card_color ?? '#F3F4F6' }}
+                    className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md border border-[#DCD7C6] text-[#10263B]"
+                    style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', backgroundColor: s.camp_templates?.card_color ?? '#F3F4F6' }}
                   >
                     {WEEKDAYS[s.weekday]} · {s.camp_templates?.template_name?.split(' ').slice(0, 3).join(' ') ?? '—'}
                     {s.scheduled_time ? ` · ${s.scheduled_time}` : ''}

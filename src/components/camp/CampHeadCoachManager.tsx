@@ -51,8 +51,8 @@ export function CampHeadCoachManager({
     <div className="mt-3 flex items-start gap-3 flex-wrap">
       <div className="flex items-center gap-2">
         <span
-          className="text-[10px] uppercase tracking-wider text-gray-400"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          className="text-[10px] uppercase tracking-wider text-[#55666E]"
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           Head Coach
         </span>
@@ -72,10 +72,10 @@ export function CampHeadCoachManager({
       </button>
 
       {open && (
-        <div className="w-full mt-2 bg-white rounded-xl border border-gray-100 p-3 space-y-1.5 max-h-72 overflow-y-auto">
+        <div className="w-full mt-2 bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-3 space-y-1.5 max-h-72 overflow-y-auto">
           <p
-            className="text-[10px] uppercase tracking-wider text-gray-400 mb-1"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            className="text-[10px] uppercase tracking-wider text-[#55666E] mb-1"
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             Pick a coach
           </p>
@@ -90,7 +90,7 @@ export function CampHeadCoachManager({
             </button>
           )}
           {coaches.length === 0 && (
-            <p className="text-xs text-gray-400 italic py-2">Loading…</p>
+            <p className="text-xs text-[#55666E] italic py-2">Loading…</p>
           )}
           {coaches.map((c) => {
             const isCurrent = c.id === currentHeadCoachId;
@@ -103,16 +103,16 @@ export function CampHeadCoachManager({
                 className={`w-full text-left flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg transition-colors ${
                   isCurrent
                     ? 'bg-emerald-50 cursor-default'
-                    : 'hover:bg-gray-50'
+                    : 'hover:bg-[#F7F9FA]'
                 }`}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-gray-800 truncate">
+                  <p className="text-xs font-medium text-[#10263B] truncate">
                     {c.display_name}
                   </p>
                   <p
-                    className="text-[10px] text-gray-400 uppercase tracking-wider"
-                    style={{ fontFamily: 'DM Mono, monospace' }}
+                    className="text-[10px] text-[#55666E] uppercase tracking-wider"
+                    style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                   >
                     {c.role}
                     {c.max_belt_permission ? ` · up to ${c.max_belt_permission.replace(/_/g, ' ')}` : ''}

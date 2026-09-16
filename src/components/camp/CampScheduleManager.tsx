@@ -70,8 +70,8 @@ export function CampScheduleManager({
     <div className="mt-3 flex items-start gap-3 flex-wrap">
       <div className="flex items-center gap-2">
         <span
-          className="text-[10px] uppercase tracking-wider text-gray-400 inline-flex items-center gap-1"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          className="text-[10px] uppercase tracking-wider text-[#55666E] inline-flex items-center gap-1"
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           <Clock size={11} strokeWidth={2} />
           Schedule
@@ -89,11 +89,11 @@ export function CampScheduleManager({
       </button>
 
       {open && (
-        <div className="w-full mt-2 bg-white rounded-xl border border-gray-100 p-3 space-y-2">
+        <div className="w-full mt-2 bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-3 space-y-2">
           <div className="flex items-center gap-2">
             <label
-              className="text-[10px] uppercase tracking-wider text-gray-500"
-              style={{ fontFamily: 'DM Mono, monospace' }}
+              className="text-[10px] uppercase tracking-wider text-[#55666E]"
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
             >
               Start
             </label>
@@ -101,15 +101,15 @@ export function CampScheduleManager({
               type="time"
               value={start}
               onChange={(e) => setStart(e.target.value)}
-              className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm"
+              className="flex-1 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm"
             />
-            <span className="text-xs text-gray-400">to</span>
+            <span className="text-xs text-[#55666E]">to</span>
             <label className="sr-only">End</label>
             <input
               type="time"
               value={end}
               onChange={(e) => setEnd(e.target.value)}
-              className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm"
+              className="flex-1 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm"
             />
           </div>
           <div className="flex items-center gap-2">
@@ -132,7 +132,7 @@ export function CampScheduleManager({
               </button>
             )}
           </div>
-          <p className="text-[10px] text-gray-400 italic">
+          <p className="text-[10px] text-[#55666E] italic">
             For multi-day camps this is the daily meeting time. For lessons,
             it&apos;s the full lesson slot.
           </p>

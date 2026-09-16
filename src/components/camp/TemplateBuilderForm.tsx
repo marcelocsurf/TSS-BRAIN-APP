@@ -288,27 +288,27 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
   return (
     <div className="space-y-6">
       {/* ── HEADER FIELDS ── */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-4">
+      <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4 space-y-4">
         <h3 className="text-sm font-semibold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-mono)' }}>
           Template Info
         </h3>
 
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+          <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
             Template Name *
           </label>
           <input
             type="text"
             value={templateName}
             onChange={(e) => setTemplateName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)] focus:border-transparent"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)] focus:border-transparent"
             placeholder="e.g. Novice 6-Day Intensive"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+            <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
               Level
             </label>
             {/* Belt swatch + select. Native <select> can't render
@@ -327,7 +327,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
               <select
                 value={levelName}
                 onChange={(e) => setLevelName(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+                className="flex-1 px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
               >
                 <option value="Custom">Custom — no belt (classes)</option>
                 {LEVEL_OPTIONS.map((l) => (
@@ -340,13 +340,13 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+            <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
               Service Category
             </label>
             <select
               value={serviceKind}
               onChange={(e) => setServiceKind(e.target.value as 'surf_camp' | 'surf_lesson' | 'custom' | '')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
             >
               <option value="">— Unspecified</option>
               <option value="surf_camp">Surf Camp (multi-day)</option>
@@ -355,13 +355,13 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
               <option value="trip">Trip (guided surf trip — no coaching)</option>
               <option value="custom">Custom</option>
             </select>
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className="text-[10px] text-[#55666E] mt-1">
               Drives the colour of the card on the calendar.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+            <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
               Capacity (max students)
             </label>
             <input
@@ -369,15 +369,15 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
               min={1}
               value={capacityMax}
               onChange={(e) => setCapacityMax(Math.max(1, parseInt(e.target.value, 10) || 1))}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
             />
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className="text-[10px] text-[#55666E] mt-1">
               Number of spots open per instance of this service.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+            <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
               Card Colour
             </label>
             <div className="flex items-center gap-2">
@@ -385,32 +385,32 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                 type="color"
                 value={cardColor || '#F3F4F6'}
                 onChange={(e) => setCardColor(e.target.value)}
-                className="h-9 w-12 rounded-lg border border-gray-200 cursor-pointer"
+                className="h-9 w-12 rounded-lg border border-[#DCD7C6] cursor-pointer"
               />
               <input
                 type="text"
                 value={cardColor}
                 onChange={(e) => setCardColor(e.target.value)}
                 placeholder="#FFFC00"
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono"
+                className="flex-1 px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm font-mono"
               />
               {cardColor && (
                 <button
                   type="button"
                   onClick={() => setCardColor('')}
-                  className="text-[10px] text-gray-500 hover:text-red-600 transition-colors"
+                  className="text-[10px] text-[#55666E] hover:text-red-600 transition-colors"
                 >
                   Reset
                 </button>
               )}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className="text-[10px] text-[#55666E] mt-1">
               Background of the service card on the calendar.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+            <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
               Accent Colour (left stripe)
             </label>
             <div className="flex items-center gap-2">
@@ -418,32 +418,32 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                 type="color"
                 value={accentColor || '#9CA3AF'}
                 onChange={(e) => setAccentColor(e.target.value)}
-                className="h-9 w-12 rounded-lg border border-gray-200 cursor-pointer"
+                className="h-9 w-12 rounded-lg border border-[#DCD7C6] cursor-pointer"
               />
               <input
                 type="text"
                 value={accentColor}
                 onChange={(e) => setAccentColor(e.target.value)}
                 placeholder="#F5C518"
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm font-mono"
+                className="flex-1 px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm font-mono"
               />
               {accentColor && (
                 <button
                   type="button"
                   onClick={() => setAccentColor('')}
-                  className="text-[10px] text-gray-500 hover:text-red-600 transition-colors"
+                  className="text-[10px] text-[#55666E] hover:text-red-600 transition-colors"
                 >
                   Reset
                 </button>
               )}
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className="text-[10px] text-[#55666E] mt-1">
               Belt-level stripe on the left edge.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+            <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
               Session Duration (per day)
             </label>
             <div className="flex items-center gap-2">
@@ -453,10 +453,10 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                 max={12}
                 value={sessionHours}
                 onChange={(e) => setSessionHours(Math.max(0, Math.min(12, parseInt(e.target.value, 10) || 0)))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+                className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
                 placeholder="0"
               />
-              <span className="text-xs text-gray-500" style={{ fontFamily: 'var(--font-mono)' }}>h</span>
+              <span className="text-xs text-[#55666E]" style={{ fontFamily: 'var(--font-mono)' }}>h</span>
               <input
                 type="number"
                 min={0}
@@ -464,24 +464,24 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                 step={5}
                 value={sessionMinutes}
                 onChange={(e) => setSessionMinutes(Math.max(0, Math.min(59, parseInt(e.target.value, 10) || 0)))}
-                className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+                className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
                 placeholder="0"
               />
-              <span className="text-xs text-gray-500" style={{ fontFamily: 'var(--font-mono)' }}>min</span>
+              <span className="text-xs text-[#55666E]" style={{ fontFamily: 'var(--font-mono)' }}>min</span>
             </div>
-            <p className="text-[10px] text-gray-400 mt-1">
+            <p className="text-[10px] text-[#55666E] mt-1">
               How long each day&apos;s session lasts (e.g. a lesson = 1h 30m).
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+            <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
               Modality
             </label>
             <select
               value={modality}
               onChange={(e) => setModality(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
             >
               {MODALITY_OPTIONS.map((m) => (
                 <option key={m} value={m}>{m}</option>
@@ -490,13 +490,13 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+            <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
               Delivery Model
             </label>
             <select
               value={deliveryModel}
               onChange={(e) => setDeliveryModel(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
             >
               {DELIVERY_OPTIONS.map((d) => (
                 <option key={d} value={d}>{d}</option>
@@ -505,26 +505,26 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+            <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
               Includes course
             </label>
             <select
               value={includesCourse}
               onChange={(e) => setIncludesCourse(e.target.value as 'white_belt' | 'yellow_belt' | 'blue_belt' | '')}
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
             >
               <option value="">— None (lesson only)</option>
               <option value="white_belt">White Belt course</option>
               <option value="yellow_belt">Yellow Belt course</option>
               <option value="blue_belt">Blue Belt course</option>
             </select>
-            <p className="text-[10px] text-gray-400 mt-1 leading-tight">
+            <p className="text-[10px] text-[#55666E] mt-1 leading-tight">
               Camps that include a course auto-promote enrolled Leads to Members and unlock portal access.
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+            <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
               Duration (days)
             </label>
             <input
@@ -532,20 +532,20 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
               min={1}
               value={days.length}
               readOnly
-              className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm bg-gray-50 cursor-not-allowed"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm bg-[#F7F9FA] cursor-not-allowed"
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+          <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
             Description
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)] focus:border-transparent resize-none"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)] focus:border-transparent resize-none"
             placeholder="Brief description of this camp template..."
           />
         </div>
@@ -553,12 +553,12 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
 
       {/* ── DAY BUILDER ── */}
       {days.map((day, dayIdx) => (
-        <div key={dayIdx} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+        <div key={dayIdx} className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] overflow-hidden">
           {/* Day header — clickable accordion */}
           <button
             type="button"
             onClick={() => toggleDay(dayIdx)}
-            className="w-full px-4 py-3 flex items-center justify-between border-b border-gray-50 hover:bg-gray-50 transition-colors"
+            className="w-full px-4 py-3 flex items-center justify-between border-b border-[#DCD7C6] hover:bg-[#F7F9FA] transition-colors"
           >
             <div className="flex items-center gap-2">
               <span className="w-7 h-7 rounded-full bg-[var(--tss-navy)] text-white text-xs font-bold flex items-center justify-center">
@@ -568,11 +568,11 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                 Day {day.day_number}
               </span>
               {day.day_goal && (
-                <span className="text-xs text-gray-400 truncate max-w-[200px]">
+                <span className="text-xs text-[#55666E] truncate max-w-[200px]">
                   — {day.day_goal}
                 </span>
               )}
-              <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+              <span className="text-[10px] text-[#55666E] bg-[#EDF3F5] px-1.5 py-0.5 rounded">
                 {day.blocks.length} block{day.blocks.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -588,7 +588,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                   Remove
                 </span>
               )}
-              <span className="text-gray-400 text-xs">
+              <span className="text-[#55666E] text-xs">
                 {expandedDays.has(dayIdx) ? '▲' : '▼'}
               </span>
             </div>
@@ -599,26 +599,26 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
               {/* Day fields */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+                  <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
                     Day Goal
                   </label>
                   <input
                     type="text"
                     value={day.day_goal || ''}
                     onChange={(e) => updateDay(dayIdx, { day_goal: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+                    className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
                     placeholder="What should students achieve today?"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+                  <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
                     Venue Default
                   </label>
                   <select
                     value={day.venue_default || ''}
                     onChange={(e) => updateDay(dayIdx, { venue_default: e.target.value || null })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+                    className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
                   >
                     <option value="">Select venue...</option>
                     {TRAINING_VENUES.map((v) => (
@@ -632,14 +632,14 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                     populates from the linked step's success criteria. */}
 
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-gray-500 mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
+                  <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
                     Day Notes
                   </label>
                   <textarea
                     value={day.day_notes || ''}
                     onChange={(e) => updateDay(dayIdx, { day_notes: e.target.value || null })}
                     rows={2}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)] resize-none"
+                    className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)] resize-none"
                     placeholder="Additional notes for this day..."
                   />
                 </div>
@@ -655,15 +655,15 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                           evaluation_type: e.target.checked ? 'progress_check' : null,
                         })
                       }
-                      className="rounded border-gray-300"
+                      className="rounded border-[#DCD7C6]"
                     />
-                    <span className="text-xs text-gray-600">Has Evaluation</span>
+                    <span className="text-xs text-[#55666E]">Has Evaluation</span>
                   </label>
                   {day.has_evaluation && (
                     <select
                       value={day.evaluation_type || 'progress_check'}
                       onChange={(e) => updateDay(dayIdx, { evaluation_type: e.target.value })}
-                      className="px-3 py-1.5 border border-gray-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+                      className="px-3 py-1.5 border border-[#DCD7C6] rounded-[5px] text-xs focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
                     >
                       {EVAL_TYPE_OPTIONS.map((et) => (
                         <option key={et.value} value={et.value}>{et.label}</option>
@@ -675,14 +675,14 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
 
               {/* ── SUPPORT MATERIAL (PPT / video / image / diagram) ── */}
               {day.id ? (
-                <div className="border-t border-gray-100 pt-3">
+                <div className="border-t border-[#DCD7C6] pt-3">
                   <h4
                     className="text-xs font-semibold text-[var(--tss-navy)] mb-2"
                     style={{ fontFamily: 'var(--font-mono)' }}
                   >
                     Support Material
                   </h4>
-                  <p className="text-[10px] text-gray-500 mb-2 leading-relaxed">
+                  <p className="text-[10px] text-[#55666E] mb-2 leading-relaxed">
                     PowerPoint / Google Slides / videos / images for this day.
                     The coach sees them inline on /camps/[id] when reading the
                     plan.
@@ -693,8 +693,8 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                   />
                 </div>
               ) : (
-                <div className="border-t border-gray-100 pt-3">
-                  <p className="text-[10px] text-gray-400 italic">
+                <div className="border-t border-[#DCD7C6] pt-3">
+                  <p className="text-[10px] text-[#55666E] italic">
                     Save this template once to enable per-day support material
                     upload.
                   </p>
@@ -702,7 +702,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
               )}
 
               {/* ── ACTIVITIES (M78) ── */}
-              <div className="border-t border-gray-100 pt-3">
+              <div className="border-t border-[#DCD7C6] pt-3">
                 <h4
                   className="text-xs font-semibold text-[var(--tss-navy)] mb-2"
                   style={{ fontFamily: 'var(--font-mono)' }}
@@ -718,7 +718,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                     return (
                       <div
                         key={blockIdx}
-                        className="border border-gray-100 rounded-xl p-3 bg-gray-50/50 border-l-4"
+                        className="border border-[#DCD7C6] rounded-[5px] p-3 bg-[#F7F9FA] border-l-4"
                         style={{ borderLeftColor: activityType.color }}
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -739,7 +739,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                               title="Move up"
                               disabled={blockIdx === 0}
                               onClick={() => moveBlock(dayIdx, blockIdx, -1)}
-                              className="text-[12px] text-gray-400 hover:text-gray-700 disabled:opacity-30 px-1"
+                              className="text-[12px] text-[#55666E] hover:text-[#10263B] disabled:opacity-30 px-1"
                             >
                               ↑
                             </button>
@@ -748,7 +748,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                               title="Move down"
                               disabled={blockIdx === day.blocks.length - 1}
                               onClick={() => moveBlock(dayIdx, blockIdx, 1)}
-                              className="text-[12px] text-gray-400 hover:text-gray-700 disabled:opacity-30 px-1"
+                              className="text-[12px] text-[#55666E] hover:text-[#10263B] disabled:opacity-30 px-1"
                             >
                               ↓
                             </button>
@@ -756,7 +756,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                               type="button"
                               title="Duplicate"
                               onClick={() => duplicateBlock(dayIdx, blockIdx)}
-                              className="text-[10px] text-gray-400 hover:text-gray-700 px-1"
+                              className="text-[10px] text-[#55666E] hover:text-[#10263B] px-1"
                             >
                               📋
                             </button>
@@ -785,7 +785,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                 <button
                   type="button"
                   onClick={() => addBlock(dayIdx)}
-                  className="mt-2 w-full py-2 border-2 border-dashed border-gray-200 rounded-xl text-xs text-gray-500 hover:border-[var(--tss-gold)] hover:text-[var(--tss-gold)] transition-colors"
+                  className="mt-2 w-full py-2 border-2 border-dashed border-[#DCD7C6] rounded-[5px] text-xs text-[#55666E] hover:border-[var(--tss-gold)] hover:text-[var(--tss-gold)] transition-colors"
                 >
                   + Add Block
                 </button>
@@ -799,14 +799,14 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
       <button
         type="button"
         onClick={addDay}
-        className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-sm text-gray-500 hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] transition-colors font-medium"
+        className="w-full py-3 border-2 border-dashed border-[#DCD7C6] rounded-[5px] text-sm text-[#55666E] hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] transition-colors font-medium"
       >
         + Add Day
       </button>
 
       {/* Error */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+        <div className="bg-red-50 border border-red-200 rounded-[5px] p-3">
           <p className="text-sm text-red-600">{error}</p>
         </div>
       )}
@@ -816,7 +816,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
         type="button"
         onClick={handleSubmit}
         disabled={loading}
-        className="w-full py-3 bg-[var(--tss-navy)] text-white rounded-xl text-sm font-medium hover:brightness-110 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 bg-[var(--tss-navy)] text-white rounded-[5px] text-sm font-medium hover:brightness-110 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading
           ? 'Saving...'

@@ -144,7 +144,7 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
         />
 
         {/* ── Desktop layout ────────────────────────── */}
-        <div className="hidden md:block bg-white rounded-2xl border border-gray-100 p-3 space-y-2">
+        <div className="hidden md:block bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] p-3 space-y-2">
           {/* Day-of-week header */}
           <div className="grid grid-cols-7 gap-2">
             {days.map((d) => {
@@ -155,9 +155,9 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
                   className={`text-[10px] uppercase tracking-wider text-center py-1 rounded-md ${
                     isToday
                       ? 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-cyan,#5AC3E7)] font-bold'
-                      : 'text-gray-400'
+                      : 'text-[#55666E]'
                   }`}
-                  style={{ fontFamily: 'DM Mono, monospace' }}
+                  style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                 >
                   {dayLabel(d)} {dayNum(d)}
                 </div>
@@ -178,12 +178,12 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
                   >
                     <ServiceCard camp={r.camp} compact />
                     {r.continuesBefore && (
-                      <span className="absolute -left-1 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">
+                      <span className="absolute -left-1 top-1/2 -translate-y-1/2 text-[10px] text-[#55666E]">
                         ‹
                       </span>
                     )}
                     {r.continuesAfter && (
-                      <span className="absolute -right-1 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">
+                      <span className="absolute -right-1 top-1/2 -translate-y-1/2 text-[10px] text-[#55666E]">
                         ›
                       </span>
                     )}
@@ -230,8 +230,8 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
           {ribbons.length > 0 && (
             <div>
               <p
-                className="text-[10px] uppercase tracking-wider text-gray-400 mb-1.5 px-1"
-                style={{ fontFamily: 'DM Mono, monospace' }}
+                className="text-[10px] uppercase tracking-wider text-[#55666E] mb-1.5 px-1"
+                style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
               >
                 Camps this week ({ribbons.length})
               </p>
@@ -252,18 +252,18 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
                 <div key={d}>
                   <div
                     className={`flex items-center justify-between mb-1.5 px-1 ${
-                      isToday ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-gray-500'
+                      isToday ? 'text-[var(--tss-cyan,#5AC3E7)]' : 'text-[#55666E]'
                     }`}
                   >
                     <span
                       className="text-[10px] uppercase tracking-wider font-bold"
-                      style={{ fontFamily: 'DM Mono, monospace' }}
+                      style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                     >
                       {dayLabel(d)} {dayNum(d)} {isToday && '· Today'}
                     </span>
                     <span
-                      className="text-[10px] text-gray-400"
-                      style={{ fontFamily: 'DM Mono, monospace' }}
+                      className="text-[10px] text-[#55666E]"
+                      style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                     >
                       {items.length || 'empty'}
                     </span>
@@ -337,11 +337,11 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
         />
 
         {templates.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-6 text-center text-sm text-gray-500">
+          <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] p-6 text-center text-sm text-[#55666E]">
             No templates available for this academy yet.
           </div>
         ) : (
-          <div className="bg-white rounded-2xl border border-gray-100 overflow-auto">
+          <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] overflow-auto">
             <div
               className="grid"
               style={{
@@ -350,8 +350,8 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
             >
               {/* Top header — month bands + week numbers */}
               <div
-                className="sticky left-0 top-0 z-20 bg-white border-b border-r border-gray-100 px-3 py-2 text-[10px] uppercase tracking-wider text-gray-400"
-                style={{ fontFamily: 'DM Mono, monospace' }}
+                className="sticky left-0 top-0 z-20 bg-[#F7F9FA] border-b border-r border-[#DCD7C6] px-3 py-2 text-[10px] uppercase tracking-wider text-[#55666E]"
+                style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
               >
                 Service
               </div>
@@ -368,15 +368,15 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
                     key={ws}
                     type="button"
                     onClick={() => goto({ view: 'week', anchor: ws })}
-                    className={`border-b border-l border-gray-100 px-1 py-1 text-[9px] text-center transition-colors ${
+                    className={`border-b border-l border-[#DCD7C6] px-1 py-1 text-[9px] text-center transition-colors ${
                       isCurrentWeek
                         ? 'bg-[var(--tss-cyan,#5AC3E7)]/10 text-[var(--tss-cyan,#5AC3E7)] font-bold'
-                        : 'text-gray-500 hover:bg-gray-50'
+                        : 'text-[#55666E] hover:bg-[#F7F9FA]'
                     }`}
-                    style={{ fontFamily: 'DM Mono, monospace' }}
+                    style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                     title={`Week ${i + 1} · ${ws}`}
                   >
-                    <div className={isFirstOfMonth ? 'font-semibold text-gray-700' : 'invisible'}>
+                    <div className={isFirstOfMonth ? 'font-semibold text-[#10263B]' : 'invisible'}>
                       {monthShort}
                     </div>
                     <div>{day}</div>
@@ -384,8 +384,8 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
                 );
               })}
               <div
-                className="border-b border-l border-gray-100 px-1 py-1 text-[9px] text-center text-gray-400 uppercase tracking-wider"
-                style={{ fontFamily: 'DM Mono, monospace' }}
+                className="border-b border-l border-[#DCD7C6] px-1 py-1 text-[9px] text-center text-[#55666E] uppercase tracking-wider"
+                style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
               >
                 Total
               </div>
@@ -411,8 +411,8 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
 
               {/* Bottom totals row */}
               <div
-                className="sticky left-0 z-10 bg-gray-50 border-r border-t border-gray-100 px-3 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold"
-                style={{ fontFamily: 'DM Mono, monospace' }}
+                className="sticky left-0 z-10 bg-[#F7F9FA] border-r border-t border-[#DCD7C6] px-3 py-1.5 text-[10px] uppercase tracking-wider text-[#55666E] font-semibold"
+                style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
               >
                 Total per week
               </div>
@@ -422,16 +422,16 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
                 return (
                   <div
                     key={`tot-${ws}`}
-                    className={`border-l border-t border-gray-100 px-1 py-1 text-center text-[10px] font-mono ${
-                      weekTotal > 0 ? 'text-[var(--tss-navy)] font-bold' : 'text-gray-300'
-                    } ${i === todayIdx ? 'bg-[var(--tss-cyan,#5AC3E7)]/10' : 'bg-gray-50'}`}
+                    className={`border-l border-t border-[#DCD7C6] px-1 py-1 text-center text-[10px] font-mono ${
+                      weekTotal > 0 ? 'text-[var(--tss-navy)] font-bold' : 'text-[#B8B1A0]'
+                    } ${i === todayIdx ? 'bg-[var(--tss-cyan,#5AC3E7)]/10' : 'bg-[#F7F9FA]'}`}
                   >
                     {weekTotal || ''}
                   </div>
                 );
               })}
               <div
-                className="bg-gray-50 border-l border-t border-gray-100 px-1 py-1 text-center text-[10px] font-bold text-[var(--tss-navy)] font-mono"
+                className="bg-[#F7F9FA] border-l border-t border-[#DCD7C6] px-1 py-1 text-center text-[10px] font-bold text-[var(--tss-navy)] font-mono"
               >
                 {templates.reduce(
                   (acc, tpl) =>
@@ -444,7 +444,7 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
           </div>
         )}
 
-        <p className="text-[10px] text-gray-400 italic px-1">
+        <p className="text-[10px] text-[#55666E] italic px-1">
           Read-only annual panorama · numbers = camp instances · tap any cell or week number to drill into that week.
         </p>
       </div>
@@ -487,14 +487,14 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
         onChangeView={(v) => goto({ view: v })}
       />
 
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] overflow-hidden">
         {/* Weekday header */}
-        <div className="grid grid-cols-7 border-b border-gray-100 bg-gray-50">
+        <div className="grid grid-cols-7 border-b border-[#DCD7C6] bg-[#F7F9FA]">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
             <div
               key={d}
-              className="px-2 py-1.5 text-center text-[10px] uppercase tracking-wider text-gray-500"
-              style={{ fontFamily: 'DM Mono, monospace' }}
+              className="px-2 py-1.5 text-center text-[10px] uppercase tracking-wider text-[#55666E]"
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
             >
               {d}
             </div>
@@ -519,7 +519,7 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
           return (
             <div
               key={wIdx}
-              className="border-b border-gray-100 last:border-b-0 relative"
+              className="border-b border-[#DCD7C6] last:border-b-0 relative"
             >
               {/* Day numbers row */}
               <div className="grid grid-cols-7">
@@ -532,9 +532,9 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
                       key={d}
                       type="button"
                       onClick={() => goto({ view: 'week', anchor: d })}
-                      className={`min-h-[90px] border-r border-gray-100 p-1.5 text-left transition-colors last:border-r-0 ${
-                        inMonth ? 'bg-white' : 'bg-gray-50/50'
-                      } hover:bg-gray-50`}
+                      className={`min-h-[90px] border-r border-[#DCD7C6] p-1.5 text-left transition-colors last:border-r-0 ${
+                        inMonth ? 'bg-[#F7F9FA]' : 'bg-[#F7F9FA]'
+                      } hover:bg-[#F7F9FA]`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <span
@@ -542,8 +542,8 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
                             isToday
                               ? 'inline-flex items-center justify-center w-5 h-5 rounded-full bg-[var(--tss-cyan,#5AC3E7)] text-white font-bold'
                               : inMonth
-                              ? 'text-gray-700'
-                              : 'text-gray-300'
+                              ? 'text-[#10263B]'
+                              : 'text-[#B8B1A0]'
                           }`}
                         >
                           {dayNum(d)}
@@ -568,7 +568,7 @@ export function CampCalendar({ camps, view, anchor, templates = [] }: Props) {
                             );
                           })}
                           {dayLessons.length > 6 && (
-                            <span className="text-[8px] text-gray-400">+{dayLessons.length - 6}</span>
+                            <span className="text-[8px] text-[#55666E]">+{dayLessons.length - 6}</span>
                           )}
                         </div>
                       )}
@@ -642,26 +642,26 @@ function CalendarHeader({
         <button
           type="button"
           onClick={onPrev}
-          className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+          className="p-1.5 rounded-md hover:bg-[#EDF3F5] transition-colors"
           aria-label="Previous"
         >
-          <ChevronLeft size={16} strokeWidth={2} className="text-gray-700" />
+          <ChevronLeft size={16} strokeWidth={2} className="text-[#10263B]" />
         </button>
         <button
           type="button"
           onClick={onToday}
-          className="px-2.5 py-1 text-[11px] uppercase tracking-wider rounded-md hover:bg-gray-100 transition-colors text-gray-700"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          className="px-2.5 py-1 text-[11px] uppercase tracking-wider rounded-md hover:bg-[#EDF3F5] transition-colors text-[#10263B]"
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           Today
         </button>
         <button
           type="button"
           onClick={onNext}
-          className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+          className="p-1.5 rounded-md hover:bg-[#EDF3F5] transition-colors"
           aria-label="Next"
         >
-          <ChevronRight size={16} strokeWidth={2} className="text-gray-700" />
+          <ChevronRight size={16} strokeWidth={2} className="text-[#10263B]" />
         </button>
         <span
           className="ml-2 text-sm font-semibold text-[var(--tss-navy)]"
@@ -679,9 +679,9 @@ function CalendarHeader({
             className={`px-4 py-2 text-xs font-bold uppercase tracking-wider transition-colors min-w-[80px] ${
               view === v
                 ? 'bg-[var(--tss-navy)] text-white'
-                : 'bg-white text-[var(--tss-navy)] hover:bg-gray-50'
+                : 'bg-[#F7F9FA] text-[var(--tss-navy)] hover:bg-[#F7F9FA]'
             }`}
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             {v}
           </button>
@@ -710,20 +710,20 @@ function YearTemplateRow({
   return (
     <>
       <div
-        className="sticky left-0 z-10 bg-white border-t border-r border-gray-100 px-3 py-1.5 flex items-center gap-2"
+        className="sticky left-0 z-10 bg-[#F7F9FA] border-t border-r border-[#DCD7C6] px-3 py-1.5 flex items-center gap-2"
       >
         <span
           className="inline-block w-3 h-3 rounded-sm border border-black/10 shrink-0"
           style={{ backgroundColor: cardColor }}
         />
         <div className="min-w-0">
-          <p className="text-[11px] font-medium text-gray-800 truncate">
+          <p className="text-[11px] font-medium text-[#10263B] truncate">
             {template.template_name}
           </p>
           {template.level_name && (
             <p
-              className="text-[9px] uppercase tracking-wider text-gray-400"
-              style={{ fontFamily: 'DM Mono, monospace' }}
+              className="text-[9px] uppercase tracking-wider text-[#55666E]"
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
             >
               {template.level_name}
             </p>
@@ -738,9 +738,9 @@ function YearTemplateRow({
             key={`${template.id}-${ws}`}
             type="button"
             onClick={() => onCellClick(ws)}
-            className={`border-t border-l border-gray-100 text-[11px] font-mono text-center transition-colors ${
+            className={`border-t border-l border-[#DCD7C6] text-[11px] font-mono text-center transition-colors ${
               isCurrentWeek ? 'bg-[var(--tss-cyan,#5AC3E7)]/5' : ''
-            } ${n > 0 ? 'hover:brightness-95' : 'hover:bg-gray-50'}`}
+            } ${n > 0 ? 'hover:brightness-95' : 'hover:bg-[#F7F9FA]'}`}
             style={
               n > 0
                 ? { backgroundColor: cardColor }
@@ -753,15 +753,15 @@ function YearTemplateRow({
                 {n}
               </span>
             ) : (
-              <span className="text-gray-200">·</span>
+              <span className="text-[#DCD7C6]">·</span>
             )}
           </button>
         );
       })}
       <div
-        className={`border-t border-l border-gray-100 px-1 py-1 text-center text-[10px] font-mono ${
-          rowTotal > 0 ? 'text-[var(--tss-navy)] font-bold' : 'text-gray-300'
-        } bg-gray-50`}
+        className={`border-t border-l border-[#DCD7C6] px-1 py-1 text-center text-[10px] font-mono ${
+          rowTotal > 0 ? 'text-[var(--tss-navy)] font-bold' : 'text-[#B8B1A0]'
+        } bg-[#F7F9FA]`}
       >
         {rowTotal || ''}
       </div>

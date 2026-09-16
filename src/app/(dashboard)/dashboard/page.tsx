@@ -203,8 +203,8 @@ export default async function DashboardHome() {
         Dashboard
       </h2>
       <p
-        className="text-[10px] uppercase tracking-wider text-gray-400 mb-6"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        className="text-[10px] uppercase tracking-wider text-[#55666E] mb-6"
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       >
         {role === 'admin' && 'System Overview'}
         {role === 'coordinator' && `Coordination · ${new Date(Date.now() - 6 * 3600_000).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })} · ${activeCamps ?? 0} active services`}
@@ -234,25 +234,25 @@ export default async function DashboardHome() {
           href="/docs/sistema-resolver-problemas.pdf"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 rounded-2xl border border-[var(--tss-cyan,#5AC3E7)]/40 bg-[var(--tss-cyan,#5AC3E7)]/10 p-4 hover:bg-[var(--tss-cyan,#5AC3E7)]/15 transition-colors"
+          className="flex items-center gap-3 rounded-lg border border-[var(--tss-cyan,#5AC3E7)]/40 bg-[var(--tss-cyan,#5AC3E7)]/10 p-4 hover:bg-[var(--tss-cyan,#5AC3E7)]/15 transition-colors"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--tss-navy)] text-white">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[5px] bg-[var(--tss-navy)] text-white">
             <LifeBuoy size={20} strokeWidth={1.75} />
           </span>
           <span className="min-w-0">
             <span className="block text-sm font-semibold text-[var(--tss-navy)]">Protocolo de Problemas</span>
-            <span className="block text-xs text-gray-500">Guía de referencia — abrir PDF</span>
+            <span className="block text-xs text-[#55666E]">Guía de referencia — abrir PDF</span>
           </span>
         </a>
 
         {academyId && <EmergencyPlanButton plan={emergencyPlan} />}
 
         <a href="/manual/index.html?role=coordinador" target="_blank" rel="noreferrer"
-          className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white shadow-sm px-4 py-3 hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors">
+          className="flex items-center gap-3 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] shadow-sm px-4 py-3 hover:border-[var(--tss-cyan,#5AC3E7)] transition-colors">
           <span className="text-xl">📘</span>
           <span>
             <span className="block text-sm font-semibold text-[var(--tss-navy)]">Manual operativo</span>
-            <span className="block text-xs text-gray-500">Cómo usar el app, paso a paso — tu capítulo</span>
+            <span className="block text-xs text-[#55666E]">Cómo usar el app, paso a paso — tu capítulo</span>
           </span>
         </a>
       </div>
@@ -262,9 +262,9 @@ export default async function DashboardHome() {
 
       {/* Academy setup checklist — coordinator, until filled */}
       {academySetup && (academySetup.emergencyMissing || academySetup.boardsMissing) && (
-        <div className="mb-8 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+        <div className="mb-8 bg-amber-50 border border-amber-200 rounded-lg p-4">
           <div className="flex items-center justify-between gap-2 mb-2">
-            <h3 className="text-sm font-semibold text-amber-800 uppercase tracking-wider inline-flex items-center gap-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>
+            <h3 className="text-sm font-semibold text-amber-800 uppercase tracking-wider inline-flex items-center gap-1.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
               <AlertTriangle size={14} strokeWidth={1.75} /> Your academy setup is pending
             </h3>
             <Link href="/my-academy" className="text-xs text-amber-800 font-semibold hover:underline shrink-0">Complete →</Link>
@@ -318,7 +318,7 @@ export default async function DashboardHome() {
             <BarChart3 size={11} strokeWidth={1.75} />
             Overview
           </p>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden mb-8">
+          <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden mb-8">
             <div className="grid grid-cols-2 md:grid-cols-4">
               {[
                 { label: 'Active Students', value: studentCount ?? 0 },
@@ -329,13 +329,13 @@ export default async function DashboardHome() {
                 <div
                   key={s.label}
                   className={`px-4 py-5 text-center ${
-                    i > 0 ? 'border-l border-gray-100' : ''
-                  } ${i >= 2 ? 'border-t md:border-t-0 border-gray-100' : ''}`}
+                    i > 0 ? 'border-l border-[#DCD7C6]' : ''
+                  } ${i >= 2 ? 'border-t md:border-t-0 border-[#DCD7C6]' : ''}`}
                 >
                   <p className="tss-stat-number">{s.value}</p>
                   <p
-                    className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mt-2"
-                    style={{ fontFamily: 'DM Mono, monospace' }}
+                    className="text-[10px] text-[#55666E] uppercase tracking-wider font-semibold mt-2"
+                    style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                   >
                     {s.label}
                   </p>
@@ -350,7 +350,7 @@ export default async function DashboardHome() {
       {(role === 'coach') && drafts.length > 0 && (
         <div className="mb-8">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
+            <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
               Pending Drafts ({drafts.length})
             </h3>
             <Link href="/sessions/drafts" className="text-xs text-[var(--tss-cyan)] hover:underline">
@@ -362,7 +362,7 @@ export default async function DashboardHome() {
               <Link
                 key={draft.id}
                 href={`/sessions/new?student=${draft.student_id}&draft=${draft.id}`}
-                className="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 hover:bg-amber-100/60 transition-colors group"
+                className="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-[5px] px-4 py-3 hover:bg-amber-100/60 transition-colors group"
               >
                 <div>
                   <p className="text-sm font-medium text-[var(--tss-navy)]">{draft.student_name}</p>
@@ -406,7 +406,7 @@ export default async function DashboardHome() {
           its own Quick Actions block inside CoordinatorDashboard above. */}
       {(role === 'coach' || role === 'assistant') && (
         <>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider mt-8" style={{ fontFamily: 'DM Mono, monospace' }}>Quick Actions</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider mt-8" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {role === 'coach' && (
               <QuickAction href="/sessions/new" label="Start Session" desc="6-step coach flow" accentColor="var(--tss-cyan)" />
@@ -426,7 +426,7 @@ export default async function DashboardHome() {
           <div className="flex items-center gap-2 mb-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/venue-scout/tss-wave.png?v=1" alt="" className="h-6 w-auto" />
-            <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--tss-navy)] font-semibold" style={{ fontFamily: 'DM Mono, monospace' }}>Tools &amp; access</p>
+            <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--tss-navy)] font-semibold" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>Tools &amp; access</p>
           </div>
           <div className="grid sm:grid-cols-3 gap-3 mb-4">
             <VideoAnalyzerLauncher variant="card" scope={coach ? `admin:${coach.id}` : undefined} />
@@ -470,18 +470,18 @@ export default async function DashboardHome() {
             const c = FAM_COLOR[g.fam] ?? '#00D2FF';
             return (
             <div key={g.fam} className="mb-3">
-              <p className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-gray-400 mb-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>
+              <p className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-[#55666E] mb-1.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
                 <span className="inline-block w-2 h-2 rounded-full" style={{ background: c }} /> {g.fam}
               </p>
               <div className="flex flex-wrap gap-2">
                 {g.items.map(({ href, label, Icon }) => (
                   <Link key={href} href={href}
-                    className="group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-gray-100 bg-white shadow-sm hover:border-[#00D2FF] hover:shadow-md transition-all text-center"
+                    className="group flex flex-col items-center justify-center gap-1.5 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] shadow-sm hover:border-[#00D2FF] hover:shadow-md transition-all text-center"
                     style={{ width: 118, height: 92 }}>
-                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--tss-navy)]/5 text-[var(--tss-navy)] group-hover:bg-[var(--tss-navy)] group-hover:text-[#00D2FF] transition-colors">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-[5px] bg-[var(--tss-navy)]/5 text-[var(--tss-navy)] group-hover:bg-[var(--tss-navy)] group-hover:text-[#00D2FF] transition-colors">
                       <Icon size={17} strokeWidth={1.75} />
                     </span>
-                    <span className="text-[9px] uppercase tracking-[0.08em] font-medium text-[var(--tss-navy)] leading-tight px-1" style={{ fontFamily: 'DM Mono, monospace' }}>{label}</span>
+                    <span className="text-[9px] uppercase tracking-[0.08em] font-medium text-[var(--tss-navy)] leading-tight px-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{label}</span>
                   </Link>
                 ))}
               </div>
@@ -489,16 +489,16 @@ export default async function DashboardHome() {
           );})}
           <div className="grid gap-3 sm:grid-cols-2 mt-3">
             <a href="/docs/sistema-resolver-problemas.pdf" target="_blank" rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)]/50 transition-colors">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--tss-navy)] text-white"><LifeBuoy size={20} strokeWidth={1.75} /></span>
+              className="flex items-center gap-3 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)]/50 transition-colors">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[5px] bg-[var(--tss-navy)] text-white"><LifeBuoy size={20} strokeWidth={1.75} /></span>
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-[var(--tss-navy)]">Protocolo de Problemas</span>
-                <span className="block text-xs text-gray-500">Guía de referencia — abrir PDF</span>
+                <span className="block text-xs text-[#55666E]">Guía de referencia — abrir PDF</span>
               </span>
             </a>
             {academyId && <EmergencyPlanButton plan={emergencyPlan} />}
             <a href="/manual/index.html?role=admin" target="_blank" rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-gray-100 bg-white shadow-sm px-4 py-2.5 text-sm font-semibold text-[var(--tss-navy)] hover:border-[var(--tss-cyan,#5AC3E7)]">
+              className="inline-flex items-center gap-2 rounded-[5px] border border-[#DCD7C6] bg-[#F7F9FA] shadow-sm px-4 py-2.5 text-sm font-semibold text-[var(--tss-navy)] hover:border-[var(--tss-cyan,#5AC3E7)]">
               📘 Manual operativo
             </a>
           </div>
@@ -534,17 +534,17 @@ async function AdminDashboard() {
       {auditEvents.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Recent Audit</h3>
+            <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] uppercase tracking-wider" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>Recent Audit</h3>
             <Link href="/audit" className="text-xs text-[var(--tss-cyan)] hover:underline">View All</Link>
           </div>
-          <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
+          <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] divide-y divide-gray-50 overflow-hidden">
             {auditEvents.map((evt: any) => (
               <div key={evt.id} className="px-4 py-2.5 flex items-center justify-between">
                 <div>
-                  <p className="text-xs text-gray-700">{evt.event_type?.replace(/_/g, ' ')}</p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{evt.actor_name || 'System'}</p>
+                  <p className="text-xs text-[#10263B]">{evt.event_type?.replace(/_/g, ' ')}</p>
+                  <p className="text-[10px] text-[#55666E] mt-0.5">{evt.actor_name || 'System'}</p>
                 </div>
-                <span className="text-[10px] text-gray-300">
+                <span className="text-[10px] text-[#B8B1A0]">
                   {new Date(evt.created_at).toLocaleDateString()}
                 </span>
               </div>
@@ -620,7 +620,7 @@ async function CoordinatorDashboard() {
       {/* ── Tools & reference — one band, end of page ── */}
       {me?.academy_id && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Tools &amp; reference</h3>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>Tools &amp; reference</h3>
           <div className="grid sm:grid-cols-2 gap-3">
             <BoardInventoryLauncher academyId={me.academy_id} variant="card" />
             <InventoryLauncher />
@@ -629,14 +629,14 @@ async function CoordinatorDashboard() {
               href="/docs/sistema-resolver-problemas.pdf"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)]/50 transition-colors"
+              className="flex items-center gap-3 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4 shadow-sm hover:border-[var(--tss-cyan,#5AC3E7)]/50 transition-colors"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--tss-navy)] text-white">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[5px] bg-[var(--tss-navy)] text-white">
                 <LifeBuoy size={20} strokeWidth={1.75} />
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-semibold text-[var(--tss-navy)]">Protocolo de Problemas</span>
-                <span className="block text-xs text-gray-500">Guía de referencia — abrir PDF</span>
+                <span className="block text-xs text-[#55666E]">Guía de referencia — abrir PDF</span>
               </span>
             </a>
             <div className="sm:col-span-2">
@@ -665,7 +665,7 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
     <div className="space-y-6">
       {/* Coach Stats */}
       <div>
-        <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>My Overview</h3>
+        <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>My Overview</h3>
         <div className="grid grid-cols-2 gap-2">
           <MiniStat label="My Students" value={coachData.myStudentCount} />
           <MiniStat label="Draft Sessions" value={coachData.draftCount} />
@@ -675,7 +675,7 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
       {/* My Next Classes (M3) — upcoming + active services assigned to me */}
       {coachData.upcomingServices && coachData.upcomingServices.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
             ▶ My Next Classes ({coachData.upcomingServices.length})
           </h3>
           <div className="space-y-2">
@@ -689,12 +689,12 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
                 <Link
                   key={s.id}
                   href={`/camps/${s.id}`}
-                  className={`block rounded-xl border p-3 hover:opacity-90 transition ${
+                  className={`block rounded-[5px] border p-3 hover:opacity-90 transition ${
                     isActive
                       ? 'bg-emerald-50 border-emerald-200'
                       : startsToday
                       ? 'bg-amber-50 border-amber-200'
-                      : 'bg-white border-gray-100'
+                      : 'bg-[#F7F9FA] border-[#DCD7C6]'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1">
@@ -711,12 +711,12 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
                       )}
                       {s.service_kind ? ` · ${s.service_kind.replace(/_/g, ' ')}` : ''}
                     </p>
-                    <span className="text-[10px] text-gray-400">
+                    <span className="text-[10px] text-[#55666E]">
                       {s.participant_count}/{s.capacity_max ?? '?'} students
                     </span>
                   </div>
                   <p className="text-sm font-bold text-[var(--tss-navy)]">{s.camp_name}</p>
-                  <p className="text-[11px] text-gray-500 mt-0.5">
+                  <p className="text-[11px] text-[#55666E] mt-0.5">
                     {new Date(s.start_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                     {s.start_date !== s.end_date && ` → ${new Date(s.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
                     {s.scheduled_time ? ` · ${s.scheduled_time}` : ''}
@@ -731,17 +731,17 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
       {/* Recent Sessions */}
       {coachData.recentSessions.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Recent Sessions</h3>
-          <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>Recent Sessions</h3>
+          <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] divide-y divide-gray-50 overflow-hidden">
             {coachData.recentSessions.map((s: any) => (
               <div key={s.id} className="px-4 py-2.5 flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-[#10263B]">
                     {s.students?.first_name} {s.students?.last_name}
                   </p>
-                  <p className="text-[10px] text-gray-400 mt-0.5">{s.mission || 'No mission'}</p>
+                  <p className="text-[10px] text-[#55666E] mt-0.5">{s.mission || 'No mission'}</p>
                 </div>
-                <span className="text-[10px] text-gray-300">
+                <span className="text-[10px] text-[#B8B1A0]">
                   {s.session_date ? new Date(s.session_date).toLocaleDateString() : ''}
                 </span>
               </div>
@@ -753,10 +753,10 @@ async function CoachDashboard({ coachId }: { coachId: string }) {
       {/* Empty state when nothing scheduled */}
       {(!coachData.upcomingServices || coachData.upcomingServices.length === 0) &&
        coachData.recentSessions.length === 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 text-center">
-          <Waves size={36} strokeWidth={1.5} className="mx-auto mb-2 text-gray-300" />
-          <p className="text-sm text-gray-500">No upcoming classes assigned yet.</p>
-          <p className="text-[11px] text-gray-400 mt-1">
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-6 text-center">
+          <Waves size={36} strokeWidth={1.5} className="mx-auto mb-2 text-[#B8B1A0]" />
+          <p className="text-sm text-[#55666E]">No upcoming classes assigned yet.</p>
+          <p className="text-[11px] text-[#55666E] mt-1">
             When a coordinator assigns you to a service, it shows up here.
           </p>
         </div>
@@ -782,11 +782,11 @@ async function AssistantDashboard() {
       {/* Medical Alerts */}
       {assistantData.medicalAlerts.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Medical Alerts</h3>
-          <div className="bg-white rounded-xl border border-red-100 divide-y divide-gray-50 overflow-hidden">
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>Medical Alerts</h3>
+          <div className="bg-[#F7F9FA] rounded-[5px] border border-red-100 divide-y divide-gray-50 overflow-hidden">
             {assistantData.medicalAlerts.map((s: any) => (
               <Link key={s.id} href={`/students/${s.id}`} className="block px-4 py-2.5 hover:bg-red-50/30 transition-colors">
-                <p className="text-sm font-medium text-gray-700">{s.first_name} {s.last_name}</p>
+                <p className="text-sm font-medium text-[#10263B]">{s.first_name} {s.last_name}</p>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {s.allergies && <span className="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded">Allergies: {s.allergies}</span>}
                   {s.injuries && <span className="text-[10px] bg-amber-50 text-amber-600 px-1.5 py-0.5 rounded">Injuries: {s.injuries}</span>}
@@ -801,14 +801,14 @@ async function AssistantDashboard() {
       {/* Emergency Contacts */}
       {assistantData.emergencyContacts.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>Emergency Contacts</h3>
-          <div className="bg-white rounded-xl border border-gray-100 divide-y divide-gray-50 overflow-hidden">
+          <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>Emergency Contacts</h3>
+          <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] divide-y divide-gray-50 overflow-hidden">
             {assistantData.emergencyContacts.map((s: any) => (
               <div key={s.id} className="px-4 py-2.5 flex items-center justify-between">
-                <p className="text-sm text-gray-700">{s.first_name} {s.last_name}</p>
+                <p className="text-sm text-[#10263B]">{s.first_name} {s.last_name}</p>
                 <div className="text-right">
-                  <p className="text-xs text-gray-500">{s.emergency_contact_name}</p>
-                  <p className="text-[10px] text-gray-400">{s.emergency_contact_phone}</p>
+                  <p className="text-xs text-[#55666E]">{s.emergency_contact_name}</p>
+                  <p className="text-[10px] text-[#55666E]">{s.emergency_contact_phone}</p>
                 </div>
               </div>
             ))}
@@ -827,11 +827,11 @@ function StatCard({ label, value }: { label: string; value: number; accent?: str
   // Accent prop kept for backwards-compat; ignored. All cards render
   // the same editorial-telemetry pattern now (Lora numeral + mono label).
   return (
-    <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] p-4 border border-[#DCD7C6] shadow-sm text-center">
       <p className="tss-stat-number">{value}</p>
       <p
-        className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mt-2"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        className="text-[10px] uppercase tracking-wider text-[#55666E] font-semibold mt-2"
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       >
         {label}
       </p>
@@ -851,8 +851,8 @@ function MiniStat({
   const isAmber = accent === 'amber';
   return (
     <div
-      className={`rounded-2xl p-4 border shadow-sm text-center ${
-        isAmber ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-100'
+      className={`rounded-lg p-4 border shadow-sm text-center ${
+        isAmber ? 'bg-amber-50 border-amber-200' : 'bg-[#F7F9FA] border-[#DCD7C6]'
       }`}
     >
       <p
@@ -862,8 +862,8 @@ function MiniStat({
         {value}
       </p>
       <p
-        className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold mt-2"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        className="text-[10px] uppercase tracking-wider text-[#55666E] font-semibold mt-2"
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       >
         {label}
       </p>
@@ -875,7 +875,7 @@ function QuickAction({ href, label, desc, accentColor }: { href: string; label: 
   return (
     <Link
       href={href}
-      className="block rounded-2xl p-4 bg-white border border-gray-100 shadow-sm hover:shadow hover:border-gray-300 transition-all group"
+      className="block rounded-lg p-4 bg-[#F7F9FA] border border-[#DCD7C6] shadow-sm hover:shadow hover:border-[#DCD7C6] transition-all group"
     >
       <div className="flex items-center gap-3">
         <div
@@ -884,7 +884,7 @@ function QuickAction({ href, label, desc, accentColor }: { href: string; label: 
         />
         <div>
           <p className="font-semibold text-sm text-[var(--tss-navy)] group-hover:text-[var(--tss-navy-light)]">{label}</p>
-          <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
+          <p className="text-xs text-[#55666E] mt-0.5">{desc}</p>
         </div>
       </div>
     </Link>
@@ -904,7 +904,7 @@ function AcademyAnalyticsPanel({ data, stats }: { data: any; stats?: any }) {
   const maxBelt = Math.max(1, ...data.beltDistribution.map((b: any) => b.count));
   return (
     <div>
-      <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'DM Mono, monospace' }}>
+      <h3 className="text-sm font-semibold text-[var(--tss-gray-500)] mb-3 uppercase tracking-wider" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
         My Academy
       </h3>
       {/* One stats home: academy metrics + operational KPIs (no duplication) */}
@@ -918,20 +918,20 @@ function AcademyAnalyticsPanel({ data, stats }: { data: any; stats?: any }) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {/* Belt distribution */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Belt distribution</p>
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-2">Belt distribution</p>
           {data.beltDistribution.length === 0 ? (
-            <p className="text-xs text-gray-400 italic">No data yet.</p>
+            <p className="text-xs text-[#55666E] italic">No data yet.</p>
           ) : (
             <div className="space-y-2">
               {data.beltDistribution.map((b: any) => {
                 const meta = beltMeta(b.belt_level);
                 return (
                   <div key={b.belt_level}>
-                    <div className="flex justify-between text-[11px] text-gray-600 mb-0.5">
+                    <div className="flex justify-between text-[11px] text-[#55666E] mb-0.5">
                       <span>{meta.label}</span><span>{b.count}</span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-[#EDF3F5] overflow-hidden">
                       <div className="h-full rounded-full" style={{ width: `${(b.count / maxBelt) * 100}%`, background: meta.color }} />
                     </div>
                   </div>
@@ -941,20 +941,20 @@ function AcademyAnalyticsPanel({ data, stats }: { data: any; stats?: any }) {
           )}
         </div>
         {/* Top active + rating */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">Most active (30d)</p>
-            <p className="text-[10px] text-gray-400">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Most active (30d)</p>
+            <p className="text-[10px] text-[#55666E]">
               Rating {data.surveyStats.avgRating != null ? `${data.surveyStats.avgRating}★ · ${data.surveyStats.totalResponses}` : '—'}
             </p>
           </div>
           {data.topStudents.length === 0 ? (
-            <p className="text-xs text-gray-400 italic">No sessions in the last 30 days.</p>
+            <p className="text-xs text-[#55666E] italic">No sessions in the last 30 days.</p>
           ) : (
             <ul className="space-y-1.5">
               {data.topStudents.slice(0, 5).map((s: any, i: number) => (
                 <li key={s.id} className="flex items-center justify-between text-sm">
-                  <span className="text-gray-700 truncate">{i + 1}. {s.name}</span>
+                  <span className="text-[#10263B] truncate">{i + 1}. {s.name}</span>
                   <span className="font-semibold text-[var(--tss-navy)]">{s.sessions_count}</span>
                 </li>
               ))}
@@ -981,7 +981,7 @@ function TodayPanel({ camps }: { camps: any[] }) {
 
   if (!camps || camps.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5">
         <div className="flex items-center justify-between mb-2">
           <h3
             className="text-base font-bold text-[var(--tss-navy)]"
@@ -990,19 +990,19 @@ function TodayPanel({ camps }: { camps: any[] }) {
             Today
           </h3>
           <span
-            className="text-[10px] uppercase tracking-wider text-gray-400"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            className="text-[10px] uppercase tracking-wider text-[#55666E]"
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             {todayLabel}
           </span>
         </div>
-        <p className="text-sm text-gray-400 italic">No services scheduled for today.</p>
+        <p className="text-sm text-[#55666E] italic">No services scheduled for today.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5">
       <div className="flex items-center justify-between mb-3">
         <h3
           className="text-base font-bold text-[var(--tss-navy)]"
@@ -1011,8 +1011,8 @@ function TodayPanel({ camps }: { camps: any[] }) {
           Today · {camps.length} service{camps.length !== 1 ? 's' : ''}
         </h3>
         <span
-          className="text-[10px] uppercase tracking-wider text-gray-400"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          className="text-[10px] uppercase tracking-wider text-[#55666E]"
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           {todayLabel}
         </span>
@@ -1031,7 +1031,7 @@ function TodayPanel({ camps }: { camps: any[] }) {
             <Link
               key={c.id}
               href={`/camps/${c.id}`}
-              className="block rounded-xl border border-black/5 shadow-sm overflow-hidden hover:shadow-md transition-all"
+              className="block rounded-[5px] border border-black/5 shadow-sm overflow-hidden hover:shadow-md transition-all"
               style={{
                 backgroundColor: cardColor,
                 borderLeft: `4px solid ${accent}`,
@@ -1040,7 +1040,7 @@ function TodayPanel({ camps }: { camps: any[] }) {
               <div className="p-3">
                 <p
                   className="text-[9px] uppercase tracking-wider text-black/55 truncate"
-                  style={{ fontFamily: 'DM Mono, monospace' }}
+                  style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                 >
                   {c.camp_templates?.level_name ?? 'Custom'} ·{' '}
                   {c.camp_templates?.service_kind === 'surf_camp'
@@ -1055,14 +1055,14 @@ function TodayPanel({ camps }: { camps: any[] }) {
                 {c.scheduled_time && (
                   <p
                     className="text-[10px] text-black/65 mt-0.5"
-                    style={{ fontFamily: 'DM Mono, monospace' }}
+                    style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                   >
                     {c.scheduled_time}
                   </p>
                 )}
                 <p
                   className="text-[10px] text-black/55 mt-1"
-                  style={{ fontFamily: 'DM Mono, monospace' }}
+                  style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                 >
                   {enrolled}/{capacity} enrolled
                   {coachName ? ` · ${coachName}` : ''}
@@ -1082,10 +1082,10 @@ function TodayPanel({ camps }: { camps: any[] }) {
 function Layer({ fold, title, children }: { fold: boolean; title: string; children: React.ReactNode }) {
   if (!fold) return <>{children}</>;
   return (
-    <details className="group rounded-2xl border border-dashed border-gray-300 bg-white/60 mb-4">
+    <details className="group rounded-lg border border-dashed border-[#DCD7C6] bg-[#F7F9FA]/60 mb-4">
       <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-[var(--tss-navy)] flex items-center justify-between">
         <span>{title}</span>
-        <span className="text-gray-400 group-open:rotate-180 transition">▾</span>
+        <span className="text-[#55666E] group-open:rotate-180 transition">▾</span>
       </summary>
       <div className="px-2 pb-2">{children}</div>
     </details>

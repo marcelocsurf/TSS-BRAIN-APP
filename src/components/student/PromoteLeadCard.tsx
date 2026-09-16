@@ -40,7 +40,7 @@ export function PromoteLeadCard({ studentId }: Props) {
 
   if (done) {
     return (
-      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-start gap-3">
+      <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-start gap-3">
         <CheckCircle2 size={20} className="text-emerald-700 flex-shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-semibold text-emerald-900">Promoted to Member.</p>
@@ -53,7 +53,7 @@ export function PromoteLeadCard({ studentId }: Props) {
   }
 
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
+    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 space-y-3">
       <div>
         <p className="text-sm font-semibold text-amber-900">This student is a Lead.</p>
         <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
@@ -65,7 +65,7 @@ export function PromoteLeadCard({ studentId }: Props) {
         <select
           value={course}
           onChange={(e) => setCourse(e.target.value as 'white_belt' | 'yellow_belt' | 'blue_belt')}
-          className="flex-1 px-3 py-2 border border-amber-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
+          className="flex-1 px-3 py-2 border border-amber-300 rounded-[5px] text-sm bg-[#F7F9FA] focus:outline-none focus:ring-2 focus:ring-amber-400"
         >
           <option value="white_belt">White Belt Masterclass</option>
           <option value="yellow_belt">Yellow Belt Masterclass</option>
@@ -75,7 +75,7 @@ export function PromoteLeadCard({ studentId }: Props) {
           type="button"
           onClick={promote}
           disabled={pending}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--tss-navy)] text-white rounded-xl text-sm font-semibold disabled:opacity-50"
+          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--tss-navy)] text-white rounded-[5px] text-sm font-semibold disabled:opacity-50"
         >
           {pending ? 'Promoting…' : 'Promote'}
           <ArrowRight size={14} />

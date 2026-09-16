@@ -19,14 +19,14 @@ export function PriorVisitsEditor({ studentId, initial }: { studentId: string; i
 
   return (
     <div className="flex items-center gap-2 pt-2">
-      <span className="text-xs text-gray-500 flex-1">Prior visits (before the app)</span>
+      <span className="text-xs text-[#55666E] flex-1">Prior visits (before the app)</span>
       <input
         type="number"
         min={0}
         max={99}
         value={value}
         onChange={(e) => setValue(Math.max(0, parseInt(e.target.value, 10) || 0))}
-        className="w-16 px-2 py-1 border border-gray-200 rounded-lg text-sm text-right"
+        className="w-16 px-2 py-1 border border-[#DCD7C6] rounded-lg text-sm text-right"
       />
       <button
         type="button"

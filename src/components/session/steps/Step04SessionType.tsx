@@ -21,10 +21,10 @@ export function Step04SessionType({ formState, options, onSelect }: Props) {
               key={opt.id}
               type="button"
               onClick={() => onSelect(opt.value)}
-              className={`w-full p-3 rounded-xl border text-left text-sm font-medium transition-all ${
+              className={`w-full p-3 rounded-[5px] border text-left text-sm font-medium transition-all ${
                 isSelected
-                  ? 'border-[#5AC3E7] bg-amber-50 text-gray-800'
-                  : 'border-gray-100 text-gray-600 hover:border-gray-200'
+                  ? 'border-[#5AC3E7] bg-amber-50 text-[#10263B]'
+                  : 'border-[#DCD7C6] text-[#55666E] hover:border-[#DCD7C6]'
               }`}
             >
               {opt.label || opt.value}

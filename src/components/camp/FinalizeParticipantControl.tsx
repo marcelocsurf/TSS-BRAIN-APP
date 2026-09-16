@@ -51,7 +51,7 @@ export function FinalizeParticipantControl({
           <CheckCircle2 size={11} strokeWidth={2} />
           Finished{departedOn ? ` · ${departedOn}` : ''}
         </span>
-        <button onClick={reopen} disabled={busy} title="Reopen" className="text-gray-300 hover:text-gray-600">
+        <button onClick={reopen} disabled={busy} title="Reopen" className="text-[#B8B1A0] hover:text-[#55666E]">
           <RotateCcw size={13} />
         </button>
       </div>
@@ -62,7 +62,7 @@ export function FinalizeParticipantControl({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--tss-navy)] border border-gray-200 rounded-full px-2 py-0.5 hover:bg-gray-50"
+        className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold text-[var(--tss-navy)] border border-[#DCD7C6] rounded-full px-2 py-0.5 hover:bg-[#F7F9FA]"
       >
         <LogOut size={11} strokeWidth={2} /> Finalize
       </button>
@@ -70,12 +70,12 @@ export function FinalizeParticipantControl({
   }
 
   return (
-    <div className="shrink-0 flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
+    <div className="shrink-0 flex items-center gap-1.5 bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg px-2 py-1">
       <input
         type="date"
         value={date}
         onChange={(e) => setDate(e.target.value)}
-        className="text-[11px] border border-gray-200 rounded px-1 py-0.5"
+        className="text-[11px] border border-[#DCD7C6] rounded px-1 py-0.5"
         title="Departure date"
       />
       <Link
@@ -88,7 +88,7 @@ export function FinalizeParticipantControl({
       <button onClick={finalize} disabled={busy} className="text-[10px] font-semibold text-white bg-[var(--tss-navy)] rounded px-2 py-1 disabled:opacity-50">
         {busy ? '…' : 'Finish'}
       </button>
-      <button onClick={() => setOpen(false)} className="text-[10px] text-gray-400">✕</button>
+      <button onClick={() => setOpen(false)} className="text-[10px] text-[#55666E]">✕</button>
     </div>
   );
 }

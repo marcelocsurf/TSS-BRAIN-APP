@@ -24,7 +24,7 @@ const STATUS_COLOR: Record<BoardStatus, string> = {
   available: 'bg-emerald-50 text-emerald-700',
   in_use: 'bg-blue-50 text-blue-600',
   in_repair: 'bg-amber-50 text-amber-700',
-  retired: 'bg-gray-100 text-gray-500',
+  retired: 'bg-[#EDF3F5] text-[#55666E]',
   rented: 'bg-purple-50 text-purple-600',
 };
 const CONDITION_ORDER: BoardCondition[] = ['excellent', 'good', 'fair', 'poor'];
@@ -111,51 +111,51 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
+    <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-mono font-semibold">
+        <p className="text-[10px] uppercase tracking-wider text-[#55666E] font-mono font-semibold">
           🏄 Board inventory ({boards.length})
         </p>
         <button onClick={() => setAdding((v) => !v)} className="text-[11px] text-[var(--tss-navy)] hover:underline">
           {adding ? 'Cancel' : '+ Add board'}
         </button>
       </div>
-      <p className="text-[11px] text-gray-500 -mt-1">
+      <p className="text-[11px] text-[#55666E] -mt-1">
         The code is auto-suggested. Coaches pick these boards when planning; closing the day returns them to available.
       </p>
 
       {adding && (
-        <div className="rounded-lg border border-gray-200 p-3 space-y-2 bg-gray-50/50">
+        <div className="rounded-lg border border-[#DCD7C6] p-3 space-y-2 bg-[#F7F9FA]">
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             <Mini label="Tipo">
-              <select value={bType} onChange={(e) => setBType(e.target.value)} className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white">
+              <select value={bType} onChange={(e) => setBType(e.target.value)} className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA]">
                 {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Mini>
             <Mini label="Shape">
-              <select value={bShape} onChange={(e) => setBShape(e.target.value)} className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white">
+              <select value={bShape} onChange={(e) => setBShape(e.target.value)} className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA]">
                 {SHAPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
             </Mini>
             <Mini label="Feet">
-              <input value={bFeet} onChange={(e) => setBFeet(e.target.value)} inputMode="numeric" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+              <input value={bFeet} onChange={(e) => setBFeet(e.target.value)} inputMode="numeric" className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs" />
             </Mini>
             <Mini label="Inch">
-              <input value={bInches} onChange={(e) => setBInches(e.target.value)} inputMode="numeric" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+              <input value={bInches} onChange={(e) => setBInches(e.target.value)} inputMode="numeric" className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs" />
             </Mini>
             <Mini label="Volume (L)">
-              <input value={bVolume} onChange={(e) => setBVolume(e.target.value)} placeholder="ej. 42" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+              <input value={bVolume} onChange={(e) => setBVolume(e.target.value)} placeholder="ej. 42" className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs" />
             </Mini>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <Mini label="Brand (optional)">
-              <input value={bBrand} onChange={(e) => setBBrand(e.target.value)} placeholder="ej. Torq" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+              <input value={bBrand} onChange={(e) => setBBrand(e.target.value)} placeholder="ej. Torq" className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs" />
             </Mini>
             <Mini label="Model (optional)">
-              <input value={bModel} onChange={(e) => setBModel(e.target.value)} placeholder="ej. Mod Fish" className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+              <input value={bModel} onChange={(e) => setBModel(e.target.value)} placeholder="ej. Mod Fish" className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs" />
             </Mini>
             <Mini label="Condition">
-              <select value={bCondition} onChange={(e) => setBCondition(e.target.value as BoardCondition)} className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white">
+              <select value={bCondition} onChange={(e) => setBCondition(e.target.value as BoardCondition)} className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA]">
                 {CONDITION_ORDER.map((c) => <option key={c} value={c}>{CONDITION_LABEL[c]}</option>)}
               </select>
             </Mini>
@@ -169,14 +169,14 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
       {error && <p className="text-xs text-red-600">{error}</p>}
 
       {boards.length === 0 ? (
-        <p className="text-xs text-gray-400 italic">No boards yet. Add the first one.</p>
+        <p className="text-xs text-[#55666E] italic">No boards yet. Add the first one.</p>
       ) : (
         <ul className="divide-y divide-gray-100">
           {boards.map((b) => (
             <li key={b.id} className="flex items-center justify-between gap-2 py-2">
               <div className="min-w-0">
                 <p className="text-sm font-mono font-semibold text-[var(--tss-navy)]">{b.code}</p>
-                <p className="text-[11px] text-gray-500">
+                <p className="text-[11px] text-[#55666E]">
                   {[
                     [b.brand, b.model].filter(Boolean).join(' ') || null,
                     b.board_type, b.shape,
@@ -185,7 +185,7 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
                   ].filter(Boolean).join(' · ')}
                 </p>
                 {(b.uses ?? 0) > 0 && (
-                  <p className="text-[10px] text-gray-400 mt-0.5">
+                  <p className="text-[10px] text-[#55666E] mt-0.5">
                     Used {b.uses} {b.uses === 1 ? 'time' : 'times'}
                     {b.first_used ? ` · since ${b.first_used}` : ''}
                     {b.last_used && b.last_used !== b.first_used ? ` · last ${b.last_used}` : ''}
@@ -212,7 +212,7 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
                     <option key={s} value={s}>{STATUS_LABEL[s]}</option>
                   ))}
                 </select>
-                <button onClick={() => remove(b.id, b.code)} className="text-[11px] text-gray-300 hover:text-red-500">✕</button>
+                <button onClick={() => remove(b.id, b.code)} className="text-[11px] text-[#B8B1A0] hover:text-red-500">✕</button>
               </div>
             </li>
           ))}
@@ -225,7 +225,7 @@ export function BoardInventory({ academyId, boards }: { academyId: string; board
 function Mini({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[9px] uppercase tracking-wider text-gray-400 font-mono mb-0.5">{label}</label>
+      <label className="block text-[9px] uppercase tracking-wider text-[#55666E] font-mono mb-0.5">{label}</label>
       {children}
     </div>
   );

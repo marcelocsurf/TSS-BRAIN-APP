@@ -26,7 +26,7 @@ export function Step17CoachFeedback({ formState, options, onSelectQuick, onChang
               className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                 isSelected
                   ? 'bg-[#1A1A2E] text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  : 'bg-[#EDF3F5] text-[#55666E] hover:bg-[#DCD7C6]'
               }`}
             >
               {opt.label || opt.value}
@@ -41,7 +41,7 @@ export function Step17CoachFeedback({ formState, options, onSelectQuick, onChang
         onChange={(e) => onChangeText(e.target.value)}
         placeholder="Detailed feedback (optional)..."
         rows={3}
-        className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
+        className="w-full p-3 rounded-[5px] border border-[#DCD7C6] text-sm resize-none focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
       />
     </div>
   );

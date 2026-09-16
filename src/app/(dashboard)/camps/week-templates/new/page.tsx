@@ -21,7 +21,7 @@ export default async function NewWeekTemplatePage() {
   return (
     <div>
       <div className="max-w-2xl mx-auto">
-        <Link href="/camps/week-templates" className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1 mb-3">
+        <Link href="/camps/week-templates" className="text-sm text-[#55666E] hover:text-[#10263B] inline-flex items-center gap-1 mb-3">
           <ArrowLeft size={14} strokeWidth={1.75} />
           Week Templates
         </Link>
@@ -34,9 +34,9 @@ export default async function NewWeekTemplatePage() {
           >
             New Week Template
           </h2>
-          <p className="text-xs text-gray-500 mt-1">Define the weekly rhythm you stamp on any week.</p>
+          <p className="text-xs text-[#55666E] mt-1">Define the weekly rhythm you stamp on any week.</p>
         </div>
-        <Link href="/camps/week-templates" className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href="/camps/week-templates" className="text-sm text-[#55666E] hover:text-[#10263B]">
           Cancel
         </Link>
       </div>

@@ -136,11 +136,11 @@ export function SequenceEvaluation({
         const self = studentSequenceRatings?.[g.id];
         const selfHeld = self?.heldBackStepId ? g.rows.find((r) => r.step_id === self.heldBackStepId) : null;
         return (
-          <div key={g.id} className="rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-3 py-2.5 bg-gray-50">
+          <div key={g.id} className="rounded-[5px] border border-[#DCD7C6] overflow-hidden">
+            <div className="px-3 py-2.5 bg-[#F7F9FA]">
               <div className="flex items-baseline gap-2 flex-wrap">
-                <p className="text-[13px] font-semibold text-gray-900">{label}</p>
-                {side && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-gray-200 text-gray-700">{side === 'both' ? 'FS·BS' : SIDE_SHORT[side]}</span>}
+                <p className="text-[13px] font-semibold text-[#10263B]">{label}</p>
+                {side && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#DCD7C6] text-[#10263B]">{side === 'both' ? 'FS·BS' : SIDE_SHORT[side]}</span>}
                 {self && (self.rating != null || selfHeld) && (
                   <span className="text-[10px] text-amber-700">
                     alumno{self.rating != null ? ` ${self.rating}★` : ''}{selfHeld ? ` · lo frena ${selfHeld.step_title ?? selfHeld.step_id}` : ''}
@@ -150,7 +150,7 @@ export function SequenceEvaluation({
                   {v.state === 'owned' ? (
                     <span className="text-emerald-600 font-bold">✓ la tiene</span>
                   ) : v.state === 'unrated' ? (
-                    <span className="text-gray-400">sin evaluar</span>
+                    <span className="text-[#55666E]">sin evaluar</span>
                   ) : (
                     <span className="text-amber-700">
                       {v.min}★
@@ -167,7 +167,7 @@ export function SequenceEvaluation({
                   className={`flex-1 h-8 rounded-lg text-[11px] font-semibold border ${
                     v.state === 'owned'
                       ? 'bg-emerald-600 text-white border-emerald-600'
-                      : 'bg-white text-gray-600 border-gray-200'
+                      : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6]'
                   }`}
                 >
                   ✓ La tiene
@@ -178,7 +178,7 @@ export function SequenceEvaluation({
                   className={`flex-1 h-8 rounded-lg text-[11px] font-semibold border ${
                     v.state === 'working'
                       ? 'bg-amber-500 text-white border-amber-500'
-                      : 'bg-white text-gray-600 border-gray-200'
+                      : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6]'
                   }`}
                 >
                   Le falta
@@ -189,7 +189,7 @@ export function SequenceEvaluation({
                   className={`flex-1 h-8 rounded-lg text-[11px] font-semibold border ${
                     v.state === 'unrated'
                       ? 'bg-gray-700 text-white border-gray-700'
-                      : 'bg-white text-gray-600 border-gray-200'
+                      : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6]'
                   }`}
                 >
                   No la vi
@@ -210,15 +210,15 @@ export function SequenceEvaluation({
                     >
                       <div className="min-w-0 flex-1">
                         {!compact && (
-                          <p className="text-[9.5px] font-mono text-gray-400">{r.step_id}</p>
+                          <p className="text-[9.5px] font-mono text-[#55666E]">{r.step_id}</p>
                         )}
-                        <p className="text-[12.5px] text-gray-800 truncate">
+                        <p className="text-[12.5px] text-[#10263B] truncate">
                           {r.step_title || r.step_id}
                         </p>
                         {(moments[r.step_id] ?? []).length > 0 && (
                           <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
                             {moments[r.step_id].map((m) => (
-                              <span key={m.key} className="inline-flex items-center gap-1 text-[10px] text-gray-500" title={m.indicators.map((x) => x.ok).join(' · ')}>
+                              <span key={m.key} className="inline-flex items-center gap-1 text-[10px] text-[#55666E]" title={m.indicators.map((x) => x.ok).join(' · ')}>
                                 <i className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#9CA3AF' }} />
                                 {m.short}
                               </span>
@@ -244,7 +244,7 @@ export function SequenceEvaluation({
                         <button
                           type="button"
                           onClick={() => emit([{ stepId: r.step_id, stars: null }])}
-                          className="text-[11px] text-gray-400 hover:text-red-600"
+                          className="text-[11px] text-[#55666E] hover:text-red-600"
                           title="Borrar esta nota"
                         >
                           ×
@@ -274,10 +274,10 @@ export function SequenceEvaluation({
       })}
 
       {orphans.length > 0 && (
-        <div className="rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+        <div className="rounded-[5px] border border-[#DCD7C6] divide-y divide-gray-100 overflow-hidden">
           {orphans.map((r) => (
             <div key={r.step_id} className="px-3 py-2 flex items-center justify-between gap-3">
-              <p className="text-[12.5px] text-gray-800 truncate flex-1 min-w-0">
+              <p className="text-[12.5px] text-[#10263B] truncate flex-1 min-w-0">
                 {r.step_title || r.step_id}
               </p>
               <div className="flex items-center gap-1.5 shrink-0">
@@ -291,7 +291,7 @@ export function SequenceEvaluation({
                   <button
                     type="button"
                     onClick={() => emit([{ stepId: r.step_id, stars: null }])}
-                    className="text-[11px] text-gray-400 hover:text-red-600"
+                    className="text-[11px] text-[#55666E] hover:text-red-600"
                     title="Borrar esta nota"
                   >
                     ×

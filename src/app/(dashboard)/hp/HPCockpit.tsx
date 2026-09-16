@@ -23,7 +23,7 @@ import { LayoutDashboard, ClipboardList, CalendarClock, Star, Mail, Users, Waves
 // paleta clara del dashboard — todo texto claro sobre #0B1B28, sin mezclar.
 // Staff-facing: español. Mobile-first: navegación de abajo como la app HP.
 
-const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' };
 const BG = '#0B1B28';
 const CARD = 'rgba(255,255,255,.045)';
 const BORDER = 'rgba(255,255,255,.09)';
@@ -500,7 +500,7 @@ function AttendanceRow({ sessionId, row, onSaved }: {
   return (
     <div className="flex items-center gap-2">
       <button type="button" onClick={toggle}
-        className="flex-1 text-left flex items-center gap-2 rounded-xl px-3 py-2"
+        className="flex-1 text-left flex items-center gap-2 rounded-[5px] px-3 py-2"
         style={{ background: present ? 'rgba(6,214,160,.1)' : 'rgba(255,107,107,.08)', border: `1px solid ${present ? 'rgba(6,214,160,.35)' : 'rgba(255,107,107,.3)'}` }}>
         <span className="text-[14px]">{present ? '✅' : '❌'}</span>
         <span className="text-[12.5px] font-medium" style={{ color: TXT }}>{row.name}</span>
@@ -595,7 +595,7 @@ function CitasTab() {
           <div className="relative">
             <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }} placeholder="Atleta…" aria-label="Atleta" style={inp} />
             {results.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full rounded-xl overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
+              <div className="absolute z-10 mt-1 w-full rounded-[5px] overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
                 {results.map((st) => (
                   <button key={st.id} type="button" onClick={() => { setPicked(st); setResults([]); }}
                     className="w-full text-left px-3 py-2 text-[12.5px]" style={{ color: TXT }}>
@@ -782,7 +782,7 @@ function QuickEvals() {
           <div className="relative">
             <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }} placeholder="Atleta…" aria-label="Atleta" style={inp} />
             {results.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full rounded-xl overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
+              <div className="absolute z-10 mt-1 w-full rounded-[5px] overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
                 {results.map((st) => (
                   <button key={st.id} type="button" onClick={() => { setPicked(st); setResults([]); }}
                     className="w-full text-left px-3 py-2 text-[12.5px]" style={{ color: TXT }}>
@@ -888,7 +888,7 @@ function MsgTab() {
           <div className="relative">
             <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }} placeholder="Atleta…" aria-label="Atleta destinatario" style={inp} />
             {results.length > 0 && (
-              <div className="absolute z-10 mt-1 w-full rounded-xl overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
+              <div className="absolute z-10 mt-1 w-full rounded-[5px] overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
                 {results.map((st) => (
                   <button key={st.id} type="button" onClick={() => { setPicked(st); setResults([]); }}
                     className="w-full text-left px-3 py-2 text-[12.5px]" style={{ color: TXT }}>
@@ -1097,7 +1097,7 @@ function DeepEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
       <div className="relative">
         <input value={picked ? picked.name : q} onChange={(e) => { setPicked(null); setQ(e.target.value); }} placeholder="Atleta… *" aria-label="Atleta" style={inp} />
         {results.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full rounded-xl overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
+          <div className="absolute z-10 mt-1 w-full rounded-[5px] overflow-hidden" style={{ background: '#12283A', border: `1px solid ${BORDER}` }}>
             {results.map((st) => (
               <button key={st.id} type="button" onClick={() => { setPicked(st); setResults([]); }}
                 className="w-full text-left px-3 py-2 text-[12.5px]" style={{ color: TXT }}>
@@ -1121,7 +1121,7 @@ function DeepEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
         const open = openSec === sec.key;
         const avg = secAvg(sec.key + '_');
         return (
-          <div key={sec.key} className="rounded-xl overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
+          <div key={sec.key} className="rounded-[5px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
             <button type="button" onClick={() => setOpenSec(open ? '' : sec.key)}
               className="w-full flex items-center justify-between px-3 py-2" style={{ background: 'rgba(255,255,255,.03)' }}>
               <p className="text-[11px] font-bold uppercase tracking-wider" style={{ ...MONO, color: sec.color }}>{sec.label}</p>
@@ -1152,7 +1152,7 @@ function DeepEvalForm({ onDone, onCancel }: { onDone: () => void; onCancel: () =
         );
       })}
 
-      <div className="rounded-xl px-3 py-2 space-y-1.5" style={{ border: `1px solid ${BORDER}`, background: 'rgba(255,209,102,.05)' }}>
+      <div className="rounded-[5px] px-3 py-2 space-y-1.5" style={{ border: `1px solid ${BORDER}`, background: 'rgba(255,209,102,.05)' }}>
         <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GOLD }}>Diagnóstico</p>
         {DEEP_DIAG_FIELDS.map((f) => (
           <input key={f.key} value={diag[f.key] ?? ''}
@@ -1260,7 +1260,7 @@ function AthleteProfile({ studentId, onBack }: { studentId: string; onBack: () =
             </p>
           </div>
           {d.last_eval?.global != null && (
-            <div className="text-center shrink-0 rounded-2xl px-3 py-2" style={{ border: `2px solid ${CYAN}` }}>
+            <div className="text-center shrink-0 rounded-lg px-3 py-2" style={{ border: `2px solid ${CYAN}` }}>
               <p className="text-[22px] font-extrabold leading-none" style={{ color: CYAN }}>{d.last_eval.global.toFixed(1)}</p>
               <p className="text-[8px] uppercase tracking-wider mt-0.5" style={{ ...MONO, color: FAINT }}>Índice /5</p>
             </div>
@@ -1325,7 +1325,7 @@ function AthleteProfile({ studentId, onBack }: { studentId: string; onBack: () =
                 { n: d.profile.weight_kg != null ? `${d.profile.weight_kg}kg` : '—', l: 'Peso' },
                 { n: d.profile.bmi != null ? String(d.profile.bmi) : '—', l: 'IMC' },
               ].map((x) => (
-                <div key={x.l} className="rounded-xl py-2.5 text-center" style={{ background: 'rgba(255,255,255,.04)' }}>
+                <div key={x.l} className="rounded-[5px] py-2.5 text-center" style={{ background: 'rgba(255,255,255,.04)' }}>
                   <p className="text-[17px] font-extrabold" style={{ color: TXT }}>{x.n}</p>
                   <p className="text-[8.5px] uppercase tracking-wider" style={{ ...MONO, color: FAINT }}>{x.l}</p>
                 </div>
@@ -1395,7 +1395,7 @@ function AthleteProfile({ studentId, onBack }: { studentId: string; onBack: () =
             { n: d.habits14.avg_water != null ? `${d.habits14.avg_water}/8` : '—', l: '💧 Agua' },
             { n: d.habits14.avg_energy != null ? `${d.habits14.avg_energy}/4` : '—', l: '⚡ Energía' },
           ].map((x) => (
-            <div key={x.l} className="rounded-xl py-2 text-center" style={{ background: 'rgba(255,255,255,.04)' }}>
+            <div key={x.l} className="rounded-[5px] py-2 text-center" style={{ background: 'rgba(255,255,255,.04)' }}>
               <p className="text-[15px] font-extrabold" style={{ color: GREEN }}>{x.n}</p>
               <p className="text-[8.5px]" style={{ ...MONO, color: FAINT }}>{x.l}</p>
             </div>

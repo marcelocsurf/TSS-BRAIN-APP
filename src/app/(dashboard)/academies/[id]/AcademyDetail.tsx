@@ -228,7 +228,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
     <div className="space-y-4">
       {/* Header — uses the effective brand colors as preview */}
       <div
-        className="rounded-xl p-5 flex items-center gap-4"
+        className="rounded-[5px] p-5 flex items-center gap-4"
         style={{ background: effectivePrimary, color: '#fff' }}
       >
         {academy.logo_url ? (
@@ -236,7 +236,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
           <img
             src={academy.logo_url}
             alt={academy.name}
-            className="w-16 h-16 rounded-lg object-contain bg-white/10 p-1"
+            className="w-16 h-16 rounded-lg object-contain bg-[#F7F9FA]/10 p-1"
           />
         ) : (
           <div
@@ -273,14 +273,14 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
           type="button"
           onClick={enterAcademy}
           disabled={pending}
-          className="flex-1 py-3 text-white text-sm font-semibold rounded-xl hover:brightness-110 disabled:opacity-50 transition-all shadow-sm"
+          className="flex-1 py-3 text-white text-sm font-semibold rounded-[5px] hover:brightness-110 disabled:opacity-50 transition-all shadow-sm"
           style={{ background: effectivePrimary }}
         >
           {pending ? 'Working…' : 'Enter as this academy →'}
         </button>
         <a
           href={`/academies/${academy.id}/billing`}
-          className="px-4 py-3 text-sm font-semibold rounded-xl bg-white border border-gray-200 text-[var(--tss-navy)] hover:bg-gray-50 transition-all shadow-sm"
+          className="px-4 py-3 text-sm font-semibold rounded-[5px] bg-[#F7F9FA] border border-[#DCD7C6] text-[var(--tss-navy)] hover:bg-[#F7F9FA] transition-all shadow-sm"
         >
           Billing
         </a>
@@ -288,8 +288,8 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
 
       {/* Coordinator — admin-only management */}
       {viewerIsPlatformAdmin && (
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
-        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-mono">
+      <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4">
+        <p className="text-[10px] uppercase tracking-wider text-[#55666E] font-mono">
           Coordinator
         </p>
         {coordinator ? (
@@ -297,7 +297,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
             <p className="text-base font-bold text-[var(--tss-navy)]">
               {coordinator.display_name}
             </p>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-[#55666E]">
               {coordinator.email} · {coordinator.role} · {coordinator.certification_level}
             </p>
             <Link
@@ -322,8 +322,8 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
       )}
 
       {/* Branding editor */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
-        <p className="text-[10px] uppercase tracking-wider text-gray-400 font-mono">
+      <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4 space-y-3">
+        <p className="text-[10px] uppercase tracking-wider text-[#55666E] font-mono">
           Identity & branding
         </p>
 
@@ -332,7 +332,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
           />
         </Field>
 
@@ -342,7 +342,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             placeholder="SV, MX, CR…"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
           />
         </Field>
 
@@ -351,12 +351,12 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
           hint="PNG or SVG, square preferred, under 5 MB. Upload straight from your photo library."
         >
           <div className="flex items-center gap-3">
-            <div className="w-16 h-16 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+            <div className="w-16 h-16 rounded-[5px] border border-[#DCD7C6] bg-[#F7F9FA] flex items-center justify-center overflow-hidden shrink-0">
               {logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
               ) : (
-                <span className="text-gray-400 text-xl font-bold">
+                <span className="text-[#55666E] text-xl font-bold">
                   {name.charAt(0).toUpperCase() || 'A'}
                 </span>
               )}
@@ -396,7 +396,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
             value={tagline}
             onChange={(e) => setTagline(e.target.value)}
             placeholder="Surf with intention."
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
           />
         </Field>
 
@@ -438,7 +438,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
       </div>
 
       {/* Emergency plan — location-specific, shown to every coach */}
-      <div className="bg-white rounded-xl border border-red-100 p-4 space-y-3">
+      <div className="bg-[#F7F9FA] rounded-[5px] border border-red-100 p-4 space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-[10px] uppercase tracking-wider text-red-600 font-mono font-semibold">
             🚨 Emergency plan
@@ -447,29 +447,29 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
             <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-semibold">Pending</span>
           )}
         </div>
-        <p className="text-[11px] text-gray-500 -mt-1">
+        <p className="text-[11px] text-[#55666E] -mt-1">
           Specific to where the academy operates. Every coach sees it in their portal — keep it always at hand.
         </p>
         <Field label="Emergency numbers (911 · ambulance · police)">
-          <input value={emNumbers} onChange={(e) => setEmNumbers(e.target.value)} placeholder="911 · Red Cross 2222-5155 · Police 911" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+          <input value={emNumbers} onChange={(e) => setEmNumbers(e.target.value)} placeholder="911 · Red Cross 2222-5155 · Police 911" className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
         </Field>
         <Field label="Nearest hospital / clinic (name · address · phone)">
-          <input value={emHospital} onChange={(e) => setEmHospital(e.target.value)} placeholder="Hospital ___ · St ___ · 2222-0000" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+          <input value={emHospital} onChange={(e) => setEmHospital(e.target.value)} placeholder="Hospital ___ · St ___ · 2222-0000" className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
         </Field>
         <Field label="Lifeguard / coast guard">
-          <input value={emLifeguard} onChange={(e) => setEmLifeguard(e.target.value)} placeholder="Lifeguard tower / contact" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+          <input value={emLifeguard} onChange={(e) => setEmLifeguard(e.target.value)} placeholder="Lifeguard tower / contact" className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
         </Field>
         <Field label="Exact spot / address to give emergency services">
-          <input value={emAddress} onChange={(e) => setEmAddress(e.target.value)} placeholder="___ Beach, in front of ___ (coords / reference)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
+          <input value={emAddress} onChange={(e) => setEmAddress(e.target.value)} placeholder="___ Beach, in front of ___ (coords / reference)" className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-red-300" />
         </Field>
         <div>
-          <label className="block text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-1">Protocol / steps</label>
+          <label className="block text-[10px] uppercase tracking-wider text-[#55666E] font-mono mb-1">Protocol / steps</label>
           <textarea
             value={emProtocol}
             onChange={(e) => setEmProtocol(e.target.value)}
             rows={4}
             placeholder="What to do in an emergency: who calls, where the first-aid kit is, meeting point, etc."
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-red-300"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-red-300"
           />
         </div>
         {emError && <p className="text-xs text-red-600">{emError}</p>}
@@ -489,9 +489,9 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
       <BoardInventory academyId={academy.id} boards={boards} />
 
       {/* Coaches list */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
+      <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] uppercase tracking-wider text-gray-400 font-mono">
+          <p className="text-[10px] uppercase tracking-wider text-[#55666E] font-mono">
             Team Members ({coaches.length})
           </p>
           {viewerIsPlatformAdmin && (
@@ -503,20 +503,20 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
             </Link>
           )}
         </div>
-        <p className="text-[10px] text-gray-400 mt-1">
+        <p className="text-[10px] text-[#55666E] mt-1">
           To move an existing coach to this academy, use the same form —
           if the email already exists, the system upgrades + reassigns
           that coach automatically.
         </p>
         {coaches.length === 0 ? (
-          <p className="text-xs text-gray-400 italic mt-2">No coaches yet.</p>
+          <p className="text-xs text-[#55666E] italic mt-2">No coaches yet.</p>
         ) : (
           <ul className="mt-2 divide-y divide-gray-100">
             {coaches.map((c) => (
               <li key={c.id} className="py-2 flex items-center justify-between">
                 <div>
                   <p className="text-sm text-[var(--tss-navy)]">{c.display_name}</p>
-                  <p className="text-[11px] text-gray-500">
+                  <p className="text-[11px] text-[#55666E]">
                     {c.role} · {c.certification_level} · {c.email}
                   </p>
                 </div>
@@ -533,9 +533,9 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
       </div>
 
       {/* Active services */}
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
+      <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] uppercase tracking-wider text-gray-400 font-mono">
+          <p className="text-[10px] uppercase tracking-wider text-[#55666E] font-mono">
             Active services ({activeServices.length})
           </p>
           <Link
@@ -546,7 +546,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
           </Link>
         </div>
         {activeServices.length === 0 ? (
-          <p className="text-xs text-gray-400 italic mt-2">No services scheduled.</p>
+          <p className="text-xs text-[#55666E] italic mt-2">No services scheduled.</p>
         ) : (
           <ul className="mt-2 divide-y divide-gray-100">
             {activeServices.map((s) => {
@@ -555,7 +555,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
                 <li key={s.id} className="py-2 flex items-center justify-between">
                   <div>
                     <p className="text-sm text-[var(--tss-navy)]">{s.camp_name}</p>
-                    <p className="text-[11px] text-gray-500">
+                    <p className="text-[11px] text-[#55666E]">
                       {s.start_date} → {s.end_date}{' '}
                       {co?.display_name ? `· ${co.display_name}` : ''}
                     </p>
@@ -575,7 +575,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
 
       {/* Danger zone — admin only */}
       {viewerIsPlatformAdmin && (
-      <div className="bg-red-50 rounded-xl border border-red-200 p-4 space-y-2">
+      <div className="bg-red-50 rounded-[5px] border border-red-200 p-4 space-y-2">
         <p className="text-[10px] uppercase tracking-wider text-red-600 font-mono">
           Danger zone
         </p>
@@ -587,7 +587,7 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
           type="button"
           onClick={onDelete}
           disabled={pending}
-          className="w-full py-2 text-xs font-semibold text-red-700 bg-white border border-red-300 rounded-lg hover:bg-red-100 disabled:opacity-50"
+          className="w-full py-2 text-xs font-semibold text-red-700 bg-[#F7F9FA] border border-red-300 rounded-lg hover:bg-red-100 disabled:opacity-50"
         >
           Delete academy
         </button>
@@ -599,9 +599,9 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
 
 function StatTile({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-3 text-center">
+    <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-3 text-center">
       <p className="text-2xl font-bold text-[var(--tss-navy)]">{value}</p>
-      <p className="text-[10px] uppercase tracking-wider text-gray-400 font-mono mt-0.5">
+      <p className="text-[10px] uppercase tracking-wider text-[#55666E] font-mono mt-0.5">
         {label}
       </p>
     </div>
@@ -619,9 +619,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-[11px] font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-[11px] font-medium text-[#10263B] mb-1">{label}</label>
       {children}
-      {hint && <p className="text-[10px] text-gray-400 mt-1">{hint}</p>}
+      {hint && <p className="text-[10px] text-[#55666E] mt-1">{hint}</p>}
     </div>
   );
 }
@@ -641,14 +641,14 @@ function ColorInput({
         type="color"
         value={value || fallback}
         onChange={(e) => onChange(e.target.value.toUpperCase())}
-        className="w-10 h-9 border border-gray-200 rounded cursor-pointer"
+        className="w-10 h-9 border border-[#DCD7C6] rounded cursor-pointer"
       />
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={fallback}
-        className="flex-1 px-2 py-1.5 border border-gray-200 rounded text-xs font-mono"
+        className="flex-1 px-2 py-1.5 border border-[#DCD7C6] rounded text-xs font-mono"
       />
     </div>
   );

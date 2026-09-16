@@ -54,14 +54,14 @@ export function PricingClient({ prices, invoices, year, month, academies, academ
         >
           Pricing & Invoicing
         </h1>
-        <p className="text-xs uppercase tracking-wider text-gray-400 mt-1" style={{ fontFamily: 'DM Mono, monospace' }}>
+        <p className="text-xs uppercase tracking-wider text-[#55666E] mt-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
           Platform admin · global course prices · monthly academy invoices
         </p>
       </header>
 
       {/* ── Pricing table ── */}
-      <section className="bg-white border border-gray-100 rounded-2xl shadow-sm">
-        <header className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+      <section className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg shadow-sm">
+        <header className="px-5 py-3 border-b border-[#DCD7C6] flex items-center gap-2">
           <DollarSign size={16} className="text-[var(--tss-cyan)]" />
           <h2 className="text-sm font-semibold text-[var(--tss-navy)]">Course prices</h2>
         </header>
@@ -70,14 +70,14 @@ export function PricingClient({ prices, invoices, year, month, academies, academ
             <PriceRow key={p.course_key} price={p} onSaved={() => router.refresh()} />
           ))}
         </ul>
-        <p className="px-5 py-3 text-[11px] text-gray-400 leading-relaxed">
+        <p className="px-5 py-3 text-[11px] text-[#55666E] leading-relaxed">
           New course grants snapshot the current price into <code>course_grants.price_cents</code>. Existing grants keep their original price.
         </p>
       </section>
 
       {/* ── Per-academy overrides ── */}
-      <section className="bg-white border border-gray-100 rounded-2xl shadow-sm">
-        <header className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+      <section className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg shadow-sm">
+        <header className="px-5 py-3 border-b border-[#DCD7C6] flex items-center gap-2">
           <Building2 size={16} className="text-[var(--tss-cyan)]" />
           <h2 className="text-sm font-semibold text-[var(--tss-navy)]">Per-academy price overrides</h2>
         </header>
@@ -87,14 +87,14 @@ export function PricingClient({ prices, invoices, year, month, academies, academ
           overrides={academyOverrides}
           onChange={() => router.refresh()}
         />
-        <p className="px-5 py-3 text-[11px] text-gray-400 leading-relaxed">
+        <p className="px-5 py-3 text-[11px] text-[#55666E] leading-relaxed">
           Overrides take priority over global pricing when granting a course to a student of that academy. Leaving an academy without an override uses the global price.
         </p>
       </section>
 
       {/* ── Invoice generator ── */}
-      <section className="bg-white border border-gray-100 rounded-2xl shadow-sm">
-        <header className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+      <section className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg shadow-sm">
+        <header className="px-5 py-3 border-b border-[#DCD7C6] flex items-center gap-2">
           <FileText size={16} className="text-[var(--tss-cyan)]" />
           <h2 className="text-sm font-semibold text-[var(--tss-navy)]">Monthly invoices</h2>
         </header>
@@ -104,7 +104,7 @@ export function PricingClient({ prices, invoices, year, month, academies, academ
         <InvoiceGeneratorButton year={year} month={month} />
 
         {invoices.length === 0 ? (
-          <p className="px-5 py-6 text-center text-xs text-gray-400">
+          <p className="px-5 py-6 text-center text-xs text-[#55666E]">
             No invoices for {MONTHS[month - 1]} {year}. Click "Generate" to bundle any un-invoiced grants.
           </p>
         ) : (
@@ -152,20 +152,20 @@ function PriceRow({
         <p className="text-sm font-semibold text-[var(--tss-navy)]">
           {COURSE_LABELS[price.course_key] ?? price.course_key}
         </p>
-        <p className="text-[11px] text-gray-400 mt-0.5">
+        <p className="text-[11px] text-[#55666E] mt-0.5">
           Updated {displayDate(price.updated_at)}
         </p>
       </div>
       {edit ? (
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500">{price.currency}</span>
+          <span className="text-xs text-[#55666E]">{price.currency}</span>
           <input
             type="number"
             step="0.01"
             min="0"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-24 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
+            className="w-24 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
           />
           <button
             type="button"
@@ -178,7 +178,7 @@ function PriceRow({
           <button
             type="button"
             onClick={() => { setEdit(false); setAmount((price.price_cents / 100).toFixed(2)); setError(''); }}
-            className="text-xs text-gray-500 px-2 py-1"
+            className="text-xs text-[#55666E] px-2 py-1"
           >
             Cancel
           </button>
@@ -218,10 +218,10 @@ function PeriodPicker({ year, month }: { year: number; month: number }) {
     go(newY, newM);
   };
   return (
-    <div className="px-5 py-3 flex items-center gap-3 border-b border-gray-100 bg-gray-50">
-      <button type="button" onClick={prev} className="text-xs px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:bg-gray-100">←</button>
+    <div className="px-5 py-3 flex items-center gap-3 border-b border-[#DCD7C6] bg-[#F7F9FA]">
+      <button type="button" onClick={prev} className="text-xs px-2.5 py-1 rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] hover:bg-[#EDF3F5]">←</button>
       <span className="text-sm font-semibold text-[var(--tss-navy)]">{MONTHS[month - 1]} {year}</span>
-      <button type="button" onClick={next} className="text-xs px-2.5 py-1 rounded-lg bg-white border border-gray-200 hover:bg-gray-100">→</button>
+      <button type="button" onClick={next} className="text-xs px-2.5 py-1 rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] hover:bg-[#EDF3F5]">→</button>
     </div>
   );
 }
@@ -245,16 +245,16 @@ function InvoiceGeneratorButton({ year, month }: { year: number; month: number }
   };
 
   return (
-    <div className="px-5 py-3 flex items-center gap-3 border-b border-gray-100">
+    <div className="px-5 py-3 flex items-center gap-3 border-b border-[#DCD7C6]">
       <button
         type="button"
         onClick={run}
         disabled={pending}
-        className="px-4 py-2 bg-[var(--tss-cyan)] text-[var(--tss-navy)] rounded-xl text-sm font-semibold disabled:opacity-50"
+        className="px-4 py-2 bg-[var(--tss-cyan)] text-[var(--tss-navy)] rounded-[5px] text-sm font-semibold disabled:opacity-50"
       >
         {pending ? 'Generating…' : `Generate invoices for ${MONTHS[month - 1]} ${year}`}
       </button>
-      {message && <p className="text-xs text-gray-500">{message}</p>}
+      {message && <p className="text-xs text-[#55666E]">{message}</p>}
     </div>
   );
 }
@@ -276,7 +276,7 @@ function InvoiceRow({
   };
 
   const statusColor: Record<string, string> = {
-    draft: 'bg-gray-100 text-gray-600',
+    draft: 'bg-[#EDF3F5] text-[#55666E]',
     sent: 'bg-amber-50 text-amber-700',
     paid: 'bg-emerald-50 text-emerald-700',
     cancelled: 'bg-red-50 text-red-700',
@@ -288,7 +288,7 @@ function InvoiceRow({
         <p className="text-sm font-semibold text-[var(--tss-navy)] truncate">
           {invoice.academy_name ?? invoice.academy_id}
         </p>
-        <p className="text-[11px] text-gray-400 mt-0.5">
+        <p className="text-[11px] text-[#55666E] mt-0.5">
           Generated {displayDate(invoice.generated_at)}
         </p>
       </div>
@@ -366,7 +366,7 @@ function AcademyOverridesEditor({
   return (
     <div>
       {overrides.length === 0 && !adding ? (
-        <p className="px-5 py-4 text-xs text-gray-400">
+        <p className="px-5 py-4 text-xs text-[#55666E]">
           No overrides yet — every academy uses the global price.
         </p>
       ) : (
@@ -375,7 +375,7 @@ function AcademyOverridesEditor({
             <li key={`${o.academy_id}-${o.course_key}`} className="px-5 py-3 flex items-center justify-between">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-[var(--tss-navy)] truncate">{academyName(o.academy_id)}</p>
-                <p className="text-[11px] text-gray-500 mt-0.5">
+                <p className="text-[11px] text-[#55666E] mt-0.5">
                   {COURSE_LABELS[o.course_key] ?? o.course_key} · {formatCents(o.price_cents, o.currency)}
                 </p>
               </div>
@@ -383,7 +383,7 @@ function AcademyOverridesEditor({
                 type="button"
                 onClick={() => remove(o.academy_id, o.course_key)}
                 disabled={pending}
-                className="text-xs text-gray-400 hover:text-red-600 transition-colors p-1.5"
+                className="text-xs text-[#55666E] hover:text-red-600 transition-colors p-1.5"
                 aria-label="Remove override"
               >
                 <Trash2 size={14} />
@@ -394,12 +394,12 @@ function AcademyOverridesEditor({
       )}
 
       {adding ? (
-        <div className="px-5 py-4 border-t border-gray-100 bg-gray-50 space-y-2">
+        <div className="px-5 py-4 border-t border-[#DCD7C6] bg-[#F7F9FA] space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={academyId}
               onChange={(e) => setAcademyId(e.target.value)}
-              className="px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
+              className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs"
             >
               <option value="">— Academy —</option>
               {academies.map((a) => (
@@ -409,7 +409,7 @@ function AcademyOverridesEditor({
             <select
               value={courseKey}
               onChange={(e) => setCourseKey(e.target.value)}
-              className="px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
+              className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs"
             >
               {prices.map((p) => (
                 <option key={p.course_key} value={p.course_key}>
@@ -417,14 +417,14 @@ function AcademyOverridesEditor({
                 </option>
               ))}
             </select>
-            <span className="text-xs text-gray-500">USD</span>
+            <span className="text-xs text-[#55666E]">USD</span>
             <input
               type="number"
               step="0.01"
               min="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="w-24 px-2 py-1.5 border border-gray-300 rounded-lg text-xs"
+              className="w-24 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs"
             />
             <button
               type="button"
@@ -437,7 +437,7 @@ function AcademyOverridesEditor({
             <button
               type="button"
               onClick={() => { setAdding(false); setError(''); }}
-              className="px-2 py-1.5 text-xs text-gray-500 hover:text-[var(--tss-navy)]"
+              className="px-2 py-1.5 text-xs text-[#55666E] hover:text-[var(--tss-navy)]"
             >
               Cancel
             </button>
@@ -445,7 +445,7 @@ function AcademyOverridesEditor({
           {error && <p className="text-xs text-red-600">{error}</p>}
         </div>
       ) : (
-        <div className="px-5 py-3 border-t border-gray-100">
+        <div className="px-5 py-3 border-t border-[#DCD7C6]">
           <button
             type="button"
             onClick={() => setAdding(true)}

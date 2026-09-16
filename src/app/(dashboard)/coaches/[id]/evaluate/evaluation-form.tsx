@@ -48,7 +48,7 @@ export function EvaluationForm({ coachId, coachName, evaluatorId }: Props) {
 
   if (saved) {
     return (
-      <div className="bg-emerald-50 rounded-2xl p-8 text-center">
+      <div className="bg-emerald-50 rounded-lg p-8 text-center">
         <CheckCircle2 size={32} strokeWidth={1.75} className="mx-auto mb-2 text-emerald-600" />
         <p className="text-lg font-semibold text-emerald-700">Evaluation saved</p>
         <p className="text-sm text-emerald-600/80 mt-1">Redirecting...</p>
@@ -61,7 +61,7 @@ export function EvaluationForm({ coachId, coachName, evaluatorId }: Props) {
       <div>
         <p
           className="text-[10px] font-mono tracking-[0.22em] text-[var(--tss-cyan,#5AC3E7)] uppercase mb-1 font-semibold"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           Director Evaluation
         </p>
@@ -71,36 +71,36 @@ export function EvaluationForm({ coachId, coachName, evaluatorId }: Props) {
         >
           {coachName}
         </h2>
-        <p className="text-sm text-gray-400">Score 1–10 in each dimension</p>
+        <p className="text-sm text-[#55666E]">Score 1–10 in each dimension</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-5">
+      <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-5 space-y-5">
         <ScoreInput label="Technical — P·R·C·H application, sequence delivery, correction quality" value={form.technical_score} onChange={v => set('technical_score', v)} />
         <ScoreInput label="Methodology — Fidelity to TSS, use of Three Circles, Block System" value={form.methodology_score} onChange={v => set('methodology_score', v)} />
         <ScoreInput label="Communication — Clarity with students, safety briefings, feedback delivery" value={form.communication_score} onChange={v => set('communication_score', v)} />
         <ScoreInput label="Consistency — Session structure, documentation, punctuality, reliability" value={form.consistency_score} onChange={v => set('consistency_score', v)} />
-        <div className="border-t border-gray-100 pt-4">
+        <div className="border-t border-[#DCD7C6] pt-4">
           <ScoreInput label="Overall — Director's holistic assessment" value={form.overall_score} onChange={v => set('overall_score', v)} highlight />
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+      <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-5 space-y-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Strengths</label>
+          <label className="block text-xs font-medium text-[#55666E] mb-1">Strengths</label>
           <textarea value={form.strengths} onChange={e => set('strengths', e.target.value)}
             rows={2} placeholder="What this coach does particularly well..."
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-gray-300" />
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-gray-300" />
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Areas to Improve</label>
+          <label className="block text-xs font-medium text-[#55666E] mb-1">Areas to Improve</label>
           <textarea value={form.areas_to_improve} onChange={e => set('areas_to_improve', e.target.value)}
             rows={2} placeholder="Where this coach needs to develop..."
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-gray-300" />
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-gray-300" />
         </div>
         <div>
           <label className="block text-xs font-medium text-[var(--tss-navy)] mb-1 inline-flex items-center gap-1">
             <Lock size={12} strokeWidth={1.75} />
-            Director Notes <span className="text-gray-400 font-normal">(internal only)</span>
+            Director Notes <span className="text-[#55666E] font-normal">(internal only)</span>
           </label>
           <textarea value={form.director_notes} onChange={e => set('director_notes', e.target.value)}
             rows={2} placeholder="Private assessment — not shared with coach..."
@@ -131,7 +131,7 @@ function ScoreInput({ label, value, onChange, highlight }: {
 }) {
   return (
     <div>
-      <label className={`block text-xs font-medium mb-2 ${highlight ? 'text-[var(--tss-navy)]' : 'text-gray-600'}`}>{label}</label>
+      <label className={`block text-xs font-medium mb-2 ${highlight ? 'text-[var(--tss-navy)]' : 'text-[#55666E]'}`}>{label}</label>
       <div className="flex gap-1.5">
         {[1,2,3,4,5,6,7,8,9,10].map(n => (
           <button key={n} type="button" onClick={() => onChange(n)}
@@ -144,15 +144,15 @@ function ScoreInput({ label, value, onChange, highlight }: {
                   ? highlight
                     ? 'bg-[var(--tss-navy)]/20 text-[var(--tss-navy)] border-[var(--tss-navy)]/20'
                     : 'bg-[var(--tss-gold)]/20 text-[var(--tss-gold)] border-[var(--tss-gold)]/20'
-                  : 'border-gray-200 text-gray-400'
+                  : 'border-[#DCD7C6] text-[#55666E]'
             }`}>
             {n}
           </button>
         ))}
       </div>
       <div className="flex justify-between mt-1">
-        <span className="text-[10px] text-gray-300">Needs work</span>
-        <span className="text-[10px] text-gray-300">Excellent</span>
+        <span className="text-[10px] text-[#B8B1A0]">Needs work</span>
+        <span className="text-[10px] text-[#B8B1A0]">Excellent</span>
       </div>
     </div>
   );

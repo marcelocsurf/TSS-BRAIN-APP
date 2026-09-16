@@ -25,11 +25,11 @@ export default async function FunnelReportPage({
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
       <header className="space-y-1">
-        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600">
+        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-[#55666E] hover:text-[#55666E]">
           <ArrowLeft size={12} /> Reportes
         </Link>
         <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Embudo QR → pagado</h1>
-        <p className="text-sm text-gray-500">Conversión de reserva a pago por canal, para perseguir las reservas sin cobrar.</p>
+        <p className="text-sm text-[#55666E]">Conversión de reserva a pago por canal, para perseguir las reservas sin cobrar.</p>
       </header>
 
       <ReportControls exportHref="/reports/funnel/export" />
@@ -48,7 +48,7 @@ export default async function FunnelReportPage({
           <ReportCard title="Por canal" icon={TrendingUp}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#F7F9FA]">
                   <tr>
                     <Th>Canal</Th>
                     <Th align="right">Reservas</Th>
@@ -61,7 +61,7 @@ export default async function FunnelReportPage({
                 <tbody className="divide-y divide-gray-50">
                   {data.channels.map((c) => (
                     <tr key={c.channel}>
-                      <Td><span className="font-medium text-gray-800">{c.label}</span></Td>
+                      <Td><span className="font-medium text-[#10263B]">{c.label}</span></Td>
                       <Td align="right" mono>{c.bookings}</Td>
                       <Td align="right" mono>{c.unpaid ? <span className="text-amber-600 font-semibold">{c.unpaid}</span> : '—'}</Td>
                       <Td align="right" mono>{c.paid}</Td>
@@ -70,11 +70,11 @@ export default async function FunnelReportPage({
                     </tr>
                   ))}
                   {data.channels.length === 0 && (
-                    <tr><td colSpan={6} className="text-center py-6 text-xs text-gray-400">Sin reservas en este rango.</td></tr>
+                    <tr><td colSpan={6} className="text-center py-6 text-xs text-[#55666E]">Sin reservas en este rango.</td></tr>
                   )}
                 </tbody>
                 {data.channels.length > 0 && (
-                  <tfoot className="bg-gray-50 border-t border-gray-200">
+                  <tfoot className="bg-[#F7F9FA] border-t border-[#DCD7C6]">
                     <tr>
                       <Td><span className="font-semibold text-[var(--tss-navy)]">Total</span></Td>
                       <Td align="right" mono>{data.totals.bookings}</Td>
@@ -89,7 +89,7 @@ export default async function FunnelReportPage({
             </div>
           </ReportCard>
 
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-[#55666E]">
             El tope del embudo es la <strong>reserva</strong> (no hay registro de escaneos del QR). Canal QR = reservas de auto-servicio;
             mostrador = las que registró un vendedor/recepción. Las reservas $0 (INCLUIDO) entran ya pagadas y suben la conversión.
           </p>

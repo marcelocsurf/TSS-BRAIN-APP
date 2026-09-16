@@ -118,8 +118,8 @@ export default async function StudentRosterPage({ searchParams }: Props) {
             Students
           </h2>
           <p
-            className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            className="text-[10px] uppercase tracking-wider text-[#55666E] mt-1"
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             {total} student{total !== 1 ? 's' : ''} total
           </p>
@@ -128,14 +128,14 @@ export default async function StudentRosterPage({ searchParams }: Props) {
           {/* Full roster export (all personal data) → CSV, opens in Excel. */}
           <a
             href="/students/export"
-            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-white text-[var(--tss-navy)] text-sm font-medium rounded-xl border border-gray-200 hover:bg-gray-50 transition-all shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2.5 bg-[#F7F9FA] text-[var(--tss-navy)] text-sm font-medium rounded-[5px] border border-[#DCD7C6] hover:bg-[#F7F9FA] transition-all shadow-sm"
             title="Descargar todos los alumnos con su data (Excel)"
           >
             <Download size={15} /> Descargar Excel
           </a>
           <Link
             href="/students/new"
-            className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:brightness-110 transition-all shadow-sm"
+            className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-[5px] hover:brightness-110 transition-all shadow-sm"
           >
             + Add Student
           </Link>
@@ -148,10 +148,10 @@ export default async function StudentRosterPage({ searchParams }: Props) {
           <Link
             key={lk}
             href={`/students?lifecycle=${lk}`}
-            className={`px-3.5 py-1.5 rounded-2xl text-xs font-semibold tracking-wide capitalize ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold tracking-wide capitalize ${
               lifecycle === lk
                 ? 'bg-[var(--tss-navy)] text-white'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                : 'bg-[#F7F9FA] text-[#55666E] border border-[#DCD7C6] hover:bg-[#F7F9FA]'
             }`}
           >
             {lk === 'member' ? 'Members' : lk === 'lead' ? 'Leads' : 'Inactive'}
@@ -161,7 +161,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
 
       {/* Sort toggle — A–Z vs newest enrolled first */}
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-[10px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>Sort</span>
+        <span className="text-[10px] uppercase tracking-wider text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>Sort</span>
         {([['name', 'A–Z'], ['newest', 'Último inscrito']] as const).map(([key, label]) => {
           const p2 = new URLSearchParams();
           for (const [k, v] of Object.entries(params)) if (v && k !== 'page' && k !== 'sort') p2.set(k, v);
@@ -169,7 +169,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
           const active = (params.sort === 'newest') === (key === 'newest');
           return (
             <Link key={key} href={`/students?${p2.toString()}`}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${active ? 'bg-[var(--tss-navy)] text-white border-transparent shadow-sm' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}>
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${active ? 'bg-[var(--tss-navy)] text-white border-transparent shadow-sm' : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6] hover:border-[#DCD7C6]'}`}>
               {label}
             </Link>
           );
@@ -241,7 +241,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
             <Link
               key={s.id}
               href={`/students/${s.id}`}
-              className="flex items-center gap-3 bg-white rounded-2xl p-3 border border-gray-100 shadow-sm hover:border-gray-300 hover:shadow transition-all"
+              className="flex items-center gap-3 bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] p-3 border border-[#DCD7C6] shadow-sm hover:border-[#DCD7C6] hover:shadow transition-all"
               style={{ borderLeftWidth: '3px', borderLeftColor: BELT_DISPLAY[s.belt_level]?.color || '#C8D0DC' }}
             >
               {/* Photo or initials */}
@@ -287,7 +287,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
                       s.intake_tier === 'extended'
                         ? 'bg-blue-50 text-blue-600'
-                        : 'bg-[var(--tss-gray-50)] text-[var(--tss-gray-500)]'
+                        : 'bg-[#F7F9FA] text-[var(--tss-gray-500)]'
                     }`}>
                       {s.intake_tier === 'extended' ? 'Full' : 'Basic'}
                     </span>
@@ -323,7 +323,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
             {currentPage > 1 && (
               <Link
                 href={buildPageUrl(currentPage - 1)}
-                className="px-4 py-2 text-xs border border-[var(--tss-gray-200)] rounded-xl bg-white text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)] transition-all"
+                className="px-4 py-2 text-xs border border-[var(--tss-gray-200)] rounded-[5px] bg-[#F7F9FA] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)] transition-all"
               >
                 Previous
               </Link>
@@ -331,7 +331,7 @@ export default async function StudentRosterPage({ searchParams }: Props) {
             {currentPage < totalPages && (
               <Link
                 href={buildPageUrl(currentPage + 1)}
-                className="px-4 py-2 text-xs bg-[var(--tss-navy)] text-white rounded-xl hover:brightness-110 transition-all"
+                className="px-4 py-2 text-xs bg-[var(--tss-navy)] text-white rounded-[5px] hover:brightness-110 transition-all"
               >
                 Next
               </Link>
@@ -352,7 +352,7 @@ function FilterLink({ href, label, active, color }: {
       className={`px-3 py-1.5 text-xs rounded-full border transition-all ${
         active
           ? 'text-white border-transparent shadow-sm'
-          : 'bg-white text-[var(--tss-gray-700)] border-[var(--tss-gray-200)] hover:border-[var(--tss-gray-300)]'
+          : 'bg-[#F7F9FA] text-[var(--tss-gray-700)] border-[var(--tss-gray-200)] hover:border-[var(--tss-gray-300)]'
       }`}
       style={active ? { backgroundColor: color || 'var(--tss-navy)', borderColor: color || 'var(--tss-navy)' } : undefined}
     >

@@ -27,11 +27,11 @@ export default async function MembershipsReportPage({
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
       <header className="space-y-1">
-        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600">
+        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-[#55666E] hover:text-[#55666E]">
           <ArrowLeft size={12} /> Reportes
         </Link>
         <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Renovaciones de membresía</h1>
-        <p className="text-sm text-gray-500">Pendientes por confirmar, renovaciones cobradas y membresías por vencer.</p>
+        <p className="text-sm text-[#55666E]">Pendientes por confirmar, renovaciones cobradas y membresías por vencer.</p>
       </header>
 
       <ReportControls exportHref="/reports/memberships/export" />
@@ -51,18 +51,18 @@ export default async function MembershipsReportPage({
           <ReportCard title="Pendientes por confirmar" icon={Clock}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50"><tr><Th>Alumno</Th><Th>Email</Th><Th align="right">Meses</Th><Th align="right">Pedida</Th><Th align="right"></Th></tr></thead>
+                <thead className="bg-[#F7F9FA]"><tr><Th>Alumno</Th><Th>Email</Th><Th align="right">Meses</Th><Th align="right">Pedida</Th><Th align="right"></Th></tr></thead>
                 <tbody className="divide-y divide-gray-50">
                   {data.pending.map((p) => (
                     <tr key={p.studentId}>
-                      <Td><span className="font-medium text-gray-800">{p.name}</span></Td>
-                      <Td><span className="text-gray-500">{p.email || '—'}</span></Td>
+                      <Td><span className="font-medium text-[#10263B]">{p.name}</span></Td>
+                      <Td><span className="text-[#55666E]">{p.email || '—'}</span></Td>
                       <Td align="right" mono>{p.months ?? '—'}</Td>
                       <Td align="right" mono>{fmtDate(p.requestedAt)}</Td>
                       <Td align="right"><Link href={`/students/${p.studentId}`} className="text-[var(--tss-cyan)] font-semibold text-[12px]">Confirmar →</Link></Td>
                     </tr>
                   ))}
-                  {data.pending.length === 0 && <tr><td colSpan={5} className="text-center py-5 text-xs text-gray-400">Sin pendientes.</td></tr>}
+                  {data.pending.length === 0 && <tr><td colSpan={5} className="text-center py-5 text-xs text-[#55666E]">Sin pendientes.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -72,18 +72,18 @@ export default async function MembershipsReportPage({
           <ReportCard title="Por vencer en 30 días" icon={AlertTriangle}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50"><tr><Th>Alumno</Th><Th>Email</Th><Th align="right">Vence</Th><Th align="right">Días</Th><Th align="right"></Th></tr></thead>
+                <thead className="bg-[#F7F9FA]"><tr><Th>Alumno</Th><Th>Email</Th><Th align="right">Vence</Th><Th align="right">Días</Th><Th align="right"></Th></tr></thead>
                 <tbody className="divide-y divide-gray-50">
                   {data.expiring.map((e) => (
                     <tr key={e.studentId}>
-                      <Td><span className="font-medium text-gray-800">{e.name}</span></Td>
-                      <Td><span className="text-gray-500">{e.email || '—'}</span></Td>
+                      <Td><span className="font-medium text-[#10263B]">{e.name}</span></Td>
+                      <Td><span className="text-[#55666E]">{e.email || '—'}</span></Td>
                       <Td align="right" mono>{fmtDate(e.endsAt)}</Td>
                       <Td align="right"><span className={`font-semibold ${e.daysLeft <= 7 ? 'text-rose-600' : 'text-amber-600'}`}>{e.daysLeft}d</span></Td>
                       <Td align="right"><Link href={`/students/${e.studentId}`} className="text-[var(--tss-cyan)] font-semibold text-[12px]">Ver →</Link></Td>
                     </tr>
                   ))}
-                  {data.expiring.length === 0 && <tr><td colSpan={5} className="text-center py-5 text-xs text-gray-400">Nada por vencer en 30 días.</td></tr>}
+                  {data.expiring.length === 0 && <tr><td colSpan={5} className="text-center py-5 text-xs text-[#55666E]">Nada por vencer en 30 días.</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -93,25 +93,25 @@ export default async function MembershipsReportPage({
           <ReportCard title="Renovaciones confirmadas (en el rango)" icon={RefreshCw}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50"><tr><Th>Alumno</Th><Th align="right">Meses</Th><Th align="right">Monto</Th><Th>Método</Th><Th align="right">Vigente hasta</Th><Th align="right">Cobrada</Th></tr></thead>
+                <thead className="bg-[#F7F9FA]"><tr><Th>Alumno</Th><Th align="right">Meses</Th><Th align="right">Monto</Th><Th>Método</Th><Th align="right">Vigente hasta</Th><Th align="right">Cobrada</Th></tr></thead>
                 <tbody className="divide-y divide-gray-50">
                   {data.confirmed.map((c, i) => (
                     <tr key={c.studentId + i}>
-                      <Td><span className="font-medium text-gray-800">{c.name}</span></Td>
+                      <Td><span className="font-medium text-[#10263B]">{c.name}</span></Td>
                       <Td align="right" mono>{c.months ?? '—'}</Td>
                       <Td align="right" mono>{money(c.amountCents)}</Td>
-                      <Td><span className="text-gray-500">{c.paymentMethod || '—'}</span></Td>
+                      <Td><span className="text-[#55666E]">{c.paymentMethod || '—'}</span></Td>
                       <Td align="right" mono>{fmtDate(c.endsAt)}</Td>
                       <Td align="right" mono>{fmtDate(c.createdAt)}</Td>
                     </tr>
                   ))}
-                  {data.confirmed.length === 0 && <tr><td colSpan={6} className="text-center py-5 text-xs text-gray-400">Sin renovaciones cobradas en el rango.</td></tr>}
+                  {data.confirmed.length === 0 && <tr><td colSpan={6} className="text-center py-5 text-xs text-[#55666E]">Sin renovaciones cobradas en el rango.</td></tr>}
                 </tbody>
               </table>
             </div>
           </ReportCard>
 
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-[#55666E]">
             "Por vencer" mira la membresía activa más lejana de cada alumno (no re-alerta si ya renovó). Las renovaciones se fechan por
             fecha de cobro. Los pedidos pendientes vienen del portal del alumno — confirmalos en su ficha.
           </p>

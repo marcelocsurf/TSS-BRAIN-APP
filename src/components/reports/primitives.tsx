@@ -23,7 +23,7 @@ export function StatCard({
     rose: 'bg-rose-50 text-rose-900 border border-rose-200',
   };
   return (
-    <div className={`rounded-2xl p-4 ${tones[tone]}`}>
+    <div className={`rounded-lg p-4 ${tones[tone]}`}>
       <div className="flex items-center justify-between mb-2">
         {Icon ? <Icon size={18} className="opacity-80" /> : <span />}
         <span className="text-[10px] uppercase tracking-wider opacity-70" style={{ fontFamily: 'var(--font-mono)' }}>
@@ -41,7 +41,7 @@ export function StatCard({
 export function Th({ children, align = 'left' }: { children?: React.ReactNode; align?: 'left' | 'right' }) {
   return (
     <th
-      className={`px-4 py-2.5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold ${align === 'right' ? 'text-right' : 'text-left'}`}
+      className={`px-4 py-2.5 text-[10px] uppercase tracking-wider text-[#55666E] font-semibold ${align === 'right' ? 'text-right' : 'text-left'}`}
       style={{ fontFamily: 'var(--font-mono)' }}
     >
       {children}
@@ -81,8 +81,8 @@ export function ReportCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-2">
+    <section className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+      <div className="px-5 py-4 border-b border-[#DCD7C6] flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           {Icon ? <Icon size={18} className="text-[var(--tss-navy)]" /> : null}
           <h2 className="text-sm font-semibold text-[var(--tss-navy)]">{title}</h2>

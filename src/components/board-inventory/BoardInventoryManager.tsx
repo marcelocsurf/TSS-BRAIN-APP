@@ -36,7 +36,7 @@ const STATUS_COLOR: Record<BoardStatus, string> = {
   available: 'bg-emerald-50 text-emerald-700',
   in_use: 'bg-blue-50 text-blue-600',
   in_repair: 'bg-amber-50 text-amber-700',
-  retired: 'bg-gray-100 text-gray-500',
+  retired: 'bg-[#EDF3F5] text-[#55666E]',
   rented: 'bg-purple-50 text-purple-600',
 };
 const CONDITION_ORDER: BoardCondition[] = ['excellent', 'good', 'fair', 'poor'];
@@ -83,7 +83,7 @@ export function BoardInventoryManager({ academyId, portalToken }: { academyId: s
         Manage the academy's boards and rent them to walk-ins. Separate from the Board Selector.
       </p>
 
-      <div className="flex gap-1 mb-4 bg-white/5 rounded-xl p-1">
+      <div className="flex gap-1 mb-4 bg-[#F7F9FA]/5 rounded-[5px] p-1">
         <TabBtn active={tab === 'inventory'} onClick={() => setTab('inventory')}>
           Inventory ({boards.length})
         </TabBtn>
@@ -127,7 +127,7 @@ function TabBtn({ active, onClick, children }: { active: boolean; onClick: () =>
     <button
       onClick={onClick}
       className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
-        active ? 'bg-white text-[var(--tss-navy)]' : 'text-white/60 hover:text-white'
+        active ? 'bg-[#F7F9FA] text-[var(--tss-navy)]' : 'text-white/60 hover:text-white'
       }`}
     >
       {children}
@@ -222,7 +222,7 @@ function InventoryTab({
       </div>
 
       {adding && (
-        <div className="rounded-xl border border-white/10 p-3 space-y-2 bg-white/5">
+        <div className="rounded-[5px] border border-white/10 p-3 space-y-2 bg-[#F7F9FA]/5">
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
             <Mini label="Type">
               <select value={bType} onChange={(e) => setBType(e.target.value)} className={selCls}>
@@ -247,7 +247,7 @@ function InventoryTab({
               </select>
             </Mini>
           </div>
-          <button onClick={add} disabled={pending} className="w-full py-2 text-[var(--tss-navy)] bg-white text-sm font-semibold rounded-lg disabled:opacity-50">
+          <button onClick={add} disabled={pending} className="w-full py-2 text-[var(--tss-navy)] bg-[#F7F9FA] text-sm font-semibold rounded-lg disabled:opacity-50">
             {pending ? 'Saving…' : 'Add to inventory'}
           </button>
         </div>
@@ -256,9 +256,9 @@ function InventoryTab({
       {boards.length === 0 ? (
         <p className="text-sm text-white/40 italic">No boards yet. Add the first one.</p>
       ) : (
-        <ul className="divide-y divide-white/5 rounded-xl border border-white/10 overflow-hidden">
+        <ul className="divide-y divide-white/5 rounded-[5px] border border-white/10 overflow-hidden">
           {boards.map((b) => (
-            <li key={b.id} className="flex items-center justify-between gap-2 p-3 bg-white/[0.03]">
+            <li key={b.id} className="flex items-center justify-between gap-2 p-3 bg-[#F7F9FA]/[0.03]">
               <div className="min-w-0">
                 <p className="text-sm font-mono font-semibold">{b.code}</p>
                 <p className="text-[11px] text-white/50">
@@ -430,12 +430,12 @@ function RentalsTab({
         <button
           onClick={() => setCreating(true)}
           disabled={available.length === 0}
-          className="w-full py-2.5 bg-white text-[var(--tss-navy)] text-sm font-semibold rounded-xl disabled:opacity-40"
+          className="w-full py-2.5 bg-[#F7F9FA] text-[var(--tss-navy)] text-sm font-semibold rounded-[5px] disabled:opacity-40"
         >
           {available.length === 0 ? 'No available boards to rent' : '+ New rental'}
         </button>
       ) : (
-        <div className="rounded-xl border border-white/10 p-3 space-y-2 bg-white/5">
+        <div className="rounded-[5px] border border-white/10 p-3 space-y-2 bg-[#F7F9FA]/5">
           <Mini label="Board">
             <select value={boardId} onChange={(e) => setBoardId(e.target.value)} className={selCls}>
               <option value="">Select a board…</option>
@@ -465,14 +465,14 @@ function RentalsTab({
               </select>
             </Mini>
             <Mini label="ID photo (private)">
-              <input type="file" accept="image/*" capture="environment" onChange={(e) => setDocFile(e.target.files?.[0] ?? null)} className="block w-full text-[11px] text-white/70 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-white/10 file:text-white" />
+              <input type="file" accept="image/*" capture="environment" onChange={(e) => setDocFile(e.target.files?.[0] ?? null)} className="block w-full text-[11px] text-white/70 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-[#F7F9FA]/10 file:text-white" />
             </Mini>
           </div>
           <Mini label="Notes"><input value={notes} onChange={(e) => setNotes(e.target.value)} className={inpCls} /></Mini>
           <p className="text-[10px] text-white/40">The ID photo is stored privately and deleted automatically when the board is returned.</p>
 
           {/* Waiver + on-screen signature (required) */}
-          <div className="rounded-lg border border-white/10 bg-white/[0.03] p-2.5 space-y-2">
+          <div className="rounded-lg border border-white/10 bg-[#F7F9FA]/[0.03] p-2.5 space-y-2">
             <p className="text-[9px] uppercase tracking-wider text-white/40 font-mono">Rental waiver</p>
             <div className="max-h-28 overflow-y-auto text-[10px] leading-relaxed text-white/60 whitespace-pre-line border border-white/5 rounded p-2 bg-black/20">
               {DEFAULT_WAIVER}
@@ -483,7 +483,7 @@ function RentalsTab({
 
           <div className="flex gap-2">
             <button onClick={resetForm} className="flex-1 py-2 border border-white/15 text-sm rounded-lg">Cancel</button>
-            <button onClick={submit} disabled={pending || uploading} className="flex-1 py-2 bg-white text-[var(--tss-navy)] text-sm font-semibold rounded-lg disabled:opacity-50">
+            <button onClick={submit} disabled={pending || uploading} className="flex-1 py-2 bg-[#F7F9FA] text-[var(--tss-navy)] text-sm font-semibold rounded-lg disabled:opacity-50">
               {uploading ? 'Uploading…' : pending ? 'Saving…' : 'Create rental'}
             </button>
           </div>
@@ -546,7 +546,7 @@ function ReturnDialog({
 
   return (
     <div className="fixed inset-0 z-[120] bg-black/70 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-sm rounded-2xl bg-[#0F1E33] border border-white/10 p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-sm rounded-lg bg-[#0F1E33] border border-white/10 p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
         <div>
           <p className="text-sm font-semibold text-white">Return {rental.board_code}</p>
           <p className="text-[11px] text-white/50">{rental.renter_name}</p>
@@ -558,7 +558,7 @@ function ReturnDialog({
               key={o.v}
               onClick={() => setCondition(o.v)}
               className={`rounded-lg p-2 text-center border transition-colors ${
-                condition === o.v ? 'bg-white text-[var(--tss-navy)] border-white' : 'border-white/15 text-white/70 hover:border-white/40'
+                condition === o.v ? 'bg-[#F7F9FA] text-[var(--tss-navy)] border-white' : 'border-white/15 text-white/70 hover:border-white/40'
               }`}
             >
               <span className="block text-[12px] font-semibold">{o.label}</span>
@@ -594,7 +594,7 @@ function ReturnDialog({
           <button
             onClick={() => onConfirm({ return_condition: condition, damage_type: damaged ? damageType : undefined, damage_notes: damaged ? damageNotes : undefined })}
             disabled={pending}
-            className="flex-1 py-2 bg-white text-[var(--tss-navy)] text-sm font-semibold rounded-lg disabled:opacity-50"
+            className="flex-1 py-2 bg-[#F7F9FA] text-[var(--tss-navy)] text-sm font-semibold rounded-lg disabled:opacity-50"
           >
             {pending ? 'Saving…' : 'Confirm return'}
           </button>
@@ -616,7 +616,7 @@ function RentalRow({
   const isActive = r.status === 'active' || r.status === 'overdue';
   const overdue = isActive && r.expected_return_date && r.expected_return_date < new Date().toISOString().slice(0, 10);
   return (
-    <li className="rounded-xl border border-white/10 p-3 bg-white/[0.03]">
+    <li className="rounded-[5px] border border-white/10 p-3 bg-[#F7F9FA]/[0.03]">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm font-semibold">{r.renter_name}</p>
@@ -639,7 +639,7 @@ function RentalRow({
           )}
         </div>
         <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
-          overdue ? 'bg-red-50 text-red-600' : isActive ? 'bg-purple-50 text-purple-600' : 'bg-white/10 text-white/50'
+          overdue ? 'bg-red-50 text-red-600' : isActive ? 'bg-purple-50 text-purple-600' : 'bg-[#F7F9FA]/10 text-white/50'
         }`}>
           {overdue ? 'Overdue' : r.status}
         </span>
@@ -671,5 +671,5 @@ function Mini({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-const inpCls = 'w-full px-2 py-1.5 border border-white/15 bg-white/5 rounded-lg text-xs text-white placeholder-white/30';
-const selCls = 'w-full px-2 py-1.5 border border-white/15 bg-white/5 rounded-lg text-xs text-white';
+const inpCls = 'w-full px-2 py-1.5 border border-white/15 bg-[#F7F9FA]/5 rounded-lg text-xs text-white placeholder-white/30';
+const selCls = 'w-full px-2 py-1.5 border border-white/15 bg-[#F7F9FA]/5 rounded-lg text-xs text-white';

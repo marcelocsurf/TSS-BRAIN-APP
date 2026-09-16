@@ -116,21 +116,21 @@ export function CampCustomizationPanel({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+    <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] overflow-hidden">
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-[#F7F9FA] transition-colors"
       >
         <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
           Customize for Student
         </h3>
-        <span className="text-gray-400 text-xs">{expanded ? '▲' : '▼'}</span>
+        <span className="text-[#55666E] text-xs">{expanded ? '▲' : '▼'}</span>
       </button>
 
       {expanded && (
         <div className="px-4 pb-4 space-y-3">
-          <p className="text-[10px] text-gray-400">
+          <p className="text-[10px] text-[#55666E]">
             Override drill names and missions for individual students on this day.
           </p>
 
@@ -151,7 +151,7 @@ export function CampCustomizationPanel({
                       ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]'
                       : isCustomized
                       ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                      : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6] hover:bg-[#F7F9FA]'
                   }`}
                 >
                   {student.first_name} {student.last_name}
@@ -177,22 +177,22 @@ export function CampCustomizationPanel({
                   return (
                     <div
                       key={block.block_order}
-                      className="border border-gray-100 rounded-lg p-2 bg-gray-50/50"
+                      className="border border-[#DCD7C6] rounded-lg p-2 bg-[#F7F9FA]"
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="w-5 h-5 rounded bg-gray-200 text-[10px] font-bold text-gray-600 flex items-center justify-center">
+                        <span className="w-5 h-5 rounded bg-[#DCD7C6] text-[10px] font-bold text-[#55666E] flex items-center justify-center">
                           {block.block_order}
                         </span>
-                        <span className="text-[10px] text-gray-400">
+                        <span className="text-[10px] text-[#55666E]">
                           {block.pilar_part || block.pilar || 'Block'}
                         </span>
-                        <span className="text-[10px] text-gray-300">
+                        <span className="text-[10px] text-[#B8B1A0]">
                           Base: {block.drill_name || 'none'}
                         </span>
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
+                          <label className="block text-[10px] text-[#55666E] mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
                             Custom Drill
                           </label>
                           <input
@@ -202,11 +202,11 @@ export function CampCustomizationPanel({
                               updateOverride(block.block_order, 'drill', e.target.value)
                             }
                             placeholder={block.drill_name || 'Same as template'}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
+                            className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
+                          <label className="block text-[10px] text-[#55666E] mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
                             Custom Mission
                           </label>
                           <input
@@ -216,11 +216,11 @@ export function CampCustomizationPanel({
                               updateOverride(block.block_order, 'mission', e.target.value)
                             }
                             placeholder={block.mission || 'Same as template'}
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
+                            className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="block text-[10px] text-gray-500 mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
+                          <label className="block text-[10px] text-[#55666E] mb-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
                             Notes
                           </label>
                           <input
@@ -230,7 +230,7 @@ export function CampCustomizationPanel({
                               updateOverride(block.block_order, 'notes', e.target.value)
                             }
                             placeholder="Additional notes for this student..."
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
+                            className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[var(--tss-gold)]"
                           />
                         </div>
                       </div>
@@ -242,7 +242,7 @@ export function CampCustomizationPanel({
                 type="button"
                 onClick={handleSave}
                 disabled={saving}
-                className="w-full py-2 bg-[var(--tss-gold)] text-white rounded-xl text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50"
+                className="w-full py-2 bg-[var(--tss-gold)] text-white rounded-[5px] text-xs font-medium hover:brightness-110 transition-all disabled:opacity-50"
               >
                 {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Customizations'}
               </button>

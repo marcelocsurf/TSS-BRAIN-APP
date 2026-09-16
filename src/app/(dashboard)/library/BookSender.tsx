@@ -37,14 +37,14 @@ export function BookSender() {
     });
 
   return (
-    <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-4">
+    <div className="mt-6 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4">
       <div className="flex items-center gap-3 mb-3">
-        <span className="w-10 h-10 rounded-xl bg-[var(--tss-navy)] text-[var(--tss-cyan,#5AC3E7)] flex items-center justify-center shrink-0">
+        <span className="w-10 h-10 rounded-[5px] bg-[var(--tss-navy)] text-[var(--tss-cyan,#5AC3E7)] flex items-center justify-center shrink-0">
           <BookOpen size={18} strokeWidth={1.75} />
         </span>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-[var(--tss-navy)]">Enviar ONE WAVE</p>
-          <p className="text-[11px] text-gray-500 leading-snug">
+          <p className="text-[11px] text-[#55666E] leading-snug">
             El libro queda en el portal de esa persona + email de entrega. Mismo motor que la
             compra por Wompi — ideal para probar el circuito o regalar copias.
           </p>
@@ -55,14 +55,14 @@ export function BookSender() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nombre (opcional)"
-          className="flex-1 min-w-[150px] px-3 py-2 border border-gray-200 rounded-lg text-sm"
+          className="flex-1 min-w-[150px] px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
         />
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="email@ejemplo.com"
           type="email"
-          className="flex-[2] min-w-[200px] px-3 py-2 border border-gray-200 rounded-lg text-sm"
+          className="flex-[2] min-w-[200px] px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
         />
         <button
           type="button"

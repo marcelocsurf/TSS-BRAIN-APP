@@ -36,22 +36,22 @@ export function CostsManager({ initial }: { initial: Settings }) {
   return (
     <div className="space-y-5">
       {/* ── 1. Coach pay matrix ── */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4 shadow-sm">
         <p className="text-sm font-bold text-[var(--tss-navy)]">Coach pay matrix</p>
-        <p className="text-[11px] text-gray-500 mb-3">$ per DAY, by level and number of ENROLLED students. Freelance model.</p>
+        <p className="text-[11px] text-[#55666E] mb-3">$ per DAY, by level and number of ENROLLED students. Freelance model.</p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr>
-                <th className="text-left text-[10px] font-mono uppercase tracking-wider text-gray-400 py-1.5">Level</th>
+                <th className="text-left text-[10px] font-mono uppercase tracking-wider text-[#55666E] py-1.5">Level</th>
                 {SIZES.map((n) => (
-                  <th key={n} className="text-center text-[10px] font-mono uppercase tracking-wider text-gray-400 py-1.5">{n} stu.</th>
+                  <th key={n} className="text-center text-[10px] font-mono uppercase tracking-wider text-[#55666E] py-1.5">{n} stu.</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {LEVELS.map((lvl) => (
-                <tr key={lvl} className="border-t border-gray-50">
+                <tr key={lvl} className="border-t border-[#DCD7C6]">
                   <td className="py-1.5 font-semibold text-[var(--tss-navy)]">{lvl}</td>
                   {SIZES.map((n) => {
                     const cell = matrix.find((m) => m.level_name === lvl && m.group_size === n);
@@ -59,7 +59,7 @@ export function CostsManager({ initial }: { initial: Settings }) {
                     return (
                       <td key={n} className="py-1.5 text-center">
                         <span className="inline-flex items-center gap-0.5">
-                          <span className="text-gray-400 text-xs">$</span>
+                          <span className="text-[#55666E] text-xs">$</span>
                           <input
                             type="number"
                             min={0}
@@ -80,7 +80,7 @@ export function CostsManager({ initial }: { initial: Settings }) {
                                 flash(key);
                               });
                             }}
-                            className="w-14 text-center px-1 py-1 border border-gray-200 rounded-lg text-sm"
+                            className="w-14 text-center px-1 py-1 border border-[#DCD7C6] rounded-lg text-sm"
                           />
                           {savedKey === key && <Check size={12} className="text-emerald-500" />}
                         </span>
@@ -95,9 +95,9 @@ export function CostsManager({ initial }: { initial: Settings }) {
       </div>
 
       {/* ── 2. Cost catalog ── */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+      <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4 shadow-sm">
         <p className="text-sm font-bold text-[var(--tss-navy)]">Cost catalog</p>
-        <p className="text-[11px] text-gray-500 mb-3">Each item has a driver: what triggers it and how it scales. Edit amounts inline.</p>
+        <p className="text-[11px] text-[#55666E] mb-3">Each item has a driver: what triggers it and how it scales. Edit amounts inline.</p>
         <div className="space-y-1.5">
           {rates.map((r) => (
             <RateRow
@@ -121,7 +121,7 @@ export function CostsManager({ initial }: { initial: Settings }) {
               }}
             />
           ))}
-          {rates.length === 0 && <p className="text-sm text-gray-400 py-4 text-center">No cost items yet — run the seed or add the first one below.</p>}
+          {rates.length === 0 && <p className="text-sm text-[#55666E] py-4 text-center">No cost items yet — run the seed or add the first one below.</p>}
         </div>
         <AddRateForm pending={pending} onAdd={(input) => start(async () => {
           const res = await upsertCostRate(input);
@@ -141,24 +141,24 @@ function RateRow({ rate, pending, saved, onSave, onDelete }: {
   onSave: (patch: Partial<CostRate>) => void; onDelete: () => void;
 }) {
   return (
-    <div className={`flex items-center gap-2 rounded-xl border border-gray-100 px-3 py-2 ${rate.active ? 'bg-gray-50' : 'bg-white opacity-50'}`}>
+    <div className={`flex items-center gap-2 rounded-[5px] border border-[#DCD7C6] px-3 py-2 ${rate.active ? 'bg-[#F7F9FA]' : 'bg-[#F7F9FA] opacity-50'}`}>
       <button
         type="button"
         disabled={pending}
         onClick={() => onSave({ active: !rate.active })}
-        className={`w-8 h-5 rounded-full relative transition-colors shrink-0 ${rate.active ? 'bg-emerald-500' : 'bg-gray-300'}`}
+        className={`w-8 h-5 rounded-full relative transition-colors shrink-0 ${rate.active ? 'bg-emerald-500' : 'bg-[#DCD7C6]'}`}
         title={rate.active ? 'Active' : 'Inactive'}
       >
-        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${rate.active ? 'left-3.5' : 'left-0.5'}`} />
+        <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-[#F7F9FA] transition-all ${rate.active ? 'left-3.5' : 'left-0.5'}`} />
       </button>
       <div className="min-w-0 flex-1">
         <p className="text-[13px] font-semibold text-[var(--tss-navy)] truncate">{rate.name}</p>
-        <p className="text-[10px] text-gray-400">
+        <p className="text-[10px] text-[#55666E]">
           {rate.category ?? '—'} · {DRIVER_LABEL[rate.driver] ?? rate.driver}
         </p>
       </div>
       <span className="inline-flex items-center gap-0.5 shrink-0">
-        <span className="text-gray-400 text-xs">$</span>
+        <span className="text-[#55666E] text-xs">$</span>
         <input
           type="number"
           min={0}
@@ -170,11 +170,11 @@ function RateRow({ rate, pending, saved, onSave, onDelete }: {
             const cents = Math.round(v * 100);
             if (cents !== rate.amount_cents) onSave({ amount_cents: cents });
           }}
-          className="w-20 text-right px-2 py-1 border border-gray-200 rounded-lg text-sm font-semibold"
+          className="w-20 text-right px-2 py-1 border border-[#DCD7C6] rounded-lg text-sm font-semibold"
         />
         {saved && <Check size={13} className="text-emerald-500" />}
       </span>
-      <button type="button" disabled={pending} onClick={onDelete} className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 shrink-0">
+      <button type="button" disabled={pending} onClick={onDelete} className="p-1.5 rounded-lg text-[#B8B1A0] hover:text-red-500 hover:bg-red-50 shrink-0">
         <Trash2 size={14} />
       </button>
     </div>
@@ -190,17 +190,17 @@ function AddRateForm({ pending, onAdd }: {
   const [driver, setDriver] = useState<CostDriver>('per_student_flat');
   const [amount, setAmount] = useState('');
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-[var(--tss-navy)]/[0.03] border border-gray-100 p-2.5">
-      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className="flex-1 min-w-[140px] px-2.5 py-1.5 border border-gray-200 rounded-lg text-sm" />
-      <select value={category} onChange={(e) => setCategory(e.target.value)} className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs">
+    <div className="mt-3 flex flex-wrap items-center gap-2 rounded-[5px] bg-[var(--tss-navy)]/[0.03] border border-[#DCD7C6] p-2.5">
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Item name" className="flex-1 min-w-[140px] px-2.5 py-1.5 border border-[#DCD7C6] rounded-lg text-sm" />
+      <select value={category} onChange={(e) => setCategory(e.target.value)} className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs">
         {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
-      <select value={driver} onChange={(e) => setDriver(e.target.value as CostDriver)} className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs">
+      <select value={driver} onChange={(e) => setDriver(e.target.value as CostDriver)} className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs">
         {DRIVERS.map((d) => <option key={d} value={d}>{DRIVER_LABEL[d]}</option>)}
       </select>
       <span className="inline-flex items-center gap-0.5">
-        <span className="text-gray-400 text-xs">$</span>
-        <input type="number" min={0} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="w-20 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-right" />
+        <span className="text-[#55666E] text-xs">$</span>
+        <input type="number" min={0} step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" className="w-20 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm text-right" />
       </span>
       <button
         type="button"
@@ -224,13 +224,13 @@ function TemplatePriceRow({ template, pending, start }: {
   const [val, setVal] = useState(template.list_price_cents != null ? $(template.list_price_cents) : '');
   const [saved, setSaved] = useState(false);
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-[var(--tss-navy)]/[.03] px-3 py-2 mb-2">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-[#DCD7C6] bg-[var(--tss-navy)]/[.03] px-3 py-2 mb-2">
       <div className="min-w-0">
         <p className="text-[12px] font-semibold text-[var(--tss-navy)]">Sale price</p>
-        <p className="text-[10px] text-gray-400">Seats are auto-priced at this on enrollment (full price).</p>
+        <p className="text-[10px] text-[#55666E]">Seats are auto-priced at this on enrollment (full price).</p>
       </div>
       <div className="flex items-center gap-1 shrink-0">
-        <span className="text-gray-400 text-sm">$</span>
+        <span className="text-[#55666E] text-sm">$</span>
         <input
           type="number" min={0} step="1" value={val} disabled={pending}
           onChange={(e) => { setVal(e.target.value); setSaved(false); }}
@@ -241,7 +241,7 @@ function TemplatePriceRow({ template, pending, start }: {
             setSaved(true);
           })}
           placeholder="—"
-          className="w-24 px-2 py-1.5 border border-gray-200 rounded-lg text-sm text-right font-semibold"
+          className="w-24 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm text-right font-semibold"
         />
         {saved && <Check size={14} className="text-emerald-600" />}
       </div>
@@ -262,12 +262,12 @@ function RecipesSection({ rates, templates, recipes, setRecipes, pending, start 
   const hasRecipe = tplRecipe.size > 0;
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4 shadow-sm">
       <p className="text-sm font-bold text-[var(--tss-navy)]">Service recipes</p>
-      <p className="text-[11px] text-gray-500 mb-3">
+      <p className="text-[11px] text-[#55666E] mb-3">
         Which cost items apply to each service. A service with no recipe uses <strong>every active item</strong> by default.
       </p>
-      <select value={tplId} onChange={(e) => setTplId(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-3">
+      <select value={tplId} onChange={(e) => setTplId(e.target.value)} className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm mb-3">
         <option value="">Pick a service template…</option>
         {templates.map((t) => (
           <option key={t.id} value={t.id}>{t.template_name} ({t.level_name ?? '—'} · {t.duration_days ?? '?'}d)</option>
@@ -285,7 +285,7 @@ function RecipesSection({ rates, templates, recipes, setRecipes, pending, start 
             const row = tplRecipe.get(r.id);
             const enabled = hasRecipe ? (row?.enabled ?? false) : true;
             return (
-              <label key={r.id} className={`flex items-center gap-2.5 rounded-lg px-3 py-2 cursor-pointer ${enabled ? 'bg-gray-50' : 'bg-white opacity-60'}`}>
+              <label key={r.id} className={`flex items-center gap-2.5 rounded-lg px-3 py-2 cursor-pointer ${enabled ? 'bg-[#F7F9FA]' : 'bg-[#F7F9FA] opacity-60'}`}>
                 <input
                   type="checkbox"
                   checked={enabled}
@@ -317,10 +317,10 @@ function RecipesSection({ rates, templates, recipes, setRecipes, pending, start 
                 />
                 <span className="min-w-0 flex-1">
                   <span className="block text-[13px] font-medium text-[var(--tss-navy)] truncate">{r.name}</span>
-                  <span className="block text-[10px] text-gray-400">{DRIVER_LABEL[r.driver]}</span>
+                  <span className="block text-[10px] text-[#55666E]">{DRIVER_LABEL[r.driver]}</span>
                 </span>
                 {enabled && (
-                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] text-gray-400" onClick={(e) => e.preventDefault()}>
+                  <span className="shrink-0 inline-flex items-center gap-1 text-[10px] text-[#55666E]" onClick={(e) => e.preventDefault()}>
                     qty
                     <input
                       type="number" min={0} step="1" defaultValue={Number(row?.qty ?? 1)} disabled={pending}
@@ -349,11 +349,11 @@ function RecipesSection({ rates, templates, recipes, setRecipes, pending, start 
                           ]);
                         });
                       }}
-                      className="w-12 px-1 py-0.5 border border-gray-200 rounded text-[12px] text-center font-semibold text-[var(--tss-navy)]"
+                      className="w-12 px-1 py-0.5 border border-[#DCD7C6] rounded text-[12px] text-center font-semibold text-[var(--tss-navy)]"
                     />
                   </span>
                 )}
-                <span className="text-sm font-semibold text-gray-600 shrink-0">${$(row?.override_cents ?? r.amount_cents)}</span>
+                <span className="text-sm font-semibold text-[#55666E] shrink-0">${$(row?.override_cents ?? r.amount_cents)}</span>
               </label>
             );
           })}

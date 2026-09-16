@@ -147,7 +147,7 @@ export function TransportPanel() {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5">
+    <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-5">
       <div className="flex items-center justify-between mb-3">
         <h2 className="inline-flex items-center gap-2 text-sm font-bold text-[var(--tss-navy)]">
           <Bus size={16} className="text-[var(--tss-cyan,#5AC3E7)]" /> Transportes programados
@@ -172,12 +172,12 @@ export function TransportPanel() {
             <>
               <button
                 onClick={copyText}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border border-[#DCD7C6] text-[#55666E] hover:bg-[#F7F9FA]"
                 title="Copiar como texto (WhatsApp / correo)"
               ><Copy size={12} /> Copiar</button>
               <button
                 onClick={downloadCsv}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border border-[#DCD7C6] text-[#55666E] hover:bg-[#F7F9FA]"
                 title="Descargar Excel (.xlsx)"
               ><Download size={12} /> Descargar Excel</button>
             </>
@@ -204,18 +204,18 @@ export function TransportPanel() {
             const pendingDays = days.filter((d) => !d.transport_status).length;
             const isCollapsed = collapsedMap[k] ?? pendingDays === 0;
             return (
-              <li key={k} className="rounded-xl border border-gray-200 overflow-hidden">
+              <li key={k} className="rounded-[5px] border border-[#DCD7C6] overflow-hidden">
                 {/* Service header — once; tap to collapse/expand its days */}
                 <button
                   type="button"
                   onClick={() => setCollapsedMap((m) => ({ ...m, [k]: !isCollapsed }))}
-                  className={`w-full flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-gray-50 text-left ${isCollapsed ? '' : 'border-b border-gray-100'}`}
+                  className={`w-full flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-[#F7F9FA] text-left ${isCollapsed ? '' : 'border-b border-[#DCD7C6]'}`}
                 >
                   <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--tss-navy)] min-w-0 truncate">
-                    <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
+                    <ChevronDown size={14} className={`text-[#55666E] shrink-0 transition-transform ${isCollapsed ? '-rotate-90' : ''}`} />
                     {first.camp_name || 'Servicio'}
                   </span>
-                  <span className="text-[11px] text-gray-500 shrink-0">
+                  <span className="text-[11px] text-[#55666E] shrink-0">
                     {first.coach_name || 'Coach'} · {days.length} día{days.length === 1 ? '' : 's'} · {first.students} alumno{first.students === 1 ? '' : 's'}
                     {uniformVenue ? ` · 🏖 ${uniformVenue}` : ''}
                     {pendingDays > 0
@@ -230,12 +230,12 @@ export function TransportPanel() {
                       key={r.plan_id}
                       className={`px-3 py-2 ${
                         r.transport_status === 'taken' ? 'bg-emerald-50/40'
-                          : r.transport_status === 'cancelled' ? 'bg-gray-50 opacity-60'
+                          : r.transport_status === 'cancelled' ? 'bg-[#F7F9FA] opacity-60'
                           : 'bg-amber-50/30'
                       }`}
                     >
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-[12px] text-gray-700 min-w-0">
+                        <p className="text-[12px] text-[#10263B] min-w-0">
                           <span className="font-bold text-[var(--tss-navy)]">{fmtDate(r.session_date)}</span>
                           {' '}· 🚐 {fmtTime(r.transport_depart)} → {fmtTime(r.transport_return)}
                           {!uniformVenue && r.surf_venue ? ` · 🏖 ${r.surf_venue}` : ''}
@@ -243,13 +243,13 @@ export function TransportPanel() {
                         <div className="flex items-center gap-1 shrink-0">
                           {r.transport_status ? (
                             <>
-                              <span className={`text-[12px] font-bold uppercase tracking-wide ${r.transport_status === 'taken' ? 'text-emerald-700' : 'text-gray-500'}`}>
+                              <span className={`text-[12px] font-bold uppercase tracking-wide ${r.transport_status === 'taken' ? 'text-emerald-700' : 'text-[#55666E]'}`}>
                                 {r.transport_status === 'taken' ? '✓ Tomado' : '✗ Cancelado'}
                               </span>
                               <button
                                 onClick={() => mark(r.plan_id, null)}
                                 disabled={pending}
-                                className="p-1 rounded-lg text-gray-400 hover:bg-gray-100"
+                                className="p-1 rounded-lg text-[#55666E] hover:bg-[#EDF3F5]"
                                 title="Volver a pendiente"
                               ><RotateCcw size={12} /></button>
                             </>
@@ -263,7 +263,7 @@ export function TransportPanel() {
                               <button
                                 onClick={() => mark(r.plan_id, 'cancelled')}
                                 disabled={pending}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg bg-white border border-gray-200 text-red-600 disabled:opacity-50"
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] text-red-600 disabled:opacity-50"
                               ><X size={12} strokeWidth={2.5} /> Cancelado</button>
                             </>
                           )}
@@ -316,14 +316,14 @@ function ActualTimeField({ label, planId, planned, value, pending, onSave }: {
   const d = delayMin(planned, local || null);
   return (
     <div className="flex items-center gap-1.5 mt-1">
-      <span className="text-[11px] text-gray-500 shrink-0">{label}</span>
+      <span className="text-[11px] text-[#55666E] shrink-0">{label}</span>
       <input
         type="time"
         value={local}
         onChange={(e) => setLocal(e.target.value)}
         onBlur={() => { if ((local || null) !== (value ?? null)) onSave(planId, local || null); }}
         disabled={pending}
-        className="text-[12px] px-2 py-1 rounded-lg border border-gray-200 bg-white min-w-0 disabled:opacity-50"
+        className="text-[12px] px-2 py-1 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] min-w-0 disabled:opacity-50"
       />
       {d != null && (
         <span className={`text-[11px] font-bold shrink-0 ${d > 5 ? 'text-red-600' : d > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>

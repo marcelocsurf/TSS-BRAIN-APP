@@ -16,7 +16,7 @@ export default async function MetodoPage() {
   return (
     <div className="p-4 md:p-6 max-w-5xl">
       <h1 className="text-xl font-bold text-[var(--tss-navy)]">El Método · Cuartel general</h1>
-      <p className="text-[13px] text-gray-500 mt-1 max-w-2xl">
+      <p className="text-[13px] text-[#55666E] mt-1 max-w-2xl">
         Todo lo que ES el negocio, en un solo lugar: doctrina, marca, certificación,
         negocio, mercadeo, operaciones y legal. Cada área guarda sus documentos y te
         muestra qué falta desarrollar. Nada de esto se otorga a coaches ni alumnos —

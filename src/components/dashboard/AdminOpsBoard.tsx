@@ -37,7 +37,7 @@ export async function AdminOpsBoard({ unreadIncidents, pendingSurveys }: { unrea
 
   return (
     <div className="mb-6 grid gap-4 md:grid-cols-2 md:items-stretch">
-      <div className="rounded-3xl p-6 flex flex-col justify-between min-h-56" style={{ background: '#061C2B' }}>
+      <div className="rounded-lg p-6 flex flex-col justify-between min-h-56" style={{ background: '#061C2B' }}>
         <div>
           <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>The Surf Sequence · Platform</p>
           <h2 className="text-[30px] mt-2" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{dayName}<br />operations</h2>
@@ -58,18 +58,18 @@ export async function AdminOpsBoard({ unreadIncidents, pendingSurveys }: { unrea
         </div>
       </div>
 
-      <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4" style={{ borderTop: '3px solid #FF6B6B' }}>
+      <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] shadow-sm p-4" style={{ borderTop: '3px solid #FF6B6B' }}>
         <p className="text-[11px] mb-2 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#FF6B6B' }}>
           <AlertTriangle size={12} /> Needs attention · platform
         </p>
         {attention.length === 0 ? (
-          <p className="text-sm text-gray-400 mt-3">All clear — nada esperando tu decisión. 🤙</p>
+          <p className="text-sm text-[#55666E] mt-3">All clear — nada esperando tu decisión. 🤙</p>
         ) : (
           <div className="divide-y divide-gray-50">
             {attention.map((a) => (
-              <Link key={a.label} href={a.href} className="flex items-center justify-between py-2.5 hover:bg-gray-50 rounded-lg px-1 -mx-1">
+              <Link key={a.label} href={a.href} className="flex items-center justify-between py-2.5 hover:bg-[#F7F9FA] rounded-lg px-1 -mx-1">
                 <p className="text-[13px] font-semibold text-[var(--tss-navy)]">{a.label}</p>
-                <span className={`text-[11px] font-extrabold rounded-full px-2.5 py-0.5 ${a.sev === 'red' ? 'bg-red-50 text-red-700' : a.sev === 'amber' ? 'bg-amber-50 text-amber-700' : 'bg-gray-100 text-gray-600'}`}>{a.count}</span>
+                <span className={`text-[11px] font-extrabold rounded-full px-2.5 py-0.5 ${a.sev === 'red' ? 'bg-red-50 text-red-700' : a.sev === 'amber' ? 'bg-amber-50 text-amber-700' : 'bg-[#EDF3F5] text-[#55666E]'}`}>{a.count}</span>
               </Link>
             ))}
           </div>

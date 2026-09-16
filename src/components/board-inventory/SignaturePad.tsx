@@ -80,7 +80,7 @@ export function SignaturePad({ onChange }: { onChange: (blob: Blob | null) => vo
         onPointerMove={move}
         onPointerUp={end}
         onPointerLeave={end}
-        className="w-full h-32 rounded-lg bg-white touch-none cursor-crosshair"
+        className="w-full h-32 rounded-lg bg-[#F7F9FA] touch-none cursor-crosshair"
         style={{ touchAction: 'none' }}
       />
       <div className="flex items-center justify-between mt-1">

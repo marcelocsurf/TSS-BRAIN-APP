@@ -18,7 +18,7 @@ export default async function SectionIntrosPage() {
       <h1 className="text-2xl font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
         Section intro videos
       </h1>
-      <p className="text-sm text-gray-500 mt-1 mb-5">
+      <p className="text-sm text-[#55666E] mt-1 mb-5">
         Paste a YouTube, Vimeo or Google Drive link. It shows under that section&apos;s header in the student course. Admin only.
       </p>
       <SectionIntroManager initial={intros} />

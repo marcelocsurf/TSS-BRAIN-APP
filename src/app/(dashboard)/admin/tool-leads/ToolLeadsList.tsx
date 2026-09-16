@@ -29,19 +29,19 @@ export function ToolLeadsList({ leads, academies }: { leads: Lead[]; academies: 
   };
 
   if (leads.length === 0) {
-    return <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center text-sm text-gray-400">Todavía no hay leads — compartí el link de la herramienta y van a ir cayendo acá. 🌊</div>;
+    return <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-10 text-center text-sm text-[#55666E]">Todavía no hay leads — compartí el link de la herramienta y van a ir cayendo acá. 🌊</div>;
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
       <div className="flex justify-end mb-2">
-        <button type="button" onClick={exportCsv} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 hover:bg-gray-50 text-[var(--tss-navy)]">
+        <button type="button" onClick={exportCsv} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-[#DCD7C6] hover:bg-[#F7F9FA] text-[var(--tss-navy)]">
           <Download size={13} /> Descargar Excel (CSV)
         </button>
       </div>
       <div className="divide-y divide-gray-50">
         {leads.map((l) => {
-          const chip = TOOL_CHIP[l.tool] ?? { label: l.tool, cls: 'bg-gray-100 text-gray-600 border-gray-200' };
+          const chip = TOOL_CHIP[l.tool] ?? { label: l.tool, cls: 'bg-[#EDF3F5] text-[#55666E] border-[#DCD7C6]' };
           return (
             <div key={l.id} className="py-2.5">
               <div className="flex items-center justify-between gap-2">
@@ -51,7 +51,7 @@ export function ToolLeadsList({ leads, academies }: { leads: Lead[]; academies: 
                     <span className={`ml-2 text-[9px] font-bold rounded-full px-2 py-0.5 border align-middle ${chip.cls}`}>{chip.label}</span>
                     {l.converted_at && <span className="ml-1.5 text-[9px] font-bold rounded-full px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 align-middle">Convertido ✓</span>}
                   </p>
-                  <p className="text-[11px] text-gray-400 truncate">{l.email} · {l.opens} uso{l.opens === 1 ? '' : 's'} · {l.devices} dispositivo{l.devices === 1 ? '' : 's'} · último: {l.last_seen.slice(0, 10)}</p>
+                  <p className="text-[11px] text-[#55666E] truncate">{l.email} · {l.opens} uso{l.opens === 1 ? '' : 's'} · {l.devices} dispositivo{l.devices === 1 ? '' : 's'} · último: {l.last_seen.slice(0, 10)}</p>
                 </div>
                 {!l.converted_at && (
                   <button type="button" onClick={() => { setConvertId(convertId === l.id ? null : l.id); setAcademyId(''); }}
@@ -62,7 +62,7 @@ export function ToolLeadsList({ leads, academies }: { leads: Lead[]; academies: 
               </div>
               {convertId === l.id && (
                 <div className="mt-2 flex items-center gap-2">
-                  <select value={academyId} onChange={(e) => setAcademyId(e.target.value)} className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-xs">
+                  <select value={academyId} onChange={(e) => setAcademyId(e.target.value)} className="flex-1 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs">
                     <option value="">Elegí la academia…</option>
                     {academies.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                   </select>

@@ -35,9 +35,9 @@ export function EmergencyPlanButton({ plan }: { plan: EmergencyPlan | null }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="flex h-full w-full items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-left transition-colors hover:bg-red-100"
+        className="flex h-full w-full items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-left transition-colors hover:bg-red-100"
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-600 text-white">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[5px] bg-red-600 text-white">
           <ShieldAlert size={20} strokeWidth={1.75} />
         </span>
         <span className="min-w-0">
@@ -54,14 +54,14 @@ export function EmergencyPlanButton({ plan }: { plan: EmergencyPlan | null }) {
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl"
+            className="w-full max-w-md rounded-t-2xl bg-[#F7F9FA] p-5 shadow-xl sm:rounded-lg"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="inline-flex items-center gap-2 text-base font-bold text-red-700">
                 <ShieldAlert size={18} strokeWidth={2} /> Plan de emergencia
               </h3>
-              <button onClick={() => setOpen(false)} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100" aria-label="Cerrar">
+              <button onClick={() => setOpen(false)} className="rounded-lg p-1 text-[#55666E] hover:bg-[#EDF3F5]" aria-label="Cerrar">
                 <X size={18} />
               </button>
             </div>
@@ -72,14 +72,14 @@ export function EmergencyPlanButton({ plan }: { plan: EmergencyPlan | null }) {
                   <div key={r.label} className="flex gap-3">
                     <span className="mt-0.5 shrink-0 text-red-500">{r.icon}</span>
                     <div className="min-w-0">
-                      <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400">{r.label}</p>
-                      <p className="whitespace-pre-line text-sm font-medium text-gray-800">{r.value}</p>
+                      <p className="text-[12px] font-mono uppercase tracking-wider text-[#55666E]">{r.label}</p>
+                      <p className="whitespace-pre-line text-sm font-medium text-[#10263B]">{r.value}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[#55666E]">
                 El plan de emergencia aún no está configurado.{' '}
                 <Link href="/my-academy" className="font-semibold text-red-600 hover:underline">Completarlo en Mi Academia →</Link>
               </p>
@@ -87,7 +87,7 @@ export function EmergencyPlanButton({ plan }: { plan: EmergencyPlan | null }) {
 
             <Link
               href="/my-academy"
-              className="mt-5 block rounded-xl border border-gray-200 py-2.5 text-center text-sm font-medium text-gray-600 hover:bg-gray-50"
+              className="mt-5 block rounded-[5px] border border-[#DCD7C6] py-2.5 text-center text-sm font-medium text-[#55666E] hover:bg-[#F7F9FA]"
             >
               Editar en Mi Academia
             </Link>

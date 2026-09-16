@@ -52,18 +52,18 @@ export function ServiceQuickPanel({ camp, onClose }: Props) {
       onClick={onClose}
     >
       <div
-        className="bg-white w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto"
+        className="bg-[#F7F9FA] w-full sm:max-w-md rounded-t-2xl sm:rounded-lg shadow-xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-100 flex items-start justify-between gap-2 sticky top-0 bg-white">
+        <div className="px-4 py-3 border-b border-[#DCD7C6] flex items-start justify-between gap-2 sticky top-0 bg-[#F7F9FA]">
           <div className="min-w-0">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
               {tpl?.level_name ?? 'Service'} · {camp.scheduled_time ?? ''}
             </p>
             <h3 className="text-base font-bold text-[var(--tss-navy)] truncate">{camp.camp_name}</h3>
           </div>
-          <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-700 p-1" aria-label="Close">
+          <button type="button" onClick={onClose} className="text-[#55666E] hover:text-[#10263B] p-1" aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -71,7 +71,7 @@ export function ServiceQuickPanel({ camp, onClose }: Props) {
         <div className="p-4 space-y-4">
           {/* Coach — change inline */}
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
               Head coach
             </label>
             <div className="flex items-center gap-2">
@@ -79,7 +79,7 @@ export function ServiceQuickPanel({ camp, onClose }: Props) {
                 value={coachId}
                 onChange={(e) => changeCoach(e.target.value)}
                 disabled={pending}
-                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white disabled:opacity-50"
+                className="flex-1 px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm bg-[#F7F9FA] disabled:opacity-50"
               >
                 <option value="">Select coach…</option>
                 {coaches.map((c) => (
@@ -93,8 +93,8 @@ export function ServiceQuickPanel({ camp, onClose }: Props) {
           {/* Capacity */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] font-mono uppercase tracking-wider text-gray-500">Spots</label>
-              <span className="text-xs text-gray-500 tabular-nums">
+              <label className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Spots</label>
+              <span className="text-xs text-[#55666E] tabular-nums">
                 {enrolled}/{capacity}{enrolled - paidCount > 0 ? ` · ${enrolled - paidCount} unpaid` : ''}
               </span>
             </div>
@@ -103,7 +103,7 @@ export function ServiceQuickPanel({ camp, onClose }: Props) {
                 const state = i < paidCount ? 'paid' : i < enrolled ? 'reserved' : 'open';
                 return (
                   <span key={i} className={`block w-3 h-3 rounded-full ${
-                    state === 'paid' ? 'bg-emerald-500' : state === 'reserved' ? 'bg-amber-400' : 'bg-gray-200'
+                    state === 'paid' ? 'bg-emerald-500' : state === 'reserved' ? 'bg-amber-400' : 'bg-[#DCD7C6]'
                   }`} />
                 );
               })}
@@ -112,7 +112,7 @@ export function ServiceQuickPanel({ camp, onClose }: Props) {
 
           {/* Add / manage students — reuses the full manager */}
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1.5">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">
               Students
             </label>
             <CampStudentManager campInstanceId={camp.id} currentParticipantIds={participantIds} />
@@ -121,7 +121,7 @@ export function ServiceQuickPanel({ camp, onClose }: Props) {
           {/* Full details */}
           <Link
             href={`/camps/${camp.id}`}
-            className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-sm font-medium text-[var(--tss-navy)]"
+            className="flex items-center justify-between px-3 py-2.5 rounded-[5px] bg-[#F7F9FA] hover:bg-[#EDF3F5] transition-colors text-sm font-medium text-[var(--tss-navy)]"
           >
             Full details (sessions, evaluations…)
             <ArrowRight size={15} />

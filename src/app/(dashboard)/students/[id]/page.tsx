@@ -80,7 +80,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         >
           Access expired
         </h2>
-        <p className="text-sm text-gray-600 leading-relaxed">
+        <p className="text-sm text-[#55666E] leading-relaxed">
           You can only view this student during the service window you&apos;re
           assigned to (from the start of the service until 1 day after it
           ends). Ask the coordinator to assign you again or wait for the next
@@ -403,7 +403,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
       {/* --- SUCCESS BANNER (shown after student creation) --- */}
       {justCreated && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-1">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-1">
           <p className="text-sm font-semibold text-emerald-700 inline-flex items-center gap-1.5">
             <CheckCircle2 size={15} strokeWidth={2} />
             Student created successfully!
@@ -415,7 +415,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       )}
 
       {/* --- 1. HEADER (always visible) --- */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5">
         <div className="flex items-center gap-4">
           <div className="flex flex-col items-center gap-1">
             {/* PhotoUploader renders the avatar + change/remove actions. */}
@@ -463,13 +463,13 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               )}
             </div>
             <p
-              className="text-[12px] uppercase tracking-wider text-gray-400 mt-1.5"
-              style={{ fontFamily: 'DM Mono, monospace' }}
+              className="text-[12px] uppercase tracking-wider text-[#55666E] mt-1.5"
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
             >
               {belt?.levelName ?? ''}
             </p>
             {(student as any).created_at && (
-              <p className="text-[12px] text-gray-400 mt-1">
+              <p className="text-[12px] text-[#55666E] mt-1">
                 Member since {new Date((student as any).created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             )}
@@ -484,8 +484,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             ['Working on', (student as any).next_recommended_focus || '—'],
             ['Last session', (student as any).last_session_date ? new Date((student as any).last_session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'],
           ].map(([k, v]) => (
-            <div key={k as string} className="rounded-xl bg-gray-50 px-3 py-2 min-w-0">
-              <p className="text-[12px] uppercase tracking-wider text-gray-500" style={{ fontFamily: 'DM Mono, monospace' }}>{k}</p>
+            <div key={k as string} className="rounded-[5px] bg-[#F7F9FA] px-3 py-2 min-w-0">
+              <p className="text-[12px] uppercase tracking-wider text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{k}</p>
               <p className="text-[13px] font-semibold text-[var(--tss-navy)] truncate" title={String(v)}>{v}</p>
             </div>
           ))}
@@ -507,7 +507,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <Link
             href={`/portal/${student.portal_token}`}
             target="_blank"
-            className="px-3 py-2.5 bg-gray-50 text-[var(--tss-navy)] text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
+            className="px-3 py-2.5 bg-[#F7F9FA] text-[var(--tss-navy)] text-sm font-medium rounded-lg hover:bg-[#EDF3F5] transition-colors"
           >
             Open portal
           </Link>
@@ -566,18 +566,18 @@ export default async function StudentProfilePage({ params, searchParams }: Props
                 First visit
               </span>
             ) : (
-              <span className="text-[12px] font-semibold uppercase tracking-wider text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2.5 py-0.5">
+              <span className="text-[12px] font-semibold uppercase tracking-wider text-[#55666E] bg-[#F7F9FA] border border-[#DCD7C6] rounded-full px-2.5 py-0.5">
                 No visits yet
               </span>
             )}
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-gray-50 rounded-xl px-3 py-2">
-              <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400">Visits</p>
-              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.visits}{visitStats.priorVisits > 0 && <span className="text-[12px] font-normal text-gray-400"> ({visitStats.priorVisits} prior)</span>}</p>
+            <div className="bg-[#F7F9FA] rounded-[5px] px-3 py-2">
+              <p className="text-[12px] font-mono uppercase tracking-wider text-[#55666E]">Visits</p>
+              <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.visits}{visitStats.priorVisits > 0 && <span className="text-[12px] font-normal text-[#55666E]"> ({visitStats.priorVisits} prior)</span>}</p>
             </div>
-            <div className="bg-gray-50 rounded-xl px-3 py-2">
-              <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400">Days trained</p>
+            <div className="bg-[#F7F9FA] rounded-[5px] px-3 py-2">
+              <p className="text-[12px] font-mono uppercase tracking-wider text-[#55666E]">Days trained</p>
               <p className="text-xl font-bold text-[var(--tss-navy)]">{visitStats.totalDays}</p>
             </div>
           </div>
@@ -594,13 +594,13 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <Row label="Emergency Phone" value={student.emergency_contact_phone} />
           {student.allergies && (
             <div className="flex items-start justify-between gap-4">
-              <span className="text-xs text-gray-500 shrink-0">Allergies</span>
+              <span className="text-xs text-[#55666E] shrink-0">Allergies</span>
               <span className="text-sm text-right text-red-600 font-medium">{student.allergies}</span>
             </div>
           )}
           {student.injuries && (
             <div className="flex items-start justify-between gap-4">
-              <span className="text-xs text-gray-500 shrink-0">Injuries</span>
+              <span className="text-xs text-[#55666E] shrink-0">Injuries</span>
               <span className="text-sm text-right text-amber-600 font-medium">{student.injuries}</span>
             </div>
           )}
@@ -644,16 +644,16 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             <Row label="What to Work Next" value={student.next_recommended_focus} highlight />
           </div>
         ) : (
-          <p className="text-sm text-gray-400 py-4 text-center">No sessions recorded yet</p>
+          <p className="text-sm text-[#55666E] py-4 text-center">No sessions recorded yet</p>
         )}
       </Card>
 
       {/* --- ACTIVE PLANS (resume CTA, only when there's an unfinished plan) --- */}
       {activeMultiBlock.length > 0 && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 space-y-2">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 space-y-2">
           <p
             className="text-[12px] uppercase tracking-wider text-emerald-700 inline-flex items-center gap-1.5 font-semibold"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             <CircleDot size={12} strokeWidth={2.5} />
             Sessions in progress / planned
@@ -661,7 +661,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           {activeMultiBlock.map((s) => (
             <div
               key={s.id}
-              className="flex items-center justify-between gap-2 bg-white rounded-xl p-3 border border-emerald-100"
+              className="flex items-center justify-between gap-2 bg-[#F7F9FA] rounded-[5px] p-3 border border-emerald-100"
             >
               <Link
                 href={`/sessions/plan/${s.id}`}
@@ -712,7 +712,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         >
           <div className="space-y-4">
             {campNotes.map((n) => (
-              <div key={n.camp_instance_id} className="rounded-xl border border-gray-100 p-3">
+              <div key={n.camp_instance_id} className="rounded-[5px] border border-[#DCD7C6] p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-[var(--tss-navy)]">{n.camp_name || 'Camp'}</p>
                   {n.approved != null && (
@@ -728,17 +728,17 @@ export default async function StudentProfilePage({ params, searchParams }: Props
                   )}
                 </div>
                 {(n.finalized_at || n.created_at) && (
-                  <p className="text-[12px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
+                  <p className="text-[12px] uppercase tracking-wider text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
                     {(n.finalized_at || n.created_at)!.slice(0, 10)}
                   </p>
                 )}
                 {n.readiness_summary && (
-                  <p className="text-[12px] text-gray-600 mb-2">{n.readiness_summary}</p>
+                  <p className="text-[12px] text-[#55666E] mb-2">{n.readiness_summary}</p>
                 )}
                 {n.student_visible_note && (
                   <div className="mb-2 rounded-lg bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan,#5AC3E7)] px-3 py-2">
-                    <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">Student sees this</p>
-                    <p className="text-sm text-gray-700 whitespace-pre-line">{n.student_visible_note}</p>
+                    <p className="text-[12px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">Student sees this</p>
+                    <p className="text-sm text-[#10263B] whitespace-pre-line">{n.student_visible_note}</p>
                   </div>
                 )}
                 {n.coach_private_note && (
@@ -758,17 +758,17 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         <div className="space-y-3">
           {student.coach_notes_general ? (
             <div>
-              <p className="text-[12px] font-semibold text-gray-400 uppercase mb-1">Internal Notes</p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 rounded-lg p-3">
+              <p className="text-[12px] font-semibold text-[#55666E] uppercase mb-1">Internal Notes</p>
+              <p className="text-sm text-[#10263B] whitespace-pre-wrap bg-[#F7F9FA] rounded-lg p-3">
                 {student.coach_notes_general}
               </p>
             </div>
           ) : (
-            <p className="text-xs text-gray-400">No coach notes yet</p>
+            <p className="text-xs text-[#55666E]">No coach notes yet</p>
           )}
           {student.current_focus_area && (
             <div>
-              <p className="text-[12px] font-semibold text-gray-400 uppercase mb-1">Current Focus Area</p>
+              <p className="text-[12px] font-semibold text-[#55666E] uppercase mb-1">Current Focus Area</p>
               <p className="text-sm text-[var(--tss-navy)] font-medium">{student.current_focus_area}</p>
             </div>
           )}
@@ -816,7 +816,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               <>
                 <Star size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
                 Official evaluation by sequence
-                {ratedCount > 0 && <span className="text-gray-400 font-normal">· {ratedCount} rated</span>}
+                {ratedCount > 0 && <span className="text-[#55666E] font-normal">· {ratedCount} rated</span>}
               </>
             }
             defaultOpen={true}
@@ -864,8 +864,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             history={oceanHistory}
             provisional={!!(student as any).ocean_level_provisional}
           />
-          <div className="pt-3 border-t border-gray-100">
-            <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-2">
+          <div className="pt-3 border-t border-[#DCD7C6]">
+            <p className="text-[12px] font-mono uppercase tracking-wider text-[#55666E] mb-2">
               Las pruebas que lo respaldan
             </p>
             <WaterTestsPanel
@@ -901,18 +901,18 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
            Y queda dicho lo que antes no estaba en ningún lado: el curso viene
            con sus drills y misiones. No se otorgan aparte. */}
-      <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100">
-          <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400">
+      <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[#DCD7C6]">
+          <p className="text-[12px] font-mono uppercase tracking-wider text-[#55666E]">
             Accesos
           </p>
-          <p className="text-[13px] text-gray-800 mt-0.5">
+          <p className="text-[13px] text-[#10263B] mt-0.5">
             {courseGrants.length > 0
               ? `${courseGrants.length} ${courseGrants.length === 1 ? 'curso otorgado' : 'cursos otorgados'}`
               : 'Sin cursos otorgados'}
             {pendingCourses.length > 0 && ` · ${pendingCourses.length} apartado(s)`}
           </p>
-          <p className="text-[11.5px] text-gray-500 mt-1">
+          <p className="text-[11.5px] text-[#55666E] mt-1">
             Cada curso viene con sus drills y misiones — no se otorgan aparte. Inscribir al alumno
             en un camp le otorga el curso de esa cinta automáticamente.
           </p>
@@ -969,14 +969,14 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               const ab = a.belt ? BELT_DISPLAY[a.belt as keyof typeof BELT_DISPLAY] : null;
               const when = new Date(a.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
               return (
-                <div key={i} className="flex items-center justify-between gap-3 py-2 border-b border-gray-50 last:border-0">
+                <div key={i} className="flex items-center justify-between gap-3 py-2 border-b border-[#DCD7C6] last:border-0">
                   <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[12px] font-mono text-gray-400 shrink-0">#{a.attempt_number ?? quizAttempts.length - i}</span>
+                    <span className="text-[12px] font-mono text-[#55666E] shrink-0">#{a.attempt_number ?? quizAttempts.length - i}</span>
                     <span className="w-3 h-3 rounded-full inline-block shrink-0" style={{ backgroundColor: ab?.color || '#999' }} />
                     <span className="text-sm font-medium text-[var(--tss-navy)] truncate">{ab?.en ?? a.belt ?? '—'}</span>
-                    {a.score != null && <span className="text-xs text-gray-500 shrink-0">{a.score}/{(a.source ?? '').includes('v2') ? 100 : 70}</span>}
+                    {a.score != null && <span className="text-xs text-[#55666E] shrink-0">{a.score}/{(a.source ?? '').includes('v2') ? 100 : 70}</span>}
                   </div>
-                  <span className="text-[12px] text-gray-400 shrink-0">{when}</span>
+                  <span className="text-[12px] text-[#55666E] shrink-0">{when}</span>
                 </div>
               );
             })}
@@ -985,15 +985,15 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               if (!latest?.skillmap?.length) return null;
               return (
                 <div className="pt-2">
-                  <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Latest skill breakdown</p>
+                  <p className="text-[12px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">Latest skill breakdown</p>
                   <div className="space-y-1">
                     {latest.skillmap.map((s, j) => (
                       <div key={j} className="flex items-center gap-2">
-                        <span className="text-[12px] text-gray-600 w-28 shrink-0 truncate">{s.name}</span>
-                        <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <span className="text-[12px] text-[#55666E] w-28 shrink-0 truncate">{s.name}</span>
+                        <div className="flex-1 h-1.5 bg-[#EDF3F5] rounded-full overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${Math.max(0, Math.min(100, s.pct))}%`, background: 'var(--tss-cyan,#5AC3E7)' }} />
                         </div>
-                        <span className="text-[12px] text-gray-400 w-8 text-right shrink-0">{s.pct}%</span>
+                        <span className="text-[12px] text-[#55666E] w-8 text-right shrink-0">{s.pct}%</span>
                       </div>
                     ))}
                   </div>
@@ -1040,7 +1040,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             <div>
               <p className="text-sm font-medium text-emerald-700">Waiver signed</p>
               {student.waiver_signed_at && (
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-[#55666E]">
                   Signed on {new Date(student.waiver_signed_at).toLocaleDateString()}
                 </p>
               )}
@@ -1059,7 +1059,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
       {/* Media-use consent — warn loudly when the student did NOT authorize it */}
       {(student as any).media_release_consent === false ? (
-        <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-3.5">
+        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 p-3.5">
           <AlertTriangle size={20} strokeWidth={1.75} className="text-red-500 shrink-0" />
           <div>
             <p className="text-sm font-semibold text-red-700">No autoriza uso de fotos ni videos</p>
@@ -1067,14 +1067,14 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           </div>
         </div>
       ) : (student as any).media_release_consent === true ? (
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2">
+        <div className="flex items-center gap-2 rounded-[5px] bg-emerald-50 border border-emerald-100 px-3 py-2">
           <CheckCircle2 size={14} strokeWidth={2} className="text-emerald-600 shrink-0" />
           <p className="text-xs text-emerald-700">Autoriza uso de fotos y videos (Sección 10)</p>
         </div>
       ) : (
-        <div className="flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-100 px-3 py-2">
-          <CircleDot size={13} strokeWidth={2} className="text-gray-400 shrink-0" />
-          <p className="text-xs text-gray-500">Uso de imagen: sin registrar (waiver anterior o sin responder)</p>
+        <div className="flex items-center gap-2 rounded-[5px] bg-[#F7F9FA] border border-[#DCD7C6] px-3 py-2">
+          <CircleDot size={13} strokeWidth={2} className="text-[#55666E] shrink-0" />
+          <p className="text-xs text-[#55666E]">Uso de imagen: sin registrar (waiver anterior o sin responder)</p>
         </div>
       )}
 
@@ -1091,8 +1091,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
           <Row label="Instagram" value={student.instagram} />
           <Row label="Height" value={student.height} />
           <Row label="Weight" value={student.weight} />
-          <div className="border-t border-gray-50 pt-2 mt-3">
-            <p className="text-[12px] font-semibold text-gray-400 uppercase mb-2">Surf Profile</p>
+          <div className="border-t border-[#DCD7C6] pt-2 mt-3">
+            <p className="text-[12px] font-semibold text-[#55666E] uppercase mb-2">Surf Profile</p>
             <Row label="Stance" value={student.stance} />
             <Row label="Experience" value={student.surf_experience_years} />
             <Row label="Frequency" value={student.surf_frequency} />
@@ -1108,8 +1108,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
             <Row label="Surf injuries" value={(student as any).surf_injuries} />
             <Row label="Returning student" value={(student as any).returning_student ? 'Yes' : null} />
           </div>
-          <div className="border-t border-gray-50 pt-2 mt-3">
-            <p className="text-[12px] font-semibold text-gray-400 uppercase mb-2">Goals</p>
+          <div className="border-t border-[#DCD7C6] pt-2 mt-3">
+            <p className="text-[12px] font-semibold text-[#55666E] uppercase mb-2">Goals</p>
             <Row label="This visit (Welcome back)" value={(student as any).personal_goal} />
             <Row label="Short Term" value={student.goal_short_term} />
             <Row label="Mid Term" value={student.goal_mid_term} />
@@ -1130,10 +1130,10 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 function Card({ title, children, highlighted }: { title: string; children: React.ReactNode; highlighted?: boolean }) {
   return (
     <div
-      className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${
+      className={`bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border shadow-sm overflow-hidden ${
         highlighted
           ? 'border-[var(--tss-cyan,#5AC3E7)]/40 ring-1 ring-[var(--tss-cyan,#5AC3E7)]/20'
-          : 'border-gray-100'
+          : 'border-[#DCD7C6]'
       }`}
     >
       <div
@@ -1143,7 +1143,7 @@ function Card({ title, children, highlighted }: { title: string; children: React
       >
         <h3 className="text-sm font-semibold text-[var(--tss-navy)]">{title}</h3>
       </div>
-      <div className="px-4 pb-4 space-y-2 border-t border-gray-100">{children}</div>
+      <div className="px-4 pb-4 space-y-2 border-t border-[#DCD7C6]">{children}</div>
     </div>
   );
 }
@@ -1158,15 +1158,15 @@ function Row({ label, value, badge, highlight }: {
   return (
     <div className="flex items-start justify-between gap-4 pt-2">
       <span
-        className="text-[12px] uppercase tracking-wider text-gray-400 shrink-0"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        className="text-[12px] uppercase tracking-wider text-[#55666E] shrink-0"
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       >
         {label}
       </span>
       {badge ? (
         <StatusBadge status={value} />
       ) : (
-        <span className={`text-sm text-right ${highlight ? 'text-[var(--tss-navy)] font-medium' : 'text-gray-700'}`}>
+        <span className={`text-sm text-right ${highlight ? 'text-[var(--tss-navy)] font-medium' : 'text-[#10263B]'}`}>
           {value}
         </span>
       )}
@@ -1179,11 +1179,11 @@ function StatusBadge({ status }: { status: string }) {
     mastered: 'bg-emerald-50 text-emerald-700',
     competent: 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]',
     partial: 'bg-amber-50 text-amber-700',
-    not_yet: 'bg-gray-50 text-gray-600',
-    not_achieved: 'bg-gray-50 text-gray-600',
+    not_yet: 'bg-[#F7F9FA] text-[#55666E]',
+    not_achieved: 'bg-[#F7F9FA] text-[#55666E]',
   };
   return (
-    <span className={`text-[12px] px-2 py-0.5 rounded-full capitalize font-semibold ${styles[status] || 'bg-gray-50 text-gray-600'}`}>
+    <span className={`text-[12px] px-2 py-0.5 rounded-full capitalize font-semibold ${styles[status] || 'bg-[#F7F9FA] text-[#55666E]'}`}>
       {status?.replace(/_/g, ' ')}
     </span>
   );

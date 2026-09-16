@@ -103,33 +103,33 @@ export default function AddStudentPage() {
 
   return (
     <div className="max-w-md mx-auto p-4 space-y-4">
-      <Link href="/students" className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-[var(--tss-navy)]">
+      <Link href="/students" className="inline-flex items-center gap-1 text-xs text-[#55666E] hover:text-[var(--tss-navy)]">
         <ArrowLeft size={12} /> Students
       </Link>
 
       <HowToAddStudent />
 
       {!createdUrl ? (
-        <form onSubmit={(e) => submit(e)} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+        <form onSubmit={(e) => submit(e)} className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5 space-y-4">
           <div>
             <h2 className="text-lg font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>New student</h2>
-            <p className="text-xs text-gray-500 mt-1">Create the minimal profile and send the link. Level, medical info and goals are filled once in the intake.</p>
+            <p className="text-xs text-[#55666E] mt-1">Create the minimal profile and send the link. Level, medical info and goals are filled once in the intake.</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <input value={first} onChange={(e) => setFirst(e.target.value)} placeholder="First name" className="px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]" />
-            <input value={last} onChange={(e) => setLast(e.target.value)} placeholder="Last name" className="px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]" />
+            <input value={first} onChange={(e) => setFirst(e.target.value)} placeholder="First name" className="px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]" />
+            <input value={last} onChange={(e) => setLast(e.target.value)} placeholder="Last name" className="px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]" />
           </div>
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone / WhatsApp" className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]" />
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional)" className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]" />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone / WhatsApp" className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional)" className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]" />
 
           <div>
-            <select value={serviceId} onChange={(e) => setServiceId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]">
+            <select value={serviceId} onChange={(e) => setServiceId(e.target.value)} className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm bg-[#F7F9FA] focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]">
               <option value="">Service · none yet (interested, not sold)</option>
               {services.map((sv) => (
                 <option key={sv.id} value={sv.id}>{sv.name}{sv.start === 'por confirmar' ? '' : ` · ${sv.days === 1 ? sv.start : `${sv.start} → ${sv.end}`}`}</option>
               ))}
             </select>
-            <p className="text-[12px] text-gray-500 mt-1.5">
+            <p className="text-[12px] text-[#55666E] mt-1.5">
               {chosen
                 ? (chosen.start === 'por confirmar'
                   ? 'Wants a camp, level not known yet → member, enrolled as "level to confirm". The intake asks everything; assign the real camp once the quiz is in.'
@@ -140,32 +140,32 @@ export default function AddStudentPage() {
             </p>
           </div>
 
-          {error && <p className="text-sm text-red-700 bg-red-50 p-3 rounded-xl">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full py-3 text-white text-sm font-semibold rounded-xl disabled:opacity-50" style={{ background: 'var(--tss-navy)' }}>
+          {error && <p className="text-sm text-red-700 bg-red-50 p-3 rounded-[5px]">{error}</p>}
+          <button type="submit" disabled={loading} className="w-full py-3 text-white text-sm font-semibold rounded-[5px] disabled:opacity-50" style={{ background: 'var(--tss-navy)' }}>
             {loading ? 'Creating…' : 'Create & get link'}
           </button>
         </form>
       ) : (
-        <div ref={successRef} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-3 text-center">
+        <div ref={successRef} className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5 space-y-3 text-center">
           <p className="text-2xl">✅</p>
           <p className="text-sm font-semibold text-[var(--tss-navy)]">Profile created</p>
           {enrollNote && <p className={`text-xs font-medium ${enrollNote.startsWith('Enrolled') ? 'text-emerald-700' : 'text-amber-700'}`}>{enrollNote}</p>}
-          <p className="text-xs text-gray-500">Send this ONE link to the student. The intake asks exactly what their service needs.</p>
+          <p className="text-xs text-[#55666E]">Send this ONE link to the student. The intake asks exactly what their service needs.</p>
           {emailSent && (
             <p className="text-xs text-emerald-700 font-medium">✓ We also emailed the link to {email}.</p>
           )}
-          <code className="block text-[11px] text-gray-600 break-all bg-gray-50 px-3 py-2 rounded-lg">{fullUrl}</code>
+          <code className="block text-[11px] text-[#55666E] break-all bg-[#F7F9FA] px-3 py-2 rounded-lg">{fullUrl}</code>
           <div className="flex gap-2">
-            <button onClick={() => { navigator.clipboard.writeText(fullUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="flex-1 py-2.5 text-sm font-semibold rounded-xl border border-gray-300 text-gray-700">
+            <button onClick={() => { navigator.clipboard.writeText(fullUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); }} className="flex-1 py-2.5 text-sm font-semibold rounded-[5px] border border-[#DCD7C6] text-[#10263B]">
               {copied ? '✓ Copied' : 'Copy link'}
             </button>
-            <a href={`https://wa.me/?text=${encodeURIComponent('Complete your intake here: ' + fullUrl)}`} target="_blank" className="flex-1 py-2.5 text-sm font-semibold rounded-xl text-white text-center" style={{ background: '#25D366' }}>
+            <a href={`https://wa.me/?text=${encodeURIComponent('Complete your intake here: ' + fullUrl)}`} target="_blank" className="flex-1 py-2.5 text-sm font-semibold rounded-[5px] text-white text-center" style={{ background: '#25D366' }}>
               WhatsApp
             </a>
           </div>
           <div className="flex gap-2 pt-1">
-            <a href={fullUrl} target="_blank" className="flex-1 py-2.5 text-sm font-semibold rounded-xl border border-gray-300 text-gray-700 text-center">Open intake</a>
-            <Link href="/students" className="flex-1 py-2.5 text-sm font-semibold rounded-xl bg-[var(--tss-navy)] text-white text-center">View students</Link>
+            <a href={fullUrl} target="_blank" className="flex-1 py-2.5 text-sm font-semibold rounded-[5px] border border-[#DCD7C6] text-[#10263B] text-center">Open intake</a>
+            <Link href="/students" className="flex-1 py-2.5 text-sm font-semibold rounded-[5px] bg-[var(--tss-navy)] text-white text-center">View students</Link>
           </div>
         </div>
       )}

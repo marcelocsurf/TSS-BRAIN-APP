@@ -26,13 +26,13 @@ export function GlobalBackBar() {
       <button
         type="button"
         onClick={back}
-        className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-600 hover:border-[var(--tss-cyan,#5AC3E7)] hover:text-[var(--tss-navy)] transition-colors"
+        className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full border border-[#DCD7C6] bg-[#F7F9FA] text-[#55666E] hover:border-[var(--tss-cyan,#5AC3E7)] hover:text-[var(--tss-navy)] transition-colors"
       >
         <ArrowLeft size={13} strokeWidth={2.25} /> Volver
       </button>
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-600 hover:border-[var(--tss-cyan,#5AC3E7)] hover:text-[var(--tss-navy)] transition-colors"
+        className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1.5 rounded-full border border-[#DCD7C6] bg-[#F7F9FA] text-[#55666E] hover:border-[var(--tss-cyan,#5AC3E7)] hover:text-[var(--tss-navy)] transition-colors"
       >
         <Home size={13} strokeWidth={2.25} /> Inicio
       </Link>

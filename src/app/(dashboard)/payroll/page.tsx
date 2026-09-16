@@ -15,7 +15,7 @@ export default async function PayrollPage() {
     <div className="max-w-3xl mx-auto space-y-4">
       <div>
         <h1 className="text-xl font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>Pagos al equipo</h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-[#55666E] mt-1">
           Qué dio cada persona, cuánto se le paga, y quién debe cierres — sin cierre no se emite pago.
         </p>
       </div>

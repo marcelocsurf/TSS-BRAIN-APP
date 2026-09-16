@@ -20,10 +20,10 @@ export function Step21TotalDuration({ formState, options, onSelect }: Props) {
               key={opt.id}
               type="button"
               onClick={() => onSelect(opt.value)}
-              className={`py-3 rounded-xl border text-center text-sm font-medium transition-all ${
+              className={`py-3 rounded-[5px] border text-center text-sm font-medium transition-all ${
                 isSelected
-                  ? 'border-[#5AC3E7] bg-amber-50 text-gray-800'
-                  : 'border-gray-100 text-gray-600 hover:border-gray-200'
+                  ? 'border-[#5AC3E7] bg-amber-50 text-[#10263B]'
+                  : 'border-[#DCD7C6] text-[#55666E] hover:border-[#DCD7C6]'
               }`}
             >
               {opt.label || `${opt.value} min`}

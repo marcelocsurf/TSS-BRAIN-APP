@@ -33,19 +33,19 @@ export function PendingPromotionsPanel() {
   if (loading || items.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-4">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-amber-200 shadow-sm p-4">
       <p className="text-[12px] font-mono uppercase tracking-wider text-amber-600 mb-2 flex items-center gap-1.5">
         <Award size={12} /> Belt promotions to confirm ({items.length})
       </p>
-      <p className="text-xs text-gray-500 mb-3">
+      <p className="text-xs text-[#55666E] mb-3">
         Recommended by a coach whose certification is below the target belt. Confirm to promote the student.
       </p>
       <div className="space-y-2">
         {items.map((r) => (
-          <div key={r.id} className="rounded-xl border border-gray-200 p-3 flex items-center gap-3">
+          <div key={r.id} className="rounded-[5px] border border-[#DCD7C6] p-3 flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-[var(--tss-navy)] truncate">{r.student_name}</p>
-              <p className="text-[11px] text-gray-500">
+              <p className="text-[11px] text-[#55666E]">
                 {label(r.from_belt)} → <span className="font-semibold text-amber-700">{label(r.recommended_belt)}</span>
                 {r.recommended_by_name && <> · by {r.recommended_by_name}</>}
                 {r.coach_max_belt && <> (cap: {label(r.coach_max_belt)})</>}
@@ -61,7 +61,7 @@ export function PendingPromotionsPanel() {
             <button
               onClick={() => resolve(r.id, false)}
               disabled={busyId === r.id}
-              className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-2.5 py-1.5 text-xs font-semibold text-gray-600 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-lg bg-[#EDF3F5] px-2.5 py-1.5 text-xs font-semibold text-[#55666E] disabled:opacity-50"
             >
               <X size={13} strokeWidth={3} /> Reject
             </button>

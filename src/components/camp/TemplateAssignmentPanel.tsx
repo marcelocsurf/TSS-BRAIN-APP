@@ -51,7 +51,7 @@ export function TemplateAssignmentPanel({
   };
 
   return (
-    <div className="mb-4 bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+    <div className="mb-4 bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Building2 size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
@@ -60,19 +60,19 @@ export function TemplateAssignmentPanel({
           </h3>
         </div>
         <span
-          className="text-[10px] uppercase tracking-wider text-gray-400"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          className="text-[10px] uppercase tracking-wider text-[#55666E]"
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           {selected.size} of {academies.length}
         </span>
       </div>
 
-      <p className="text-[11px] text-gray-500 mb-3">
+      <p className="text-[11px] text-[#55666E] mb-3">
         Pick the academies that should see this template in their <code>/camps/templates</code> and use it in their calendar. Unticking removes access — existing camp instances are not affected.
       </p>
 
       {academies.length === 0 ? (
-        <p className="text-sm text-gray-400 italic">No academies registered yet.</p>
+        <p className="text-sm text-[#55666E] italic">No academies registered yet.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
           {academies.map((a) => {
@@ -83,7 +83,7 @@ export function TemplateAssignmentPanel({
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors ${
                   isOn
                     ? 'bg-[var(--tss-cyan,#5AC3E7)]/10 border-[var(--tss-cyan,#5AC3E7)]/30'
-                    : 'bg-white border-gray-200 hover:border-gray-300'
+                    : 'bg-[#F7F9FA] border-[#DCD7C6] hover:border-[#DCD7C6]'
                 }`}
               >
                 <input
@@ -92,7 +92,7 @@ export function TemplateAssignmentPanel({
                   onChange={() => toggle(a.id)}
                   className="rounded accent-[var(--tss-cyan,#5AC3E7)]"
                 />
-                <span className="text-sm text-gray-700 truncate">{a.name}</span>
+                <span className="text-sm text-[#10263B] truncate">{a.name}</span>
               </label>
             );
           })}

@@ -29,7 +29,7 @@ export function VideoLinkEditor({ sessionResultId, currentLink }: {
     return (
       <button
         onClick={() => setEditing(true)}
-        className="text-xs text-gray-400 hover:text-[var(--tss-navy)] flex items-center gap-1 mt-1"
+        className="text-xs text-[#55666E] hover:text-[var(--tss-navy)] flex items-center gap-1 mt-1"
       >
         + Add video link
       </button>
@@ -49,7 +49,7 @@ export function VideoLinkEditor({ sessionResultId, currentLink }: {
         </a>
         <button
           onClick={() => setEditing(true)}
-          className="text-xs text-gray-400 hover:text-gray-600"
+          className="text-xs text-[#55666E] hover:text-[#55666E]"
         >
           Edit
         </button>
@@ -65,7 +65,7 @@ export function VideoLinkEditor({ sessionResultId, currentLink }: {
         value={link}
         onChange={e => setLink(e.target.value)}
         placeholder="https://drive.google.com/... or YouTube link"
-        className="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-300"
+        className="w-full px-3 py-1.5 border border-[#DCD7C6] rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-gray-300"
         autoFocus
       />
       <div className="flex gap-2">
@@ -78,7 +78,7 @@ export function VideoLinkEditor({ sessionResultId, currentLink }: {
         </button>
         <button
           onClick={() => { setEditing(false); setLink(currentLink); }}
-          className="px-3 py-1 border border-gray-200 text-gray-500 text-xs rounded-lg hover:bg-gray-50"
+          className="px-3 py-1 border border-[#DCD7C6] text-[#55666E] text-xs rounded-lg hover:bg-[#F7F9FA]"
         >
           Cancel
         </button>

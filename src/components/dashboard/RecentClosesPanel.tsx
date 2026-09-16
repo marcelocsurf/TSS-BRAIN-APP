@@ -38,7 +38,7 @@ export function RecentClosesPanel() {
   const newCount = closes.filter((c) => c.is_new).length;
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
+    <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] shadow-sm">
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -46,7 +46,7 @@ export function RecentClosesPanel() {
       >
         <span className="inline-flex items-center gap-2 text-sm font-bold text-[var(--tss-navy)]">
           <ClipboardCheck size={16} className="text-[var(--tss-cyan,#5AC3E7)]" /> Cierres y feedback
-          <span className="text-[11px] font-semibold text-gray-500">· {closes.length} esta semana</span>
+          <span className="text-[11px] font-semibold text-[#55666E]">· {closes.length} esta semana</span>
           {newCount > 0 && (
             <span className="text-[12px] font-bold text-white bg-[var(--tss-cyan,#5AC3E7)] rounded-full px-2 py-0.5">{newCount} nuevo{newCount > 1 ? 's' : ''}</span>
           )}
@@ -54,7 +54,7 @@ export function RecentClosesPanel() {
             <span className="text-[12px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">{pending.length} sin cerrar</span>
           )}
         </span>
-        <ChevronDown size={16} className={`text-gray-400 transition-transform shrink-0 ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`text-[#55666E] transition-transform shrink-0 ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (
@@ -67,8 +67,8 @@ export function RecentClosesPanel() {
               </p>
               <div className="space-y-1.5">
                 {pending.map((p) => (
-                  <div key={p.camp_session_id} className="rounded-xl border border-amber-200 bg-amber-50/50 px-3 py-2 flex items-center justify-between gap-2">
-                    <span className="text-[12px] text-gray-800 min-w-0 truncate">
+                  <div key={p.camp_session_id} className="rounded-[5px] border border-amber-200 bg-amber-50/50 px-3 py-2 flex items-center justify-between gap-2">
+                    <span className="text-[12px] text-[#10263B] min-w-0 truncate">
                       <span className="font-semibold">{p.camp_name || 'Servicio'}</span>
                       {p.day_number ? ` · Día ${p.day_number}` : ''} · {fmtDate(p.session_date)}
                     </span>
@@ -82,31 +82,31 @@ export function RecentClosesPanel() {
           {/* Recent closes with feedback */}
           {closes.length > 0 && (
             <div>
-              <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Cierres · últimos 7 días</p>
+              <p className="text-[12px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">Cierres · últimos 7 días</p>
               <div className="space-y-2">
                 {closes.map((c) => (
-                  <div key={c.camp_session_id} className={`rounded-xl border p-3 ${c.is_new ? 'border-[var(--tss-cyan,#5AC3E7)]/50 bg-[var(--tss-cyan,#5AC3E7)]/5' : 'border-gray-200'}`}>
+                  <div key={c.camp_session_id} className={`rounded-[5px] border p-3 ${c.is_new ? 'border-[var(--tss-cyan,#5AC3E7)]/50 bg-[var(--tss-cyan,#5AC3E7)]/5' : 'border-[#DCD7C6]'}`}>
                     <div className="flex items-center justify-between gap-2 mb-1.5">
                       <p className="text-sm font-semibold text-[var(--tss-navy)] min-w-0 truncate">
                         {c.camp_name || 'Servicio'}{c.day_number ? ` · Día ${c.day_number}` : ''}
                         {c.is_new && <span className="ml-1.5 text-[11px] font-bold uppercase text-[var(--tss-cyan,#0369A1)]">nuevo</span>}
                       </p>
-                      <span className="text-[12px] text-gray-400 shrink-0">{fmtWhen(c.closed_at)}</span>
+                      <span className="text-[12px] text-[#55666E] shrink-0">{fmtWhen(c.closed_at)}</span>
                     </div>
-                    <p className="text-[11px] text-gray-500 mb-2">Cerró: {c.coach_name || 'Coach'}</p>
+                    <p className="text-[11px] text-[#55666E] mb-2">Cerró: {c.coach_name || 'Coach'}</p>
                     <div className="space-y-1.5">
                       {c.students.map((s, i) => {
-                        const st = STATUS[s.status ?? ''] ?? { label: '—', dot: '#9CA3AF', text: 'text-gray-500' };
+                        const st = STATUS[s.status ?? ''] ?? { label: '—', dot: '#9CA3AF', text: 'text-[#55666E]' };
                         return (
-                          <div key={i} className="rounded-lg bg-gray-50 border border-gray-100 px-2.5 py-1.5">
+                          <div key={i} className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] px-2.5 py-1.5">
                             <div className="flex items-center gap-1.5">
                               <Circle size={8} fill={st.dot} strokeWidth={0} />
-                              <span className="text-[12px] font-semibold text-gray-800">{s.name}</span>
+                              <span className="text-[12px] font-semibold text-[#10263B]">{s.name}</span>
                               <span className={`text-[12px] font-semibold ${st.text}`}>{st.label}</span>
                             </div>
-                            {s.feedback && <p className="text-[11px] text-gray-600 leading-snug mt-0.5">💬 {s.feedback}</p>}
-                            {s.whats_next && <p className="text-[11px] text-gray-500 leading-snug">→ {s.whats_next}</p>}
-                            {!s.feedback && !s.whats_next && <p className="text-[12px] text-gray-400 italic mt-0.5">Sin comentarios</p>}
+                            {s.feedback && <p className="text-[11px] text-[#55666E] leading-snug mt-0.5">💬 {s.feedback}</p>}
+                            {s.whats_next && <p className="text-[11px] text-[#55666E] leading-snug">→ {s.whats_next}</p>}
+                            {!s.feedback && !s.whats_next && <p className="text-[12px] text-[#55666E] italic mt-0.5">Sin comentarios</p>}
                           </div>
                         );
                       })}

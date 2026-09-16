@@ -35,7 +35,7 @@ export function IntakeStatusCard({ portalToken, intakeCompletedAt }: Props) {
   };
 
   return (
-    <div className={`rounded-2xl border p-3 ${
+    <div className={`rounded-lg border p-3 ${
       intakeCompletedAt
         ? 'bg-emerald-50 border-emerald-100'
         : 'bg-amber-50 border-amber-100'
@@ -64,7 +64,7 @@ export function IntakeStatusCard({ portalToken, intakeCompletedAt }: Props) {
           className={`shrink-0 px-3 py-1.5 text-xs rounded-lg font-medium transition-all inline-flex items-center gap-1 ${
             copied
               ? 'bg-emerald-600 text-white'
-              : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
+              : 'bg-[#F7F9FA] border border-[#DCD7C6] text-[#55666E] hover:border-[#55666E]'
           }`}
         >
           {copied ? (<><Check size={12} strokeWidth={2.5} /> Copied</>) : 'Copy Intake Link'}

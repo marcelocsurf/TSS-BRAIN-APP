@@ -61,12 +61,12 @@ export default async function AcademiesPage() {
         >
           Academies
         </h1>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-[#55666E] mt-1">
           Platform admin view. Create academies and assign a coordinator to each.
         </p>
         <p
-          className="text-[10px] uppercase tracking-wider text-gray-400 mt-2 inline-flex items-center gap-1.5"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          className="text-[10px] uppercase tracking-wider text-[#55666E] mt-2 inline-flex items-center gap-1.5"
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           <Building2 size={11} strokeWidth={1.75} />
           {normalized.length} academies · {totalStudents ?? 0} total students

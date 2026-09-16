@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 function complianceTone(pct: number | null): string {
-  if (pct == null) return 'text-gray-400';
+  if (pct == null) return 'text-[#55666E]';
   if (pct >= 90) return 'text-emerald-600';
   if (pct >= 70) return 'text-amber-600';
   return 'text-rose-600';
@@ -32,11 +32,11 @@ export default async function ClosuresReportPage({
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
       <header className="space-y-1">
-        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600">
+        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-[#55666E] hover:text-[#55666E]">
           <ArrowLeft size={12} /> Reportes
         </Link>
         <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Cierres por coach</h1>
-        <p className="text-sm text-gray-500">Cumplimiento de cierre de sesiones (el cierre habilita el pago). Sin cierre = no pagable.</p>
+        <p className="text-sm text-[#55666E]">Cumplimiento de cierre de sesiones (el cierre habilita el pago). Sin cierre = no pagable.</p>
       </header>
 
       <ReportControls exportHref="/reports/closures/export" />
@@ -55,7 +55,7 @@ export default async function ClosuresReportPage({
           <ReportCard title="Por coach" icon={CheckSquare}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#F7F9FA]">
                   <tr>
                     <Th>Coach</Th>
                     {data.isPlatformAdmin && <Th>Academia</Th>}
@@ -71,8 +71,8 @@ export default async function ClosuresReportPage({
                 <tbody className="divide-y divide-gray-50">
                   {data.rows.map((r) => (
                     <tr key={r.coachId}>
-                      <Td><span className="font-medium text-gray-800">{r.name}</span></Td>
-                      {data.isPlatformAdmin && <Td><span className="text-gray-500">{r.academyName || '—'}</span></Td>}
+                      <Td><span className="font-medium text-[#10263B]">{r.name}</span></Td>
+                      {data.isPlatformAdmin && <Td><span className="text-[#55666E]">{r.academyName || '—'}</span></Td>}
                       <Td align="right" mono>{r.scheduled}</Td>
                       <Td align="right" mono>{r.closed}</Td>
                       <Td align="right" mono>{r.overdue ? <span className="text-rose-600 font-semibold">{r.overdue}</span> : '—'}</Td>
@@ -83,14 +83,14 @@ export default async function ClosuresReportPage({
                     </tr>
                   ))}
                   {data.rows.length === 0 && (
-                    <tr><td colSpan={data.isPlatformAdmin ? 9 : 8} className="text-center py-6 text-xs text-gray-400">Sin sesiones en este rango.</td></tr>
+                    <tr><td colSpan={data.isPlatformAdmin ? 9 : 8} className="text-center py-6 text-xs text-[#55666E]">Sin sesiones en este rango.</td></tr>
                   )}
                 </tbody>
               </table>
             </div>
           </ReportCard>
 
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-[#55666E]">
             Cumplimiento = cerradas / (cerradas + atrasadas). Se atribuye al coach efectivo del servicio (head coach si aceptó la
             transferencia). Las sesiones futuras sin cerrar cuentan como "próximas", no afectan el cumplimiento.
             <br />🎯 "Con foco" = % de cierres del coach con "qué trabajar próximo" escrito (el corazón del seguimiento).

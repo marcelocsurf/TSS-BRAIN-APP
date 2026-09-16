@@ -31,12 +31,12 @@ export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
   if (incidents.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
       <div className={`flex items-center justify-between ${open ? 'mb-3' : ''}`}>
         <button
           onClick={() => setOpen((v) => !v)}
           className="text-sm font-semibold text-red-700 uppercase tracking-wider inline-flex items-center gap-1.5"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           <AlertTriangle size={14} strokeWidth={1.75} /> Incidents
           {unread.length > 0 && (
@@ -50,7 +50,7 @@ export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
       </div>
 
       {open && (
-        <div className="bg-white rounded-xl border border-red-200 divide-y divide-red-50 overflow-hidden">
+        <div className="bg-[#F7F9FA] rounded-[5px] border border-red-200 divide-y divide-red-50 overflow-hidden">
           {incidents.map((inc) => (
             <div key={inc.id} className={inc.acknowledged ? 'opacity-55' : ''}>
               <div className="px-4 py-3">
@@ -58,13 +58,13 @@ export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
                   <span className="text-[12px] font-mono uppercase tracking-wider text-red-700 bg-red-50 px-2 py-0.5 rounded-full">
                     {incidentTypeLabel(inc.incident_type)}
                   </span>
-                  <span className="text-[12px] text-gray-400">
+                  <span className="text-[12px] text-[#55666E]">
                     {inc.created_at ? displayDate(inc.created_at) : ''}
                   </span>
                 </div>
                 <p className="text-sm text-[var(--tss-navy)] mt-1">
                   {inc.is_general ? (
-                    <span className="text-gray-500 italic">General (no specific student)</span>
+                    <span className="text-[#55666E] italic">General (no specific student)</span>
                   ) : (
                     <>
                       {inc.student_id ? (
@@ -75,10 +75,10 @@ export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
                   {inc.coach_name ? ` · ${inc.coach_name}` : ''}
                 </p>
                 {inc.incident_description && (
-                  <p className="text-xs text-gray-600 mt-0.5">{inc.incident_description}</p>
+                  <p className="text-xs text-[#55666E] mt-0.5">{inc.incident_description}</p>
                 )}
                 {inc.incident_action && (
-                  <p className="text-[11px] text-gray-500 mt-0.5"><span className="text-gray-400">Action:</span> {inc.incident_action}</p>
+                  <p className="text-[11px] text-[#55666E] mt-0.5"><span className="text-[#55666E]">Action:</span> {inc.incident_action}</p>
                 )}
                 <div className="mt-2">
                   {inc.acknowledged ? (
@@ -92,7 +92,7 @@ export function IncidentsPanel({ incidents }: { incidents: IncidentAlert[] }) {
                       <Check size={12} strokeWidth={2.5} /> {busyId === inc.id ? '…' : 'Mark as read'}
                     </button>
                   ) : (
-                    <span className="text-[12px] text-gray-400 italic">Logged with the session</span>
+                    <span className="text-[12px] text-[#55666E] italic">Logged with the session</span>
                   )}
                 </div>
               </div>

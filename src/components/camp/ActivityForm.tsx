@@ -94,7 +94,7 @@ function TypeSelector({
   return (
     <div className="space-y-1">
       <label
-        className="block text-[10px] font-medium text-gray-500"
+        className="block text-[10px] font-medium text-[#55666E]"
         style={{ fontFamily: 'var(--font-mono)' }}
       >
         Activity Type
@@ -108,7 +108,7 @@ function TypeSelector({
         <select
           value={type}
           onChange={(e) => onChange(e.target.value)}
-          className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+          className="flex-1 px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
         >
           {options.map((opt) => (
             <option key={opt.value} value={opt.value}>
@@ -117,7 +117,7 @@ function TypeSelector({
           ))}
         </select>
       </div>
-      <p className="text-[10px] text-gray-400 leading-snug pl-3">
+      <p className="text-[10px] text-[#55666E] leading-snug pl-3">
         {current.description}
       </p>
     </div>
@@ -174,7 +174,7 @@ function WaterMissionFields({
           }}
         />
       ) : (
-        <p className="text-[11px] text-gray-400 italic">Loading sequence catalog…</p>
+        <p className="text-[11px] text-[#55666E] italic">Loading sequence catalog…</p>
       )}
     </div>
   );
@@ -270,7 +270,7 @@ function LandDrillFields({
           onChange={onPick}
         />
       ) : (
-        <p className="text-[11px] text-gray-400 italic">Loading sequence catalog…</p>
+        <p className="text-[11px] text-[#55666E] italic">Loading sequence catalog…</p>
       )}
 
       {/* EDPF — 4 sub-fields per Canon §A.6 */}
@@ -423,7 +423,7 @@ function EdpfArea({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={2}
-        className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none"
+        className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none"
         placeholder={hint}
       />
     </div>
@@ -449,7 +449,7 @@ function WarmUpFields({
   return (
     <div>
       <label
-        className="block text-[10px] text-gray-500 mb-0.5"
+        className="block text-[10px] text-[#55666E] mb-0.5"
         style={{ fontFamily: 'var(--font-mono)' }}
       >
         Warm-Up Type
@@ -457,7 +457,7 @@ function WarmUpFields({
       <select
         value={block.activity_subtype ?? ''}
         onChange={(e) => pickSubtype(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
       >
         <option value="">Pick a sub-type…</option>
         {WARMUP_SUBTYPES.map((s) => (
@@ -472,7 +472,7 @@ function WarmUpFields({
           value={block.pilar_part ?? ''}
           onChange={(e) => onChange({ pilar_part: e.target.value || null })}
           placeholder="Custom warm-up description"
-          className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+          className="mt-2 w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm"
         />
       )}
     </div>
@@ -497,7 +497,7 @@ function MentalFields({
   return (
     <div>
       <label
-        className="block text-[10px] text-gray-500 mb-0.5"
+        className="block text-[10px] text-[#55666E] mb-0.5"
         style={{ fontFamily: 'var(--font-mono)' }}
       >
         Mental Activity
@@ -505,7 +505,7 @@ function MentalFields({
       <select
         value={block.activity_subtype ?? ''}
         onChange={(e) => pickSubtype(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]"
       >
         <option value="">Pick a sub-type…</option>
         {MENTAL_SUBTYPES.map((s) => (
@@ -520,7 +520,7 @@ function MentalFields({
           value={block.pilar_part ?? ''}
           onChange={(e) => onChange({ pilar_part: e.target.value || null })}
           placeholder="Custom mental cue / routine"
-          className="mt-2 w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+          className="mt-2 w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm"
         />
       )}
     </div>
@@ -537,7 +537,7 @@ function VenueAnalysisFields({
   return (
     <div className="space-y-2">
       <label
-        className="block text-[10px] text-gray-500"
+        className="block text-[10px] text-[#55666E]"
         style={{ fontFamily: 'var(--font-mono)' }}
       >
         Variant
@@ -545,7 +545,7 @@ function VenueAnalysisFields({
       <select
         value={block.activity_subtype ?? 'group'}
         onChange={(e) => onChange({ activity_subtype: e.target.value })}
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm"
       >
         <option value="group">Group-led (coach guides)</option>
         <option value="student_led">Student-led (each writes own plan)</option>
@@ -556,7 +556,7 @@ function VenueAnalysisFields({
         onChange={(e) => onChange({ pilar_part: e.target.value || null })}
         rows={2}
         placeholder="Today's go/no-go question (optional)"
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm resize-none"
       />
     </div>
   );
@@ -590,41 +590,41 @@ function GetInStpFields({
           value={block.pilar_part ?? ''}
           onChange={(e) => onChange({ pilar_part: e.target.value || null })}
           placeholder="Activity title (e.g. Full pop-up chain)"
-          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+          className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm"
         />
         <textarea
           value={block.mission_custom ?? ''}
           onChange={(e) => onChange({ mission_custom: e.target.value || null })}
           rows={3}
           placeholder="What will the students do? What is this activity about?"
-          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none"
+          className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm resize-none"
         />
       </div>
 
       <div>
         <label
-          className="block text-[10px] text-gray-500 mb-1"
+          className="block text-[10px] text-[#55666E] mb-1"
           style={{ fontFamily: 'var(--font-mono)' }}
         >
           Pick one or more STPs in sequence
         </label>
         {stps.length === 0 ? (
-          <p className="text-[11px] text-gray-400 italic">Loading STPs…</p>
+          <p className="text-[11px] text-[#55666E] italic">Loading STPs…</p>
         ) : (
-          <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-2 space-y-1">
+          <div className="max-h-48 overflow-y-auto border border-[#DCD7C6] rounded-[5px] p-2 space-y-1">
             {stps.map((s) => (
               <label
                 key={s.id}
-                className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-50 cursor-pointer text-xs"
+                className="flex items-center gap-2 px-2 py-1 rounded hover:bg-[#F7F9FA] cursor-pointer text-xs"
               >
                 <input
                   type="checkbox"
                   checked={selected.includes(s.id)}
                   onChange={() => toggle(s.id)}
-                  className="rounded border-gray-300"
+                  className="rounded border-[#DCD7C6]"
                 />
-                <span className="font-mono text-[10px] text-gray-500">{s.id}</span>
-                <span className="flex-1 text-gray-700 truncate">{s.title}</span>
+                <span className="font-mono text-[10px] text-[#55666E]">{s.id}</span>
+                <span className="flex-1 text-[#10263B] truncate">{s.title}</span>
               </label>
             ))}
           </div>
@@ -653,14 +653,14 @@ function TheoryFields({
         value={block.pilar_part ?? ''}
         onChange={(e) => onChange({ pilar_part: e.target.value || null })}
         placeholder="Theory topic (e.g. Parts of a Wave · Etiquette)"
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm"
       />
       <textarea
         value={block.mission_custom ?? ''}
         onChange={(e) => onChange({ mission_custom: e.target.value || null })}
         rows={3}
         placeholder="Description / key points to cover"
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm resize-none"
       />
     </div>
   );
@@ -680,9 +680,9 @@ function EvaluationFields({
         value={block.pilar_part ?? ''}
         onChange={(e) => onChange({ pilar_part: e.target.value || null })}
         placeholder="Evaluation focus (e.g. 25-STP self-eval)"
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm"
       />
-      <p className="text-[10px] text-gray-400 leading-snug">
+      <p className="text-[10px] text-[#55666E] leading-snug">
         On Day 6 use this for the final coach evaluation that links to
         /camps/[id]/evaluate. The camp is marked Completed once every
         student has an evaluation.
@@ -704,7 +704,7 @@ function FreePracticeFields({
       onChange={(e) => onChange({ pilar_part: e.target.value || null })}
       rows={2}
       placeholder="Optional guideline for free practice"
-      className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none"
+      className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm resize-none"
     />
   );
 }
@@ -723,14 +723,14 @@ function CustomFields({
         value={block.pilar_part ?? ''}
         onChange={(e) => onChange({ pilar_part: e.target.value || null })}
         placeholder="Activity title"
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm"
       />
       <textarea
         value={block.mission_custom ?? ''}
         onChange={(e) => onChange({ mission_custom: e.target.value || null })}
         rows={3}
         placeholder="Free-form description"
-        className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm resize-none"
+        className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm resize-none"
       />
     </div>
   );
@@ -760,10 +760,10 @@ function MetaFields({
   const showEvalFocus = TYPES_WITH_EVAL_FOCUS.includes(type);
 
   return (
-    <div className="grid grid-cols-2 gap-2 border-t border-gray-100 pt-3">
+    <div className="grid grid-cols-2 gap-2 border-t border-[#DCD7C6] pt-3">
       <div>
         <label
-          className="block text-[10px] text-gray-500 mb-0.5"
+          className="block text-[10px] text-[#55666E] mb-0.5"
           style={{ fontFamily: 'var(--font-mono)' }}
         >
           Time
@@ -771,7 +771,7 @@ function MetaFields({
         <select
           value={block.mission_time || '15'}
           onChange={(e) => onChange({ mission_time: e.target.value })}
-          className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
+          className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs"
         >
           {MISSION_TIME_OPTIONS.map((mt) => (
             <option key={mt.value} value={mt.value}>
@@ -783,7 +783,7 @@ function MetaFields({
 
       <div>
         <label
-          className="block text-[10px] text-gray-500 mb-0.5"
+          className="block text-[10px] text-[#55666E] mb-0.5"
           style={{ fontFamily: 'var(--font-mono)' }}
         >
           Repetitions
@@ -798,13 +798,13 @@ function MetaFields({
             })
           }
           placeholder="0"
-          className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
+          className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs"
         />
       </div>
 
       <div className="col-span-2">
         <label
-          className="block text-[10px] text-gray-500 mb-0.5"
+          className="block text-[10px] text-[#55666E] mb-0.5"
           style={{ fontFamily: 'var(--font-mono)' }}
         >
           Equipment
@@ -815,7 +815,7 @@ function MetaFields({
           value={block.equipment ?? ''}
           onChange={(e) => onChange({ equipment: e.target.value || null })}
           placeholder="Surf board · Mat · Chalk line… (comma-separated)"
-          className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
+          className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs"
         />
         <datalist id="equipment-options">
           {EQUIPMENT_OPTIONS.map((eq) => (
@@ -827,7 +827,7 @@ function MetaFields({
       {showEvalFocus && (
         <div className="col-span-2">
           <label
-            className="block text-[10px] text-gray-500 mb-0.5"
+            className="block text-[10px] text-[#55666E] mb-0.5"
             style={{ fontFamily: 'var(--font-mono)' }}
           >
             Evaluation Focus
@@ -837,7 +837,7 @@ function MetaFields({
             value={block.evaluation_focus ?? ''}
             onChange={(e) => onChange({ evaluation_focus: e.target.value || null })}
             placeholder="What to evaluate / observe"
-            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
+            className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs"
           />
         </div>
       )}

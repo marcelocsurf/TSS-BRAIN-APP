@@ -12,16 +12,16 @@ export function EmailSwitches({ rows: initial }: { rows: EmailSettingRow[] }) {
     <div className="max-w-2xl mx-auto p-4 space-y-5">
       <div>
         <h1 className="text-xl font-bold">Correos</h1>
-        <p className="text-sm text-gray-500 mt-1">Cada correo tiene su interruptor. Apagado = no sale aunque tenga disparador. Los marcados NEW nacen apagados hasta que los prendas.</p>
+        <p className="text-sm text-[#55666E] mt-1">Cada correo tiene su interruptor. Apagado = no sale aunque tenga disparador. Los marcados NEW nacen apagados hasta que los prendas.</p>
       </div>
       {groups.map((g) => (
-        <div key={g.a} className="bg-white rounded-2xl border border-gray-200 divide-y">
-          <p className="px-4 py-2 text-[11px] font-mono uppercase tracking-wider text-gray-500">{AUD[g.a]}</p>
+        <div key={g.a} className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] divide-y">
+          <p className="px-4 py-2 text-[11px] font-mono uppercase tracking-wider text-[#55666E]">{AUD[g.a]}</p>
           {g.list.map((r) => (
             <div key={r.kind} className="px-4 py-3 flex items-center gap-3">
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-gray-900">{r.label}</p>
-                <p className="text-[11px] text-gray-400 font-mono">{r.kind}</p>
+                <p className="text-sm font-semibold text-[#10263B]">{r.label}</p>
+                <p className="text-[11px] text-[#55666E] font-mono">{r.kind}</p>
               </div>
               <button type="button" disabled={busy === r.kind} aria-pressed={r.enabled}
                 onClick={async () => {

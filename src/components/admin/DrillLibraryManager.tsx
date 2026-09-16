@@ -116,7 +116,7 @@ export function DrillLibraryManager({ initial }: { initial: DrillRow[] }) {
           <option value="game">Game</option>
         </select>
         <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && reload()} placeholder="Search title / step…" className={`${inp} flex-1 min-w-[140px]`} />
-        <label className="flex items-center gap-1.5 text-xs text-gray-500">
+        <label className="flex items-center gap-1.5 text-xs text-[#55666E]">
           <input type="checkbox" checked={includeRetired} onChange={(e) => setIncludeRetired(e.target.checked)} /> Show retired
         </label>
         <button onClick={openNew} className="px-3.5 py-2 bg-[var(--tss-navy)] text-white rounded-lg text-sm font-semibold hover:opacity-90">
@@ -128,7 +128,7 @@ export function DrillLibraryManager({ initial }: { initial: DrillRow[] }) {
 
       {/* Editor */}
       {editing !== null && (
-        <div className="bg-white border-2 border-[var(--tss-navy)]/20 rounded-xl p-4 space-y-3">
+        <div className="bg-[#F7F9FA] border-2 border-[var(--tss-navy)]/20 rounded-[5px] p-4 space-y-3">
           <p className="text-sm font-bold text-[var(--tss-navy)]">{editing === 'new' ? 'New drill / mission' : 'Edit drill / mission'}</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             <Field label="Type"><select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as any })} className={sel}><option value="drill">Drill (land)</option><option value="mission">Mission (water)</option><option value="game">Game</option></select></Field>
@@ -156,8 +156,8 @@ export function DrillLibraryManager({ initial }: { initial: DrillRow[] }) {
             <textarea value={form.success_criteria} onChange={(e) => setForm({ ...form, success_criteria: e.target.value })} rows={3} className={`${inp} resize-y`} />
           </Field>
           {/* ── Directorio: procedencia, público, acceso (Marcelo 2026-09-11) ── */}
-          <div className="rounded-xl border border-dashed border-gray-300 p-3 space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Directory · where it came from and who sees it</p>
+          <div className="rounded-[5px] border border-dashed border-[#DCD7C6] p-3 space-y-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#55666E]">Directory · where it came from and who sees it</p>
             <Field label="What it develops (technique or detail)"><input value={form.develops} onChange={(e) => setForm({ ...form, develops: e.target.value })} className={inp} placeholder="e.g. hips low in the pop-up · back foot on the tail" /></Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Context"><select value={form.context} onChange={(e) => setForm({ ...form, context: e.target.value })} className={sel}>{CONTEXTS.map((c) => <option key={c} value={c}>{c || '—'}</option>)}</select></Field>
@@ -166,9 +166,9 @@ export function DrillLibraryManager({ initial }: { initial: DrillRow[] }) {
                   {AUDIENCES.map((a) => {
                     const on = form.audience.includes(a);
                     return <button key={a} type="button" onClick={() => setForm({ ...form, audience: on ? form.audience.filter((x) => x !== a) : [...form.audience, a] })}
-                      className={`text-[12px] px-2.5 py-1 rounded-full border ${on ? 'bg-[var(--tss-navy)] text-white border-transparent' : 'border-gray-300 text-gray-600'}`}>{a}</button>;
+                      className={`text-[12px] px-2.5 py-1 rounded-full border ${on ? 'bg-[var(--tss-navy)] text-white border-transparent' : 'border-[#DCD7C6] text-[#55666E]'}`}>{a}</button>;
                   })}
-                  <span className="text-[11px] text-gray-400 self-center">none = everyone</span>
+                  <span className="text-[11px] text-[#55666E] self-center">none = everyone</span>
                 </div>
               </Field>
             </div>
@@ -180,18 +180,18 @@ export function DrillLibraryManager({ initial }: { initial: DrillRow[] }) {
               <textarea value={form.source_note} onChange={(e) => setForm({ ...form, source_note: e.target.value })} rows={2} className={`${inp} resize-y`} placeholder="e.g. 'buen drill para el pop-up, sirve para niños'" />
             </Field>
             <div className="flex flex-wrap gap-4">
-              <label className="flex items-center gap-2 text-sm text-gray-700">
+              <label className="flex items-center gap-2 text-sm text-[#10263B]">
                 <input type="checkbox" checked={form.coach_visible} onChange={(e) => setForm({ ...form, coach_visible: e.target.checked })} />
-                Coaches can use it <span className="text-xs text-gray-400">(off = only in this directory)</span>
+                Coaches can use it <span className="text-xs text-[#55666E]">(off = only in this directory)</span>
               </label>
-              <label className="flex items-center gap-2 text-sm text-gray-700">
+              <label className="flex items-center gap-2 text-sm text-[#10263B]">
                 <input type="checkbox" checked={form.student_visible} onChange={(e) => setForm({ ...form, student_visible: e.target.checked })} />
-                Students can see it <span className="text-xs text-gray-400">(off = hidden from the student app)</span>
+                Students can see it <span className="text-xs text-[#55666E]">(off = hidden from the student app)</span>
               </label>
             </div>
           </div>
           <div className="flex gap-2 pt-1">
-            <button onClick={() => setEditing(null)} className="flex-1 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+            <button onClick={() => setEditing(null)} className="flex-1 py-2.5 border border-[#DCD7C6] rounded-lg text-sm font-medium text-[#10263B] hover:bg-[#F7F9FA]">Cancel</button>
             <button onClick={save} disabled={pending} className="flex-[2] py-2.5 bg-[var(--tss-navy)] text-white rounded-lg text-sm font-bold disabled:opacity-50">
               {pending ? 'Saving…' : 'Save — appears everywhere instantly'}
             </button>
@@ -200,31 +200,31 @@ export function DrillLibraryManager({ initial }: { initial: DrillRow[] }) {
       )}
 
       {/* List */}
-      <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+      <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] divide-y divide-gray-100 overflow-hidden">
         {rows.length === 0 ? (
-          <p className="text-sm text-gray-400 italic p-4">No drills match.</p>
+          <p className="text-sm text-[#55666E] italic p-4">No drills match.</p>
         ) : rows.map((d) => (
           <div key={d.id} className={`flex items-center justify-between gap-3 px-4 py-3 ${!d.active ? 'opacity-50' : ''}`}>
             <div className="min-w-0">
               <p className="text-sm font-medium text-[var(--tss-navy)] truncate">
                 {d.title}
                 {d.type === 'game' && <span className="ml-2 text-[10px] font-bold text-[#0090B0]">· game</span>}
-                {!d.student_visible && <span className="ml-2 text-[10px] text-gray-400">· hidden from students</span>}
+                {!d.student_visible && <span className="ml-2 text-[10px] text-[#55666E]">· hidden from students</span>}
                 {d.coach_visible === false && <span className="ml-2 text-[10px] text-amber-600">· directory only (coaches can't use it)</span>}
-                {(d.audience ?? []).length > 0 && <span className="ml-2 text-[10px] text-gray-400">· {(d.audience ?? []).join('/')}</span>}
-                {d.source && <span className="ml-2 text-[10px] text-gray-400">· {d.source}{d.dictated_on ? ` ${d.dictated_on}` : ''}</span>}
+                {(d.audience ?? []).length > 0 && <span className="ml-2 text-[10px] text-[#55666E]">· {(d.audience ?? []).join('/')}</span>}
+                {d.source && <span className="ml-2 text-[10px] text-[#55666E]">· {d.source}{d.dictated_on ? ` ${d.dictated_on}` : ''}</span>}
                 {!d.active && <span className="ml-2 text-[10px] text-red-400">· retired</span>}
               </p>
-              <p className="text-[11px] text-gray-500">
+              <p className="text-[11px] text-[#55666E]">
                 {[d.step_id, d.time_estimate ? `${d.time_estimate} min` : null, d.reps_recommended ? `${d.reps_recommended} reps` : null].filter(Boolean).join(' · ') || 'no step'}
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <span className={`text-[10px] px-2 py-0.5 rounded-full ${TYPE_COLORS[d.type]}`}>{d.type}</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">{d.belt}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#EDF3F5] text-[#55666E] capitalize">{d.belt}</span>
               <button onClick={() => openEdit(d)} className="text-[12px] text-[var(--tss-cyan)] hover:underline">Edit</button>
               {d.active
-                ? <button onClick={() => retire(d)} className="text-[12px] text-gray-400 hover:text-red-500">Retire</button>
+                ? <button onClick={() => retire(d)} className="text-[12px] text-[#55666E] hover:text-red-500">Retire</button>
                 : <button onClick={() => restore(d)} className="text-[12px] text-emerald-600 hover:underline">Restore</button>}
             </div>
           </div>
@@ -237,11 +237,11 @@ export function DrillLibraryManager({ initial }: { initial: DrillRow[] }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-1">{label}</label>
+      <label className="block text-[10px] uppercase tracking-wider text-[#55666E] font-mono mb-1">{label}</label>
       {children}
     </div>
   );
 }
 
-const inp = 'w-full px-2.5 py-2 border border-gray-200 rounded-lg text-sm';
-const sel = 'px-2.5 py-2 border border-gray-200 rounded-lg text-sm bg-white';
+const inp = 'w-full px-2.5 py-2 border border-[#DCD7C6] rounded-lg text-sm';
+const sel = 'px-2.5 py-2 border border-[#DCD7C6] rounded-lg text-sm bg-[#F7F9FA]';

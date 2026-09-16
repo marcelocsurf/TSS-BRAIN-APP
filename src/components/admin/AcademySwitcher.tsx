@@ -56,7 +56,7 @@ export function AcademySwitcher({ academies, currentActAsId }: Props) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] hover:bg-white/5 transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-md text-[11px] hover:bg-[#F7F9FA]/5 transition-colors"
       >
         <span className="flex flex-col items-start min-w-0">
           <span className="text-[9px] uppercase tracking-wider text-white/40 font-mono">
@@ -77,21 +77,21 @@ export function AcademySwitcher({ academies, currentActAsId }: Props) {
       </button>
 
       {open && (
-        <div className="absolute left-3 right-3 top-full mt-1 bg-white text-[var(--tss-navy)] rounded-lg shadow-2xl border border-gray-200 z-50 overflow-hidden">
+        <div className="absolute left-3 right-3 top-full mt-1 bg-[#F7F9FA] text-[var(--tss-navy)] rounded-lg shadow-2xl border border-[#DCD7C6] z-50 overflow-hidden">
           <button
             type="button"
             onClick={() => switchTo(null)}
             disabled={pending}
-            className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 ${!currentActAsId ? 'font-bold' : ''}`}
+            className={`w-full text-left px-3 py-2 text-xs hover:bg-[#F7F9FA] ${!currentActAsId ? 'font-bold' : ''}`}
           >
             <span className="inline-flex items-center gap-1.5">
               <Globe size={12} strokeWidth={1.75} />
               Platform admin
             </span>
-            <span className="block text-[10px] text-gray-500">See all academies</span>
+            <span className="block text-[10px] text-[#55666E]">See all academies</span>
           </button>
 
-          <div className="border-t border-gray-100" />
+          <div className="border-t border-[#DCD7C6]" />
 
           <div className="max-h-64 overflow-y-auto">
             {academies.map((a) => (
@@ -100,21 +100,21 @@ export function AcademySwitcher({ academies, currentActAsId }: Props) {
                 type="button"
                 onClick={() => switchTo(a.id)}
                 disabled={pending}
-                className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-50 ${
+                className={`w-full text-left px-3 py-2 text-xs hover:bg-[#F7F9FA] ${
                   currentActAsId === a.id ? 'font-bold bg-amber-50' : ''
                 }`}
               >
                 <span className="block">{a.name}</span>
-                <span className="block text-[10px] text-gray-500 font-mono">{a.slug}</span>
+                <span className="block text-[10px] text-[#55666E] font-mono">{a.slug}</span>
               </button>
             ))}
           </div>
 
-          <div className="border-t border-gray-100" />
+          <div className="border-t border-[#DCD7C6]" />
           <Link
             href="/academies"
             onClick={() => setOpen(false)}
-            className="block px-3 py-2 text-[11px] text-center text-[var(--tss-navy)] hover:bg-gray-50 font-semibold"
+            className="block px-3 py-2 text-[11px] text-center text-[var(--tss-navy)] hover:bg-[#F7F9FA] font-semibold"
           >
             Manage academies →
           </Link>

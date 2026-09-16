@@ -81,9 +81,9 @@ export default async function AcademyDetailPage({ params }: Props) {
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-4 pb-12">
-      <div className="flex items-center gap-2 text-xs text-gray-500">
+      <div className="flex items-center gap-2 text-xs text-[#55666E]">
         <Link href={viewerIsPlatformAdmin ? '/academies' : '/dashboard'} className="hover:text-[var(--tss-navy)]">← {viewerIsPlatformAdmin ? 'Academies' : 'Dashboard'}</Link>
-        <span className="text-gray-300">/</span>
+        <span className="text-[#B8B1A0]">/</span>
         <span className="text-[var(--tss-navy)] font-semibold">{academy.name}</span>
       </div>
 

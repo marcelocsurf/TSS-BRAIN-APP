@@ -40,7 +40,7 @@ export function DeleteDraftButton({ draftId }: Props) {
           type="button"
           onClick={() => setConfirming(false)}
           disabled={loading}
-          className="px-2 py-1.5 bg-gray-100 text-gray-500 text-[10px] rounded-lg hover:bg-gray-200 transition-colors"
+          className="px-2 py-1.5 bg-[#EDF3F5] text-[#55666E] text-[10px] rounded-lg hover:bg-[#DCD7C6] transition-colors"
         >
           No
         </button>

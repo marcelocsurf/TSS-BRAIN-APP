@@ -125,8 +125,8 @@ export default async function CampsPage({
             Camps
           </h2>
           <p
-            className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            className="text-[10px] uppercase tracking-wider text-[#55666E] mt-1"
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             {camps.length} service{camps.length !== 1 ? 's' : ''} in view
           </p>
@@ -139,13 +139,13 @@ export default async function CampsPage({
           />
           <Link
             href="/camps/week-templates"
-            className="px-3 py-2.5 border border-gray-200 text-sm rounded-xl hover:bg-gray-50 text-gray-700 transition-all"
+            className="px-3 py-2.5 border border-[#DCD7C6] text-sm rounded-[5px] hover:bg-[#F7F9FA] text-[#10263B] transition-all"
           >
             Week templates
           </Link>
           <Link
             href="/camps/templates"
-            className="px-3 py-2.5 border border-gray-200 text-sm rounded-xl hover:bg-gray-50 text-gray-700 transition-all"
+            className="px-3 py-2.5 border border-[#DCD7C6] text-sm rounded-[5px] hover:bg-[#F7F9FA] text-[#10263B] transition-all"
           >
             Templates
           </Link>

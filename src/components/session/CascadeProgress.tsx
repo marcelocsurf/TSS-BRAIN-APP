@@ -25,7 +25,7 @@ export function CascadeProgress({ currentStep, isWaterVenue }: Props) {
   const progressPercent = Math.round((effectiveStep / totalSteps) * 100);
 
   return (
-    <div className="sticky top-0 z-10 bg-white border-b border-[var(--tss-gray-100)] px-4 py-3 shadow-sm">
+    <div className="sticky top-0 z-10 bg-[#F7F9FA] border-b border-[var(--tss-gray-100)] px-4 py-3 shadow-sm">
       {/* Moment tabs */}
       <div className="flex gap-1 mb-2">
         {moments.map((moment) => {

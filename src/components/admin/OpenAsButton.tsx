@@ -35,7 +35,7 @@ export function OpenAsButton(props: Props) {
       type="button"
       onClick={onClick}
       disabled={pending}
-      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 disabled:opacity-50"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[5px] text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100 disabled:opacity-50"
     >
       <Eye size={14} strokeWidth={1.75} />
       {pending ? 'Opening…' : props.label ?? (props.kind === 'student' ? 'Open as student' : 'Open as coach')}

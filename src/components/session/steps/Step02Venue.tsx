@@ -23,18 +23,18 @@ export function Step02Venue({ formState, options, onSelect }: Props) {
               key={opt.id}
               type="button"
               onClick={() => onSelect(opt.value, isWater)}
-              className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${
+              className={`w-full flex items-center gap-3 p-3 rounded-[5px] border transition-all text-left ${
                 isSelected
                   ? 'border-[#5AC3E7] bg-amber-50'
-                  : 'border-gray-100 hover:border-gray-200'
+                  : 'border-[#DCD7C6] hover:border-[#DCD7C6]'
               }`}
             >
               <span className="text-lg">{isWater ? '🌊' : '🏋️'}</span>
-              <span className="text-sm font-medium text-gray-800">
+              <span className="text-sm font-medium text-[#10263B]">
                 {opt.label || opt.value}
               </span>
               {!isWater && (
-                <span className="ml-auto text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                <span className="ml-auto text-xs text-[#55666E] bg-[#EDF3F5] px-2 py-0.5 rounded-full">
                   Dry land
                 </span>
               )}

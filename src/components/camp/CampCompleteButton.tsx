@@ -27,7 +27,7 @@ export function CampCompleteButton({ campId }: Props) {
 
   if (confirming) {
     return (
-      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-3">
+      <div className="bg-amber-50 border border-amber-200 rounded-[5px] p-4 space-y-3">
         <p className="text-sm text-amber-800 font-medium text-center">
           Are you sure? This will mark the camp as completed.
         </p>
@@ -44,7 +44,7 @@ export function CampCompleteButton({ campId }: Props) {
             type="button"
             onClick={() => setConfirming(false)}
             disabled={loading}
-            className="flex-1 py-2.5 bg-white text-gray-600 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-all disabled:opacity-50"
+            className="flex-1 py-2.5 bg-[#F7F9FA] text-[#55666E] border border-[#DCD7C6] rounded-lg text-sm font-medium hover:bg-[#F7F9FA] transition-all disabled:opacity-50"
           >
             Cancel
           </button>
@@ -57,7 +57,7 @@ export function CampCompleteButton({ campId }: Props) {
     <button
       type="button"
       onClick={() => setConfirming(true)}
-      className="w-full py-3 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition-all"
+      className="w-full py-3 bg-green-600 text-white rounded-[5px] text-sm font-medium hover:bg-green-700 transition-all"
     >
       Complete Camp
     </button>

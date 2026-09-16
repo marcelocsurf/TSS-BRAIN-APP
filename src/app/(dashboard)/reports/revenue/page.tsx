@@ -39,11 +39,11 @@ export default async function RevenueReportPage({
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
       <header className="space-y-1">
-        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600">
+        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-[#55666E] hover:text-[#55666E]">
           <ArrowLeft size={12} /> Reportes
         </Link>
         <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Ingresos por venta de asientos</h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-[#55666E]">
           Dinero cobrado (asientos pagados, sin INCLUIDO/cortesía) por {granularity === 'week' ? 'semana' : 'mes'} y tipo de servicio.
         </p>
       </header>
@@ -64,8 +64,8 @@ export default async function RevenueReportPage({
           {data.serviceTotals.length > 0 && (
             <section className="flex flex-wrap gap-2">
               {data.serviceTotals.map((s) => (
-                <span key={s.key} className="text-[12px] rounded-full px-3 py-1.5 bg-gray-50 border border-gray-100 text-gray-700">
-                  <span className="font-semibold text-[var(--tss-navy)]">{s.label}</span> · {money(s.cents)} <span className="text-gray-400">({s.seats})</span>
+                <span key={s.key} className="text-[12px] rounded-full px-3 py-1.5 bg-[#F7F9FA] border border-[#DCD7C6] text-[#10263B]">
+                  <span className="font-semibold text-[var(--tss-navy)]">{s.label}</span> · {money(s.cents)} <span className="text-[#55666E]">({s.seats})</span>
                 </span>
               ))}
             </section>
@@ -74,7 +74,7 @@ export default async function RevenueReportPage({
           <ReportCard title={granularity === 'week' ? 'Por semana' : 'Por mes'} icon={DollarSign}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#F7F9FA]">
                   <tr>
                     <Th>Período</Th>
                     {data.serviceTotals.map((s) => <Th key={s.key} align="right">{s.label}</Th>)}
@@ -94,11 +94,11 @@ export default async function RevenueReportPage({
                     </tr>
                   ))}
                   {data.rows.length === 0 && (
-                    <tr><td colSpan={data.serviceTotals.length + 3} className="text-center py-6 text-xs text-gray-400">Sin ventas en este rango.</td></tr>
+                    <tr><td colSpan={data.serviceTotals.length + 3} className="text-center py-6 text-xs text-[#55666E]">Sin ventas en este rango.</td></tr>
                   )}
                 </tbody>
                 {data.rows.length > 0 && (
-                  <tfoot className="bg-gray-50 border-t border-gray-200">
+                  <tfoot className="bg-[#F7F9FA] border-t border-[#DCD7C6]">
                     <tr>
                       <Td><span className="font-semibold text-[var(--tss-navy)]">Total</span></Td>
                       {data.serviceTotals.map((s) => <Td key={s.key} align="right" mono>{money(s.cents)}</Td>)}
@@ -111,7 +111,7 @@ export default async function RevenueReportPage({
             </div>
           </ReportCard>
 
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-[#55666E]">
             Ingreso = suma de <code>amount_cents</code> de asientos pagados (excluye INCLUIDO/cortesía de $0). Fechado por fecha de pago
             (hora El Salvador). El pendiente son reservas activas sin cobrar. Los datos se recalculan en cada carga.
           </p>

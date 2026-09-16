@@ -31,7 +31,7 @@ export default async function CostsPage() {
         <h2 className="text-2xl font-bold text-[var(--tss-navy)] leading-tight" style={{ fontFamily: 'var(--font-heading)' }}>
           Costs
         </h2>
-        <p className="text-[10px] uppercase tracking-wider text-gray-400 mt-1" style={{ fontFamily: 'DM Mono, monospace' }}>
+        <p className="text-[10px] uppercase tracking-wider text-[#55666E] mt-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
           Coach pay matrix · cost catalog · service recipes
         </p>
       </div>

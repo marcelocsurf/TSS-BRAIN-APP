@@ -82,7 +82,7 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
 
   if (isEmpty) {
     return (
-      <p className="text-sm text-gray-400 py-4 text-center">
+      <p className="text-sm text-[#55666E] py-4 text-center">
         No portal activity yet — student hasn&apos;t logged self-training,
         sequence ratings, or completed lessons.
       </p>
@@ -124,7 +124,7 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
       {/* Course final exams — belt exit tests taken in the portal */}
       {exams.length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">
+          <p className="text-[10px] font-semibold text-[#55666E] uppercase mb-1.5">
             Course final exams
           </p>
           <div className="space-y-1">
@@ -138,13 +138,13 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
                   }`}
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-800">{courseLabel(e.course_key)} exam</p>
-                    <p className="text-[10px] text-gray-400">
+                    <p className="text-sm font-medium text-[#10263B]">{courseLabel(e.course_key)} exam</p>
+                    <p className="text-[10px] text-[#55666E]">
                       {new Date(e.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[11px] text-gray-500">{e.score}/{e.total} · {pct}%</span>
+                    <span className="text-[11px] text-[#55666E]">{e.score}/{e.total} · {pct}%</span>
                     <span
                       className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
                         e.passed ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
@@ -191,7 +191,7 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
       {/* Recent self-training */}
       {recentSelf.length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">
+          <p className="text-[10px] font-semibold text-[#55666E] uppercase mb-1.5">
             Recent self-training
           </p>
           <div className="space-y-1">
@@ -201,21 +201,21 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
                 <div
                   key={s.id}
                   className={`flex items-center justify-between border rounded px-3 py-2 ${
-                    isCustom ? 'border-gray-100 bg-gray-50/40' : 'border-gray-100'
+                    isCustom ? 'border-[#DCD7C6] bg-[#F7F9FA]/40' : 'border-[#DCD7C6]'
                   }`}
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="text-sm text-gray-700 truncate">
+                      <p className="text-sm text-[#10263B] truncate">
                         {s.drill_name || s.linked_step_id || 'Untitled drill'}
                       </p>
                       {isCustom && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 font-medium uppercase tracking-wider shrink-0">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#DCD7C6] text-[#55666E] font-medium uppercase tracking-wider shrink-0">
                           Custom
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-gray-400">
+                    <p className="text-[10px] text-[#55666E]">
                       {new Date(s.date).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
@@ -225,7 +225,7 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
                       {isCustom ? ' · does not count toward step mastery' : ''}
                     </p>
                     {s.intention_text && (
-                      <p className="text-[10px] text-gray-500 italic mt-0.5 truncate">
+                      <p className="text-[10px] text-[#55666E] italic mt-0.5 truncate">
                         &ldquo;{s.intention_text}&rdquo;
                       </p>
                     )}
@@ -236,7 +236,7 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
                             {(() => { const Icon = c.result === 'met' ? Check : c.result === 'partial' ? CircleDot : X; return (
                               <Icon size={10} strokeWidth={2.5} className="mt-0.5 shrink-0" style={{ color: c.result === 'met' ? '#0f7b4f' : c.result === 'partial' ? '#8a6a00' : '#b4232c' }} aria-label={c.result} />
                             ); })()}
-                            <span className="text-gray-600">{c.criterion_text}</span>
+                            <span className="text-[#55666E]">{c.criterion_text}</span>
                           </p>
                         ))}
                       </div>
@@ -257,20 +257,20 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
       {/* Recent lessons completed */}
       {recentLessons.length > 0 && (
         <div>
-          <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1.5">
+          <p className="text-[10px] font-semibold text-[#55666E] uppercase mb-1.5">
             Recent lessons completed
           </p>
           <div className="space-y-1">
             {recentLessons.map((l) => (
               <div
                 key={l.lesson_id}
-                className="flex items-center justify-between border border-gray-100 rounded px-3 py-1.5"
+                className="flex items-center justify-between border border-[#DCD7C6] rounded px-3 py-1.5"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-gray-700 truncate">
+                  <p className="text-sm text-[#10263B] truncate">
                     {l.lesson_title || l.lesson_id}
                   </p>
-                  <p className="text-[10px] text-gray-400">
+                  <p className="text-[10px] text-[#55666E]">
                     {l.course_section ? `${l.course_section} · ` : ''}
                     {l.completed_at
                       ? new Date(l.completed_at).toLocaleDateString('en-US', {
@@ -281,7 +281,7 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
                   </p>
                 </div>
                 {l.quiz_score != null && (
-                  <span className="text-[10px] text-gray-500 ml-2">
+                  <span className="text-[10px] text-[#55666E] ml-2">
                     Quiz: {l.quiz_score}%
                   </span>
                 )}
@@ -293,17 +293,17 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
 
       {/* All ratings (collapsed) */}
       {sortedRatings.length > 0 && (
-        <details className="border border-gray-100 rounded">
-          <summary className="text-[10px] font-semibold text-gray-500 uppercase cursor-pointer px-3 py-2">
+        <details className="border border-[#DCD7C6] rounded">
+          <summary className="text-[10px] font-semibold text-[#55666E] uppercase cursor-pointer px-3 py-2">
             All sequence self-ratings ({sortedRatings.length})
           </summary>
           <div className="px-3 pb-3 grid grid-cols-2 gap-1">
             {sortedRatings.map((r) => (
               <div
                 key={r.step_id}
-                className="flex items-center justify-between bg-gray-50 rounded px-2 py-1"
+                className="flex items-center justify-between bg-[#F7F9FA] rounded px-2 py-1"
               >
-                <span className="text-xs text-gray-700">{r.step_id}</span>
+                <span className="text-xs text-[#10263B]">{r.step_id}</span>
                 <RatingStars rating={r.current_rating} />
               </div>
             ))}
@@ -328,7 +328,7 @@ function Stat({
   return (
     <div
       className={`rounded-lg p-2.5 text-center ${
-        highlighted ? 'bg-red-50' : 'bg-gray-50'
+        highlighted ? 'bg-red-50' : 'bg-[#F7F9FA]'
       }`}
     >
       <p
@@ -338,9 +338,9 @@ function Stat({
       >
         {value}
       </p>
-      <p className="text-[10px] text-gray-500 uppercase">{label}</p>
+      <p className="text-[10px] text-[#55666E] uppercase">{label}</p>
       {sublabel && (
-        <p className="text-[9px] text-gray-400 mt-0.5">{sublabel}</p>
+        <p className="text-[9px] text-[#55666E] mt-0.5">{sublabel}</p>
       )}
     </div>
   );
@@ -352,7 +352,7 @@ function RatingStars({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <span
           key={i}
-          className={i <= rating ? 'text-amber-400' : 'text-gray-200'}
+          className={i <= rating ? 'text-amber-400' : 'text-[#DCD7C6]'}
         >
           &#9733;
         </span>

@@ -50,7 +50,7 @@ export default async function AcademyBillingPage({ params }: Props) {
   return (
     <div className="max-w-3xl mx-auto space-y-5">
       <div>
-        <Link href={`/academies/${id}`} className="text-xs text-gray-500 hover:text-gray-800 inline-flex items-center gap-1 mb-2">
+        <Link href={`/academies/${id}`} className="text-xs text-[#55666E] hover:text-[#10263B] inline-flex items-center gap-1 mb-2">
           <ArrowLeft size={12} /> Back to academy
         </Link>
         <h1
@@ -61,30 +61,30 @@ export default async function AcademyBillingPage({ params }: Props) {
         </h1>
       </div>
 
-      <section className="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">
-        <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1" style={{ fontFamily: 'DM Mono, monospace' }}>
+      <section className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg shadow-sm p-5">
+        <p className="text-[10px] uppercase tracking-wider text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
           Accruing this month (un-invoiced)
         </p>
         <p className="text-2xl font-semibold text-[var(--tss-navy)] font-mono">
           {formatCents(accrual.cents, accrual.currency)}
         </p>
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-[#55666E] mt-1">
           {accrual.count} course grant{accrual.count === 1 ? '' : 's'} this period
         </p>
       </section>
 
-      <section className="bg-white border border-gray-100 rounded-2xl shadow-sm">
-        <header className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
+      <section className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg shadow-sm">
+        <header className="px-5 py-3 border-b border-[#DCD7C6] flex items-center gap-2">
           <FileText size={16} className="text-[var(--tss-cyan)]" />
           <h2 className="text-sm font-semibold text-[var(--tss-navy)]">Invoices</h2>
         </header>
         {invoices.length === 0 ? (
-          <p className="px-5 py-6 text-center text-xs text-gray-400">No invoices yet for this academy.</p>
+          <p className="px-5 py-6 text-center text-xs text-[#55666E]">No invoices yet for this academy.</p>
         ) : (
           <ul className="divide-y divide-gray-100">
             {invoices.map((inv) => {
               const statusColor: Record<string, string> = {
-                draft: 'bg-gray-100 text-gray-600',
+                draft: 'bg-[#EDF3F5] text-[#55666E]',
                 sent: 'bg-amber-50 text-amber-700',
                 paid: 'bg-emerald-50 text-emerald-700',
                 cancelled: 'bg-red-50 text-red-700',
@@ -95,7 +95,7 @@ export default async function AcademyBillingPage({ params }: Props) {
                     <p className="text-sm font-semibold text-[var(--tss-navy)]">
                       {MONTHS[inv.period_month - 1]} {inv.period_year}
                     </p>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
+                    <p className="text-[11px] text-[#55666E] mt-0.5">
                       Generated {new Date(inv.generated_at).toLocaleDateString()}
                       {inv.paid_at ? ` · Paid ${new Date(inv.paid_at).toLocaleDateString()}` : ''}
                     </p>
@@ -112,7 +112,7 @@ export default async function AcademyBillingPage({ params }: Props) {
           </ul>
         )}
         {isAdmin && (
-          <p className="px-5 py-3 text-[11px] text-gray-400 border-t border-gray-100">
+          <p className="px-5 py-3 text-[11px] text-[#55666E] border-t border-[#DCD7C6]">
             Status changes (sent / paid / cancelled) live in the admin panel: <Link href="/admin/pricing" className="text-[var(--tss-cyan)] hover:underline">Pricing & Invoicing</Link>.
           </p>
         )}

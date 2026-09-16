@@ -35,7 +35,7 @@ export function CopyIntakeLinkButton({ portalToken }: Props) {
       className={`px-3 py-2 text-xs rounded-lg transition-colors ${
         copied
           ? 'bg-green-50 text-green-700'
-          : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+          : 'bg-[#F7F9FA] text-[#55666E] hover:bg-[#EDF3F5]'
       }`}
     >
       {copied ? 'Copied! \u2713' : 'Copy Intake Link'}

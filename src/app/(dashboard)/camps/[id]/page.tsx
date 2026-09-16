@@ -84,15 +84,15 @@ export default async function CampDetailPage({ params }: Props) {
       {/* Back link */}
       <Link
         href="/camps"
-        className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-[var(--tss-navy)] transition-colors"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        className="inline-flex items-center gap-1 text-xs text-[#55666E] hover:text-[var(--tss-navy)] transition-colors"
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       >
         <ArrowLeft size={12} strokeWidth={1.75} />
         Back to schedule
       </Link>
 
       {/* Header */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2
@@ -101,7 +101,7 @@ export default async function CampDetailPage({ params }: Props) {
             >
               {instance.camp_name}
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-[#55666E] mt-1">
               {(instance as any).camp_templates?.template_name}
             </p>
           </div>
@@ -133,8 +133,8 @@ export default async function CampDetailPage({ params }: Props) {
         />
 
         <div
-          className="flex flex-wrap gap-3 mt-2 text-[10px] text-gray-400 uppercase tracking-wider"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          className="flex flex-wrap gap-3 mt-2 text-[10px] text-[#55666E] uppercase tracking-wider"
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           <span>{instance.start_date} → {instance.end_date}</span>
           <span className="capitalize">{instance.modality}</span>
@@ -155,24 +155,24 @@ export default async function CampDetailPage({ params }: Props) {
       {/* ═══ HOW IT'S GOING · day by day (auditoría coordinador 2026-09-11) ═══
           Estado + coach por día; al abrir, lo que el coach dejó a cada alumno. */}
       {dayStatus.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-[#DCD7C6] flex items-center justify-between">
             <h3 className="text-sm font-semibold text-[var(--tss-navy)]">How it&apos;s going · day by day</h3>
-            <p className="text-[12px] text-gray-500">{dayStatus.filter((d) => d.state === 'closed').length}/{dayStatus.length} days closed</p>
+            <p className="text-[12px] text-[#55666E]">{dayStatus.filter((d) => d.state === 'closed').length}/{dayStatus.length} days closed</p>
           </div>
           <div className="divide-y divide-gray-100">
             {dayStatus.map((d) => {
               const open = d.state !== 'planned' && d.results.length > 0;
-              const pill = d.state === 'closed' ? 'bg-emerald-50 text-emerald-700' : d.state === 'in_progress' ? 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]' : 'bg-gray-50 text-gray-500';
+              const pill = d.state === 'closed' ? 'bg-emerald-50 text-emerald-700' : d.state === 'in_progress' ? 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]' : 'bg-[#F7F9FA] text-[#55666E]';
               const word = d.state === 'closed' ? 'Closed' : d.state === 'in_progress' ? 'In progress' : 'Planned';
               return (
                 <details key={d.session_id} open={open && d.state === 'in_progress'} className="group">
                   <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-700 text-xs font-bold flex items-center justify-center shrink-0">{d.day_number}</span>
+                      <span className="w-8 h-8 rounded-full bg-[#EDF3F5] text-[#10263B] text-xs font-bold flex items-center justify-center shrink-0">{d.day_number}</span>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-gray-900">Day {d.day_number}{d.session_date ? ` · ${d.session_date}` : ''}</p>
-                        <p className="text-[12px] text-gray-500 truncate">{d.coach ? `Coach ${d.coach}` : 'No coach yet'}{d.venue ? ` · 📍 ${d.venue}` : ''}{d.results.length ? ` · ${d.results.length} student${d.results.length === 1 ? '' : 's'} with feedback` : ''}{d.results.some((r) => r.incident) ? ' · ⚠ incident' : ''}</p>
+                        <p className="text-sm font-medium text-[#10263B]">Day {d.day_number}{d.session_date ? ` · ${d.session_date}` : ''}</p>
+                        <p className="text-[12px] text-[#55666E] truncate">{d.coach ? `Coach ${d.coach}` : 'No coach yet'}{d.venue ? ` · 📍 ${d.venue}` : ''}{d.results.length ? ` · ${d.results.length} student${d.results.length === 1 ? '' : 's'} with feedback` : ''}{d.results.some((r) => r.incident) ? ' · ⚠ incident' : ''}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -181,33 +181,33 @@ export default async function CampDetailPage({ params }: Props) {
                     </div>
                   </summary>
                   {(d.venue || d.conditions || d.common_notes) && (
-                    <div className="px-4 pb-2 text-[12px] text-gray-600 space-y-0.5">
-                      {d.venue && <p>📍 Where: <span className="text-gray-900">{d.venue}</span></p>}
-                      {d.conditions && <p>🌊 Conditions: <span className="text-gray-900">{d.conditions}</span></p>}
-                      {d.common_notes && <p>📝 Coach notes: <span className="text-gray-900">{d.common_notes}</span></p>}
+                    <div className="px-4 pb-2 text-[12px] text-[#55666E] space-y-0.5">
+                      {d.venue && <p>📍 Where: <span className="text-[#10263B]">{d.venue}</span></p>}
+                      {d.conditions && <p>🌊 Conditions: <span className="text-[#10263B]">{d.conditions}</span></p>}
+                      {d.common_notes && <p>📝 Coach notes: <span className="text-[#10263B]">{d.common_notes}</span></p>}
                     </div>
                   )}
                   {d.results.length > 0 ? (
                     <div className="px-4 pb-3 space-y-1.5">
                       {d.results.map((r) => (
-                        <div key={r.student_id} className={`rounded-lg px-3 py-2 ${r.incident ? 'bg-red-50 border border-red-200' : 'bg-gray-50'}`}>
-                          <p className="text-[13px] font-semibold text-gray-900">{r.name}{r.status ? <span className="ml-2 text-[11px] font-normal text-gray-500">{r.status.replace(/_/g, ' ')}</span> : null}</p>
+                        <div key={r.student_id} className={`rounded-lg px-3 py-2 ${r.incident ? 'bg-red-50 border border-red-200' : 'bg-[#F7F9FA]'}`}>
+                          <p className="text-[13px] font-semibold text-[#10263B]">{r.name}{r.status ? <span className="ml-2 text-[11px] font-normal text-[#55666E]">{r.status.replace(/_/g, ' ')}</span> : null}</p>
                           {r.incident && (
                             <p className="text-[12.5px] text-red-700 font-semibold">⚠ Incident · {r.incident.type.replace(/_/g, ' ')}{r.incident.description ? ` — ${r.incident.description}` : ''}{r.incident.action ? ` · Action: ${r.incident.action}` : ''}</p>
                           )}
-                          {r.mission && <p className="text-[12px] text-gray-700">Worked on: {r.mission}</p>}
+                          {r.mission && <p className="text-[12px] text-[#10263B]">Worked on: {r.mission}</p>}
                           {r.achieved && <p className="text-[12px] text-emerald-700">✓ {r.achieved}</p>}
                           {r.whats_next && <p className="text-[12.5px] text-[var(--tss-navy)]">🎯 Next: {r.whats_next}</p>}
-                          {r.coach_feedback && <p className="text-[12px] text-gray-600">{r.coach_feedback}</p>}
-                          {r.homework && <p className="text-[12px] text-gray-600">Homework: {r.homework}</p>}
+                          {r.coach_feedback && <p className="text-[12px] text-[#55666E]">{r.coach_feedback}</p>}
+                          {r.homework && <p className="text-[12px] text-[#55666E]">Homework: {r.homework}</p>}
                           {r.internal_notes && <p className="text-[12px] text-amber-800">🔒 Internal: {r.internal_notes}</p>}
                           {r.video_link && <a href={r.video_link} target="_blank" rel="noreferrer" className="text-[12px] text-[var(--tss-navy)] underline">Video</a>}
-                          {!r.whats_next && !r.coach_feedback && !r.mission && !r.incident && <p className="text-[12px] text-gray-400 italic">Closed without notes.</p>}
+                          {!r.whats_next && !r.coach_feedback && !r.mission && !r.incident && <p className="text-[12px] text-[#55666E] italic">Closed without notes.</p>}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="px-4 pb-3 text-[12px] text-gray-400 italic">Nothing written yet for this day.</p>
+                    <p className="px-4 pb-3 text-[12px] text-[#55666E] italic">Nothing written yet for this day.</p>
                   )}
                 </details>
               );
@@ -218,7 +218,7 @@ export default async function CampDetailPage({ params }: Props) {
 
       {/* Participants with belt levels — kept right under the staff section so
           enrolment is visible without scrolling to the bottom. */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">
             Enrolled Students ({participants.length})
@@ -234,7 +234,7 @@ export default async function CampDetailPage({ params }: Props) {
               return (
                 <div
                   key={p.id}
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#F7F9FA] transition-colors"
                 >
                   <Link
                     href={`/students/${p.students?.id}`}
@@ -247,10 +247,10 @@ export default async function CampDetailPage({ params }: Props) {
                       {p.students?.first_name?.[0]}{p.students?.last_name?.[0]}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">
+                      <p className="text-sm font-medium text-[#10263B] truncate">
                         {p.students?.first_name} {p.students?.last_name}
                       </p>
-                      <p className="text-[10px] text-gray-400">{belt?.en} — {belt?.levelName}</p>
+                      <p className="text-[10px] text-[#55666E]">{belt?.en} — {belt?.levelName}</p>
                     </div>
                   </Link>
                   <EnrollmentPaymentControl
@@ -285,7 +285,7 @@ export default async function CampDetailPage({ params }: Props) {
             })}
           </div>
         ) : (
-          <p className="text-xs text-gray-400 text-center py-3">No students enrolled</p>
+          <p className="text-xs text-[#55666E] text-center py-3">No students enrolled</p>
         )}
 
         {/* Add/Remove students */}
@@ -309,11 +309,11 @@ export default async function CampDetailPage({ params }: Props) {
       <CampCostPanel campInstanceId={id} />
 
       {/* Final Evaluations CTA */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Final Evaluations</h3>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-[#55666E] mt-1">
               {evaluatedCount} of {totalStudents} students evaluated
             </p>
           </div>
@@ -326,7 +326,7 @@ export default async function CampDetailPage({ params }: Props) {
           </Link>
         </div>
         {totalStudents > 0 && (
-          <div className="mt-3 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+          <div className="mt-3 bg-[#EDF3F5] rounded-full h-1.5 overflow-hidden">
             <div
               className="bg-[var(--tss-cyan,#5AC3E7)] h-full rounded-full transition-all"
               style={{ width: `${(evaluatedCount / totalStudents) * 100}%` }}
@@ -354,7 +354,7 @@ export default async function CampDetailPage({ params }: Props) {
 
       {/* Camp Completion */}
       {allFinalEvalsDone && campNotCompleted && (
-        <div className="bg-emerald-50 rounded-2xl border border-emerald-200 p-4 space-y-3">
+        <div className="bg-emerald-50 rounded-lg border border-emerald-200 p-4 space-y-3">
           <div className="text-center">
             <p className="text-sm font-semibold text-emerald-700 inline-flex items-center gap-1.5">
               <CheckCircle2 size={15} strokeWidth={2} />
@@ -369,17 +369,17 @@ export default async function CampDetailPage({ params }: Props) {
       )}
 
       {instance.status === 'completed' && (
-        <div className="bg-gray-50 rounded-2xl border border-gray-200 p-4 text-center">
-          <p className="text-sm font-medium text-gray-600 inline-flex items-center gap-1.5 justify-center">
-            <CheckCircle2 size={15} strokeWidth={2} className="text-gray-500" />
+        <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4 text-center">
+          <p className="text-sm font-medium text-[#55666E] inline-flex items-center gap-1.5 justify-center">
+            <CheckCircle2 size={15} strokeWidth={2} className="text-[#55666E]" />
             This camp has been completed.
           </p>
         </div>
       )}
 
       {/* Day schedule with session blocks */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-[#DCD7C6]">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Schedule</h3>
         </div>
         <div className="divide-y divide-gray-100">
@@ -390,19 +390,19 @@ export default async function CampDetailPage({ params }: Props) {
               <Link
                 key={s.id}
                 href={`/camps/${id}/day/${s.day_number}`}
-                className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between px-4 py-3 hover:bg-[#F7F9FA] transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
                     isCompleted ? 'bg-emerald-100 text-emerald-700' :
                     isActive ? 'bg-[var(--tss-cyan,#5AC3E7)]/20 text-[var(--tss-navy)]' :
-                    'bg-gray-100 text-gray-500'
+                    'bg-[#EDF3F5] text-[#55666E]'
                   }`}>
                     {s.day_number}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">Day {s.day_number}</p>
-                    <p className="text-xs text-gray-500 truncate max-w-[200px]">
+                    <p className="text-sm font-medium text-[#10263B]">Day {s.day_number}</p>
+                    <p className="text-xs text-[#55666E] truncate max-w-[200px]">
                       {s.camp_template_days?.day_goal?.slice(0, 60)}
                     </p>
                     {s.camp_template_days?.evaluation_focus && (
@@ -416,12 +416,12 @@ export default async function CampDetailPage({ params }: Props) {
                   <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-semibold ${
                     isCompleted ? 'bg-emerald-50 text-emerald-700' :
                     isActive ? 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]' :
-                    'bg-gray-50 text-gray-400'
+                    'bg-[#F7F9FA] text-[#55666E]'
                   }`}>
                     {s.session_status}
                   </span>
                   {s.session_date && (
-                    <p className="text-[10px] text-gray-400 mt-0.5">{s.session_date}</p>
+                    <p className="text-[10px] text-[#55666E] mt-0.5">{s.session_date}</p>
                   )}
                 </div>
               </Link>
@@ -446,12 +446,12 @@ function CampStatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     planned: 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]',
     active: 'bg-emerald-50 text-emerald-700',
-    completed: 'bg-gray-100 text-gray-600',
-    draft: 'bg-gray-50 text-gray-500',
+    completed: 'bg-[#EDF3F5] text-[#55666E]',
+    draft: 'bg-[#F7F9FA] text-[#55666E]',
     cancelled: 'bg-red-50 text-red-600',
   };
   return (
-    <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-semibold shrink-0 ${styles[status] || 'bg-gray-50'}`}>
+    <span className={`text-[10px] px-2 py-0.5 rounded-full capitalize font-semibold shrink-0 ${styles[status] || 'bg-[#F7F9FA]'}`}>
       {status}
     </span>
   );

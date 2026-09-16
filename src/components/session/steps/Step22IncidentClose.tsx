@@ -28,20 +28,20 @@ export function Step22IncidentClose({
       <h3 className="text-lg font-semibold text-[#1A1A2E]">Close Session</h3>
 
       {/* Incident toggle */}
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+      <div className="flex items-center justify-between p-4 bg-[#F7F9FA] rounded-[5px]">
         <div>
-          <p className="text-sm font-medium text-gray-800">Incident Report</p>
-          <p className="text-xs text-gray-400">Did any incident occur?</p>
+          <p className="text-sm font-medium text-[#10263B]">Incident Report</p>
+          <p className="text-xs text-[#55666E]">Did any incident occur?</p>
         </div>
         <button
           type="button"
           onClick={() => onToggleIncident(!formState.incident_report)}
           className={`relative w-12 h-7 rounded-full transition-colors ${
-            formState.incident_report ? 'bg-red-500' : 'bg-gray-300'
+            formState.incident_report ? 'bg-red-500' : 'bg-[#DCD7C6]'
           }`}
         >
           <span
-            className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow transition-transform ${
+            className={`absolute top-0.5 w-6 h-6 bg-[#F7F9FA] rounded-full shadow transition-transform ${
               formState.incident_report ? 'translate-x-5' : 'translate-x-0.5'
             }`}
           />
@@ -50,7 +50,7 @@ export function Step22IncidentClose({
 
       {/* Incident fields */}
       {formState.incident_report && (
-        <div className="space-y-3 p-4 bg-red-50 rounded-xl border border-red-100">
+        <div className="space-y-3 p-4 bg-red-50 rounded-[5px] border border-red-100">
           <p className="text-sm font-semibold text-red-700">Incident Details</p>
 
           {/* Type */}
@@ -67,7 +67,7 @@ export function Step22IncidentClose({
                     className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
                       isSelected
                         ? 'bg-red-600 text-white'
-                        : 'bg-white text-red-600 border border-red-200 hover:bg-red-100'
+                        : 'bg-[#F7F9FA] text-red-600 border border-red-200 hover:bg-red-100'
                     }`}
                   >
                     {opt.label || opt.value}
@@ -108,9 +108,9 @@ export function Step22IncidentClose({
         type="button"
         onClick={onSave}
         disabled={isSaving}
-        className={`w-full py-4 rounded-xl text-white text-sm font-semibold transition-all ${
+        className={`w-full py-4 rounded-[5px] text-white text-sm font-semibold transition-all ${
           isSaving
-            ? 'bg-gray-400 cursor-not-allowed'
+            ? 'bg-[#B8B1A0] cursor-not-allowed'
             : 'bg-[#1A1A2E] hover:opacity-90 active:scale-[0.98]'
         }`}
       >

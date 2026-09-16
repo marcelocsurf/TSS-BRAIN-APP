@@ -63,7 +63,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
     return (
       <button
         onClick={() => setOpen(true)}
-        className="px-3 py-2 bg-gray-50 text-[var(--tss-navy)] text-xs font-medium rounded-lg hover:bg-gray-100 inline-flex items-center gap-1"
+        className="px-3 py-2 bg-[#F7F9FA] text-[var(--tss-navy)] text-xs font-medium rounded-lg hover:bg-[#EDF3F5] inline-flex items-center gap-1"
       >
         <Pencil size={12} strokeWidth={1.75} /> Edit
       </button>
@@ -72,30 +72,30 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-xl w-full max-w-md p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold text-[var(--tss-navy)]">Edit staff member</h3>
-          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
+          <button onClick={() => setOpen(false)} className="text-[#55666E] hover:text-[#55666E]"><X size={18} /></button>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <label className="text-xs text-gray-500">First name
-            <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
+          <label className="text-xs text-[#55666E]">First name
+            <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="mt-1 w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm text-[#10263B]" />
           </label>
-          <label className="text-xs text-gray-500">Last name
-            <input value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
+          <label className="text-xs text-[#55666E]">Last name
+            <input value={lastName} onChange={(e) => setLastName(e.target.value)} className="mt-1 w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm text-[#10263B]" />
           </label>
         </div>
-        <label className="text-xs text-gray-500 block">Email
-          <input value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900" />
+        <label className="text-xs text-[#55666E] block">Email
+          <input value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm text-[#10263B]" />
         </label>
-        <label className="text-xs text-gray-500 block">Role
-          <select value={role} onChange={(e) => setRole(e.target.value)} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white capitalize">
+        <label className="text-xs text-[#55666E] block">Role
+          <select value={role} onChange={(e) => setRole(e.target.value)} className="mt-1 w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm text-[#10263B] bg-[#F7F9FA] capitalize">
             {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
         </label>
         {role === 'host' && (
-          <label className="flex items-start gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-3 cursor-pointer">
+          <label className="flex items-start gap-2 text-xs text-[#55666E] bg-[#F7F9FA] rounded-lg p-3 cursor-pointer">
             <input type="checkbox" checked={canCoordinate} onChange={(e) => setCanCoordinate(e.target.checked)} className="mt-0.5" />
             <span>
               <span className="font-semibold text-[var(--tss-navy)]">Coverage mode (coordination)</span><br />
@@ -104,7 +104,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
           </label>
         )}
         {role === 'host' && (
-          <label className="flex items-start gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-3 cursor-pointer">
+          <label className="flex items-start gap-2 text-xs text-[#55666E] bg-[#F7F9FA] rounded-lg p-3 cursor-pointer">
             <input type="checkbox" checked={opsCoordination} onChange={(e) => setOpsCoordination(e.target.checked)} className="mt-0.5" />
             <span>
               <span className="font-semibold text-[var(--tss-navy)]">Coordination coverage (planning dashboard)</span><br />
@@ -112,9 +112,9 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
             </span>
           </label>
         )}
-        <label className="text-xs text-gray-500 block">HP specialist role (team portal /equipo)
+        <label className="text-xs text-[#55666E] block">HP specialist role (team portal /equipo)
           <select value={specialistRole} onChange={(e) => setSpecialistRole(e.target.value)}
-            className="mt-1 w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm">
+            className="mt-1 w-full border border-[#DCD7C6] rounded-lg px-2 py-1.5 text-sm">
             <option value="">— None —</option>
             <option value="psicologo">Psicólogo</option>
             <option value="fisico">Preparador físico</option>
@@ -122,7 +122,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
           </select>
         </label>
         {!['host', 'coordinator', 'admin'].includes(role) && (
-          <label className="flex items-start gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg p-3 cursor-pointer">
+          <label className="flex items-start gap-2 text-xs text-[#55666E] bg-[#F7F9FA] rounded-lg p-3 cursor-pointer">
             <input type="checkbox" checked={canBoards} onChange={(e) => setCanBoards(e.target.checked)} className="mt-0.5" />
             <span>
               <span className="font-semibold text-[var(--tss-navy)]">Board inventory access</span><br />
@@ -131,8 +131,8 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
           </label>
         )}
         {academies.length > 0 && (
-          <label className="text-xs text-gray-500 block">Academy
-            <select value={academyId} onChange={(e) => setAcademyId(e.target.value)} className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900 bg-white">
+          <label className="text-xs text-[#55666E] block">Academy
+            <select value={academyId} onChange={(e) => setAcademyId(e.target.value)} className="mt-1 w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm text-[#10263B] bg-[#F7F9FA]">
               {academies.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </label>
@@ -149,7 +149,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
             <Trash2 size={12} strokeWidth={1.75} /> {deleting ? 'Deleting…' : 'Delete'}
           </button>
           <div className="flex gap-2">
-            <button onClick={() => setOpen(false)} className="px-3 py-2 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">Cancel</button>
+            <button onClick={() => setOpen(false)} className="px-3 py-2 text-xs rounded-lg border border-[#DCD7C6] text-[#55666E] hover:bg-[#F7F9FA]">Cancel</button>
             <button onClick={save} disabled={saving} className="px-4 py-2 text-xs font-semibold rounded-lg bg-[var(--tss-navy)] text-white hover:opacity-90 disabled:opacity-50">
               {saving ? 'Saving…' : 'Save changes'}
             </button>

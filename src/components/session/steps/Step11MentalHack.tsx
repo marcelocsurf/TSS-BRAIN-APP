@@ -12,7 +12,7 @@ export function Step11MentalHack({ formState, options, onSelect }: Props) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-[#1A1A2E]">Mental Hack</h3>
-      <p className="text-xs text-gray-400">Choose a mental focus cue for the session</p>
+      <p className="text-xs text-[#55666E]">Choose a mental focus cue for the session</p>
       <div className="space-y-2">
         {options.map((opt) => {
           const isSelected = formState.mental_hack === opt.value;
@@ -21,10 +21,10 @@ export function Step11MentalHack({ formState, options, onSelect }: Props) {
               key={opt.id}
               type="button"
               onClick={() => onSelect(opt.value)}
-              className={`w-full p-3 rounded-xl border text-left text-sm font-medium transition-all ${
+              className={`w-full p-3 rounded-[5px] border text-left text-sm font-medium transition-all ${
                 isSelected
-                  ? 'border-[#5AC3E7] bg-amber-50 text-gray-800'
-                  : 'border-gray-100 text-gray-600 hover:border-gray-200'
+                  ? 'border-[#5AC3E7] bg-amber-50 text-[#10263B]'
+                  : 'border-[#DCD7C6] text-[#55666E] hover:border-[#DCD7C6]'
               }`}
             >
               {opt.label || opt.value}

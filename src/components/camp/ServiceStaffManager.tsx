@@ -80,10 +80,10 @@ export function ServiceStaffManager({
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-4">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 space-y-4">
       <div>
         <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Service staff</h3>
-        <p className="text-[11px] text-gray-500">Assistants + photographer/filmmaker. Each one is notified and accepts or declines.</p>
+        <p className="text-[11px] text-[#55666E]">Assistants + photographer/filmmaker. Each one is notified and accepts or declines.</p>
       </div>
 
       {/* Current staff */}
@@ -92,12 +92,12 @@ export function ServiceStaffManager({
           {staff.map((s) => (
             <li key={s.id} className="flex items-center justify-between gap-2 py-2">
               <div className="min-w-0">
-                <p className="text-sm text-gray-800 truncate">{s.name}</p>
-                <p className="text-[10px] text-gray-400">{ROLE_LABEL[s.role] ?? s.role}{s.is_coach ? '' : ' · no account'}</p>
+                <p className="text-sm text-[#10263B] truncate">{s.name}</p>
+                <p className="text-[10px] text-[#55666E]">{ROLE_LABEL[s.role] ?? s.role}{s.is_coach ? '' : ' · no account'}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_CHIP[s.status]}`}>{STATUS_LABEL[s.status]}</span>
-                <button onClick={() => run(() => removeServiceStaff(s.id))} className="text-[11px] text-gray-300 hover:text-red-500">✕</button>
+                <button onClick={() => run(() => removeServiceStaff(s.id))} className="text-[11px] text-[#B8B1A0] hover:text-red-500">✕</button>
               </div>
             </li>
           ))}
@@ -107,10 +107,10 @@ export function ServiceStaffManager({
       {error && <p className="text-xs text-red-600">{error}</p>}
 
       {/* Add assistant */}
-      <div className="rounded-lg border border-gray-200 p-3 space-y-2 bg-gray-50/50">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">Add assistant (coach)</p>
+      <div className="rounded-lg border border-[#DCD7C6] p-3 space-y-2 bg-[#F7F9FA]">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Add assistant (coach)</p>
         <div className="flex gap-2">
-          <select value={assistantId} onChange={(e) => setAssistantId(e.target.value)} className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white">
+          <select value={assistantId} onChange={(e) => setAssistantId(e.target.value)} className="flex-1 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm bg-[#F7F9FA]">
             <option value="">Choose coach…</option>
             {coaches.filter((c) => !assignedCoachIds.has(c.id)).map((c) => (
               <option key={c.id} value={c.id}>{c.name} ({c.role})</option>
@@ -121,15 +121,15 @@ export function ServiceStaffManager({
       </div>
 
       {/* Add external (photographer / filmmaker) */}
-      <div className="rounded-lg border border-gray-200 p-3 space-y-2 bg-gray-50/50">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">Add photographer / filmmaker</p>
+      <div className="rounded-lg border border-[#DCD7C6] p-3 space-y-2 bg-[#F7F9FA]">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Add photographer / filmmaker</p>
         <div className="flex gap-2">
-          <select value={extRole} onChange={(e) => setExtRole(e.target.value as ServiceStaffRole)} className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white">
+          <select value={extRole} onChange={(e) => setExtRole(e.target.value as ServiceStaffRole)} className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm bg-[#F7F9FA]">
             <option value="photographer">Photographer</option>
             <option value="filmmaker">Filmmaker</option>
             <option value="other">Other</option>
           </select>
-          <select value={extMemberId} onChange={(e) => setExtMemberId(e.target.value)} className="flex-1 px-2 py-1.5 border border-gray-200 rounded-lg text-sm bg-white">
+          <select value={extMemberId} onChange={(e) => setExtMemberId(e.target.value)} className="flex-1 px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm bg-[#F7F9FA]">
             <option value="">+ New person…</option>
             {staffMembers.filter((m) => !assignedMemberIds.has(m.id)).map((m) => (
               <option key={m.id} value={m.id}>{m.name}{m.role ? ` (${m.role})` : ''}</option>
@@ -138,9 +138,9 @@ export function ServiceStaffManager({
         </div>
         {!extMemberId && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name" className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
-            <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email (for the invite)" className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
-            <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Phone" className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm" />
+            <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name" className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm" />
+            <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="Email (for the invite)" className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm" />
+            <input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="Phone" className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-sm" />
           </div>
         )}
         <button onClick={addExternal} disabled={pending} className="w-full py-2 text-white text-xs font-semibold rounded-lg disabled:opacity-50 bg-[var(--tss-navy)]">

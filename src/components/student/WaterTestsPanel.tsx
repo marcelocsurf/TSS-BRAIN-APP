@@ -84,15 +84,15 @@ export function WaterTestsPanel({
   };
 
   if (rows === null && !error) {
-    return <p className="text-sm text-gray-400 italic">Cargando…</p>;
+    return <p className="text-sm text-[#55666E] italic">Cargando…</p>;
   }
 
   // El formulario se pinta DEBAJO de la fila tocada (2026-09-11): antes iba
   // al final de toda la lista, fuera de la pantalla, y parecía que
   // "registrar" no hacía nada.
   const renderForm = () => form && (
-        <div className="rounded-xl border-2 border-cyan-500 p-3 space-y-2">
-          <p className="text-[12.5px] font-semibold text-gray-900">
+        <div className="rounded-[5px] border-2 border-cyan-500 p-3 space-y-2">
+          <p className="text-[12.5px] font-semibold text-[#10263B]">
             {testByKey(form.test)?.name} · {OCEAN_LEVEL_INFO[form.level].short}
           </p>
           {testByKey(form.test)?.unit && (
@@ -102,14 +102,14 @@ export function WaterTestsPanel({
               value={form.measured}
               onChange={(e) => setForm({ ...form, measured: e.target.value })}
               placeholder={`Cuánto (${testByKey(form.test)?.unit})`}
-              className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-[13px]"
+              className="w-full px-2.5 py-2 border border-[#DCD7C6] rounded-lg text-[13px]"
             />
           )}
           <input
             value={form.conditions}
             onChange={(e) => setForm({ ...form, conditions: e.target.value })}
             placeholder="Condiciones (opcional) — p. ej. mar chico, piscina"
-            className="w-full px-2.5 py-2 border border-gray-200 rounded-lg text-[13px]"
+            className="w-full px-2.5 py-2 border border-[#DCD7C6] rounded-lg text-[13px]"
           />
           <div className="flex gap-2">
             <button type="button" disabled={pending} onClick={() => save(true)}
@@ -117,11 +117,11 @@ export function WaterTestsPanel({
               Pasó
             </button>
             <button type="button" disabled={pending} onClick={() => save(false)}
-              className="flex-1 h-9 rounded-lg bg-gray-200 text-gray-700 text-[12.5px] font-bold disabled:opacity-50">
+              className="flex-1 h-9 rounded-lg bg-[#DCD7C6] text-[#10263B] text-[12.5px] font-bold disabled:opacity-50">
               No pasó
             </button>
             <button type="button" onClick={() => setForm(null)}
-              className="px-3 h-9 rounded-lg text-[12.5px] text-gray-400">
+              className="px-3 h-9 rounded-lg text-[12.5px] text-[#55666E]">
               ✕
             </button>
           </div>
@@ -131,7 +131,7 @@ export function WaterTestsPanel({
   return (
     <div className="space-y-3">
       <div className="flex items-baseline gap-2 flex-wrap">
-        <p className="text-[11px] text-gray-500 flex-1">
+        <p className="text-[11px] text-[#55666E] flex-1">
           Se pasa o no se pasa — no hay estrellas. Esto no cambia su Ocean Level: te dice qué
           está respaldado por una prueba.
         </p>
@@ -141,10 +141,10 @@ export function WaterTestsPanel({
               probado hasta {OCEAN_LEVEL_INFO[earned].short}
             </span>
           ) : (
-            <span className="text-gray-400">sin pruebas</span>
+            <span className="text-[#55666E]">sin pruebas</span>
           )}
           {currentLevel && (
-            <span className="text-gray-400"> · ficha: {currentLevel}</span>
+            <span className="text-[#55666E]"> · ficha: {currentLevel}</span>
           )}
         </span>
       </div>
@@ -156,13 +156,13 @@ export function WaterTestsPanel({
         const info = OCEAN_LEVEL_INFO[level];
         const done = reqs.every((req) => meets(level, req));
         return (
-          <div key={level} className="rounded-xl border border-gray-200 overflow-hidden">
-            <div className="px-3 py-2 bg-gray-50 flex items-baseline gap-2">
+          <div key={level} className="rounded-[5px] border border-[#DCD7C6] overflow-hidden">
+            <div className="px-3 py-2 bg-[#F7F9FA] flex items-baseline gap-2">
               <span className="text-[11px] font-mono text-cyan-700">{info.short}</span>
-              <span className="text-[13px] font-semibold text-gray-900">{info.name}</span>
+              <span className="text-[13px] font-semibold text-[#10263B]">{info.name}</span>
               <span className="ml-auto text-[10px] font-mono shrink-0">
                 {done ? <span className="text-emerald-600 font-bold">✓ probado</span>
-                      : <span className="text-gray-400">{reqs.filter((r) => meets(level, r)).length}/{reqs.length}</span>}
+                      : <span className="text-[#55666E]">{reqs.filter((r) => meets(level, r)).length}/{reqs.length}</span>}
               </span>
             </div>
             <div className="divide-y divide-gray-100">
@@ -174,13 +174,13 @@ export function WaterTestsPanel({
                   <div key={req.test} className="px-3 py-2">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <p className={`text-[12.5px] ${ok ? 'text-gray-800' : 'text-gray-600'}`}>
+                      <p className={`text-[12.5px] ${ok ? 'text-[#10263B]' : 'text-[#55666E]'}`}>
                         {ok && <span className="text-emerald-600">✓ </span>}
                         {requirementLabel(req)}
                       </p>
-                      <p className="text-[10.5px] text-gray-400">{t?.proves}</p>
+                      <p className="text-[10.5px] text-[#55666E]">{t?.proves}</p>
                       {r && (
-                        <p className="text-[10px] font-mono text-gray-400 mt-0.5">
+                        <p className="text-[10px] font-mono text-[#55666E] mt-0.5">
                           {r.passed ? 'pasó' : 'no pasó'}
                           {r.measured != null && ` · ${r.measured}${t?.unit ? ' ' + t.unit : ''}`}
                           {' · '}{new Date(r.tested_at).toLocaleDateString('es-ES')}
@@ -190,7 +190,7 @@ export function WaterTestsPanel({
                     <button
                       type="button"
                       onClick={() => setForm({ level, test: req.test, measured: '', conditions: '' })}
-                      className="shrink-0 text-[12px] px-3 h-9 rounded-lg border border-gray-300 hover:border-gray-500 font-semibold"
+                      className="shrink-0 text-[12px] px-3 h-9 rounded-lg border border-[#DCD7C6] hover:border-[#DCD7C6]0 font-semibold"
                     >
                       {r ? 'repetir' : 'registrar'}
                     </button>

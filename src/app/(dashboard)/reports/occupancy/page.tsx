@@ -39,11 +39,11 @@ export default async function OccupancyReportPage({
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
       <header className="space-y-1">
-        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600">
+        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-[#55666E] hover:text-[#55666E]">
           <ArrowLeft size={12} /> Reportes
         </Link>
         <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Ocupación vs capacidad</h1>
-        <p className="text-sm text-gray-500">Utilización de cupos por servicio — para planear capacidad y ventas.</p>
+        <p className="text-sm text-[#55666E]">Utilización de cupos por servicio — para planear capacidad y ventas.</p>
       </header>
 
       <ReportControls
@@ -74,7 +74,7 @@ export default async function OccupancyReportPage({
           <ReportCard title={groupBy === 'template' ? 'Por plantilla' : groupBy === 'week' ? 'Por semana' : 'Por tipo de servicio'} icon={Gauge}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#F7F9FA]">
                   <tr>
                     <Th>{groupBy === 'template' ? 'Plantilla' : groupBy === 'week' ? 'Semana' : 'Servicio'}</Th>
                     <Th align="right">Servicios</Th>
@@ -89,7 +89,7 @@ export default async function OccupancyReportPage({
                   {data.rows.map((r) => (
                     <tr key={r.key}>
                       <Td>
-                        <span className="font-medium text-gray-800">{groupBy === 'week' ? fmtWeek(r.key) : r.label}</span>
+                        <span className="font-medium text-[#10263B]">{groupBy === 'week' ? fmtWeek(r.key) : r.label}</span>
                         {r.capacityNotSet > 0 && <span className="ml-2 text-[10px] text-amber-600">⚠ {r.capacityNotSet} sin cupo</span>}
                       </Td>
                       <Td align="right" mono>{r.services}</Td>
@@ -101,11 +101,11 @@ export default async function OccupancyReportPage({
                     </tr>
                   ))}
                   {data.rows.length === 0 && (
-                    <tr><td colSpan={7} className="text-center py-6 text-xs text-gray-400">Sin servicios en este rango.</td></tr>
+                    <tr><td colSpan={7} className="text-center py-6 text-xs text-[#55666E]">Sin servicios en este rango.</td></tr>
                   )}
                 </tbody>
                 {data.rows.length > 0 && (
-                  <tfoot className="bg-gray-50 border-t border-gray-200">
+                  <tfoot className="bg-[#F7F9FA] border-t border-[#DCD7C6]">
                     <tr>
                       <Td><span className="font-semibold text-[var(--tss-navy)]">Total</span></Td>
                       <Td align="right" mono>{data.totals.services}</Td>
@@ -121,7 +121,7 @@ export default async function OccupancyReportPage({
             </div>
           </ReportCard>
 
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-[#55666E]">
             Capacidad efectiva = cupo del servicio (override) o el de su plantilla. Un camp de varios días cuenta en su semana de inicio.
             Ocupación = inscritos activos / cupos. "Ocupación pagada" solo cuenta asientos ya cobrados.
           </p>

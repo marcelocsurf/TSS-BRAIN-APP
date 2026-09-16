@@ -36,14 +36,14 @@ export function SectionIntroManager({ initial }: { initial: Record<string, Secti
       {SECTIONS.map((s) => {
         const preview = toEmbedUrl(urls[s.key] || '');
         return (
-          <div key={s.key} className="bg-white rounded-xl border border-gray-200 p-4">
+          <div key={s.key} className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4">
             <p className="text-sm font-semibold text-[var(--tss-navy)] mb-2">{s.label}</p>
             <div className="flex gap-2">
               <input
                 value={urls[s.key]}
                 onChange={(e) => setUrls({ ...urls, [s.key]: e.target.value })}
                 placeholder="https://youtu.be/…  ·  vimeo.com/…  ·  drive.google.com/…"
-                className="flex-1 px-2.5 py-2 border border-gray-200 rounded-lg text-sm"
+                className="flex-1 px-2.5 py-2 border border-[#DCD7C6] rounded-lg text-sm"
               />
               <button
                 onClick={() => save(s.key)}

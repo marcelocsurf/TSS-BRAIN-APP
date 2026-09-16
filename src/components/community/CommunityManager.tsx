@@ -92,7 +92,7 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
     <div className="mt-5 space-y-4">
       {/* Contador honesto: la regla de las 6-8 piezas a la vista. */}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[12px] text-gray-500">
+        <p className="text-[12px] text-[#55666E]">
           {publishedCount === 0
             ? 'Nada publicado todavía — la pestaña no les aparece a los alumnos.'
             : `${publishedCount} publicada${publishedCount === 1 ? '' : 's'} · ${initial.length - publishedCount} en borrador`}
@@ -111,7 +111,7 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
 
       {/* Compositor */}
       {form && (
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 space-y-3">
+        <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4 space-y-3">
           <div className="flex flex-wrap gap-1.5">
             {(Object.keys(KIND_META) as CommunityKind[]).map((k) => (
               <button
@@ -121,7 +121,7 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
                 className={`rounded-full px-3 py-1.5 text-[11.5px] font-semibold border ${
                   form.kind === k
                     ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]'
-                    : 'bg-white text-gray-600 border-gray-200'
+                    : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6]'
                 }`}
               >
                 {KIND_META[k].label}
@@ -133,52 +133,52 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             placeholder="Título (lo ve el alumno — en inglés)"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
           />
           <textarea
             value={form.body_md}
             onChange={(e) => setForm({ ...form, body_md: e.target.value })}
             placeholder="Texto (opcional, en inglés). Párrafos separados por línea en blanco."
             rows={4}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
           />
           {(form.kind === 'video' || form.kind === 'note') && (
             <input
               value={form.video_url}
               onChange={(e) => setForm({ ...form, video_url: e.target.value })}
               placeholder="Link del video (YouTube/Vimeo — opcional para una nota)"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
             />
           )}
           {isEvent && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
               <div>
-                <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">Fecha y hora</label>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">Fecha y hora</label>
                 <input
                   type="datetime-local"
                   value={form.event_at}
                   onChange={(e) => setForm({ ...form, event_at: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">Link para unirse (Zoom/Meet)</label>
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">Link para unirse (Zoom/Meet)</label>
                 <input
                   value={form.event_link}
                   onChange={(e) => setForm({ ...form, event_link: e.target.value })}
                   placeholder="https://…"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+                <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">
                   Grabación (se carga DESPUÉS del vivo — la clase de hoy es el archivo de mañana)
                 </label>
                 <input
                   value={form.recording_url}
                   onChange={(e) => setForm({ ...form, recording_url: e.target.value })}
                   placeholder="https://…"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
                 />
               </div>
             </div>
@@ -190,7 +190,7 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
               type="button"
               onClick={submit}
               disabled={pending}
-              className="rounded-xl px-4 py-2 text-[12.5px] font-semibold text-white disabled:opacity-50"
+              className="rounded-[5px] px-4 py-2 text-[12.5px] font-semibold text-white disabled:opacity-50"
               style={{ background: 'var(--tss-navy, #0A1628)' }}
             >
               {pending ? 'Guardando…' : form.id ? 'Guardar cambios' : 'Guardar borrador'}
@@ -198,7 +198,7 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
             <button
               type="button"
               onClick={() => setForm(null)}
-              className="rounded-xl px-4 py-2 text-[12.5px] font-semibold border border-gray-200 text-gray-600"
+              className="rounded-[5px] px-4 py-2 text-[12.5px] font-semibold border border-[#DCD7C6] text-[#55666E]"
             >
               Cancelar
             </button>
@@ -211,11 +211,11 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
         {initial.map((p) => {
           const Meta = KIND_META[p.kind] ?? KIND_META.note;
           return (
-            <div key={p.id} className="rounded-2xl border border-gray-200 bg-white px-4 py-3 flex items-start gap-3">
+            <div key={p.id} className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] px-4 py-3 flex items-start gap-3">
               <Meta.Icon size={16} className="mt-0.5 shrink-0 text-[#0090B0]" />
               <div className="min-w-0 flex-1">
                 <p className="text-[13.5px] font-semibold text-[var(--tss-navy)] leading-snug">{p.title}</p>
-                <p className="text-[11px] text-gray-500 mt-0.5">
+                <p className="text-[11px] text-[#55666E] mt-0.5">
                   {Meta.label}
                   {p.event_at && ` · ${displayDate(p.event_at)}`}
                   {p.published
@@ -235,7 +235,7 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
                   disabled={pending}
                   className={`rounded-full px-3 py-1.5 text-[11px] font-semibold border ${
                     p.published
-                      ? 'border-gray-200 text-gray-500'
+                      ? 'border-[#DCD7C6] text-[#55666E]'
                       : 'bg-[#06D6A0]/10 border-[#06D6A0]/40 text-[var(--tss-navy)]'
                   }`}
                 >
@@ -256,7 +256,7 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
                       recording_url: p.recording_url ?? '',
                     })
                   }
-                  className="p-1.5 text-gray-400 hover:text-gray-700"
+                  className="p-1.5 text-[#55666E] hover:text-[#10263B]"
                 >
                   <Pencil size={14} />
                 </button>
@@ -264,7 +264,7 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
                   type="button"
                   aria-label="Borrar"
                   onClick={() => remove(p)}
-                  className="p-1.5 text-gray-400 hover:text-red-600"
+                  className="p-1.5 text-[#55666E] hover:text-red-600"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -273,7 +273,7 @@ export function CommunityManager({ initial }: { initial: CommunityPostRow[] }) {
           );
         })}
         {initial.length === 0 && !form && (
-          <p className="text-[13px] text-gray-400 py-8 text-center">
+          <p className="text-[13px] text-[#55666E] py-8 text-center">
             Todavía no hay publicaciones. Los videos viejos y seminarios pasados cuentan —
             no tienen que ser piezas nuevas.
           </p>

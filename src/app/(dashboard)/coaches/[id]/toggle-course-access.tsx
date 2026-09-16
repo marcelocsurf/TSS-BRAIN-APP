@@ -30,8 +30,8 @@ export function ToggleCourseAccess({ coachId, currentAccess }: Props) {
   return (
     <div className="flex items-center gap-3">
       <div className="flex flex-col">
-        <span className="text-xs font-medium text-gray-700">Coach Portal Access</span>
-        <span className="text-[10px] text-gray-400">
+        <span className="text-xs font-medium text-[#10263B]">Coach Portal Access</span>
+        <span className="text-[10px] text-[#55666E]">
           {granted ? 'Coach can access their courses & tools' : 'No portal course access yet'}
         </span>
       </div>
@@ -39,16 +39,16 @@ export function ToggleCourseAccess({ coachId, currentAccess }: Props) {
         onClick={toggle}
         disabled={loading}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-          granted ? 'bg-emerald-500' : 'bg-gray-200'
+          granted ? 'bg-emerald-500' : 'bg-[#DCD7C6]'
         }`}
       >
         <span
-          className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${
+          className={`inline-block h-4 w-4 rounded-full bg-[#F7F9FA] shadow transition-transform ${
             granted ? 'translate-x-6' : 'translate-x-1'
           }`}
         />
       </button>
-      <span className={`text-xs font-medium ${granted ? 'text-emerald-600' : 'text-gray-400'}`}>
+      <span className={`text-xs font-medium ${granted ? 'text-emerald-600' : 'text-[#55666E]'}`}>
         {loading ? '…' : granted ? 'Granted' : 'Blocked'}
       </span>
     </div>

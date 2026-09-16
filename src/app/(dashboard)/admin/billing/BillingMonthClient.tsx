@@ -31,27 +31,27 @@ export function BillingMonthClient({ yearMonth }: Props) {
       <button
         type="button"
         onClick={() => goto(shiftMonth(yearMonth, -1))}
-        className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+        className="p-1.5 rounded-md hover:bg-[#EDF3F5] transition-colors"
         aria-label="Previous month"
       >
-        <ChevronLeft size={16} strokeWidth={2} className="text-gray-700" />
+        <ChevronLeft size={16} strokeWidth={2} className="text-[#10263B]" />
       </button>
 
       <input
         type="month"
         value={yearMonth}
         onChange={(e) => goto(e.target.value)}
-        className="px-3 py-1.5 border border-gray-200 rounded-md text-xs"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        className="px-3 py-1.5 border border-[#DCD7C6] rounded-md text-xs"
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       />
 
       <button
         type="button"
         onClick={() => goto(shiftMonth(yearMonth, 1))}
-        className="p-1.5 rounded-md hover:bg-gray-100 transition-colors"
+        className="p-1.5 rounded-md hover:bg-[#EDF3F5] transition-colors"
         aria-label="Next month"
       >
-        <ChevronRight size={16} strokeWidth={2} className="text-gray-700" />
+        <ChevronRight size={16} strokeWidth={2} className="text-[#10263B]" />
       </button>
 
       <a

@@ -8,7 +8,7 @@ interface Props {
 export async function CourseProgressPanel({ studentId, hasAccess }: Props) {
   if (!hasAccess) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-sm text-gray-600">
+      <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg p-4 text-sm text-[#55666E]">
         <p className="font-medium">No course access</p>
         <p className="text-xs mt-1">
           This student has not been granted access to the TSS White Belt Masterclass.
@@ -83,7 +83,7 @@ export async function CourseProgressPanel({ studentId, hasAccess }: Props) {
           <span className="text-xs uppercase tracking-wide opacity-80">Overall Progress</span>
           <span className="text-2xl font-bold">{overallPercent}%</span>
         </div>
-        <div className="w-full bg-white/10 rounded-full h-2">
+        <div className="w-full bg-[#F7F9FA]/10 rounded-full h-2">
           <div
             className="h-full bg-[var(--tss-gold,#d4a017)] rounded-full transition-all"
             style={{ width: `${overallPercent}%` }}
@@ -124,10 +124,10 @@ export async function CourseProgressPanel({ studentId, hasAccess }: Props) {
         const meta = sectionMeta[key];
 
         return (
-          <div key={key} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-            <div className="px-3 py-2 bg-gray-50 flex justify-between items-center text-xs">
+          <div key={key} className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg overflow-hidden">
+            <div className="px-3 py-2 bg-[#F7F9FA] flex justify-between items-center text-xs">
               <span className="font-medium">{meta.emoji} {meta.title}</span>
-              <span className="text-gray-500">
+              <span className="text-[#55666E]">
                 {sectionDone}/{items.length} ({sectionPct}%)
               </span>
             </div>
@@ -142,7 +142,7 @@ export async function CourseProgressPanel({ studentId, hasAccess }: Props) {
                     className={`aspect-square rounded text-[9px] font-bold flex items-center justify-center cursor-help ${
                       done
                         ? 'bg-green-100 text-green-700 border border-green-300'
-                        : 'bg-gray-100 text-gray-400'
+                        : 'bg-[#EDF3F5] text-[#55666E]'
                     }`}
                   >
                     {item.id.split('-')[1]}

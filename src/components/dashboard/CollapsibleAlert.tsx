@@ -24,16 +24,16 @@ export function CollapsibleAlert({
     amber: { chip: 'bg-amber-50 text-amber-700', border: 'border-amber-100', dot: 'bg-amber-400' },
     red: { chip: 'bg-red-50 text-red-600', border: 'border-red-100', dot: 'bg-red-400' },
     orange: { chip: 'bg-orange-50 text-orange-600', border: 'border-orange-100', dot: 'bg-orange-400' },
-    gray: { chip: 'bg-gray-100 text-gray-600', border: 'border-gray-100', dot: 'bg-gray-400' },
+    gray: { chip: 'bg-[#EDF3F5] text-[#55666E]', border: 'border-[#DCD7C6]', dot: 'bg-[#B8B1A0]' },
   };
   const t = tones[tone] ?? tones.amber;
 
   return (
-    <div className={`bg-white rounded-xl border ${t.border} overflow-hidden`}>
+    <div className={`bg-[#F7F9FA] rounded-[5px] border ${t.border} overflow-hidden`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50/60 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#F7F9FA]/60 transition-colors"
         aria-expanded={open}
       >
         <span className="flex items-center gap-2">
@@ -44,10 +44,10 @@ export function CollapsibleAlert({
         <ChevronDown
           size={16}
           strokeWidth={2}
-          className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`text-[#55666E] transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
-      {open && <div className="border-t border-gray-50 divide-y divide-gray-50">{children}</div>}
+      {open && <div className="border-t border-[#DCD7C6] divide-y divide-gray-50">{children}</div>}
     </div>
   );
 }

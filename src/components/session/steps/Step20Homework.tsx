@@ -42,7 +42,7 @@ export function Step20Homework({ formState, cueOptions, currentPilar, onToggleCu
                   ? 'bg-[#5AC3E7] text-white'
                   : highlight
                     ? 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-[#EDF3F5] text-[#55666E] hover:bg-[#DCD7C6]'
               }`}
             >
               {opt.label || opt.value}
@@ -65,14 +65,14 @@ export function Step20Homework({ formState, cueOptions, currentPilar, onToggleCu
             {renderCueChips(recommended, true)}
             {other.length > 0 && (
               <>
-                <p className="text-xs text-gray-500 mt-3 mb-2">Other</p>
+                <p className="text-xs text-[#55666E] mt-3 mb-2">Other</p>
                 {renderCueChips(other, false)}
               </>
             )}
           </>
         ) : (
           <>
-            <p className="text-xs text-gray-500 mb-2">Select cues for the student to practice</p>
+            <p className="text-xs text-[#55666E] mb-2">Select cues for the student to practice</p>
             {renderCueChips(cueOptions, false)}
           </>
         )}
@@ -84,7 +84,7 @@ export function Step20Homework({ formState, cueOptions, currentPilar, onToggleCu
         onChange={(e) => onChangeText(e.target.value)}
         placeholder="Additional homework instructions (optional)..."
         rows={3}
-        className="w-full p-3 rounded-xl border border-gray-200 text-sm resize-none focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
+        className="w-full p-3 rounded-[5px] border border-[#DCD7C6] text-sm resize-none focus:outline-none focus:border-[#5AC3E7] focus:ring-1 focus:ring-[#5AC3E7]"
       />
     </div>
   );

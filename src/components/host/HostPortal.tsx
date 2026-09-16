@@ -87,12 +87,12 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
       <button type="button" onClick={() => setOpen(!open)} className="w-full text-left px-3.5 py-3">
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             <p className="font-bold text-[14px] truncate" style={{ color: INK }}>{row.name}</p>
-            <p className="text-[11px] text-gray-400 truncate">{row.belt ? beltPretty(row.belt) : 'Sin cinta'}{row.email ? ` · ${row.email}` : ''}</p>
+            <p className="text-[11px] text-[#55666E] truncate">{row.belt ? beltPretty(row.belt) : 'Sin cinta'}{row.email ? ` · ${row.email}` : ''}</p>
           </div>
           <span className="text-[18px] shrink-0">{complete ? '🟢' : '🟠'}</span>
         </div>
@@ -103,7 +103,7 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
         </div>
       </button>
       {open && (
-        <div className="px-3.5 pb-3.5 space-y-2.5 border-t border-gray-50 pt-2.5">
+        <div className="px-3.5 pb-3.5 space-y-2.5 border-t border-[#DCD7C6] pt-2.5">
           {/* Link del intake SIEMPRE disponible (pedido de Cony): aunque la
               ficha esté completa, sirve para pedir datos que faltan o corregir. */}
           <div className="flex gap-2">
@@ -123,7 +123,7 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
               correo dudoso (o sin correo) se perdía y nadie podía recuperarla
               — reporte de Cony 2026-08-11. Ahora se manda por WhatsApp. */}
           {detail?.pendingSurvey && (
-            <div className="rounded-xl p-2.5 space-y-1.5" style={{ background: 'rgba(255,209,102,.18)', border: '1px solid rgba(255,209,102,.5)' }}>
+            <div className="rounded-[5px] p-2.5 space-y-1.5" style={{ background: 'rgba(255,209,102,.18)', border: '1px solid rgba(255,209,102,.5)' }}>
               <p className="text-[11px] font-bold" style={{ color: '#7a5c00' }}>
                 📝 Encuesta sin responder · clase del {new Date(detail.pendingSurvey.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'America/El_Salvador' })}
               </p>
@@ -145,7 +145,7 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
           )}
           {/* Experiencia del camp sin responder — mismo patrón de rescate. */}
           {detail?.pendingExperience && (
-            <div className="rounded-xl p-2.5 space-y-1.5" style={{ background: 'rgba(0,210,255,.10)', border: '1px solid rgba(0,168,204,.4)' }}>
+            <div className="rounded-[5px] p-2.5 space-y-1.5" style={{ background: 'rgba(0,210,255,.10)', border: '1px solid rgba(0,168,204,.4)' }}>
               <p className="text-[11px] font-bold" style={{ color: '#00607a' }}>
                 🏄 Experiencia del camp sin responder{detail.pendingExperience.campName ? ` · ${detail.pendingExperience.campName}` : ''}
               </p>
@@ -179,7 +179,7 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
                   Con solicitud pendiente → confirmarla; sin membresía activa →
                   renovar directo 1/6/12 meses a precio de lista. */}
               {canCoordinate && detail.membership?.pending_request && (
-                <div className="rounded-xl p-2.5" style={{ background: 'rgba(6,214,160,.08)', border: '1px solid rgba(6,214,160,.35)' }}>
+                <div className="rounded-[5px] p-2.5" style={{ background: 'rgba(6,214,160,.08)', border: '1px solid rgba(6,214,160,.35)' }}>
                   <p className="text-[8px] mb-1.5" style={{ ...F_M, color: '#0a7c5d' }}>Confirmar renovación pedida · método de pago</p>
                   <div className="flex flex-wrap gap-1.5">
                     {(['cash', 'card', 'transfer'] as const).map((m) => (
@@ -192,7 +192,7 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
                 </div>
               )}
               {canCoordinate && detail.membership && !detail.membership.active && !detail.membership.pending_request && (
-                <div className="rounded-xl p-2.5" style={{ background: '#F7F9FA' }}>
+                <div className="rounded-[5px] p-2.5" style={{ background: '#F7F9FA' }}>
                   <p className="text-[8px] mb-1.5" style={{ ...F_M, color: '#8a6d1c' }}>Renovar herramienta de entrenamiento (1 año · $99)</p>
                   <div className="flex flex-wrap gap-1.5">
                     {MEMBERSHIP_PLANS.map(({ months: m, price: p }) => (
@@ -220,7 +220,7 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
               )}
               {detail.upcoming?.length > 0 && (
                 <div>
-                  <p className="text-[9px] text-gray-400" style={F_M}>Próximas reservas</p>
+                  <p className="text-[9px] text-[#55666E]" style={F_M}>Próximas reservas</p>
                   {detail.upcoming.map((u: any, i: number) => (
                     <p key={i} className="text-[12px]" style={{ color: INK }}>
                       {(u.name ?? '').split(' · ')[0]} · {u.date}{u.time ? ` · ${u.time.slice(0, 5)}` : ''} — {u.paid ? '✓ pagado' : '💰 debe pagar'}
@@ -230,10 +230,10 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
               )}
               {detail.sessions?.length > 0 && (
                 <div>
-                  <p className="text-[9px] text-gray-400" style={F_M}>Bitácora reciente</p>
+                  <p className="text-[9px] text-[#55666E]" style={F_M}>Bitácora reciente</p>
                   {detail.sessions.slice(0, 3).map((r: any, i: number) => (
                     <div key={i} className="mb-1">
-                      <p className="text-[11px] text-gray-600 leading-snug">
+                      <p className="text-[11px] text-[#55666E] leading-snug">
                         {(r.created_at ?? '').slice(0, 10)} — {r.coach_feedback || r.status || 'sesión registrada'}
                       </p>
                       {/* El seguimiento es lo que el equipo necesita ver: qué
@@ -251,56 +251,56 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
                 <div>
                   <p className="text-[9px]" style={{ ...F_M, color: '#c04545' }}>⚠ Incidentes</p>
                   {detail.incidents.map((inc: any, i: number) => (
-                    <p key={i} className="text-[11px] text-gray-600">{(inc.created_at ?? '').slice(0, 10)} · {inc.incident_type}: {inc.description}</p>
+                    <p key={i} className="text-[11px] text-[#55666E]">{(inc.created_at ?? '').slice(0, 10)} · {inc.incident_type}: {inc.description}</p>
                   ))}
                 </div>
               )}
               {/* Contacto & datos — lo que el mostrador necesita a diario
                   (pedido de Cony): correo, WhatsApp, cumpleaños, talla, medidas. */}
-              <div className="space-y-0.5 rounded-xl bg-gray-50 p-2.5">
-                <p className="text-[9px] text-gray-400" style={F_M}>Contacto & datos</p>
-                {row.email && <p className="text-[11px] text-gray-700">📧 {row.email}</p>}
+              <div className="space-y-0.5 rounded-[5px] bg-[#F7F9FA] p-2.5">
+                <p className="text-[9px] text-[#55666E]" style={F_M}>Contacto & datos</p>
+                {row.email && <p className="text-[11px] text-[#10263B]">📧 {row.email}</p>}
                 {row.phone && (
-                  <p className="text-[11px] text-gray-700">
+                  <p className="text-[11px] text-[#10263B]">
                     💬 <a href={`https://wa.me/${String(row.phone).replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="underline decoration-dotted" style={{ color: '#0090B0' }}>{row.phone}</a>
-                    <span className="text-gray-400"> · WhatsApp</span>
+                    <span className="text-[#55666E]"> · WhatsApp</span>
                   </p>
                 )}
-                {detail.instagram && <p className="text-[11px] text-gray-700">📸 @{String(detail.instagram).replace(/^@/, '')}</p>}
-                {detail.dob && <p className="text-[11px] text-gray-700">🎂 {detail.dob}{detail.age ? ` · ${detail.age} años` : ''}</p>}
+                {detail.instagram && <p className="text-[11px] text-[#10263B]">📸 @{String(detail.instagram).replace(/^@/, '')}</p>}
+                {detail.dob && <p className="text-[11px] text-[#10263B]">🎂 {detail.dob}{detail.age ? ` · ${detail.age} años` : ''}</p>}
                 {(detail.shirt || detail.height || detail.weight) && (
-                  <p className="text-[11px] text-gray-700">
+                  <p className="text-[11px] text-[#10263B]">
                     {[detail.shirt ? `👕 Talla ${detail.shirt}` : null, detail.height ? `📏 ${detail.height}` : null, detail.weight ? `⚖️ ${detail.weight}` : null].filter(Boolean).join(' · ')}
                   </p>
                 )}
-                {detail.languages && <p className="text-[11px] text-gray-700">🗣 {detail.languages}</p>}
+                {detail.languages && <p className="text-[11px] text-[#10263B]">🗣 {detail.languages}</p>}
                 {!row.email && !row.phone && !detail.dob && !detail.shirt && (
-                  <p className="text-[11px] text-gray-400">Sin datos aún — mandale el link de ficha ↑</p>
+                  <p className="text-[11px] text-[#55666E]">Sin datos aún — mandale el link de ficha ↑</p>
                 )}
               </div>
               {(detail.goals || detail.fears || detail.experience || detail.board) && (
                 <div className="space-y-0.5">
-                  <p className="text-[9px] text-gray-400" style={F_M}>Perfil surf</p>
+                  <p className="text-[9px] text-[#55666E]" style={F_M}>Perfil surf</p>
                   {(detail.experience || detail.frequency || detail.self_level) && (
-                    <p className="text-[11px] text-gray-600">🏄 {[detail.experience, detail.frequency ? detail.frequency.split(' / ')[0] : null, detail.self_level].filter(Boolean).join(' · ')}</p>
+                    <p className="text-[11px] text-[#55666E]">🏄 {[detail.experience, detail.frequency ? detail.frequency.split(' / ')[0] : null, detail.self_level].filter(Boolean).join(' · ')}</p>
                   )}
                   {(detail.board || detail.stance || detail.wave_size) && (
-                    <p className="text-[11px] text-gray-600">🛹 {[detail.board, detail.stance, detail.wave_size ? `ola ${detail.wave_size.split(' - ')[0]}` : null].filter(Boolean).join(' · ')}</p>
+                    <p className="text-[11px] text-[#55666E]">🛹 {[detail.board, detail.stance, detail.wave_size ? `ola ${detail.wave_size.split(' - ')[0]}` : null].filter(Boolean).join(' · ')}</p>
                   )}
-                  {detail.goals && <p className="text-[11px] text-gray-600">🎯 Metas: {detail.goals}</p>}
-                  {detail.goal_mid && <p className="text-[11px] text-gray-500 pl-4">3-6 meses: {detail.goal_mid}</p>}
-                  {detail.goal_long && <p className="text-[11px] text-gray-500 pl-4">1-3 años: {detail.goal_long}</p>}
-                  {detail.week_wish && <p className="text-[11px] text-gray-600">⭐ Esta semana: {detail.week_wish}</p>}
-                  {detail.barrier && <p className="text-[11px] text-gray-600">🧱 Barrera: {detail.barrier}</p>}
-                  {detail.fears && <p className="text-[11px] text-gray-600">😰 Miedos: {detail.fears}</p>}
-                  {detail.injuries && <p className="text-[11px] text-gray-600">🩹 Lesiones: {detail.injuries}</p>}
-                  {detail.allergies && <p className="text-[11px] text-gray-600">⚠ Alergias: {detail.allergies}</p>}
-                  {detail.emergency && <p className="text-[11px] text-gray-600">🆘 Emergencia: {detail.emergency}</p>}
+                  {detail.goals && <p className="text-[11px] text-[#55666E]">🎯 Metas: {detail.goals}</p>}
+                  {detail.goal_mid && <p className="text-[11px] text-[#55666E] pl-4">3-6 meses: {detail.goal_mid}</p>}
+                  {detail.goal_long && <p className="text-[11px] text-[#55666E] pl-4">1-3 años: {detail.goal_long}</p>}
+                  {detail.week_wish && <p className="text-[11px] text-[#55666E]">⭐ Esta semana: {detail.week_wish}</p>}
+                  {detail.barrier && <p className="text-[11px] text-[#55666E]">🧱 Barrera: {detail.barrier}</p>}
+                  {detail.fears && <p className="text-[11px] text-[#55666E]">😰 Miedos: {detail.fears}</p>}
+                  {detail.injuries && <p className="text-[11px] text-[#55666E]">🩹 Lesiones: {detail.injuries}</p>}
+                  {detail.allergies && <p className="text-[11px] text-[#55666E]">⚠ Alergias: {detail.allergies}</p>}
+                  {detail.emergency && <p className="text-[11px] text-[#55666E]">🆘 Emergencia: {detail.emergency}</p>}
                 </div>
               )}
-              {detail.medical_notes && <p className="text-[11px] text-gray-500">🩺 {detail.medical_notes}</p>}
+              {detail.medical_notes && <p className="text-[11px] text-[#55666E]">🩺 {detail.medical_notes}</p>}
             </div>
-          ) : <p className="text-[11px] text-gray-400">Cargando ficha…</p>}
+          ) : <p className="text-[11px] text-[#55666E]">Cargando ficha…</p>}
         </div>
       )}
     </div>
@@ -423,7 +423,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
           <div className="space-y-4">
             {/* Qué es esta pestaña. La confusión #1 del host es buscar en HOY
                 una clase que todavía no entra en la ventana de 7 días. */}
-            <p className="text-[10.5px] text-gray-400 leading-snug">
+            <p className="text-[10.5px] text-[#55666E] leading-snug">
               <strong style={{ color: '#0090B0' }}>Hoy = atender y cobrar.</strong> Solo lo que llega en los próximos 7 días.
               ¿Buscás una clase más adelante? Está en <button type="button" onClick={() => setTab('operacion')} className="underline decoration-dotted" style={{ color: '#0090B0' }}>🗓 Agenda</button>.
             </p>
@@ -432,7 +432,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                 confirmar, sesiones sin cierre— son de coordinación y salieron de
                 acá. Queda el SOBRECUPO, que sí lo maneja el mostrador. */}
             {alerts && alerts.overcap.length > 0 && (
-              <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,209,102,.16)', border: '1px solid rgba(255,209,102,.5)' }}>
+              <div className="rounded-lg p-3.5" style={{ background: 'rgba(255,209,102,.16)', border: '1px solid rgba(255,209,102,.5)' }}>
                 <p className="text-[9px] mb-1" style={{ ...F_M, color: '#7a5c00' }}>📈 Grupos en sobrecupo</p>
                 <p className="text-[12px]" style={{ color: '#7a5c00' }}>{alerts.overcap.join(' · ')}</p>
               </div>
@@ -441,14 +441,14 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
             <CoachTasks token={token} />
             {/* Quién acaba de reservar (48 h) — QR o vendedor, pagado o pendiente */}
             {recent !== null && recent.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                <p className="text-[9px] text-gray-400" style={F_M}>🔔 Reservas recientes · 48 h</p>
+              <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
+                <p className="text-[9px] text-[#55666E]" style={F_M}>🔔 Reservas recientes · 48 h</p>
                 <div className="mt-2 space-y-2">
                   {recent.map((r: any) => (
                     <div key={r.id} className="flex items-center justify-between gap-2 text-[12px]">
                       <div className="min-w-0">
                         <p className="font-bold truncate" style={{ color: INK }}>{r.name}</p>
-                        <p className="text-[10.5px] text-gray-400 truncate">{(r.class_name ?? '').split(' · ').slice(0, 2).join(' · ')} · vía {r.source}</p>
+                        <p className="text-[10.5px] text-[#55666E] truncate">{(r.class_name ?? '').split(' · ').slice(0, 2).join(' · ')} · vía {r.source}</p>
                       </div>
                       <span className="shrink-0 text-[10px] font-bold px-2 py-1 rounded-full"
                         style={r.paid ? { background: 'rgba(6,214,160,.15)', color: '#0a7c5d' } : { background: 'rgba(255,209,102,.2)', color: '#7a5c00' }}>
@@ -459,7 +459,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                 </div>
               </div>
             )}
-            {board === null ? <p className="text-sm text-gray-400 text-center py-8">Cargando clases…</p>
+            {board === null ? <p className="text-sm text-[#55666E] text-center py-8">Cargando clases…</p>
               : <DeskBoard token={token} classes={(board?.classes ?? []) as any}
                   onChanged={() => {
                     // El HOY se carga client-side, así que tras cobrar/mover/
@@ -469,21 +469,21 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                   }} />}
             {/* Protocolo oficial cuando algo sale mal — referencia de un toque */}
             <a href="/docs/sistema-resolver-problemas.pdf" target="_blank" rel="noopener noreferrer"
-              className="block bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3">
+              className="block bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm px-4 py-3">
               <span className="flex items-center justify-between gap-2">
                 <span className="text-[13px] font-bold" style={{ color: INK }}>🧭 Protocolo de resolución de problemas</span>
-                <span className="text-[9px] px-2 py-0.5 rounded-md bg-gray-100 text-gray-600" style={F_M}>PDF</span>
+                <span className="text-[9px] px-2 py-0.5 rounded-md bg-[#EDF3F5] text-[#55666E]" style={F_M}>PDF</span>
               </span>
             </a>
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-              <p className="text-[9px] text-gray-400" style={F_M}>⚠ Incidentes · últimos 14 días</p>
-              {incidents === null ? <p className="text-[12px] text-gray-400 mt-2">Cargando…</p>
+            <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
+              <p className="text-[9px] text-[#55666E]" style={F_M}>⚠ Incidentes · últimos 14 días</p>
+              {incidents === null ? <p className="text-[12px] text-[#55666E] mt-2">Cargando…</p>
                 : incidents.length === 0 ? <p className="text-[12px] mt-2" style={{ color: '#0a7c5d' }}>Sin incidentes. 🤙</p>
                 : incidents.map((i: any) => (
                   <div key={i.id} className="mt-2.5 pl-3 border-l-2" style={{ borderColor: CORAL }}>
                     <p className="text-[12px] font-bold" style={{ color: INK }}>{i.incident_type}{i.student_name ? ` · ${i.student_name}` : ''}</p>
-                    <p className="text-[11px] text-gray-500 leading-snug">{i.description}{i.action_taken ? ` — ${i.action_taken}` : ''}</p>
-                    <p className="text-[10px] text-gray-400">{(i.created_at ?? '').slice(0, 10)}{i.coach ? ` · ${i.coach}` : ''}</p>
+                    <p className="text-[11px] text-[#55666E] leading-snug">{i.description}{i.action_taken ? ` — ${i.action_taken}` : ''}</p>
+                    <p className="text-[10px] text-[#55666E]">{(i.created_at ?? '').slice(0, 10)}{i.coach ? ` · ${i.coach}` : ''}</p>
                   </div>
                 ))}
             </div>
@@ -492,23 +492,23 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
 
         {tab === 'operacion' && (
           <div className="space-y-3">
-            <p className="text-[10.5px] text-gray-400 leading-snug">
+            <p className="text-[10.5px] text-[#55666E] leading-snug">
               <strong style={{ color: '#0090B0' }}>Agenda = ver y planear.</strong> Cualquier día del año. Tocá un alumno para ver sus datos; el cobro se hace en 📋 Hoy.
             </p>
             {/* Calendario de todo el año: flechas por semana + salto a cualquier fecha */}
             <div className="flex items-center justify-between gap-2">
-              <button type="button" onClick={() => shiftStrip(-7)} className="rounded-full w-9 h-9 bg-white border border-gray-200 text-gray-500 font-bold">‹</button>
+              <button type="button" onClick={() => shiftStrip(-7)} className="rounded-full w-9 h-9 bg-[#F7F9FA] border border-[#DCD7C6] text-[#55666E] font-bold">‹</button>
               <p className="text-[10px]" style={{ ...F_M, color: '#6b7280' }}>
                 {new Date(stripStart + 'T00:00:00').toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
               </p>
-              <label className="rounded-full px-3 h-9 bg-white border border-gray-200 text-[11px] text-gray-500 inline-flex items-center gap-1 cursor-pointer">
+              <label className="rounded-full px-3 h-9 bg-[#F7F9FA] border border-[#DCD7C6] text-[11px] text-[#55666E] inline-flex items-center gap-1 cursor-pointer">
                 📅 Ir a
                 <input type="date" value={opDate}
                   onChange={(e) => { if (e.target.value) { setOpDate(e.target.value); setStripStart(e.target.value); } }}
                   className="w-0 opacity-0 absolute" style={{ pointerEvents: 'none' }}
                   onClick={(e) => (e.target as HTMLInputElement).showPicker?.()} />
               </label>
-              <button type="button" onClick={() => shiftStrip(7)} className="rounded-full w-9 h-9 bg-white border border-gray-200 text-gray-500 font-bold">›</button>
+              <button type="button" onClick={() => shiftStrip(7)} className="rounded-full w-9 h-9 bg-[#F7F9FA] border border-[#DCD7C6] text-[#55666E] font-bold">›</button>
             </div>
             <div className="flex gap-1.5 overflow-x-auto pb-1">
               {Array.from({ length: 7 }).map((_, i) => {
@@ -519,7 +519,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                 const isToday = iso === new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
                 return (
                   <button key={iso} type="button" onClick={() => setOpDate(iso)}
-                    className="shrink-0 rounded-2xl px-3 py-2 text-center"
+                    className="shrink-0 rounded-lg px-3 py-2 text-center"
                     style={sel ? { background: CYAN, color: INK } : { background: '#fff', border: isToday ? `2px solid ${CYAN}` : '1px solid #e5e7eb', color: '#6b7280' }}>
                     <span className="block text-[8px]" style={F_M}>{d.toLocaleDateString('es-ES', { weekday: 'short' })}</span>
                     <span className="block text-[15px] font-bold">{d.getDate()}</span>
@@ -529,7 +529,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
             </div>
 
             {/* Programación del día para WhatsApp: el mismo texto del coordinador. */}
-            <div className="rounded-2xl px-3.5 py-3 flex items-center gap-2 flex-wrap" style={{ background: '#0A2438' }}>
+            <div className="rounded-lg px-3.5 py-3 flex items-center gap-2 flex-wrap" style={{ background: '#0A2438' }}>
               <div className="min-w-0 flex-1">
                 <p className="text-[8px]" style={{ ...F_M, color: '#00D2FF' }}>Programación para WhatsApp</p>
                 <p className="text-[12px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
@@ -543,8 +543,8 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
               {program && program.date === opDate && program.count > 0 && <CopyTextButton text={program.text} label="📋 Copiar" />}
             </div>
 
-            {opEvents === null ? <p className="text-[12px] text-gray-400 text-center py-8">Cargando el día…</p>
-              : opEvents.length === 0 ? <p className="text-[12px] text-gray-400 text-center py-8">Nada programado este día.</p>
+            {opEvents === null ? <p className="text-[12px] text-[#55666E] text-center py-8">Cargando el día…</p>
+              : opEvents.length === 0 ? <p className="text-[12px] text-[#55666E] text-center py-8">Nada programado este día.</p>
               : opEvents.map((e) => (
                 <OpEventCard key={e.camp_id} token={token} e={e} canCoordinate={canCoordinate} academySlug={academySlug}
                   onReserve={() => { if (e.closed) return; setReserveFor(e); }}
@@ -560,19 +560,19 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                 + Clase en otro horario ({new Date(opDate + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' })})
               </button>
             ) : (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-2">
-                <p className="text-[9px] text-gray-400" style={F_M}>Nueva clase · {new Date(opDate + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
-                {adhocTpls === null ? <p className="text-[12px] text-gray-400">Cargando plantillas…</p> : (
+              <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 space-y-2">
+                <p className="text-[9px] text-[#55666E]" style={F_M}>Nueva clase · {new Date(opDate + 'T00:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })}</p>
+                {adhocTpls === null ? <p className="text-[12px] text-[#55666E]">Cargando plantillas…</p> : (
                   <>
                     <select value={adhocTpl} onChange={(ev) => setAdhocTpl(ev.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white">
+                      className="w-full px-3 py-2.5 border border-[#DCD7C6] rounded-[5px] text-sm bg-[#F7F9FA]">
                       {adhocTpls.map((t: any) => (
                         <option key={t.id} value={t.id}>{t.template_name}{t.list_price_cents != null ? ` — $${(t.list_price_cents / 100).toFixed(0)}` : ''}</option>
                       ))}
                     </select>
                     <div className="flex items-center gap-2">
                       <input type="time" value={adhocTime} onChange={(ev) => setAdhocTime(ev.target.value)}
-                        className="flex-1 px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-white" />
+                        className="flex-1 px-3 py-2.5 border border-[#DCD7C6] rounded-[5px] text-sm bg-[#F7F9FA]" />
                       <button type="button" disabled={adhocBusy || !adhocTpl}
                         onClick={async () => {
                           setAdhocBusy(true); setAdhocMsg(null);
@@ -586,9 +586,9 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                         className="rounded-full px-5 py-2.5 text-[10px] disabled:opacity-40" style={{ ...F_M, background: '#00D2FF', color: INK, fontWeight: 700 }}>
                         {adhocBusy ? 'Creando…' : 'Crear'}
                       </button>
-                      <button type="button" onClick={() => setAdhocOpen(false)} className="px-3 py-2.5 text-[11px] text-gray-400">Cancelar</button>
+                      <button type="button" onClick={() => setAdhocOpen(false)} className="px-3 py-2.5 text-[11px] text-[#55666E]">Cancelar</button>
                     </div>
-                    <p className="text-[10px] text-gray-400">Se avisa a coordinación para asignarle coach. El cobro, como siempre, en recepción.</p>
+                    <p className="text-[10px] text-[#55666E]">Se avisa a coordinación para asignarle coach. El cobro, como siempre, en recepción.</p>
                   </>
                 )}
                 {adhocMsg && <p className="text-[11px] font-semibold" style={{ color: adhocMsg.startsWith('✓') ? '#0a7c5d' : '#c04545' }}>{adhocMsg}</p>}
@@ -605,11 +605,11 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
             {/* Sistema de renta: inventario + rentas con waiver y firma */}
             {academyId
               ? (
-                <div className="rounded-2xl p-4" style={{ background: INK }}>
+                <div className="rounded-lg p-4" style={{ background: INK }}>
                   <BoardInventoryManager academyId={academyId} portalToken={token} />
                 </div>
               )
-              : <p className="text-[12px] text-gray-400 text-center py-6">Sin academia asignada.</p>}
+              : <p className="text-[12px] text-[#55666E] text-center py-6">Sin academia asignada.</p>}
           </div>
         )}
 
@@ -634,25 +634,25 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
             </button>
             {pickOpen && !reserveFor && (
               <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3" style={{ background: 'rgba(6,28,43,.8)' }} onClick={() => setPickOpen(false)}>
-                <div className="w-full max-w-md bg-white rounded-2xl p-4 space-y-2 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="w-full max-w-md bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] p-4 space-y-2 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Paso 1 de 2</p>
                       <p className="font-bold text-[15px]" style={{ color: INK }}>¿A qué servicio lo inscribís?</p>
-                      <p className="text-[11px] text-gray-500">Próximos 14 días con lugar. Después elegís o creás al cliente y te sale su link.</p>
+                      <p className="text-[11px] text-[#55666E]">Próximos 14 días con lugar. Después elegís o creás al cliente y te sale su link.</p>
                     </div>
-                    <button type="button" onClick={() => setPickOpen(false)} className="text-[20px] leading-none text-gray-400 px-1">×</button>
+                    <button type="button" onClick={() => setPickOpen(false)} className="text-[20px] leading-none text-[#55666E] px-1">×</button>
                   </div>
-                  {upcoming === null ? <p className="text-[12px] text-gray-400 py-4 text-center">Cargando…</p>
-                    : upcoming.length === 0 ? <p className="text-[12px] text-gray-400 py-4 text-center">No hay servicios con lugar en los próximos 14 días. Creá la clase en Agenda (+ Clase en otro horario).</p>
+                  {upcoming === null ? <p className="text-[12px] text-[#55666E] py-4 text-center">Cargando…</p>
+                    : upcoming.length === 0 ? <p className="text-[12px] text-[#55666E] py-4 text-center">No hay servicios con lugar en los próximos 14 días. Creá la clase en Agenda (+ Clase en otro horario).</p>
                     : upcoming.map(({ date, ev }) => {
                       const left = ev.capacity > 0 ? ev.capacity - ev.enrolled : null;
                       const multi = (ev.total_days ?? 1) > 1;
                       return (
                         <button key={ev.camp_id} type="button" onClick={() => { setPickOpen(false); setReserveFor(ev); }}
-                          className="w-full text-left rounded-xl px-3 py-2.5 border border-gray-200 bg-white hover:border-[#00D2FF]">
+                          className="w-full text-left rounded-[5px] px-3 py-2.5 border border-[#DCD7C6] bg-[#F7F9FA] hover:border-[#00D2FF]">
                           <p className="text-[13px] font-bold" style={{ color: INK }}>{ev.name}</p>
-                          <p className="text-[11px] text-gray-500">
+                          <p className="text-[11px] text-[#55666E]">
                             {date === 'por confirmar'
                               ? 'Quiere camp, nivel aún sin saber. Queda inscrito; se asigna al camp real cuando llena su intake.'
                               : <>{date}{ev.time ? ` · ${ev.time.slice(0, 5)}` : ''}{multi ? ` · ${ev.total_days} días (camp)` : ' · 1 día'}{ev.coach ? ` · ${ev.coach}` : ''}{left !== null ? ` · ${left} libre${left === 1 ? '' : 's'}` : ''}</>}
@@ -664,21 +664,21 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
               </div>
             )}
             {quizLeads && quizLeads.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
                 <button type="button" onClick={() => setQuizOpen(!quizOpen)} className="w-full text-left px-3.5 py-3 flex items-center justify-between">
                   <div>
                     <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Quiz de la web · sin compra · 30 días</p>
                     <p className="font-bold text-[14px]" style={{ color: INK }}>{quizLeads.length} interesado{quizLeads.length === 1 ? '' : 's'} con nivel</p>
                   </div>
-                  <span className="text-gray-400">{quizOpen ? '▴' : '▾'}</span>
+                  <span className="text-[#55666E]">{quizOpen ? '▴' : '▾'}</span>
                 </button>
                 {quizOpen && (
-                  <div className="px-3.5 pb-3 space-y-1.5 border-t border-gray-50 pt-2">
+                  <div className="px-3.5 pb-3 space-y-1.5 border-t border-[#DCD7C6] pt-2">
                     {quizLeads.map((l) => (
                       <div key={l.id} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-2" style={{ background: 'rgba(0,210,255,.06)' }}>
                         <div className="min-w-0">
                           <p className="text-[13px] font-bold truncate" style={{ color: INK }}>{l.name} <span className="font-semibold text-[11px]" style={{ color: '#0090B0' }}>{l.level_name ?? ''}{l.score != null ? ` · ${l.score}/100` : ''}</span></p>
-                          <p className="text-[11px] text-gray-500 truncate">{l.when}{l.email ? ` · ${l.email}` : ''}{l.phone ? ` · ${l.phone}` : ''}</p>
+                          <p className="text-[11px] text-[#55666E] truncate">{l.when}{l.email ? ` · ${l.email}` : ''}{l.phone ? ` · ${l.phone}` : ''}</p>
                         </div>
                         {l.phone && (
                           <a href={`https://wa.me/${l.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${l.name.split(' ')[0]}! Vimos tu quiz de nivel (${l.level_name ?? ''}). ¿Te ayudamos a elegir tu camp?`)}`} target="_blank" rel="noreferrer"
@@ -696,15 +696,15 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
                 onAssigned={() => { setHolding(null); setAttention(null); }} />
             )}
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por nombre, email o teléfono…"
-              className="w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm bg-white shadow-sm" />
+              className="w-full px-4 py-3 border border-[#DCD7C6] rounded-lg text-sm bg-[#F7F9FA] shadow-sm" />
             {results !== null ? (
               results.length === 0
-                ? <p className="text-[12px] text-gray-400 text-center py-4">Sin resultados para “{q}”.</p>
+                ? <p className="text-[12px] text-[#55666E] text-center py-4">Sin resultados para “{q}”.</p>
                 : results.map((r) => <StudentCard key={r.id} token={token} row={r} canCoordinate={canCoordinate} />)
             ) : (
               <>
-                <p className="text-[9px] text-gray-400 pt-1" style={F_M}>🔔 Necesitan atención · próximos 14 días</p>
-                {attention === null ? <p className="text-[12px] text-gray-400">Cargando…</p>
+                <p className="text-[9px] text-[#55666E] pt-1" style={F_M}>🔔 Necesitan atención · próximos 14 días</p>
+                {attention === null ? <p className="text-[12px] text-[#55666E]">Cargando…</p>
                   : attention.length === 0 ? <p className="text-[12px] py-3" style={{ color: '#0a7c5d' }}>Todos los inscritos tienen sus fichas completas. 🤙</p>
                   : attention.map((r) => <StudentCard key={r.id} token={token} row={r} canCoordinate={canCoordinate} />)}
               </>
@@ -763,14 +763,14 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
   const needsCoach = !e.coach || coachPending;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>
             {e.time ? e.time.slice(0, 5) : 'Sin hora'}{e.day_number ? ` · Día ${e.day_number} de ${e.total_days}` : ''}{e.session_status ? ` · ${e.session_status}` : ''}
           </p>
           <p className="font-bold text-[15px] truncate" style={{ color: INK }}>{e.name}</p>
-          <p className="text-[11px] text-gray-400 truncate">
+          <p className="text-[11px] text-[#55666E] truncate">
             {e.coach ? `Coach ${e.coach}${coachPending ? ' · por confirmar ⏳' : ''}` : 'Sin coach asignado ⚠'}{e.venue ? ` · 📍 ${e.venue}` : ''}
           </p>
         </div>
@@ -813,15 +813,15 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
 
       {/* Host cubre coordinador: ajustar horarios de la van / marcar que salió. */}
       {trEdit && e.transport?.plan_id && (
-        <div className="mt-2 rounded-xl p-2.5 space-y-1.5" style={{ background: '#F7F9FA' }}>
-          <p className="text-[8px] text-gray-400" style={F_M}>Transporte · ajustar (queda al instante)</p>
+        <div className="mt-2 rounded-[5px] p-2.5 space-y-1.5" style={{ background: '#F7F9FA' }}>
+          <p className="text-[8px] text-[#55666E]" style={F_M}>Transporte · ajustar (queda al instante)</p>
           <div className="flex flex-wrap items-center gap-1.5">
-            <label className="text-[10px] text-gray-500">Sale</label>
+            <label className="text-[10px] text-[#55666E]">Sale</label>
             <input type="time" value={trDep} onChange={(ev) => setTrDep(ev.target.value)}
-              className="px-2 py-1.5 border border-gray-200 rounded-lg text-[11px] bg-white" />
-            <label className="text-[10px] text-gray-500">Vuelve</label>
+              className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-[11px] bg-[#F7F9FA]" />
+            <label className="text-[10px] text-[#55666E]">Vuelve</label>
             <input type="time" value={trRet} onChange={(ev) => setTrRet(ev.target.value)}
-              className="px-2 py-1.5 border border-gray-200 rounded-lg text-[11px] bg-white" />
+              className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-[11px] bg-[#F7F9FA]" />
             <button type="button" disabled={busy}
               onClick={async () => {
                 setBusy(true);
@@ -851,8 +851,8 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
       )}
 
       {e.students.length > 0 && (
-        <div className="mt-2 pt-2 border-t border-gray-50">
-          <p className="text-[8px] text-gray-400 mb-1" style={F_M}>
+        <div className="mt-2 pt-2 border-t border-[#DCD7C6]">
+          <p className="text-[8px] text-[#55666E] mb-1" style={F_M}>
             Alumnos{unpaid ? ` · ${unpaid} por cobrar` : ''}{noWaiver ? ` · ${noWaiver} sin waiver ⚠` : ''} · tocá un nombre para ver sus datos
           </p>
           {/* Cada alumno se abre en su ficha de contacto (mismo bloque que el
@@ -867,9 +867,9 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
                     className="w-full flex items-center justify-between gap-2 text-left py-1">
                     <span className="text-[12px] font-semibold truncate" style={{ color: INK }}>
                       {s.name}
-                      {s.room_number ? <span className="text-gray-400 font-normal"> · 🏨 {s.room_number}</span> : ''}
+                      {s.room_number ? <span className="text-[#55666E] font-normal"> · 🏨 {s.room_number}</span> : ''}
                     </span>
-                    <span className="shrink-0 text-[10px] text-gray-400">
+                    <span className="shrink-0 text-[10px] text-[#55666E]">
                       {!s.paid ? '💰 ' : ''}{!s.waiver ? '⚠ ' : ''}{open ? '▴' : '▾'}
                     </span>
                   </button>
@@ -880,7 +880,7 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
                         canEditRoom={canCoordinate}
                         onSaveRoom={(room) => deskSetRoom(token, s.participant_id, room).then((r) => { if (r.ok) onChanged?.(); return r; })}
                       />
-                      <p className="mt-1 text-[9.5px] text-gray-400 leading-snug">
+                      <p className="mt-1 text-[9.5px] text-[#55666E] leading-snug">
                         {s.paid ? '✓ Pagado.' : '💰 Pendiente de cobro — se cobra en la pestaña Hoy.'}
                         {!s.waiver ? ' Falta waiver.' : ''}
                       </p>
@@ -896,10 +896,10 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
       {/* Un camp de varios días se CIERRA al arrancar — nadie entra a mitad
           de una secuencia. En vez del botón, el mostrador ve por qué. */}
       {e.closed && (
-        <div className="mt-2.5 rounded-2xl px-3 py-2.5 text-center"
+        <div className="mt-2.5 rounded-lg px-3 py-2.5 text-center"
           style={{ background: 'rgba(192,69,69,.08)', border: '1px solid rgba(192,69,69,.3)' }}>
           <p className="text-[11px] font-bold" style={{ color: '#c04545' }}>🔒 Camp en curso — inscripción cerrada</p>
-          <p className="text-[10.5px] text-gray-500 mt-0.5">Se cierra al arrancar. Ofrecele al cliente el siguiente camp.</p>
+          <p className="text-[10.5px] text-[#55666E] mt-0.5">Se cierra al arrancar. Ofrecele al cliente el siguiente camp.</p>
         </div>
       )}
       {/* Cupo ∞ (capacity 0 = sin tope): sí se puede reservar, sin contador. */}
@@ -948,7 +948,7 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
           {singleDayClass && (
             <>
               <button type="button" disabled={busy} onClick={() => { setMoveOpen(!moveOpen); setAssignOpen(false); setMsg(null); }}
-                className="rounded-full px-3 py-2 text-[9px] border border-gray-200 text-gray-500" style={F_M}>🕐 Reprogramar</button>
+                className="rounded-full px-3 py-2 text-[9px] border border-[#DCD7C6] text-[#55666E]" style={F_M}>🕐 Reprogramar</button>
               <button type="button" disabled={busy}
                 onClick={async () => {
                   const warn = e.students.length ? ` OJO: tiene ${e.students.length} alumno(s) — el sistema te dirá a quién avisar.` : '';
@@ -960,17 +960,17 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
                   setMsg(r.students?.length ? `✓ Cancelada — avisales a: ${r.students.join(', ')}` : '✓ Clase cancelada.');
                   setTimeout(onChanged, 1600);
                 }}
-                className="rounded-full px-3 py-2 text-[9px] border border-gray-200 text-gray-400" style={F_M}>✕ Cancelar</button>
+                className="rounded-full px-3 py-2 text-[9px] border border-[#DCD7C6] text-[#55666E]" style={F_M}>✕ Cancelar</button>
             </>
           )}
         </div>
       )}
 
       {assignOpen && (
-        <div className="mt-2 rounded-xl bg-gray-50 p-2.5 space-y-1.5">
-          <p className="text-[9px] text-gray-400" style={F_M}>Invitar coach — debe aceptar desde su portal</p>
-          {coachOpts === null ? <p className="text-[11px] text-gray-400">Cargando coaches…</p>
-            : coachOpts.length === 0 ? <p className="text-[11px] text-gray-400">No hay coaches activos.</p>
+        <div className="mt-2 rounded-[5px] bg-[#F7F9FA] p-2.5 space-y-1.5">
+          <p className="text-[9px] text-[#55666E]" style={F_M}>Invitar coach — debe aceptar desde su portal</p>
+          {coachOpts === null ? <p className="text-[11px] text-[#55666E]">Cargando coaches…</p>
+            : coachOpts.length === 0 ? <p className="text-[11px] text-[#55666E]">No hay coaches activos.</p>
             : coachOpts.map((c: any) => (
               <button key={c.id} type="button" disabled={busy}
                 onClick={async () => {
@@ -982,19 +982,19 @@ function OpEventCard({ token, e, canCoordinate, academySlug, onReserve, onChange
                   setAssignOpen(false);
                   setTimeout(onChanged, 1200);
                 }}
-                className="w-full text-left px-3 py-2 rounded-lg bg-white border border-gray-200 text-[12px] disabled:opacity-50" style={{ color: INK }}>
-                <span className="font-bold">{c.display_name}</span>{c.certification_level ? <span className="text-gray-400 text-[10px]"> · {c.certification_level}</span> : null}
+                className="w-full text-left px-3 py-2 rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] text-[12px] disabled:opacity-50" style={{ color: INK }}>
+                <span className="font-bold">{c.display_name}</span>{c.certification_level ? <span className="text-[#55666E] text-[10px]"> · {c.certification_level}</span> : null}
               </button>
             ))}
         </div>
       )}
 
       {moveOpen && (
-        <div className="mt-2 rounded-xl bg-gray-50 p-2.5 space-y-1.5">
-          <p className="text-[9px] text-gray-400" style={F_M}>Nueva fecha y hora</p>
+        <div className="mt-2 rounded-[5px] bg-[#F7F9FA] p-2.5 space-y-1.5">
+          <p className="text-[9px] text-[#55666E]" style={F_M}>Nueva fecha y hora</p>
           <div className="flex items-center gap-1.5">
-            <input type="date" value={mvDate} onChange={(ev) => setMvDate(ev.target.value)} className="flex-1 px-2.5 py-2 border border-gray-200 rounded-xl text-sm bg-white" />
-            <input type="time" value={mvTime} onChange={(ev) => setMvTime(ev.target.value)} className="px-2.5 py-2 border border-gray-200 rounded-xl text-sm bg-white" />
+            <input type="date" value={mvDate} onChange={(ev) => setMvDate(ev.target.value)} className="flex-1 px-2.5 py-2 border border-[#DCD7C6] rounded-[5px] text-sm bg-[#F7F9FA]" />
+            <input type="time" value={mvTime} onChange={(ev) => setMvTime(ev.target.value)} className="px-2.5 py-2 border border-[#DCD7C6] rounded-[5px] text-sm bg-[#F7F9FA]" />
             <button type="button" disabled={busy || !mvDate || !mvTime}
               onClick={async () => {
                 setBusy(true); setMsg(null);
@@ -1080,10 +1080,10 @@ function ReserveModal({ token, event, onClose, onDone }: {
     const url = doneLink.url;
     return (
       <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3" style={{ background: 'rgba(6,28,43,.8)' }} onClick={onDone}>
-        <div className="w-full max-w-md bg-white rounded-2xl p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+        <div className="w-full max-w-md bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
           {msg && <p className="text-[12px] font-semibold" style={{ color: '#0a7c5d' }}>{msg}</p>}
           <p className="text-[13px] font-bold" style={{ color: INK }}>Ahora mandale este link por WhatsApp</p>
-          <p className="text-[11.5px] text-gray-500">Es el ÚNICO que necesita: ficha y waiver, y si es camp también su nivel y metas. Si ya vino antes, solo confirma sus datos.</p>
+          <p className="text-[11.5px] text-[#55666E]">Es el ÚNICO que necesita: ficha y waiver, y si es camp también su nivel y metas. Si ya vino antes, solo confirma sus datos.</p>
           {url ? (
             <>
               <code className="block text-[11px] break-all rounded-lg px-3 py-2" style={{ background: 'rgba(0,210,255,.09)', color: '#0090B0' }}>{url}</code>
@@ -1101,7 +1101,7 @@ function ReserveModal({ token, event, onClose, onDone }: {
           ) : (
             <p className="text-[11.5px]" style={{ color: '#c04545' }}>No se pudo generar el link; copialo desde 👥 Clientes.</p>
           )}
-          <button type="button" onClick={onDone} className="w-full py-2 text-[11px] font-bold text-gray-500">Listo</button>
+          <button type="button" onClick={onDone} className="w-full py-2 text-[11px] font-bold text-[#55666E]">Listo</button>
         </div>
       </div>
     );
@@ -1109,17 +1109,17 @@ function ReserveModal({ token, event, onClose, onDone }: {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3" style={{ background: 'rgba(6,28,43,.8)' }} onClick={onClose}>
-      <div className="w-full max-w-md bg-white rounded-2xl p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] p-4 space-y-3" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-[9px]" style={{ ...F_M, color: '#0090B0' }}>Reservar cupo</p>
             <p className="font-bold text-[15px]" style={{ color: INK }}>{event.name}{event.time ? ` · ${event.time.slice(0, 5)}` : ''}</p>
           </div>
-          <button type="button" onClick={onClose} className="text-[20px] leading-none text-gray-400 px-1">×</button>
+          <button type="button" onClick={onClose} className="text-[20px] leading-none text-[#55666E] px-1">×</button>
         </div>
 
         {isFull && (
-          <p className="text-[11px] font-bold rounded-xl px-3 py-2" style={{ background: 'rgba(255,209,102,.18)', color: '#7a5c00' }}>
+          <p className="text-[11px] font-bold rounded-[5px] px-3 py-2" style={{ background: 'rgba(255,209,102,.18)', color: '#7a5c00' }}>
             ⚠ Grupo lleno ({event.enrolled}/{event.capacity} — cupo sugerido). Esta reserva entra como SOBRECUPO.
           </p>
         )}
@@ -1134,25 +1134,25 @@ function ReserveModal({ token, event, onClose, onDone }: {
         {mode === 'existing' ? (
           <div className="space-y-1.5">
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Nombre o email…" autoFocus
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+              className="w-full px-3 py-2.5 border border-[#DCD7C6] rounded-[5px] text-sm" />
             {(found ?? []).map((f) => (
               <button key={f.id} type="button" disabled={busy} onClick={() => reserve({ studentId: f.id })}
-                className="w-full text-left px-3 py-2.5 rounded-xl border border-gray-200 text-[13px] disabled:opacity-50" style={{ color: INK }}>
-                <span className="font-bold">{f.name}</span>{f.email ? <span className="text-gray-400 text-[11px]"> · {f.email}</span> : null}
+                className="w-full text-left px-3 py-2.5 rounded-[5px] border border-[#DCD7C6] text-[13px] disabled:opacity-50" style={{ color: INK }}>
+                <span className="font-bold">{f.name}</span>{f.email ? <span className="text-[#55666E] text-[11px]"> · {f.email}</span> : null}
               </button>
             ))}
-            {found !== null && found.length === 0 && <p className="text-[11px] text-gray-400">Sin resultados — probá &quot;Cliente nuevo&quot;.</p>}
+            {found !== null && found.length === 0 && <p className="text-[11px] text-[#55666E]">Sin resultados — probá &quot;Cliente nuevo&quot;.</p>}
           </div>
         ) : (
           <div className="space-y-1.5">
             <div className="grid grid-cols-2 gap-1.5">
-              <input value={nu.firstName} onChange={(e) => setNu({ ...nu, firstName: e.target.value })} placeholder="Nombre *" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
-              <input value={nu.lastName} onChange={(e) => setNu({ ...nu, lastName: e.target.value })} placeholder="Apellido" className="px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+              <input value={nu.firstName} onChange={(e) => setNu({ ...nu, firstName: e.target.value })} placeholder="Nombre *" className="px-3 py-2.5 border border-[#DCD7C6] rounded-[5px] text-sm" />
+              <input value={nu.lastName} onChange={(e) => setNu({ ...nu, lastName: e.target.value })} placeholder="Apellido" className="px-3 py-2.5 border border-[#DCD7C6] rounded-[5px] text-sm" />
             </div>
             {/* ¿Ya existe alguien con ese nombre? Mejor reusarlo que crear
                 un segundo perfil que le parte el historial en dos. */}
             {nameDupes.length > 0 && (
-              <div className="rounded-xl p-2.5 space-y-1.5" style={{ background: 'rgba(255,209,102,.18)', border: '1px solid rgba(255,209,102,.5)' }}>
+              <div className="rounded-[5px] p-2.5 space-y-1.5" style={{ background: 'rgba(255,209,102,.18)', border: '1px solid rgba(255,209,102,.5)' }}>
                 <p className="text-[11px] font-bold" style={{ color: '#7a5c00' }}>
                   ⚠ Ya hay {nameDupes.length === 1 ? 'un cliente' : `${nameDupes.length} clientes`} con ese nombre
                 </p>
@@ -1161,23 +1161,23 @@ function ReserveModal({ token, event, onClose, onDone }: {
                 </p>
                 {nameDupes.map((d) => (
                   <button key={d.id} type="button" disabled={busy} onClick={() => reserve({ studentId: d.id })}
-                    className="w-full text-left px-2.5 py-2 rounded-lg bg-white border border-gray-200 text-[12px] disabled:opacity-50" style={{ color: INK }}>
+                    className="w-full text-left px-2.5 py-2 rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] text-[12px] disabled:opacity-50" style={{ color: INK }}>
                     <span className="font-bold">{d.name}</span>
-                    {d.email ? <span className="text-gray-400 text-[10.5px]"> · {d.email}</span> : <span className="text-gray-400 text-[10.5px]"> · sin correo</span>}
+                    {d.email ? <span className="text-[#55666E] text-[10.5px]"> · {d.email}</span> : <span className="text-[#55666E] text-[10.5px]"> · sin correo</span>}
                   </button>
                 ))}
               </div>
             )}
-            <input value={nu.email} onChange={(e) => setNu({ ...nu, email: e.target.value })} placeholder="Email" className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+            <input value={nu.email} onChange={(e) => setNu({ ...nu, email: e.target.value })} placeholder="Email" className="w-full px-3 py-2.5 border border-[#DCD7C6] rounded-[5px] text-sm" />
             {emailSuggestion && (
               <button type="button" onClick={() => setNu({ ...nu, email: emailSuggestion })}
-                className="w-full text-left rounded-xl px-3 py-2"
+                className="w-full text-left rounded-[5px] px-3 py-2"
                 style={{ background: 'rgba(255,209,102,.18)', border: '1px solid rgba(255,209,102,.5)' }}>
                 <span className="block text-[11.5px]" style={{ color: '#7a5c00' }}>¿Quisiste decir <strong>{emailSuggestion}</strong>?</span>
                 <span className="block text-[10px] mt-0.5" style={{ color: '#a08030' }}>Tocá para usarlo — un correo mal escrito crea un segundo perfil.</span>
               </button>
             )}
-            <input value={nu.phone} onChange={(e) => setNu({ ...nu, phone: e.target.value })} placeholder="Teléfono / WhatsApp" className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm" />
+            <input value={nu.phone} onChange={(e) => setNu({ ...nu, phone: e.target.value })} placeholder="Teléfono / WhatsApp" className="w-full px-3 py-2.5 border border-[#DCD7C6] rounded-[5px] text-sm" />
             <button type="button" disabled={busy || !nu.firstName.trim()} onClick={() => reserve(nu)}
               className="w-full rounded-full py-3 text-[10px] disabled:opacity-40" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 700 }}>
               {busy ? 'Reservando…' : nameDupes.length > 0 ? 'Es otra persona · crear nuevo' : 'Reservar cupo'}
@@ -1185,7 +1185,7 @@ function ReserveModal({ token, event, onClose, onDone }: {
           </div>
         )}
         {msg && <p className="text-[12px] font-semibold text-center" style={{ color: msg.startsWith('✓') ? '#0a7c5d' : '#c04545' }}>{msg}</p>}
-        <p className="text-[10px] text-gray-400 text-center">El pago se confirma en recepción — queda como reservado.</p>
+        <p className="text-[10px] text-[#55666E] text-center">El pago se confirma en recepción — queda como reservado.</p>
       </div>
     </div>
   );
@@ -1327,7 +1327,7 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="rounded-2xl px-4 py-5" style={{ background: '#0A1628' }}>
+      <div className="rounded-lg px-4 py-5" style={{ background: '#0A1628' }}>
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Front Desk</p>
         <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>🚐 Transporte · próximos 14 días</h2>
         <p className="text-[11px] text-white/50 mt-1">Lo que los coaches solicitaron al planear sus clases y camps. Marcá "salió" cuando el transporte se vaya.</p>
@@ -1348,24 +1348,24 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
 
       {/* 🔔 Notas de los coaches: pedidos, cambios de horario, cancelaciones */}
       {notices.length > 0 && (
-        <div className="rounded-2xl bg-white p-3 space-y-1.5">
+        <div className="rounded-lg bg-[#F7F9FA] p-3 space-y-1.5">
           <p className="text-[10px] font-bold" style={{ ...F_M, color: '#8a99a6' }}>🔔 Cambios recientes</p>
           {notices.slice(0, 5).map((n) => (
             <div key={n.id} className="text-[11px] leading-snug border-l-2 pl-2" style={{ borderColor: GOLD }}>
               <p className="font-semibold" style={{ color: INK }}>{n.title}</p>
-              <p className="text-gray-500">
+              <p className="text-[#55666E]">
                 {n.body}{' '}
-                <span className="text-gray-400">· {new Date(n.created_at).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/El_Salvador' })}</span>
+                <span className="text-[#55666E]">· {new Date(n.created_at).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/El_Salvador' })}</span>
               </p>
             </div>
           ))}
         </div>
       )}
 
-      {rows === null && <p className="text-sm text-gray-400 px-1">Cargando…</p>}
+      {rows === null && <p className="text-sm text-[#55666E] px-1">Cargando…</p>}
       {rows === 'error' && (
-        <div className="rounded-2xl bg-white p-6 text-center">
-          <p className="text-sm text-gray-600">No se pudo cargar el tablero de transporte.</p>
+        <div className="rounded-lg bg-[#F7F9FA] p-6 text-center">
+          <p className="text-sm text-[#55666E]">No se pudo cargar el tablero de transporte.</p>
           <button type="button" onClick={() => { setRows(null); load(); }}
             className="mt-2 rounded-full px-4 py-2 text-[9px]" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 700 }}>
             Reintentar
@@ -1373,9 +1373,9 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
         </div>
       )}
       {Array.isArray(rows) && groups.length === 0 && (
-        <div className="rounded-2xl bg-white p-6 text-center">
-          <p className="text-sm text-gray-500">Sin transportes solicitados en los próximos 14 días.</p>
-          <p className="text-[11px] text-gray-400 mt-1">El coach lo pide al planear su día; apenas lo haga, aparece acá.</p>
+        <div className="rounded-lg bg-[#F7F9FA] p-6 text-center">
+          <p className="text-sm text-[#55666E]">Sin transportes solicitados en los próximos 14 días.</p>
+          <p className="text-[11px] text-[#55666E] mt-1">El coach lo pide al planear su día; apenas lo haga, aparece acá.</p>
         </div>
       )}
 
@@ -1386,7 +1386,7 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
             <CopyTextButton text={dayText(date, list)} label="📋 Copiar día" />
           </div>
           {list.map((r) => (
-            <div key={r.plan_id} className="rounded-2xl bg-white p-3.5 space-y-2" style={{ borderLeft: `4px solid ${r.status === 'taken' ? GREEN : r.status === 'cancelled' ? '#c04545' : GOLD}` }}>
+            <div key={r.plan_id} className="rounded-lg bg-[#F7F9FA] p-3.5 space-y-2" style={{ borderLeft: `4px solid ${r.status === 'taken' ? GREEN : r.status === 'cancelled' ? '#c04545' : GOLD}` }}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-[15px] font-extrabold leading-tight" style={{ color: INK }}>
@@ -1403,7 +1403,7 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
                   {r.status === 'taken' ? '✓ Salió' : r.status === 'cancelled' ? 'Cancelado' : 'Pendiente'}
                 </span>
               </div>
-              <p className="text-[11px] text-gray-600">
+              <p className="text-[11px] text-[#55666E]">
                 👥 <b>{r.passengers} pasajeros</b> ({r.students} {r.students === 1 ? 'alumno' : 'alumnos'} + {r.staff} staff)
                 {r.venue ? <> · 📍 {r.venue}</> : null}
                 {r.class_start ? <> · <b>🕐 encuentro {String(r.class_start).slice(0, 5)}</b></> : null}
@@ -1430,9 +1430,9 @@ function TransporteTab({ token, canCoordinate }: { token: string; canCoordinate:
               )}
               {editId === r.plan_id && (
                 <div className="flex items-center gap-2">
-                  <input type="time" value={dep} onChange={(e) => setDep(e.target.value)} className="text-sm px-2 py-1.5 rounded-lg border border-gray-200" aria-label="Hora de salida" />
-                  <span className="text-gray-400 text-xs">→</span>
-                  <input type="time" value={ret} onChange={(e) => setRet(e.target.value)} className="text-sm px-2 py-1.5 rounded-lg border border-gray-200" aria-label="Hora de regreso" />
+                  <input type="time" value={dep} onChange={(e) => setDep(e.target.value)} className="text-sm px-2 py-1.5 rounded-lg border border-[#DCD7C6]" aria-label="Hora de salida" />
+                  <span className="text-[#55666E] text-xs">→</span>
+                  <input type="time" value={ret} onChange={(e) => setRet(e.target.value)} className="text-sm px-2 py-1.5 rounded-lg border border-[#DCD7C6]" aria-label="Hora de regreso" />
                   <button type="button" disabled={busyId === r.plan_id} onClick={() => saveTimes(r)}
                     className="rounded-full px-3 py-1.5 text-[9px]" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 700 }}>
                     Guardar
@@ -1612,7 +1612,7 @@ function AvailabilityTab({ token }: { token: string }) {
 
   return (
     <div className="space-y-4 pb-4">
-      <div className="rounded-2xl px-4 py-5" style={{ background: '#0A1628' }}>
+      <div className="rounded-lg px-4 py-5" style={{ background: '#0A1628' }}>
         <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)] mb-1">Front Desk</p>
         <h2 className="text-lg font-bold text-white" style={{ fontFamily: 'var(--font-heading)' }}>📣 Disponibilidad · próximos 14 días</h2>
         <p className="text-[11px] text-white/50 mt-1">Todo lo programado con su cupo libre y su precio — para responder al instante y para reservar desde AGENDA.</p>
@@ -1640,10 +1640,10 @@ function AvailabilityTab({ token }: { token: string }) {
         )}
       </div>
 
-      {rows === null && <p className="text-sm text-gray-400 px-1">Cargando…</p>}
+      {rows === null && <p className="text-sm text-[#55666E] px-1">Cargando…</p>}
       {rows === 'error' && (
-        <div className="rounded-2xl bg-white p-6 text-center">
-          <p className="text-sm text-gray-600">No se pudo cargar la disponibilidad.</p>
+        <div className="rounded-lg bg-[#F7F9FA] p-6 text-center">
+          <p className="text-sm text-[#55666E]">No se pudo cargar la disponibilidad.</p>
           <button type="button" onClick={() => { setRows(null); load(); }}
             className="mt-2 rounded-full px-4 py-2 text-[9px]" style={{ ...F_M, background: CYAN, color: INK, fontWeight: 700 }}>
             Reintentar
@@ -1651,7 +1651,7 @@ function AvailabilityTab({ token }: { token: string }) {
         </div>
       )}
       {Array.isArray(rows) && groups.length === 0 && (
-        <p className="text-sm text-gray-400 px-1">
+        <p className="text-sm text-[#55666E] px-1">
           {soloLibres ? 'Todo lleno en los próximos 14 días.' : 'No hay servicios programados en los próximos 14 días.'}
         </p>
       )}
@@ -1665,14 +1665,14 @@ function AvailabilityTab({ token }: { token: string }) {
           {list.map((r) => {
             const lleno = r.spots_left === 0 || r.closed;
             return (
-              <div key={`${r.camp_id}-${r.date}`} className="rounded-2xl bg-white p-3.5"
+              <div key={`${r.camp_id}-${r.date}`} className="rounded-lg bg-[#F7F9FA] p-3.5"
                 style={{ borderLeft: `4px solid ${lleno ? '#c04545' : r.is_event ? GOLD : GREEN}` }}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[15px] font-extrabold leading-tight" style={{ color: INK }}>
                       {hhmm(r.time)} · {r.name}
                     </p>
-                    <p className="text-[11.5px] mt-0.5 text-gray-500">
+                    <p className="text-[11.5px] mt-0.5 text-[#55666E]">
                       {r.is_event && r.total_days ? <b style={{ color: '#7a5c00' }}>🗓 Evento · {r.total_days} días · </b> : null}
                       {r.coach_name ? `${r.coach_name}` : 'sin coach'}
                       {r.venue ? ` · 📍 ${r.venue}` : ''}
@@ -1686,7 +1686,7 @@ function AvailabilityTab({ token }: { token: string }) {
                       {cupoTxt(r)}
                     </p>
                     {r.capacity > 0 && (
-                      <p className="text-[9px] text-gray-400">{r.enrolled}/{r.capacity}</p>
+                      <p className="text-[9px] text-[#55666E]">{r.enrolled}/{r.capacity}</p>
                     )}
                   </div>
                 </div>

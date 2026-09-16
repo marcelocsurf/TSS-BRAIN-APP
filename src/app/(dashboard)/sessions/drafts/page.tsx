@@ -15,7 +15,7 @@ export default async function DraftsPage() {
           >
             Draft Sessions
           </h2>
-          <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
+          <p className="text-xs text-[#55666E] mt-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
             {drafts.length} draft{drafts.length !== 1 ? 's' : ''} saved
           </p>
         </div>
@@ -28,16 +28,16 @@ export default async function DraftsPage() {
       </div>
 
       {drafts.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center">
-          <p className="text-sm text-gray-400">No draft sessions</p>
-          <p className="text-xs text-gray-300 mt-1">Drafts are saved when you exit a session before completing it.</p>
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-8 text-center">
+          <p className="text-sm text-[#55666E]">No draft sessions</p>
+          <p className="text-xs text-[#B8B1A0] mt-1">Drafts are saved when you exit a session before completing it.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {drafts.map((draft) => (
             <div
               key={draft.id}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center justify-between gap-3"
+              className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 flex items-center justify-between gap-3"
             >
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[var(--tss-navy)] truncate">
@@ -45,17 +45,17 @@ export default async function DraftsPage() {
                 </p>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {draft.mission && (
-                    <span className="text-xs text-gray-500 truncate max-w-[180px]">
+                    <span className="text-xs text-[#55666E] truncate max-w-[180px]">
                       {draft.mission}
                     </span>
                   )}
                   {draft.training_venue && (
-                    <span className="text-[10px] bg-gray-50 text-gray-400 px-1.5 py-0.5 rounded capitalize">
+                    <span className="text-[10px] bg-[#F7F9FA] text-[#55666E] px-1.5 py-0.5 rounded capitalize">
                       {draft.training_venue.replace(/_/g, ' ')}
                     </span>
                   )}
                 </div>
-                <p className="text-[10px] text-gray-300 mt-1">
+                <p className="text-[10px] text-[#B8B1A0] mt-1">
                   {new Date(draft.created_at).toLocaleDateString()} &middot; {new Date(draft.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>

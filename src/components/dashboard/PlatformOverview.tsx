@@ -54,12 +54,12 @@ function PulseStat({ label, value, href, alert }: { label: string; value: number
   return (
     <Link
       href={href}
-      className={`rounded-2xl border bg-white px-3 py-3 text-center shadow-sm transition-colors hover:border-[var(--tss-cyan,#5AC3E7)] ${
-        alert ? 'border-red-200 bg-red-50' : 'border-gray-100'
+      className={`rounded-lg border bg-[#F7F9FA] px-3 py-3 text-center shadow-sm transition-colors hover:border-[var(--tss-cyan,#5AC3E7)] ${
+        alert ? 'border-red-200 bg-red-50' : 'border-[#DCD7C6]'
       }`}
     >
       <p className={`text-xl font-bold leading-none ${alert ? 'text-red-600' : 'text-[var(--tss-navy)]'}`}>{value}</p>
-      <p className="mt-1.5 text-[11px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
+      <p className="mt-1.5 text-[11px] uppercase tracking-wider text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
         {label}
       </p>
     </Link>
@@ -68,15 +68,15 @@ function PulseStat({ label, value, href, alert }: { label: string; value: number
 
 function AcademyCard({ a }: { a: AcademyPulse }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-50">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--tss-navy)]/5 text-[var(--tss-navy)] shrink-0">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-[#DCD7C6]">
+        <span className="flex h-9 w-9 items-center justify-center rounded-[5px] bg-[var(--tss-navy)]/5 text-[var(--tss-navy)] shrink-0">
           <Building2 size={17} strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-[var(--tss-navy)] truncate">{a.name}</p>
-          <p className="text-[12px] text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>
+          <p className="text-[12px] text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
             {a.studentsActive} active students
           </p>
         </div>
@@ -91,11 +91,11 @@ function AcademyCard({ a }: { a: AcademyPulse }) {
       <div className="px-4 py-3 space-y-3">
         {/* Today */}
         <div>
-          <p className="text-[11px] font-mono uppercase tracking-wider text-gray-400 mb-1 inline-flex items-center gap-1">
+          <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1 inline-flex items-center gap-1">
             <Tent size={10} /> Today
           </p>
           {a.servicesToday.length === 0 ? (
-            <p className="text-[12px] text-gray-400 italic">No services running today.</p>
+            <p className="text-[12px] text-[#55666E] italic">No services running today.</p>
           ) : (
             <ul className="space-y-1">
               {a.servicesToday.map((s) => (
@@ -103,7 +103,7 @@ function AcademyCard({ a }: { a: AcademyPulse }) {
                   <Link href={`/camps/${s.id}`} className="hover:underline">
                     {s.camp_name}
                   </Link>
-                  <span className="text-gray-400">
+                  <span className="text-[#55666E]">
                     {s.scheduled_time ? ` · ${s.scheduled_time}` : ''}
                     {s.head_coach_name ? ` · ${s.head_coach_name}` : ' · no coach assigned'}
                   </span>
@@ -115,7 +115,7 @@ function AcademyCard({ a }: { a: AcademyPulse }) {
 
         {/* Incidents */}
         {(a.unreadIncidents > 0 || a.recentIncidents.length > 0) && (
-          <div className="rounded-xl bg-red-50 border border-red-100 px-3 py-2">
+          <div className="rounded-[5px] bg-red-50 border border-red-100 px-3 py-2">
             <p className="text-[11px] font-mono uppercase tracking-wider text-red-600 mb-1 inline-flex items-center gap-1">
               <AlertTriangle size={10} /> Incidents{a.unreadIncidents > 0 ? ` · ${a.unreadIncidents} unread` : ''}
             </p>
@@ -148,13 +148,13 @@ function AcademyCard({ a }: { a: AcademyPulse }) {
 
         {/* Week numbers */}
         <div className="grid grid-cols-2 gap-2">
-          <div className="rounded-xl bg-gray-50 px-3 py-2 text-center">
+          <div className="rounded-[5px] bg-[#F7F9FA] px-3 py-2 text-center">
             <p className="text-base font-bold text-[var(--tss-navy)] leading-none">{a.weekSessionsClosed}</p>
-            <p className="mt-1 text-[11px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>Sessions this week</p>
+            <p className="mt-1 text-[11px] uppercase tracking-wider text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>Sessions this week</p>
           </div>
-          <div className="rounded-xl bg-gray-50 px-3 py-2 text-center">
+          <div className="rounded-[5px] bg-[#F7F9FA] px-3 py-2 text-center">
             <p className="text-base font-bold text-[var(--tss-navy)] leading-none">{a.weekNewStudents}</p>
-            <p className="mt-1 text-[11px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>New students this week</p>
+            <p className="mt-1 text-[11px] uppercase tracking-wider text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>New students this week</p>
           </div>
         </div>
       </div>

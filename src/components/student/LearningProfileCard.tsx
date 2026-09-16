@@ -103,24 +103,24 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
   if (!primary && !editing && intakeChannel) {
     const ip = LEARNING_PROFILES[intakeChannel];
     return (
-      <div className={`rounded-xl border ${ip.border} ${ip.bg} p-4`}>
+      <div className={`rounded-[5px] border ${ip.border} ${ip.bg} p-4`}>
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <span
-              className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+              className="shrink-0 w-10 h-10 rounded-[5px] flex items-center justify-center"
               style={{ backgroundColor: `${ip.color}1A` }}
             >
               <ChannelIcon name={ip.iconName} color={ip.color} />
             </span>
             <div className="min-w-0">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 inline-flex items-center gap-1">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] inline-flex items-center gap-1">
                 <Brain size={10} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
                 How they learn
               </p>
               <p className="text-base font-bold truncate" style={{ color: ip.color }}>
                 {ip.name}
               </p>
-              <p className="text-[10px] text-gray-500 mt-0.5">
+              <p className="text-[10px] text-[#55666E] mt-0.5">
                 From intake — tap <strong>Set</strong> to confirm or refine
               </p>
             </div>
@@ -134,17 +134,17 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
           </button>
         </div>
 
-        <p className="text-[12px] text-gray-700 leading-relaxed mb-3">
+        <p className="text-[12px] text-[#10263B] leading-relaxed mb-3">
           {ip.description}
         </p>
 
-        <div className="bg-white/60 rounded-lg p-3">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1.5">
+        <div className="bg-[#F7F9FA]/60 rounded-lg p-3">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">
             Coach — how to teach this student
           </p>
           <ul className="space-y-1">
             {ip.coachTips.map((tip, i) => (
-              <li key={i} className="text-[12px] text-gray-700 leading-snug">
+              <li key={i} className="text-[12px] text-[#10263B] leading-snug">
                 • {tip}
               </li>
             ))}
@@ -157,7 +157,7 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
   // ── Empty state — nothing from intake either ──
   if (!primary && !editing) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
             <Brain size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
@@ -171,7 +171,7 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
             Set
           </button>
         </div>
-        <p className="text-[11px] text-gray-500 leading-relaxed">
+        <p className="text-[11px] text-[#55666E] leading-relaxed">
           No learning profile yet. It appears automatically once the student
           answers &ldquo;how I learn best&rdquo; in their intake — or tap{' '}
           <strong>Set</strong> to record it manually.
@@ -183,7 +183,7 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
   // ── Edit state ──
   if (editing) {
     return (
-      <div className="bg-white rounded-2xl border border-amber-200 shadow-sm p-4 space-y-3">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-amber-200 shadow-sm p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
             <Brain size={14} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
@@ -197,7 +197,7 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
               setPickSecondary(secondary);
               setError('');
             }}
-            className="text-xs text-gray-500"
+            className="text-xs text-[#55666E]"
           >
             Cancel
           </button>
@@ -249,17 +249,17 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
   if (!p) return null;
 
   return (
-    <div className={`rounded-xl border ${p.border} ${p.bg} p-4`}>
+    <div className={`rounded-[5px] border ${p.border} ${p.bg} p-4`}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <span
-            className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center"
+            className="shrink-0 w-10 h-10 rounded-[5px] flex items-center justify-center"
             style={{ backgroundColor: `${p.color}1A` }}
           >
             <ChannelIcon name={p.iconName} color={p.color} />
           </span>
           <div className="min-w-0">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 inline-flex items-center gap-1">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] inline-flex items-center gap-1">
               <Brain size={10} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
               How they learn
             </p>
@@ -270,7 +270,7 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
               {p.name}
             </p>
             {s && (
-              <p className="text-[11px] text-gray-600 mt-0.5">
+              <p className="text-[11px] text-[#55666E] mt-0.5">
                 Secondary: <span className="font-medium inline-flex items-center gap-1">
                   <ChannelIcon name={s.iconName} color={s.color} size={12} /> {s.shortName}
                 </span>
@@ -281,23 +281,23 @@ export function LearningProfileCard({ studentId, primary, secondary, portalToken
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="text-[10px] text-gray-500 hover:text-gray-800 shrink-0"
+          className="text-[10px] text-[#55666E] hover:text-[#10263B] shrink-0"
         >
           Edit
         </button>
       </div>
 
-      <p className="text-[12px] text-gray-700 leading-relaxed mb-3">
+      <p className="text-[12px] text-[#10263B] leading-relaxed mb-3">
         {p.description}
       </p>
 
-      <div className="bg-white/60 rounded-lg p-3">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500 mb-1.5">
+      <div className="bg-[#F7F9FA]/60 rounded-lg p-3">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">
           Coach — how to teach this student
         </p>
         <ul className="space-y-1">
           {p.coachTips.map((tip, i) => (
-            <li key={i} className="text-[12px] text-gray-700 leading-snug">
+            <li key={i} className="text-[12px] text-[#10263B] leading-snug">
               • {tip}
             </li>
           ))}
@@ -322,7 +322,7 @@ function ChannelPicker({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+      <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">
         {label}
       </label>
       <div className="grid grid-cols-2 gap-2">
@@ -338,10 +338,10 @@ function ChannelPicker({
               onClick={() => onChange(selected ? null : ch)}
               className={`text-left p-2.5 rounded-lg border transition ${
                 isExcluded
-                  ? 'opacity-30 border-gray-200 bg-gray-50'
+                  ? 'opacity-30 border-[#DCD7C6] bg-[#F7F9FA]'
                   : selected
                   ? 'border-transparent text-white'
-                  : 'border-gray-200 hover:border-gray-400'
+                  : 'border-[#DCD7C6] hover:border-[#55666E]'
               }`}
               style={selected && !isExcluded ? { background: info.color } : {}}
             >

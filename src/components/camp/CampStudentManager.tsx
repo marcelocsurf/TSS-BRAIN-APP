@@ -199,7 +199,7 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
   };
 
   return (
-    <div className="mt-3 pt-3 border-t border-gray-100">
+    <div className="mt-3 pt-3 border-t border-[#DCD7C6]">
       <button
         type="button"
         onClick={() => setShowManager(!showManager)}
@@ -211,14 +211,14 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
       {showManager && (
         <div className="mt-3">
           {/* Tabs */}
-          <div className="flex items-center gap-1 mb-3 border-b border-gray-100">
+          <div className="flex items-center gap-1 mb-3 border-b border-[#DCD7C6]">
             <button
               type="button"
               onClick={() => setTab('existing')}
               className={`px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5 border-b-2 transition-colors ${
                 tab === 'existing'
                   ? 'border-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-navy)]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  : 'border-transparent text-[#55666E] hover:text-[#10263B]'
               }`}
             >
               <UserSearch size={13} strokeWidth={1.75} />
@@ -230,7 +230,7 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
               className={`px-3 py-2 text-xs font-semibold inline-flex items-center gap-1.5 border-b-2 transition-colors ${
                 tab === 'new'
                   ? 'border-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-navy)]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  : 'border-transparent text-[#55666E] hover:text-[#10263B]'
               }`}
             >
               <UserPlus size={13} strokeWidth={1.75} />
@@ -247,13 +247,13 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name or last name…"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
+                className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]"
               />
               {currentParticipantIds.length > 0 && (
                 <div>
                   <p
-                    className="text-[10px] font-semibold text-gray-400 uppercase mb-1 tracking-wider"
-                    style={{ fontFamily: 'DM Mono, monospace' }}
+                    className="text-[10px] font-semibold text-[#55666E] uppercase mb-1 tracking-wider"
+                    style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                   >
                     Remove from camp
                   </p>
@@ -279,8 +279,8 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
               {availableStudents.length > 0 ? (
                 <div>
                   <p
-                    className="text-[10px] font-semibold text-gray-400 uppercase mb-1 tracking-wider"
-                    style={{ fontFamily: 'DM Mono, monospace' }}
+                    className="text-[10px] font-semibold text-[#55666E] uppercase mb-1 tracking-wider"
+                    style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                   >
                     Add to camp
                   </p>
@@ -300,7 +300,7 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
                           {s.first_name[0]}
                           {s.last_name[0]}
                         </div>
-                        <span className="text-xs text-gray-700 flex-1">
+                        <span className="text-xs text-[#10263B] flex-1">
                           {s.first_name} {s.last_name}
                         </span>
                         <span className="text-[10px] text-green-600">+ Add</span>
@@ -309,7 +309,7 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
                   </div>
                 </div>
               ) : (
-                <p className="text-xs text-gray-400 italic">
+                <p className="text-xs text-[#55666E] italic">
                   {searching
                     ? 'Searching…'
                     : search.trim()
@@ -325,7 +325,7 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
             <div>
               {!justCreated ? (
                 <form onSubmit={submitNewLead} className="space-y-2">
-                  <p className="text-[11px] text-gray-500 leading-relaxed mb-2">
+                  <p className="text-[11px] text-[#55666E] leading-relaxed mb-2">
                     Quick capture for a new client. We create a Lead, enrol them in this service,
                     and send them the safety form to complete on their own.
                   </p>
@@ -336,7 +336,7 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
                       placeholder="First name"
                       value={newLead.first_name}
                       onChange={(e) => setNewLead({ ...newLead, first_name: e.target.value })}
-                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      className="px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
                     />
                     <input
                       type="text"
@@ -344,7 +344,7 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
                       placeholder="Last name"
                       value={newLead.last_name}
                       onChange={(e) => setNewLead({ ...newLead, last_name: e.target.value })}
-                      className="px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                      className="px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
                     />
                   </div>
                   <input
@@ -352,14 +352,14 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
                     placeholder="Email (optional but recommended)"
                     value={newLead.email}
                     onChange={(e) => setNewLead({ ...newLead, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
                   />
                   <input
                     type="tel"
                     placeholder="Phone (optional)"
                     value={newLead.phone}
                     onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                    className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm"
                   />
                   <button
                     type="submit"
@@ -370,7 +370,7 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
                   </button>
                 </form>
               ) : (
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 space-y-3">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-[5px] p-3 space-y-3">
                   <p className="text-xs text-emerald-700 font-medium inline-flex items-center gap-1.5">
                     <Check size={13} strokeWidth={2} />
                     {justCreated.name} enrolled as Lead.
@@ -380,14 +380,14 @@ export function CampStudentManager({ campInstanceId, currentParticipantIds }: Pr
                       ? 'Safety-form email sent. Once they submit, the coach sees waiver + medical info.'
                       : `Email NOT sent (${justCreated.reason ?? 'no email on file'}). Copy the link below and send via WhatsApp.`}
                   </p>
-                  <div className="flex items-center gap-2 text-[10px] font-mono text-emerald-800 bg-white border border-emerald-200 rounded-md px-2 py-1.5 truncate">
+                  <div className="flex items-center gap-2 text-[10px] font-mono text-emerald-800 bg-[#F7F9FA] border border-emerald-200 rounded-md px-2 py-1.5 truncate">
                     {justCreated.url}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={copyLink}
-                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-white text-[var(--tss-navy)] text-xs font-semibold rounded-md border border-emerald-200 hover:bg-emerald-50 transition-colors"
+                      className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#F7F9FA] text-[var(--tss-navy)] text-xs font-semibold rounded-md border border-emerald-200 hover:bg-emerald-50 transition-colors"
                     >
                       <Copy size={12} strokeWidth={2} />
                       {copied ? 'Copied!' : 'Copy link'}

@@ -120,7 +120,7 @@ export default async function AuditDashboardPage() {
           />
         </div>
         {inactiveStudents && inactiveStudents.length > 0 && (
-          <div className="mt-3 text-xs text-gray-500">
+          <div className="mt-3 text-xs text-[#55666E]">
             {inactiveStudents.slice(0, 5).map((s: any) => (
               <p key={s.id}>{s.first_name} {s.last_name} — last: {s.last_session_date ? new Date(s.last_session_date).toLocaleDateString() : 'never'}</p>
             ))}
@@ -131,18 +131,18 @@ export default async function AuditDashboardPage() {
       {/* Camp Progress */}
       <Section title="Camp Progress">
         {campProgress.length === 0 ? (
-          <p className="text-sm text-gray-400">No active camps.</p>
+          <p className="text-sm text-[#55666E]">No active camps.</p>
         ) : (
           <div className="space-y-2">
             {campProgress.map((c) => (
-              <div key={c.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+              <div key={c.id} className="flex items-center justify-between bg-[#F7F9FA] rounded-lg p-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-800">{c.camp_name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{c.status}</p>
+                  <p className="text-sm font-medium text-[#10263B]">{c.camp_name}</p>
+                  <p className="text-xs text-[#55666E] capitalize">{c.status}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-[var(--tss-navy)]">{c.completedDays}/{c.totalDays}</p>
-                  <p className="text-[10px] text-gray-400">days completed</p>
+                  <p className="text-[10px] text-[#55666E]">days completed</p>
                 </div>
               </div>
             ))}
@@ -155,8 +155,8 @@ export default async function AuditDashboardPage() {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-      <div className="px-4 py-3 border-b border-gray-50">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-[#DCD7C6]">
         <h3 className="text-sm font-semibold text-[var(--tss-navy)]">{title}</h3>
       </div>
       <div className="p-4">{children}</div>
@@ -166,9 +166,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="bg-gray-50 rounded-lg p-3 text-center">
+    <div className="bg-[#F7F9FA] rounded-lg p-3 text-center">
       <p className="text-xl font-bold text-[var(--tss-navy)]">{value}</p>
-      <p className="text-[10px] text-gray-500 mt-0.5">{label}</p>
+      <p className="text-[10px] text-[#55666E] mt-0.5">{label}</p>
     </div>
   );
 }
@@ -181,7 +181,7 @@ function Flag({ label, value, severity }: { label: string; value: number; severi
   };
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-gray-700">{label}</span>
+      <span className="text-sm text-[#10263B]">{label}</span>
       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${colors[severity]}`}>
         {value}
       </span>

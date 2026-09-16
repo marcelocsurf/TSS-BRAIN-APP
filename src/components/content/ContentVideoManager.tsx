@@ -79,7 +79,7 @@ export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId, 
   return (
     <div className="space-y-2">
       {videos.length === 0 && !adding && (
-        <p className="text-[11px] text-gray-400 italic">No media yet.</p>
+        <p className="text-[11px] text-[#55666E] italic">No media yet.</p>
       )}
 
       {videos.map((v, idx) => (
@@ -94,7 +94,7 @@ export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId, 
       ))}
 
       {adding ? (
-        <div className="bg-white rounded-lg border border-amber-200 p-3 space-y-2">
+        <div className="bg-[#F7F9FA] rounded-lg border border-amber-200 p-3 space-y-2">
           <div className="flex gap-1.5">
             {MEDIA_OPTIONS.map((opt) => (
               <button
@@ -104,7 +104,7 @@ export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId, 
                 className={`flex-1 px-2 py-1.5 text-[11px] font-semibold rounded-lg border transition-colors ${
                   newMediaType === opt.value
                     ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]'
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                    : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6] hover:border-[#55666E]'
                 }`}
               >
                 {opt.label}
@@ -116,14 +116,14 @@ export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId, 
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
             placeholder="Label (e.g. Intro · Demo · Common errors)"
-            className="w-full px-3 py-2 border border-gray-200 rounded text-sm"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded text-sm"
           />
           <input
             type="url"
             value={newUrl}
             onChange={(e) => setNewUrl(e.target.value)}
             placeholder={placeholder}
-            className="w-full px-3 py-2 border border-gray-200 rounded text-sm"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded text-sm"
             autoFocus
           />
           <input
@@ -131,7 +131,7 @@ export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId, 
             value={newCaption}
             onChange={(e) => setNewCaption(e.target.value)}
             placeholder="Caption (optional) — short note shown under the thumbnail"
-            className="w-full px-3 py-2 border border-gray-200 rounded text-sm"
+            className="w-full px-3 py-2 border border-[#DCD7C6] rounded text-sm"
           />
           {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="flex gap-2">
@@ -145,7 +145,7 @@ export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId, 
                 setNewMediaType('video');
                 setError('');
               }}
-              className="px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded"
+              className="px-3 py-1.5 text-xs text-[#55666E] border border-[#DCD7C6] rounded"
             >
               Cancel
             </button>
@@ -163,7 +163,7 @@ export function ContentVideoManager({ videos, lessonId, drillMissionId, stepId, 
         <button
           type="button"
           onClick={() => setAdding(true)}
-          className="w-full px-3 py-2 text-xs text-gray-600 border border-dashed border-gray-300 hover:border-gray-500 rounded-lg"
+          className="w-full px-3 py-2 text-xs text-[#55666E] border border-dashed border-[#DCD7C6] hover:border-[#DCD7C6]0 rounded-lg"
         >
           + Add Media
         </button>
@@ -232,26 +232,26 @@ function VideoRow({
 
   if (editing) {
     return (
-      <div className="bg-white rounded-lg border border-blue-200 p-3 space-y-2">
+      <div className="bg-[#F7F9FA] rounded-lg border border-blue-200 p-3 space-y-2">
         <input
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Label (optional)"
-          className="w-full px-3 py-2 border border-gray-200 rounded text-sm"
+          className="w-full px-3 py-2 border border-[#DCD7C6] rounded text-sm"
         />
         <input
           type="url"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded text-sm font-mono"
+          className="w-full px-3 py-2 border border-[#DCD7C6] rounded text-sm font-mono"
         />
         <input
           type="text"
           value={caption}
           onChange={(e) => setCaption(e.target.value)}
           placeholder="Caption (optional)"
-          className="w-full px-3 py-2 border border-gray-200 rounded text-sm"
+          className="w-full px-3 py-2 border border-[#DCD7C6] rounded text-sm"
         />
         {error && <p className="text-xs text-red-600">{error}</p>}
         <div className="flex gap-2">
@@ -264,7 +264,7 @@ function VideoRow({
               setCaption(video.caption || '');
               setError('');
             }}
-            className="px-3 py-1.5 text-xs text-gray-600 border border-gray-200 rounded"
+            className="px-3 py-1.5 text-xs text-[#55666E] border border-[#DCD7C6] rounded"
           >
             Cancel
           </button>
@@ -300,9 +300,9 @@ function VideoRow({
       : 'bg-amber-50 text-amber-700'; // diagram
 
   return (
-    <div className="flex items-center gap-3 bg-white rounded-lg border border-gray-100 px-3 py-2">
+    <div className="flex items-center gap-3 bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] px-3 py-2">
       {/* Thumbnail */}
-      <div className="w-12 h-12 rounded bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+      <div className="w-12 h-12 rounded bg-[#EDF3F5] overflow-hidden flex-shrink-0 flex items-center justify-center">
         {isImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={directImageUrl(video.url)} alt={video.label || ''} className="w-full h-full object-cover" />
@@ -314,12 +314,12 @@ function VideoRow({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={ytThumb} alt={video.label || ''} className="w-full h-full object-cover" />
         ) : (
-          <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">VIDEO</span>
+          <span className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">VIDEO</span>
         )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-gray-800 truncate">
+          <p className="text-sm font-medium text-[#10263B] truncate">
             {video.label || '(no label)'}
           </p>
           <span className={`text-[9px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded flex-shrink-0 ${pillClass}`}>
@@ -335,7 +335,7 @@ function VideoRow({
           {video.url}
         </a>
         {video.caption && (
-          <p className="text-[11px] text-gray-500 mt-0.5 truncate">{video.caption}</p>
+          <p className="text-[11px] text-[#55666E] mt-0.5 truncate">{video.caption}</p>
         )}
       </div>
       <div className="flex items-center gap-0.5 shrink-0">
@@ -365,7 +365,7 @@ function IconBtn({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="w-7 h-7 flex items-center justify-center rounded text-gray-500 hover:bg-gray-100 disabled:opacity-30 text-sm"
+      className="w-7 h-7 flex items-center justify-center rounded text-[#55666E] hover:bg-[#EDF3F5] disabled:opacity-30 text-sm"
     >
       {children}
     </button>

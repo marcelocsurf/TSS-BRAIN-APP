@@ -14,7 +14,7 @@ import { SpecialistGuide } from '@/components/specialist/SpecialistGuide';
 
 // GREEN = Foam #06D6A0, el verde de éxito del canon v10 (#39D98A era ajeno a la paleta).
 const INK = '#061C2B', CYAN = '#00D2FF', GOLD = '#FFD166', GREEN = '#06D6A0';
-const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
+const MONO: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' };
 const DISPLAY: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%' as any, fontWeight: 800, letterSpacing: '-0.01em' };
 
 const ROLE_COLOR: Record<string, string> = {
@@ -60,7 +60,7 @@ export function SpecialistPortal({ token }: { token: string }) {
   if (home === 'denied') {
     return (
       <Shell>
-        <div className="rounded-2xl p-6 text-center" style={{ background: 'rgba(255,255,255,.05)' }}>
+        <div className="rounded-lg p-6 text-center" style={{ background: 'rgba(255,255,255,.05)' }}>
           <p className="text-sm font-semibold text-white">Este link no tiene temporadas asignadas.</p>
           <p className="text-[12px] mt-1" style={{ color: '#8aa0b2' }}>Pedile a coordinación que te asigne como especialista o head coach de una temporada.</p>
         </div>
@@ -99,7 +99,7 @@ export function SpecialistPortal({ token }: { token: string }) {
             <button
               type="button"
               onClick={() => setOpenId(openId === a.student_id ? null : a.student_id)}
-              className="w-full text-left rounded-2xl p-3.5 flex items-center gap-3"
+              className="w-full text-left rounded-lg p-3.5 flex items-center gap-3"
               style={{ background: openId === a.student_id ? 'rgba(0,210,255,.08)' : 'rgba(255,255,255,.05)', border: openId === a.student_id ? `1px solid ${CYAN}55` : '1px solid rgba(255,255,255,.08)' }}
             >
               {a.photo_url ? (
@@ -128,7 +128,7 @@ export function SpecialistPortal({ token }: { token: string }) {
           </div>
         ))}
         {home.athletes.length === 0 && (
-          <p className="text-[12px] rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.05)', color: '#8aa0b2' }}>
+          <p className="text-[12px] rounded-lg p-4" style={{ background: 'rgba(255,255,255,.05)', color: '#8aa0b2' }}>
             Todavía no tenés atletas asignados. Aparecen acá cuando coordinación te suma a una temporada.
           </p>
         )}
@@ -163,7 +163,7 @@ function AthletePanel({ token, studentId, roleKey }: { token: string; studentId:
   if (!data) return <p className="text-[11px] px-3 py-2" style={{ color: '#7BA2B5' }}>Cargando…</p>;
 
   return (
-    <div className="mt-1.5 rounded-2xl p-3 space-y-3" style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)' }}>
+    <div className="mt-1.5 rounded-lg p-3 space-y-3" style={{ background: 'rgba(255,255,255,.03)', border: '1px solid rgba(255,255,255,.07)' }}>
       {/* Tabs del panel */}
       <div className="flex gap-1.5">
         {([['plan', '📅 Plan'], ['muro', '💬 Muro'], ['tools', '🛠 Herramientas']] as const).map(([id, label]) => (
@@ -241,7 +241,7 @@ function YearAgenda({ data }: { data: SpecialistAthlete }) {
   const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' });
 
   return (
-    <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
+    <div className="rounded-[5px] p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
       <p className="text-[9px] uppercase tracking-wider mb-2" style={{ ...MONO, color: GOLD }}>
         🗓 Su año completo {tl.season ? `· ${tl.season.start.slice(5)} → ${tl.season.end.slice(5)}` : ''}
       </p>
@@ -300,7 +300,7 @@ function PlanTab({ data, token, onChanged }: { data: SpecialistAthlete; token: s
       <DayByDay data={data} token={token} onChanged={onChanged} />
       {/* Score por pilar */}
       {data.pillars && (
-        <div className="rounded-xl p-3" style={{ background: 'rgba(0,210,255,.05)', border: '1px solid rgba(0,210,255,.2)' }}>
+        <div className="rounded-[5px] p-3" style={{ background: 'rgba(0,210,255,.05)', border: '1px solid rgba(0,210,255,.2)' }}>
           <p className="text-[9px] uppercase tracking-wider mb-2" style={{ ...MONO, color: CYAN }}>Score por pilar · últ. eval {data.pillars.eval_date}</p>
           <div className="grid grid-cols-4 gap-2">
             {PILLAR_META.map((p) => (
@@ -386,7 +386,7 @@ function WallTab({ token, studentId, data, onPosted }: { token: string; studentI
     <div className="space-y-2.5">
       <div className="flex gap-2">
         <input value={body} onChange={(e) => setBody(e.target.value)} placeholder="Mensaje para el equipo y el atleta…"
-          className="flex-1 rounded-xl px-3 py-2 text-[12px]" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: '#eaf4fa' }} />
+          className="flex-1 rounded-[5px] px-3 py-2 text-[12px]" style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.14)', color: '#eaf4fa' }} />
         <button type="button" disabled={busy || !body.trim()} onClick={post}
           className="rounded-full px-4 text-[10px] font-bold uppercase tracking-wider disabled:opacity-40" style={{ ...MONO, background: CYAN, color: INK }}>
           Enviar
@@ -395,7 +395,7 @@ function WallTab({ token, studentId, data, onPosted }: { token: string; studentI
       {err && <p className="text-[10.5px]" style={{ color: '#FF6B6B' }}>{err}</p>}
       <div className="space-y-1.5">
         {data.wall.map((w) => (
-          <div key={w.id} className="rounded-xl px-3 py-2" style={{ background: w.mine ? 'rgba(0,210,255,.08)' : 'rgba(255,255,255,.05)', borderLeft: `3px solid ${w.author.includes('(athlete)') ? GOLD : w.mine ? CYAN : 'rgba(255,255,255,.18)'}` }}>
+          <div key={w.id} className="rounded-[5px] px-3 py-2" style={{ background: w.mine ? 'rgba(0,210,255,.08)' : 'rgba(255,255,255,.05)', borderLeft: `3px solid ${w.author.includes('(athlete)') ? GOLD : w.mine ? CYAN : 'rgba(255,255,255,.18)'}` }}>
             <p className="text-[9.5px] uppercase tracking-wide" style={{ ...MONO, color: w.author.includes('(athlete)') ? GOLD : '#7BA2B5' }}>
               {w.author.replace(' (athlete)', ' · Atleta')} · {fmtDT(w.created_at)}
             </p>
@@ -430,7 +430,7 @@ function ToolsTab({ token, studentId, data, roleKey, onChanged }: {
       )}
       {canDiet && <DietEditor token={token} studentId={studentId} data={data} onChanged={onChanged} />}
       {!canDiet && data.diet.micro.length > 0 && (
-        <div className="rounded-xl p-3" style={{ background: 'rgba(255,209,102,.06)', border: '1px solid rgba(255,209,102,.25)' }}>
+        <div className="rounded-[5px] p-3" style={{ background: 'rgba(255,209,102,.06)', border: '1px solid rgba(255,209,102,.25)' }}>
           <p className="text-[9px] uppercase tracking-wider mb-1" style={{ ...MONO, color: GOLD }}>🥗 Dieta (de la nutricionista)</p>
           {data.diet.micro.slice(-2).map((d) => (
             <p key={d.week_number} className="text-[10.5px] mt-1" style={{ color: '#dce8f0' }}><b style={{ color: GOLD }}>M{d.week_number}</b> · {d.body.slice(0, 160)}</p>
@@ -464,7 +464,7 @@ function TaskCreator({ token, studentId, roleKey, onChanged }: { token: string; 
   };
 
   return (
-    <div className="rounded-xl p-3" style={{ background: 'rgba(57,217,138,.05)', border: '1px solid rgba(57,217,138,.25)' }}>
+    <div className="rounded-[5px] p-3" style={{ background: 'rgba(57,217,138,.05)', border: '1px solid rgba(57,217,138,.25)' }}>
       <button type="button" onClick={() => setOpen(!open)} className="w-full text-left flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GREEN }}>📌 Dejar sesión online / tarea</p>
         <span className="text-[11px]" style={{ color: GREEN }}>{open ? '▴' : '+'}</span>
@@ -537,7 +537,7 @@ function DietEditor({ token, studentId, data, onChanged }: { token: string; stud
   };
 
   return (
-    <div className="rounded-xl p-3" style={{ background: 'rgba(255,209,102,.06)', border: '1px solid rgba(255,209,102,.3)' }}>
+    <div className="rounded-[5px] p-3" style={{ background: 'rgba(255,209,102,.06)', border: '1px solid rgba(255,209,102,.3)' }}>
       <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: GOLD }}>🥗 Dieta del atleta</p>
       <div className="flex gap-1.5 mt-2">
         {([['micro', 'Por microciclo'], ['day', 'Nota de un día']] as const).map(([id, label]) => (
@@ -652,7 +652,7 @@ function CitaCreator({ token, data, onChanged }: { token: string; data: Speciali
   };
 
   return (
-    <div className="rounded-xl p-3" style={{ background: 'rgba(0,210,255,.05)', border: '1px solid rgba(0,210,255,.25)' }}>
+    <div className="rounded-[5px] p-3" style={{ background: 'rgba(0,210,255,.05)', border: '1px solid rgba(0,210,255,.25)' }}>
       <button type="button" onClick={() => setOpen(!open)} className="w-full text-left flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: CYAN }}>📅 Agendar cita / evaluación</p>
         <span className="text-[11px]" style={{ color: CYAN }}>{open ? '▴' : '+'}</span>
@@ -715,7 +715,7 @@ function DayByDay({ data, token, onChanged }: { data: SpecialistAthlete; token: 
   const fmt = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 
   return (
-    <div className="rounded-xl p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
+    <div className="rounded-[5px] p-3" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
       <p className="text-[9px] uppercase tracking-wider mb-2" style={{ ...MONO, color: GOLD }}>
         📋 Día por día · {prog.title}
       </p>

@@ -29,16 +29,16 @@ export function ProfileTabs({ bitacora, progresion, perfil }: {
         className="sticky top-0 z-30 -mx-1 px-1 py-2 mb-3"
         style={{ background: 'linear-gradient(180deg, var(--tss-gray-50, #F9FAFB) 75%, transparent)' }}
       >
-        <div className="grid grid-cols-3 gap-1.5 bg-white rounded-2xl border border-gray-100 shadow-sm p-1.5">
+        <div className="grid grid-cols-3 gap-1.5 bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-1.5">
           {TABS.map((t) => (
             <button
               key={t.key}
               type="button"
               onClick={() => setTab(t.key)}
-              className={`py-2 rounded-xl text-[13px] font-semibold transition-all ${
+              className={`py-2 rounded-[5px] text-[13px] font-semibold transition-all ${
                 tab === t.key
                   ? 'bg-[var(--tss-navy)] text-white shadow-sm'
-                  : 'text-gray-500 hover:text-[var(--tss-navy)] hover:bg-gray-50'
+                  : 'text-[#55666E] hover:text-[var(--tss-navy)] hover:bg-[#F7F9FA]'
               }`}
             >
               {t.label}

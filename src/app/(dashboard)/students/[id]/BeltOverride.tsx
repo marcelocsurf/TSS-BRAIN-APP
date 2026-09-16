@@ -9,15 +9,15 @@ export function BeltOverride({ studentId, current }: { studentId: string; curren
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   if (!open) {
-    return <button type="button" onClick={() => setOpen(true)} className="text-[10px] px-2 py-0.5 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50">Change belt</button>;
+    return <button type="button" onClick={() => setOpen(true)} className="text-[10px] px-2 py-0.5 rounded-full border border-[#DCD7C6] text-[#55666E] hover:bg-[#F7F9FA]">Change belt</button>;
   }
   return (
-    <div className="mt-2 rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2 max-w-md">
+    <div className="mt-2 rounded-[5px] border border-amber-200 bg-amber-50 p-3 space-y-2 max-w-md">
       <p className="text-[11px] text-amber-800">Manual override: skips the water rule and the certification cap. Logged in the internal notes.</p>
-      <select value={belt} onChange={(e) => setBelt(e.target.value)} className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 bg-white">
+      <select value={belt} onChange={(e) => setBelt(e.target.value)} className="w-full text-sm px-3 py-2 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA]">
         {(Object.keys(BELT_DISPLAY) as BeltLevel[]).map((k) => <option key={k} value={k}>{BELT_DISPLAY[k].en} — {BELT_DISPLAY[k].levelName}</option>)}
       </select>
-      <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 bg-white" />
+      <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional)" className="w-full text-sm px-3 py-2 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA]" />
       <div className="flex gap-2">
         <button type="button" disabled={busy || belt === current}
           onClick={async () => {
@@ -30,7 +30,7 @@ export function BeltOverride({ studentId, current }: { studentId: string; curren
             window.location.reload();
           }}
           className="h-9 px-4 rounded-lg text-sm font-semibold text-white disabled:opacity-50" style={{ background: '#061C2B' }}>{busy ? 'Saving…' : 'Save belt'}</button>
-        <button type="button" onClick={() => setOpen(false)} className="h-9 px-3 rounded-lg text-sm text-gray-600">Cancel</button>
+        <button type="button" onClick={() => setOpen(false)} className="h-9 px-3 rounded-lg text-sm text-[#55666E]">Cancel</button>
       </div>
     </div>
   );

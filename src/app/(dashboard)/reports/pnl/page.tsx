@@ -25,11 +25,11 @@ export default async function PnLReportPage({
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
       <header className="space-y-1">
-        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600">
+        <Link href="/reports" className="inline-flex items-center gap-1 text-[11px] text-[#55666E] hover:text-[#55666E]">
           <ArrowLeft size={12} /> Reportes
         </Link>
         <h1 className="text-2xl font-bold text-[var(--tss-navy)]">P&L por academia</h1>
-        <p className="text-sm text-gray-500">Ingresos (asientos + membresías) menos nómina real de coaches.</p>
+        <p className="text-sm text-[#55666E]">Ingresos (asientos + membresías) menos nómina real de coaches.</p>
       </header>
 
       <ReportControls exportHref="/reports/pnl/export" />
@@ -48,7 +48,7 @@ export default async function PnLReportPage({
           <ReportCard title="Por academia" icon={DollarSign}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50">
+                <thead className="bg-[#F7F9FA]">
                   <tr>
                     <Th>Academia</Th>
                     <Th align="right">Asientos</Th>
@@ -62,7 +62,7 @@ export default async function PnLReportPage({
                 <tbody className="divide-y divide-gray-50">
                   {data.rows.map((r) => (
                     <tr key={r.academyId || 'none'}>
-                      <Td><span className="font-medium text-gray-800">{r.academyName}</span></Td>
+                      <Td><span className="font-medium text-[#10263B]">{r.academyName}</span></Td>
                       <Td align="right" mono>{money(r.seatRevenueCents)}</Td>
                       <Td align="right" mono>{money(r.membershipRevenueCents)}</Td>
                       <Td align="right" mono><span className="font-semibold text-[var(--tss-navy)]">{money(r.revenueCents)}</span></Td>
@@ -72,11 +72,11 @@ export default async function PnLReportPage({
                     </tr>
                   ))}
                   {data.rows.length === 0 && (
-                    <tr><td colSpan={7} className="text-center py-6 text-xs text-gray-400">Sin datos en este rango.</td></tr>
+                    <tr><td colSpan={7} className="text-center py-6 text-xs text-[#55666E]">Sin datos en este rango.</td></tr>
                   )}
                 </tbody>
                 {data.rows.length > 1 && (
-                  <tfoot className="bg-gray-50 border-t border-gray-200">
+                  <tfoot className="bg-[#F7F9FA] border-t border-[#DCD7C6]">
                     <tr>
                       <Td><span className="font-semibold text-[var(--tss-navy)]">Total</span></Td>
                       <Td align="right" mono>{money(data.totals.seatRevenueCents)}</Td>
@@ -92,7 +92,7 @@ export default async function PnLReportPage({
             </div>
           </ReportCard>
 
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-[#55666E]">
             Neto = ingresos − nómina real de coaches (<code>coach_payments</code>). Los costos no-coach por servicio (equipo, transporte,
             asistentes, filmer) <strong>no</strong> están incluidos acá — viven en el panel de costos de cada camp para no doble-contar la
             mano de obra ni sobrecargar la base. Ingresos fechados por fecha de pago; nómina por período de pago.

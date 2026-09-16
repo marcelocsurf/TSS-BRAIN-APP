@@ -30,10 +30,10 @@ export function HowToAddStudent({ defaultOpen = false }: { defaultOpen?: boolean
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-[#F7F9FA] transition-colors"
       >
         <HelpCircle size={16} className="text-[var(--tss-cyan,#5AC3E7)] shrink-0" />
         <span className="text-sm font-semibold text-[var(--tss-navy)] flex-1">
@@ -41,13 +41,13 @@ export function HowToAddStudent({ defaultOpen = false }: { defaultOpen?: boolean
         </span>
         <ChevronDown
           size={16}
-          className={`text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`text-[#55666E] transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
       {open && (
-        <div className="px-4 pb-4 pt-1 space-y-3 border-t border-gray-100">
-          <p className="text-xs text-gray-500 pt-3">
+        <div className="px-4 pb-4 pt-1 space-y-3 border-t border-[#DCD7C6]">
+          <p className="text-xs text-[#55666E] pt-3">
             The level is never something you type by hand — it comes from the quiz (objective) and the
             coach confirms it. This avoids the ~37% of surfers who overestimate themselves.
           </p>
@@ -59,12 +59,12 @@ export function HowToAddStudent({ defaultOpen = false }: { defaultOpen?: boolean
               </div>
               <div>
                 <p className="text-sm font-semibold text-[var(--tss-navy)]">{s.title}</p>
-                <p className="text-xs text-gray-500 leading-relaxed mt-0.5">{s.body}</p>
+                <p className="text-xs text-[#55666E] leading-relaxed mt-0.5">{s.body}</p>
               </div>
             </div>
           ))}
 
-          <div className="flex gap-3 rounded-xl bg-amber-50 border border-amber-100 px-3 py-2.5">
+          <div className="flex gap-3 rounded-[5px] bg-amber-50 border border-amber-100 px-3 py-2.5">
             <ShieldQuestion size={15} className="text-amber-600 shrink-0 mt-0.5" />
             <p className="text-xs text-amber-900 leading-relaxed">
               <strong>“I already know their level.”</strong> Still send the intake — the quiz takes under a

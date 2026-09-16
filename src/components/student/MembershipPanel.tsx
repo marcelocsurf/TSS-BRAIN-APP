@@ -41,8 +41,8 @@ export function MembershipPanel({ studentId, info }: { studentId: string; info: 
     : `Activa · vence ${info.ends_at ? new Date(info.ends_at).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : ''} (${days} días)`;
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4">
-      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Membresía</p>
+    <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-2">Membresía</p>
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span className="text-[13px] font-semibold" style={{ color: tone }}>● {label}</span>
         {info.pending_request && (
@@ -58,32 +58,32 @@ export function MembershipPanel({ studentId, info }: { studentId: string; info: 
       {err && <p className="text-[11px] text-red-600 mt-1.5">{err}</p>}
 
       {/* Otorgar acceso al portal: membresía manual + link listo para enviar */}
-      <div className="mt-3 pt-3 border-t border-gray-50">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+      <div className="mt-3 pt-3 border-t border-[#DCD7C6]">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">
           {info.active ? 'Extender la herramienta de entrenamiento' : '🔑 Otorgar la herramienta de entrenamiento'}
         </p>
         <div className="flex items-center gap-1.5 flex-wrap">
           {[1, 3, 6, 12].map((m) => (
             <button key={m} onClick={() => grant(m)} disabled={pending}
-              className="text-[11px] font-bold px-3 py-1.5 rounded-full border border-gray-200 hover:border-gray-400 disabled:opacity-50 text-gray-700">
+              className="text-[11px] font-bold px-3 py-1.5 rounded-full border border-[#DCD7C6] hover:border-[#55666E] disabled:opacity-50 text-[#10263B]">
               +{m} {m === 1 ? 'mes' : 'meses'}
             </button>
           ))}
           <span className="inline-flex items-center gap-1">
             <input type="number" min={1} max={36} value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="N"
-              className="w-12 text-[11px] px-2 py-1.5 rounded-full border border-gray-200 text-center" />
+              className="w-12 text-[11px] px-2 py-1.5 rounded-full border border-[#DCD7C6] text-center" />
             <button type="button" disabled={pending || !(Number(custom) >= 1)} onClick={() => grant(Number(custom))}
-              className="text-[11px] font-bold px-2.5 py-1.5 rounded-full border border-gray-200 hover:border-gray-400 disabled:opacity-40 text-gray-700">
+              className="text-[11px] font-bold px-2.5 py-1.5 rounded-full border border-[#DCD7C6] hover:border-[#55666E] disabled:opacity-40 text-[#10263B]">
               + meses
             </button>
           </span>
-          <label className="inline-flex items-center gap-1 text-[10.5px] text-gray-500 ml-1 cursor-pointer">
+          <label className="inline-flex items-center gap-1 text-[10.5px] text-[#55666E] ml-1 cursor-pointer">
             <input type="checkbox" checked={gift} onChange={(e) => setGift(e.target.checked)} className="h-3 w-3" />
             🎁 regalo (sin cobro)
           </label>
         </div>
         {msg && <p className="text-[11px] font-semibold text-emerald-700 mt-1.5">{msg}</p>}
-        <p className="text-[10px] text-gray-400 mt-1">Al otorgar, el link del portal queda copiado para enviárselo. Sin membresía activa, el portal le muestra la pantalla de renovación.</p>
+        <p className="text-[10px] text-[#55666E] mt-1">Al otorgar, el link del portal queda copiado para enviárselo. Sin membresía activa, el portal le muestra la pantalla de renovación.</p>
       </div>
     </div>
   );

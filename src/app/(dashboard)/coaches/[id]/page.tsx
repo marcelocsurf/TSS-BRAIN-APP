@@ -133,7 +133,7 @@ export default async function CoachProfilePage({ params }: Props) {
       <div className="flex items-center gap-3">
         <Link
           href="/coaches"
-          className="text-gray-400 hover:text-gray-600 text-sm inline-flex items-center gap-1"
+          className="text-[#55666E] hover:text-[#55666E] text-sm inline-flex items-center gap-1"
         >
           <ArrowLeft size={14} strokeWidth={1.75} />
           Coaches
@@ -141,7 +141,7 @@ export default async function CoachProfilePage({ params }: Props) {
       </div>
 
       {/* HEADER SECTION */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             {/* Avatar — real photo if the coach uploaded one, else initials */}
@@ -175,15 +175,15 @@ export default async function CoachProfilePage({ params }: Props) {
                 {coach.display_name}
               </h2>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-[#55666E]">
                   Max Belt: {coach.max_belt_permission?.replace('_', ' ')}
                 </span>
               </div>
               {coach.email && (
-                <p className="text-xs text-gray-300 mt-1">{coach.email}</p>
+                <p className="text-xs text-[#B8B1A0] mt-1">{coach.email}</p>
               )}
               {coach.created_at && (
-                <p className="text-[11px] text-gray-300 mt-0.5">
+                <p className="text-[11px] text-[#B8B1A0] mt-0.5">
                   Member since {new Date(coach.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
               )}
@@ -210,7 +210,7 @@ export default async function CoachProfilePage({ params }: Props) {
               <Link
                 href={coach.portal_category === 'manager' ? `/manager-portal/${coach.portal_token}` : `/coach-portal/${coach.portal_token}`}
                 target="_blank"
-                className="px-3 py-2 bg-gray-50 text-[var(--tss-navy)] text-xs font-medium rounded-lg hover:bg-gray-100 inline-flex items-center gap-1"
+                className="px-3 py-2 bg-[#F7F9FA] text-[var(--tss-navy)] text-xs font-medium rounded-lg hover:bg-[#EDF3F5] inline-flex items-center gap-1"
                 title="Open this person's personal portal in a new tab"
               >
                 {coach.portal_category === 'manager' ? 'Open Manager Portal' : 'Open Coach Portal'}
@@ -223,14 +223,14 @@ export default async function CoachProfilePage({ params }: Props) {
           </div>
         </div>
         {coach.portal_token && (
-          <div className="mt-3 pt-3 border-t border-gray-50">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+          <div className="mt-3 pt-3 border-t border-[#DCD7C6]">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
               {coach.portal_category === 'manager' ? 'Manager Portal Link' : 'Coach Portal Link'}
             </p>
-            <code className="text-[10px] text-gray-600 break-all block bg-gray-50 px-2 py-1.5 rounded">
+            <code className="text-[10px] text-[#55666E] break-all block bg-[#F7F9FA] px-2 py-1.5 rounded">
               {coach.portal_category === 'manager' ? '/manager-portal/' : '/coach-portal/'}{coach.portal_token}
             </code>
-            <p className="text-[9px] text-gray-400 italic mt-1">
+            <p className="text-[9px] text-[#55666E] italic mt-1">
               {coach.portal_category === 'manager'
                 ? 'Share with the manager — read-only academy overview (sales, services, incidents, inventory).'
                 : 'Share with the coach so they can access their personal portal (courses + tools + their stats).'}
@@ -240,7 +240,7 @@ export default async function CoachProfilePage({ params }: Props) {
 
         {/* Course access toggle — only platform admin */}
         {isPlatformAdmin && (
-          <div className="mt-3 pt-3 border-t border-gray-50">
+          <div className="mt-3 pt-3 border-t border-[#DCD7C6]">
             <ToggleCourseAccess
               coachId={id}
               currentAccess={!!coach.course_access_granted}
@@ -278,11 +278,11 @@ export default async function CoachProfilePage({ params }: Props) {
           { label: 'Unique Students', value: stats.unique_students },
           { label: 'This Month', value: stats.sessions_this_month },
         ]).map(stat => (
-          <div key={stat.label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+          <div key={stat.label} className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 text-center">
             <p className="text-2xl font-bold text-[var(--tss-navy)]">{stat.value}</p>
             <p
-              className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
-              style={{ fontFamily: 'DM Mono, monospace' }}
+              className="text-[10px] uppercase tracking-wider text-[#55666E] mt-1"
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
             >
               {stat.label}
             </p>
@@ -291,7 +291,7 @@ export default async function CoachProfilePage({ params }: Props) {
       </div>
 
       {/* ONBOARDING STATUS */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-wrap items-center gap-3">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 flex flex-wrap items-center gap-3">
         {intakeDone ? (
           <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">
             <CheckCircle2 size={13} strokeWidth={2} /> Profile complete
@@ -302,7 +302,7 @@ export default async function CoachProfilePage({ params }: Props) {
           </span>
         )}
         {coach.waiver_signed ? (
-          <span className="text-[11px] text-gray-500">Waiver signed{coach.waiver_signed_at ? ` · ${String(coach.waiver_signed_at).slice(0, 10)}` : ''}</span>
+          <span className="text-[11px] text-[#55666E]">Waiver signed{coach.waiver_signed_at ? ` · ${String(coach.waiver_signed_at).slice(0, 10)}` : ''}</span>
         ) : (
           <span className="text-[11px] text-amber-700">Waiver not signed</span>
         )}
@@ -320,25 +320,25 @@ export default async function CoachProfilePage({ params }: Props) {
       {/* CONTACT + EMERGENCY */}
       {(coach.phone || coach.languages || coach.emergency_contact_name || coach.emergency_contact_phone) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Contact</p>
-            <div className="space-y-1.5 text-sm text-gray-700">
-              {coach.phone && <p className="flex items-center gap-2"><Phone size={13} className="text-gray-400" /> {coach.phone}</p>}
-              {coach.languages && <p className="flex items-center gap-2"><Languages size={13} className="text-gray-400" /> {coach.languages}</p>}
-              {coach.email && <p className="flex items-center gap-2"><ExternalLink size={13} className="text-gray-400" /> {coach.email}</p>}
-              {!coach.phone && !coach.languages && <p className="text-gray-400 italic text-xs">No contact info.</p>}
+          <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-2">Contact</p>
+            <div className="space-y-1.5 text-sm text-[#10263B]">
+              {coach.phone && <p className="flex items-center gap-2"><Phone size={13} className="text-[#55666E]" /> {coach.phone}</p>}
+              {coach.languages && <p className="flex items-center gap-2"><Languages size={13} className="text-[#55666E]" /> {coach.languages}</p>}
+              {coach.email && <p className="flex items-center gap-2"><ExternalLink size={13} className="text-[#55666E]" /> {coach.email}</p>}
+              {!coach.phone && !coach.languages && <p className="text-[#55666E] italic text-xs">No contact info.</p>}
             </div>
           </div>
           {canSeePrivate && (
-            <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-4">
+            <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-red-100 shadow-sm p-4">
               <p className="text-[10px] font-mono uppercase tracking-wider text-red-600 mb-2 flex items-center gap-1.5"><ShieldAlert size={12} /> Emergency contact</p>
               {coach.emergency_contact_name || coach.emergency_contact_phone ? (
                 <div className="text-sm text-[var(--tss-navy)]">
                   <p className="font-semibold">{coach.emergency_contact_name || '—'}</p>
-                  <p className="text-gray-700">{coach.emergency_contact_phone || '—'}</p>
+                  <p className="text-[#10263B]">{coach.emergency_contact_phone || '—'}</p>
                 </div>
               ) : (
-                <p className="text-gray-400 italic text-xs">Not on file — ask the coach to complete their profile.</p>
+                <p className="text-[#55666E] italic text-xs">Not on file — ask the coach to complete their profile.</p>
               )}
             </div>
           )}
@@ -347,48 +347,48 @@ export default async function CoachProfilePage({ params }: Props) {
 
       {/* MEDICAL / SAFETY — admin/coordinator only */}
       {canSeePrivate && (coach.allergies || coach.injuries || coach.medical_notes) && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><HeartPulse size={12} /> Medical / Safety</p>
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-2 flex items-center gap-1.5"><HeartPulse size={12} /> Medical / Safety</p>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
-            {coach.allergies && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Allergies</p><p className="text-gray-700">{coach.allergies}</p></div>}
-            {coach.injuries && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Injuries</p><p className="text-gray-700">{coach.injuries}</p></div>}
-            {coach.medical_notes && <div><p className="text-[10px] uppercase tracking-wider text-gray-400">Medical notes</p><p className="text-gray-700">{coach.medical_notes}</p></div>}
+            {coach.allergies && <div><p className="text-[10px] uppercase tracking-wider text-[#55666E]">Allergies</p><p className="text-[#10263B]">{coach.allergies}</p></div>}
+            {coach.injuries && <div><p className="text-[10px] uppercase tracking-wider text-[#55666E]">Injuries</p><p className="text-[#10263B]">{coach.injuries}</p></div>}
+            {coach.medical_notes && <div><p className="text-[10px] uppercase tracking-wider text-[#55666E]">Medical notes</p><p className="text-[#10263B]">{coach.medical_notes}</p></div>}
           </div>
         </div>
       )}
 
       {/* PROFESSIONAL BACKGROUND */}
       {(coach.years_coaching != null || coach.years_surfing != null || coach.specialty_area || coach.other_certifications || coach.bio_short) && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2 flex items-center gap-1.5"><Briefcase size={12} /> Background</p>
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-2 flex items-center gap-1.5"><Briefcase size={12} /> Background</p>
           <div className="flex flex-wrap gap-2 mb-2">
-            {coach.years_coaching != null && <span className="text-[11px] bg-gray-50 px-2 py-1 rounded-full text-gray-700">{coach.years_coaching} yrs coaching</span>}
-            {coach.years_surfing != null && <span className="text-[11px] bg-gray-50 px-2 py-1 rounded-full text-gray-700">{coach.years_surfing} yrs surfing</span>}
-            {coach.specialty_area && <span className="text-[11px] bg-gray-50 px-2 py-1 rounded-full text-gray-700">{coach.specialty_area}</span>}
+            {coach.years_coaching != null && <span className="text-[11px] bg-[#F7F9FA] px-2 py-1 rounded-full text-[#10263B]">{coach.years_coaching} yrs coaching</span>}
+            {coach.years_surfing != null && <span className="text-[11px] bg-[#F7F9FA] px-2 py-1 rounded-full text-[#10263B]">{coach.years_surfing} yrs surfing</span>}
+            {coach.specialty_area && <span className="text-[11px] bg-[#F7F9FA] px-2 py-1 rounded-full text-[#10263B]">{coach.specialty_area}</span>}
           </div>
-          {coach.other_certifications && <p className="text-[12px] text-gray-600"><span className="text-gray-400">Other certifications:</span> {coach.other_certifications}</p>}
-          {coach.bio_short && <p className="text-sm text-gray-700 mt-2 leading-relaxed">{coach.bio_short}</p>}
+          {coach.other_certifications && <p className="text-[12px] text-[#55666E]"><span className="text-[#55666E]">Other certifications:</span> {coach.other_certifications}</p>}
+          {coach.bio_short && <p className="text-sm text-[#10263B] mt-2 leading-relaxed">{coach.bio_short}</p>}
         </div>
       )}
 
       {/* SERVICES LED */}
       {services.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-3 border-b border-gray-100">
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+          <div className="px-5 py-3 border-b border-[#DCD7C6]">
             <h3 className="text-sm font-semibold text-[var(--tss-navy)] flex items-center gap-1.5"><Calendar size={14} /> Services led ({services.length})</h3>
           </div>
           <div className="divide-y divide-gray-50">
             {services.slice(0, 12).map((s) => (
-              <Link key={s.id} href={`/camps/${s.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-gray-50">
+              <Link key={s.id} href={`/camps/${s.id}`} className="flex items-center justify-between gap-3 px-5 py-3 hover:bg-[#F7F9FA]">
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-800 truncate">{s.camp_name || s.template_name || 'Service'}</p>
-                  <p className="text-[11px] text-gray-400">
+                  <p className="text-sm text-[#10263B] truncate">{s.camp_name || s.template_name || 'Service'}</p>
+                  <p className="text-[11px] text-[#55666E]">
                     {s.start_date ? String(s.start_date).slice(0, 10) : '—'}
                     {' · '}{s.participant_count} student{s.participant_count === 1 ? '' : 's'}
                     {' · '}{s.role === 'head_coach' ? 'Head coach' : 'Coach'}
                   </p>
                 </div>
-                <span className="text-[10px] uppercase tracking-wider text-gray-400 shrink-0">{s.status}</span>
+                <span className="text-[10px] uppercase tracking-wider text-[#55666E] shrink-0">{s.status}</span>
               </Link>
             ))}
           </div>
@@ -396,8 +396,8 @@ export default async function CoachProfilePage({ params }: Props) {
       )}
 
       {/* STAR RATING SECTION */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-[#DCD7C6]">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Student Ratings</h3>
         </div>
         <div className="px-5 py-4">
@@ -417,12 +417,12 @@ export default async function CoachProfilePage({ params }: Props) {
                       className={
                         star <= Math.round(ratingStats.avg_rating)
                           ? 'fill-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-cyan,#5AC3E7)]'
-                          : 'text-gray-200'
+                          : 'text-[#DCD7C6]'
                       }
                     />
                   ))}
                 </div>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-[#55666E] mt-1">
                   {ratingStats.total_ratings} review{ratingStats.total_ratings !== 1 ? 's' : ''}
                 </p>
               </div>
@@ -440,38 +440,38 @@ export default async function CoachProfilePage({ params }: Props) {
                     : 0;
                   return (
                     <div key={row.stars} className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 w-8 text-right inline-flex items-center justify-end gap-0.5">
+                      <span className="text-xs text-[#55666E] w-8 text-right inline-flex items-center justify-end gap-0.5">
                         {row.stars}
                         <Star size={10} strokeWidth={2} className="fill-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-cyan,#5AC3E7)]" />
                       </span>
-                      <div className="flex-1 bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                      <div className="flex-1 bg-[#EDF3F5] rounded-full h-2.5 overflow-hidden">
                         <div
                           className="bg-[var(--tss-cyan,#5AC3E7)] h-full rounded-full transition-all"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-400 w-6">{row.count}</span>
+                      <span className="text-xs text-[#55666E] w-6">{row.count}</span>
                     </div>
                   );
                 })}
               </div>
             </div>
           ) : (
-            <p className="text-xs text-gray-300 italic text-center py-4">No ratings yet.</p>
+            <p className="text-xs text-[#B8B1A0] italic text-center py-4">No ratings yet.</p>
           )}
 
           {/* Per-dimension averages — quick read of strengths/weaknesses */}
           {ratingStats.total_ratings > 0 && (dimAvg.safety != null || dimAvg.clarity != null || dimAvg.improvement != null || dimAvg.recommendPct != null) && (
-            <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 border-t border-gray-50 pt-4">
+            <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2 border-t border-[#DCD7C6] pt-4">
               {[
                 { label: 'Safety in the water', value: dimAvg.safety != null ? `${dimAvg.safety.toFixed(1)}/5` : '—' },
                 { label: 'Clarity', value: dimAvg.clarity != null ? `${dimAvg.clarity.toFixed(1)}/5` : '—' },
                 { label: 'Learned / progressed', value: dimAvg.improvement != null ? `${dimAvg.improvement.toFixed(1)}/5` : '—' },
                 { label: 'Would repeat', value: dimAvg.recommendPct != null ? `${dimAvg.recommendPct}%` : '—' },
               ].map((d) => (
-                <div key={d.label} className="rounded-xl bg-gray-50 px-3 py-2.5 text-center">
+                <div key={d.label} className="rounded-[5px] bg-[#F7F9FA] px-3 py-2.5 text-center">
                   <p className="text-lg font-bold leading-none text-[var(--tss-navy)]">{d.value}</p>
-                  <p className="mt-1.5 text-[9px] uppercase tracking-wider text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>{d.label}</p>
+                  <p className="mt-1.5 text-[9px] uppercase tracking-wider text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{d.label}</p>
                 </div>
               ))}
             </div>
@@ -480,8 +480,8 @@ export default async function CoachProfilePage({ params }: Props) {
       </div>
 
       {/* STUDENT FEEDBACK SECTION */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-100">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-[#DCD7C6]">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Student Feedback</h3>
         </div>
         <div className="divide-y divide-gray-50">
@@ -499,18 +499,18 @@ export default async function CoachProfilePage({ params }: Props) {
                           className={
                             star <= (fb.coach_rating || 0)
                               ? 'fill-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-cyan,#5AC3E7)]'
-                              : 'text-gray-200'
+                              : 'text-[#DCD7C6]'
                           }
                         />
                       ))}
                     </div>
                     {fb.student_first_name && (
-                      <span className="text-xs font-medium text-gray-600">
+                      <span className="text-xs font-medium text-[#55666E]">
                         {fb.student_first_name}
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] text-gray-300">
+                  <span className="text-[10px] text-[#B8B1A0]">
                     {new Date(fb.created_at).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
@@ -518,47 +518,47 @@ export default async function CoachProfilePage({ params }: Props) {
                     })}
                   </span>
                 </div>
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 mb-1" style={{ fontFamily: 'DM Mono, monospace' }}>
+                <p className="text-[10px] uppercase tracking-wider text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
                   Coach overall · {fb.coach_rating || 0}/5
                 </p>
                 {/* What the student actually rated — context for the stars */}
                 <div className="flex flex-wrap gap-1.5 mb-1.5">
                   {fb.feedback_clarity != null && (
-                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Clarity {fb.feedback_clarity}/5</span>
+                    <span className="text-[10px] bg-[#F7F9FA] text-[#55666E] px-2 py-0.5 rounded-full">Clarity {fb.feedback_clarity}/5</span>
                   )}
                   {fb.safety != null && (
-                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Safety {fb.safety}/5</span>
+                    <span className="text-[10px] bg-[#F7F9FA] text-[#55666E] px-2 py-0.5 rounded-full">Safety {fb.safety}/5</span>
                   )}
                   {fb.improvement_value != null && (
-                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Learned/improved {fb.improvement_value}/5</span>
+                    <span className="text-[10px] bg-[#F7F9FA] text-[#55666E] px-2 py-0.5 rounded-full">Learned/improved {fb.improvement_value}/5</span>
                   )}
                   {fb.recommend != null && (
-                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">Would repeat {fb.recommend}/5</span>
+                    <span className="text-[10px] bg-[#F7F9FA] text-[#55666E] px-2 py-0.5 rounded-full">Would repeat {fb.recommend}/5</span>
                   )}
                   {fb.flow_channel != null && (
-                    <span className="text-[10px] bg-gray-50 text-gray-600 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] bg-[#F7F9FA] text-[#55666E] px-2 py-0.5 rounded-full">
                       Class felt: {['Bored', 'Easy', 'Optimal', 'Hard', 'Frustrating'][fb.flow_channel - 1] ?? fb.flow_channel}
                     </span>
                   )}
                 </div>
                 {fb.open_comment && (
-                  <p className="text-xs text-gray-600 italic">“{fb.open_comment}”</p>
+                  <p className="text-xs text-[#55666E] italic">“{fb.open_comment}”</p>
                 )}
               </div>
             ))
           ) : (
             <div className="px-5 py-6 text-center">
-              <p className="text-xs text-gray-300 italic">No feedback yet.</p>
+              <p className="text-xs text-[#B8B1A0] italic">No feedback yet.</p>
             </div>
           )}
         </div>
       </div>
 
       {/* TEACHING RESOURCES SECTION */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-50">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-[#DCD7C6]">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Teaching Resources</h3>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-[#55666E] mt-0.5">
             Available based on certification level
           </p>
         </div>
@@ -568,7 +568,7 @@ export default async function CoachProfilePage({ params }: Props) {
               <div key={idx} className="px-5 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-[var(--tss-navy)]">{res.name}</p>
-                  <p className="text-xs text-gray-400">{res.description}</p>
+                  <p className="text-xs text-[#55666E]">{res.description}</p>
                 </div>
                 {res.url && res.url !== '#' ? (
                   <a
@@ -580,23 +580,23 @@ export default async function CoachProfilePage({ params }: Props) {
                     <span className="inline-flex items-center gap-0.5">Open <ArrowRight size={11} strokeWidth={1.75} /></span>
                   </a>
                 ) : (
-                  <span className="text-[10px] text-gray-300 flex-shrink-0">Coming soon</span>
+                  <span className="text-[10px] text-[#B8B1A0] flex-shrink-0">Coming soon</span>
                 )}
               </div>
             ))
           ) : (
             <div className="px-5 py-6 text-center">
-              <p className="text-xs text-gray-300 italic">No resources available.</p>
+              <p className="text-xs text-[#B8B1A0] italic">No resources available.</p>
             </div>
           )}
         </div>
       </div>
 
       {/* CERTIFICATIONS SECTION */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-50">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-[#DCD7C6]">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Certifications</h3>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-[#55666E] mt-0.5">
             {currentUserIsAdmin
               ? 'Only admin can grant or revoke certifications'
               : 'Active certifications for this coach'}
@@ -623,7 +623,7 @@ export default async function CoachProfilePage({ params }: Props) {
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-gray-300 italic text-center py-2">
+                <p className="text-xs text-[#B8B1A0] italic text-center py-2">
                   No certifications yet.
                 </p>
               )}
@@ -633,8 +633,8 @@ export default async function CoachProfilePage({ params }: Props) {
       </div>
 
       {/* EVALUATION HISTORY */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-50 flex items-center justify-between">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-[#DCD7C6] flex items-center justify-between">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Director Evaluations</h3>
           <Link
             href={`/coaches/${id}/evaluate`}
@@ -648,7 +648,7 @@ export default async function CoachProfilePage({ params }: Props) {
             evaluations.map(ev => (
               <div key={ev.id} className="px-5 py-4">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-[#55666E]">
                     {new Date(ev.evaluation_date).toLocaleDateString('en-US', {
                       month: 'long',
                       day: 'numeric',
@@ -682,33 +682,33 @@ export default async function CoachProfilePage({ params }: Props) {
                         }`}
                       >
                         {s.value}
-                        <span className="text-xs text-gray-300">/10</span>
+                        <span className="text-xs text-[#B8B1A0]">/10</span>
                       </p>
-                      <p className="text-[10px] text-gray-400">{s.label}</p>
+                      <p className="text-[10px] text-[#55666E]">{s.label}</p>
                     </div>
                   ))}
                 </div>
                 {ev.strengths && (
-                  <p className="text-xs text-gray-600 mb-1">
+                  <p className="text-xs text-[#55666E] mb-1">
                     <span className="font-medium">Strengths:</span> {ev.strengths}
                   </p>
                 )}
                 {ev.areas_to_improve && (
-                  <p className="text-xs text-gray-600 mb-1">
+                  <p className="text-xs text-[#55666E] mb-1">
                     <span className="font-medium">Improve:</span> {ev.areas_to_improve}
                   </p>
                 )}
                 {ev.director_notes && (
                   <div className="bg-red-50 rounded-lg px-3 py-2 mt-2">
                     <p className="text-xs text-red-400 font-medium mb-0.5">Director Notes</p>
-                    <p className="text-xs text-gray-700">{ev.director_notes}</p>
+                    <p className="text-xs text-[#10263B]">{ev.director_notes}</p>
                   </div>
                 )}
               </div>
             ))
           ) : (
             <div className="px-5 py-6 text-center">
-              <p className="text-xs text-gray-300 italic">No evaluations yet.</p>
+              <p className="text-xs text-[#B8B1A0] italic">No evaluations yet.</p>
               <Link
                 href={`/coaches/${id}/evaluate`}
                 className="mt-2 inline-block text-xs text-[var(--tss-cyan,#5AC3E7)] hover:underline"
@@ -721,8 +721,8 @@ export default async function CoachProfilePage({ params }: Props) {
       </div>
 
       {/* RECENT SESSIONS */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-50">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
+        <div className="px-5 py-3 border-b border-[#DCD7C6]">
           <h3 className="text-sm font-semibold text-[var(--tss-navy)]">Recent Sessions</h3>
         </div>
         <div className="divide-y divide-gray-50">
@@ -731,7 +731,7 @@ export default async function CoachProfilePage({ params }: Props) {
               <div key={s.id} className="px-5 py-3 flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <p className="text-sm text-gray-700">
+                    <p className="text-sm text-[#10263B]">
                       {s.student_name || 'Unknown Student'}
                     </p>
                     <span
@@ -740,14 +740,14 @@ export default async function CoachProfilePage({ params }: Props) {
                           ? 'bg-blue-50 text-blue-500'
                           : s.source === 'camp'
                             ? 'bg-cyan-50 text-cyan-600'
-                            : 'bg-gray-50 text-gray-400'
+                            : 'bg-[#F7F9FA] text-[#55666E]'
                       }`}
                     >
                       {s.source === 'cascade' ? 'Cascade' : s.source === 'camp' ? 'Camp' : 'Standalone'}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-[#55666E]">
                       {new Date(s.session_date).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
@@ -756,14 +756,14 @@ export default async function CoachProfilePage({ params }: Props) {
                     </p>
                     {s.pilar && (
                       <>
-                        <span className="text-gray-200">&middot;</span>
-                        <span className="text-xs text-gray-400">{s.pilar}</span>
+                        <span className="text-[#DCD7C6]">&middot;</span>
+                        <span className="text-xs text-[#55666E]">{s.pilar}</span>
                       </>
                     )}
                     {s.status && (
                       <>
-                        <span className="text-gray-200">&middot;</span>
-                        <span className="text-xs text-gray-400">{s.status}</span>
+                        <span className="text-[#DCD7C6]">&middot;</span>
+                        <span className="text-xs text-[#55666E]">{s.status}</span>
                       </>
                     )}
                   </div>
@@ -772,7 +772,7 @@ export default async function CoachProfilePage({ params }: Props) {
             ))
           ) : (
             <div className="px-5 py-6 text-center">
-              <p className="text-xs text-gray-300 italic">No sessions recorded yet.</p>
+              <p className="text-xs text-[#B8B1A0] italic">No sessions recorded yet.</p>
             </div>
           )}
         </div>

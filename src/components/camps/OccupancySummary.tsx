@@ -92,11 +92,11 @@ export function OccupancySummary({ camps, anchor }: { camps: any[]; anchor?: str
   ];
 
   return (
-    <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+    <div className="mb-5 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4 shadow-sm">
       <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
           Occupancy · {shown.length} service{shown.length === 1 ? '' : 's'}
-          <span className="text-gray-300"> · {humanRange(ref, period)}</span>
+          <span className="text-[#B8B1A0]"> · {humanRange(ref, period)}</span>
         </p>
         <p className="text-[11px] font-semibold" style={{ color: m.occupancy >= 80 ? '#059669' : m.occupancy >= 40 ? '#D97706' : '#6B7280' }}>
           {m.occupancy}% full
@@ -111,7 +111,7 @@ export function OccupancySummary({ camps, anchor }: { camps: any[]; anchor?: str
             key={p}
             onClick={() => setPeriod(p)}
             className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors ${
-              period === p ? 'bg-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-navy)] border-[var(--tss-cyan,#5AC3E7)]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+              period === p ? 'bg-[var(--tss-cyan,#5AC3E7)] text-[var(--tss-navy)] border-[var(--tss-cyan,#5AC3E7)]' : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6] hover:border-[#DCD7C6]'
             }`}
           >
             {PERIOD_LABEL[p]}
@@ -127,7 +127,7 @@ export function OccupancySummary({ camps, anchor }: { camps: any[]; anchor?: str
               key={k}
               onClick={() => setFilter(k)}
               className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
-                filter === k ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                filter === k ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6] hover:border-[#DCD7C6]'
               }`}
             >
               {k === 'all' ? 'All' : labelFor(k)}
@@ -136,25 +136,25 @@ export function OccupancySummary({ camps, anchor }: { camps: any[]; anchor?: str
         </div>
       )}
 
-      <div className="h-2.5 rounded-full overflow-hidden bg-gray-100 flex mb-3">
+      <div className="h-2.5 rounded-full overflow-hidden bg-[#EDF3F5] flex mb-3">
         <div style={{ width: m.spots ? `${(m.sold / m.spots) * 100}%` : '0%', background: '#059669' }} />
         <div style={{ width: m.spots ? `${(m.reserved / m.spots) * 100}%` : '0%', background: '#F59E0B' }} />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {stats.map((s) => (
-          <div key={s.label} className="rounded-xl bg-gray-50 px-3 py-2.5">
+          <div key={s.label} className="rounded-[5px] bg-[#F7F9FA] px-3 py-2.5">
             <p className="text-xl font-bold leading-none" style={{ color: s.accent }}>{s.value}</p>
-            <p className="text-[9px] uppercase tracking-wider text-gray-400 mt-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>{s.label}</p>
+            <p className="text-[9px] uppercase tracking-wider text-[#55666E] mt-1.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{s.label}</p>
           </div>
         ))}
       </div>
 
       {(m.soldCents > 0 || m.reservedCents > 0) && (
-        <p className="text-[11px] text-gray-500 mt-3">
+        <p className="text-[11px] text-[#55666E] mt-3">
           <span className="font-semibold text-emerald-700">{money(m.soldCents)}</span> collected
           {m.reservedCents > 0 && <> · <span className="font-semibold text-amber-700">{money(m.reservedCents)}</span> reserved (unpaid)</>}
-          {' · '}<span className="text-gray-400">{money(m.soldCents + m.reservedCents)} committed</span>
+          {' · '}<span className="text-[#55666E]">{money(m.soldCents + m.reservedCents)} committed</span>
         </p>
       )}
     </div>

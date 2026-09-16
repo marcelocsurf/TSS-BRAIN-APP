@@ -12,7 +12,7 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   open: { label: 'Abierta', cls: 'text-amber-700 bg-amber-50 border-amber-200' },
   ordered: { label: 'Pedida', cls: 'text-blue-700 bg-blue-50 border-blue-200' },
   received: { label: 'Recibida', cls: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-  cancelled: { label: 'Cancelada', cls: 'text-gray-500 bg-gray-50 border-gray-200' },
+  cancelled: { label: 'Cancelada', cls: 'text-[#55666E] bg-[#F7F9FA] border-[#DCD7C6]' },
 };
 
 function fmtDate(d: string) {
@@ -40,7 +40,7 @@ export function RequisitionsPanel() {
   }
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5">
+    <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-5">
       <h2 className="inline-flex items-center gap-2 text-sm font-bold text-[var(--tss-navy)] mb-3">
         <ClipboardList size={16} className="text-[var(--tss-cyan,#5AC3E7)]" /> Requisiciones de compra
         <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">{active.length}</span>
@@ -51,15 +51,15 @@ export function RequisitionsPanel() {
           const isOpen = openId === r.id;
           const st = STATUS[r.status] ?? STATUS.open;
           return (
-            <li key={r.id} className="rounded-xl border border-gray-200">
+            <li key={r.id} className="rounded-[5px] border border-[#DCD7C6]">
               <div className="flex flex-wrap items-center justify-between gap-2 p-3">
                 <button type="button" onClick={() => setOpenId(isOpen ? null : r.id)} className="min-w-0 text-left flex items-center gap-2">
-                  <ChevronDown size={14} className={`text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={14} className={`text-[#55666E] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                   <span className="min-w-0">
                     <span className="block text-sm font-semibold text-[var(--tss-navy)]">
                       {r.items.length} ítem{r.items.length === 1 ? '' : 's'} · {fmtDate(r.created_at)}
                     </span>
-                    <span className="block text-[11px] text-gray-500">{r.created_by_name || 'Coordinador'}</span>
+                    <span className="block text-[11px] text-[#55666E]">{r.created_by_name || 'Coordinador'}</span>
                   </span>
                 </button>
                 <div className="flex items-center gap-1.5 shrink-0">
@@ -68,17 +68,17 @@ export function RequisitionsPanel() {
                     href={`/inventory/requisition/${r.id}`}
                     target="_blank"
                     rel="noopener"
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-1 rounded-lg border border-[#DCD7C6] text-[#55666E] hover:bg-[#F7F9FA]"
                     title="Ver / imprimir PDF"
                   ><FileDown size={12} /> PDF</a>
                 </div>
               </div>
 
               {isOpen && (
-                <div className="border-t border-gray-100 px-3 py-2.5">
+                <div className="border-t border-[#DCD7C6] px-3 py-2.5">
                   <table className="w-full text-[12px]">
                     <thead>
-                      <tr className="text-[12px] uppercase tracking-wider text-gray-400 text-left">
+                      <tr className="text-[12px] uppercase tracking-wider text-[#55666E] text-left">
                         <th className="py-1 font-mono">Ítem</th>
                         <th className="py-1 font-mono text-center">Stock</th>
                         <th className="py-1 font-mono text-center">Mín</th>
@@ -87,16 +87,16 @@ export function RequisitionsPanel() {
                     </thead>
                     <tbody>
                       {r.items.map((it, i) => (
-                        <tr key={i} className="border-t border-gray-50">
-                          <td className="py-1.5 text-gray-800">{it.name}{it.unit ? <span className="text-gray-400"> · {it.unit}</span> : ''}</td>
+                        <tr key={i} className="border-t border-[#DCD7C6]">
+                          <td className="py-1.5 text-[#10263B]">{it.name}{it.unit ? <span className="text-[#55666E]"> · {it.unit}</span> : ''}</td>
                           <td className="py-1.5 text-center text-red-600 font-semibold">{it.in_stock}</td>
-                          <td className="py-1.5 text-center text-gray-500">{it.minimum}</td>
+                          <td className="py-1.5 text-center text-[#55666E]">{it.minimum}</td>
                           <td className="py-1.5 text-center font-bold text-[var(--tss-navy)]">{it.needed}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  {r.note && <p className="mt-2 text-[11px] text-gray-500 italic">Nota: {r.note}</p>}
+                  {r.note && <p className="mt-2 text-[11px] text-[#55666E] italic">Nota: {r.note}</p>}
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {r.status === 'open' && (
                       <button onClick={() => mark(r.id, 'ordered')} disabled={pending} className="inline-flex items-center gap-1 text-[12px] font-bold px-2.5 py-1.5 rounded-lg bg-blue-600 text-white disabled:opacity-50">
@@ -106,7 +106,7 @@ export function RequisitionsPanel() {
                     <button onClick={() => mark(r.id, 'received')} disabled={pending} className="inline-flex items-center gap-1 text-[12px] font-bold px-2.5 py-1.5 rounded-lg bg-emerald-500 text-white disabled:opacity-50">
                       <Check size={13} /> Recibida
                     </button>
-                    <button onClick={() => mark(r.id, 'cancelled')} disabled={pending} className="inline-flex items-center gap-1 text-[12px] font-semibold px-2.5 py-1.5 rounded-lg bg-white border border-gray-200 text-red-600 disabled:opacity-50">
+                    <button onClick={() => mark(r.id, 'cancelled')} disabled={pending} className="inline-flex items-center gap-1 text-[12px] font-semibold px-2.5 py-1.5 rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] text-red-600 disabled:opacity-50">
                       <X size={13} /> Cancelar
                     </button>
                   </div>

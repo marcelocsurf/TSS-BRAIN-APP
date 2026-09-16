@@ -111,7 +111,7 @@ export function StudentFilters() {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-xl border border-[var(--tss-gray-200)] bg-white text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)] transition-all"
+        className="flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-[5px] border border-[var(--tss-gray-200)] bg-[#F7F9FA] text-[var(--tss-gray-700)] hover:border-[var(--tss-gray-300)] transition-all"
         style={{ fontFamily: 'var(--font-mono)' }}
       >
         <svg
@@ -132,7 +132,7 @@ export function StudentFilters() {
 
       {/* Filter panel */}
       {open && (
-        <div className="mt-3 p-4 bg-white border border-[var(--tss-gray-100)] rounded-xl shadow-sm">
+        <div className="mt-3 p-4 bg-[#F7F9FA] border border-[var(--tss-gray-100)] rounded-[5px] shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-medium text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-mono)' }}>
               ADVANCED FILTERS
@@ -235,7 +235,7 @@ function FilterSelect({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`w-full px-2.5 py-1.5 text-xs border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent transition-all ${
+        className={`w-full px-2.5 py-1.5 text-xs border rounded-[5px] bg-[#F7F9FA] focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent transition-all ${
           value
             ? 'border-[var(--tss-cyan)] text-[var(--tss-navy)]'
             : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)]'
@@ -284,7 +284,7 @@ function FilterInput({
         value={local}
         placeholder={placeholder}
         onChange={(e) => handleChange(e.target.value)}
-        className={`w-full px-2.5 py-1.5 text-xs border rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent transition-all ${
+        className={`w-full px-2.5 py-1.5 text-xs border rounded-[5px] bg-[#F7F9FA] focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent transition-all ${
           local
             ? 'border-[var(--tss-cyan)] text-[var(--tss-navy)]'
             : 'border-[var(--tss-gray-200)] text-[var(--tss-gray-700)]'

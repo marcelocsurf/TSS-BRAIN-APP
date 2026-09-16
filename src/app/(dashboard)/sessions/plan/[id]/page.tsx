@@ -17,7 +17,7 @@ export default async function PlanSessionPage({ params }: Props) {
       <div className="max-w-2xl mx-auto px-4 pt-4">
         <Link
           href={`/students/${data.session.student_id}`}
-          className="text-xs text-gray-500 hover:text-[var(--tss-navy)]"
+          className="text-xs text-[#55666E] hover:text-[var(--tss-navy)]"
         >
           ← Back to student
         </Link>

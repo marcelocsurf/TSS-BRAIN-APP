@@ -130,7 +130,7 @@ export default async function EditCampTemplatePage({ params }: Props) {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Link href="/camps/templates" className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1 mb-3">
+      <Link href="/camps/templates" className="text-sm text-[#55666E] hover:text-[#10263B] inline-flex items-center gap-1 mb-3">
         <ArrowLeft size={14} strokeWidth={1.75} />
         Templates
       </Link>
@@ -142,9 +142,9 @@ export default async function EditCampTemplatePage({ params }: Props) {
           >
             Edit Template
           </h2>
-          <p className="text-xs text-gray-500 mt-1">{template.template_name}</p>
+          <p className="text-xs text-[#55666E] mt-1">{template.template_name}</p>
         </div>
-        <Link href="/camps/templates" className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href="/camps/templates" className="text-sm text-[#55666E] hover:text-[#10263B]">
           Cancel
         </Link>
       </div>

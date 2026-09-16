@@ -32,7 +32,7 @@ export default async function AnalyticsPage() {
       <header className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-[var(--tss-navy)]">Analytics</h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-[#55666E] mt-1">
             Platform-wide student + engagement metrics
           </p>
         </div>
@@ -73,7 +73,7 @@ export default async function AnalyticsPage() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Belt distribution */}
-        <section className="bg-white rounded-2xl border border-gray-100 p-5">
+        <section className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] p-5">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp size={18} className="text-[var(--tss-navy)]" />
             <h2 className="text-sm font-semibold text-[var(--tss-navy)]">
@@ -81,7 +81,7 @@ export default async function AnalyticsPage() {
             </h2>
           </div>
           {data.beltDistribution.length === 0 ? (
-            <p className="text-xs text-gray-400">No students yet.</p>
+            <p className="text-xs text-[#55666E]">No students yet.</p>
           ) : (
             <div className="space-y-2.5">
               {data.beltDistribution.map((b) => {
@@ -97,16 +97,16 @@ export default async function AnalyticsPage() {
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: color }}
                         />
-                        <span className="text-sm text-gray-700">{label}</span>
+                        <span className="text-sm text-[#10263B]">{label}</span>
                       </div>
                       <span
-                        className="text-xs text-gray-500 tabular-nums"
+                        className="text-xs text-[#55666E] tabular-nums"
                         style={{ fontFamily: 'var(--font-mono)' }}
                       >
                         {b.count}
                       </span>
                     </div>
-                    <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 bg-[#EDF3F5] rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full"
                         style={{
@@ -124,7 +124,7 @@ export default async function AnalyticsPage() {
         </section>
 
         {/* Top students */}
-        <section className="bg-white rounded-2xl border border-gray-100 p-5">
+        <section className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] p-5">
           <div className="flex items-center gap-2 mb-4">
             <Trophy size={18} className="text-[var(--tss-navy)]" />
             <h2 className="text-sm font-semibold text-[var(--tss-navy)]">
@@ -132,7 +132,7 @@ export default async function AnalyticsPage() {
             </h2>
           </div>
           {data.topStudents.length === 0 ? (
-            <p className="text-xs text-gray-400">No sessions yet this period.</p>
+            <p className="text-xs text-[#55666E]">No sessions yet this period.</p>
           ) : (
             <div className="divide-y divide-gray-50">
               {data.topStudents.map((s, idx) => {
@@ -141,11 +141,11 @@ export default async function AnalyticsPage() {
                   <Link
                     key={s.id}
                     href={`/students/${s.id}`}
-                    className="flex items-center justify-between py-2 hover:bg-gray-50 -mx-2 px-2 rounded-lg"
+                    className="flex items-center justify-between py-2 hover:bg-[#F7F9FA] -mx-2 px-2 rounded-lg"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <span
-                        className="text-xs text-gray-400 tabular-nums w-5"
+                        className="text-xs text-[#55666E] tabular-nums w-5"
                         style={{ fontFamily: 'var(--font-mono)' }}
                       >
                         {idx + 1}
@@ -155,8 +155,8 @@ export default async function AnalyticsPage() {
                         style={{ backgroundColor: display?.color || '#9CA3AF' }}
                       />
                       <div className="min-w-0">
-                        <p className="text-sm text-gray-800 truncate">{s.name}</p>
-                        <p className="text-[11px] text-gray-400 truncate">
+                        <p className="text-sm text-[#10263B] truncate">{s.name}</p>
+                        <p className="text-[11px] text-[#55666E] truncate">
                           {s.academy_name || 'No academy'}
                         </p>
                       </div>
@@ -176,8 +176,8 @@ export default async function AnalyticsPage() {
       </div>
 
       {/* Per academy */}
-      <section className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+      <section className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] overflow-hidden">
+        <div className="px-5 py-4 border-b border-[#DCD7C6] flex items-center gap-2">
           <Building2 size={18} className="text-[var(--tss-navy)]" />
           <h2 className="text-sm font-semibold text-[var(--tss-navy)]">
             Per academy breakdown
@@ -185,7 +185,7 @@ export default async function AnalyticsPage() {
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-[#F7F9FA]">
               <tr className="text-left">
                 <Th>Academy</Th>
                 <Th align="right">Total</Th>
@@ -202,7 +202,7 @@ export default async function AnalyticsPage() {
                 return (
                   <tr key={a.academy_id || 'direct'}>
                     <Td>
-                      <span className="font-medium text-gray-800">{a.academy_name}</span>
+                      <span className="font-medium text-[#10263B]">{a.academy_name}</span>
                     </Td>
                     <Td align="right" mono>{a.total}</Td>
                     <Td align="right" mono>{a.members}</Td>
@@ -216,7 +216,7 @@ export default async function AnalyticsPage() {
                             ? 'text-emerald-600'
                             : engagement >= 25
                             ? 'text-amber-600'
-                            : 'text-gray-400'
+                            : 'text-[#55666E]'
                         }`}
                       >
                         {engagement}%
@@ -227,7 +227,7 @@ export default async function AnalyticsPage() {
               })}
               {data.perAcademy.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center py-6 text-xs text-gray-400">
+                  <td colSpan={7} className="text-center py-6 text-xs text-[#55666E]">
                     No data
                   </td>
                 </tr>
@@ -237,7 +237,7 @@ export default async function AnalyticsPage() {
         </div>
       </section>
 
-      <p className="text-[11px] text-gray-400 text-center">
+      <p className="text-[11px] text-[#55666E] text-center">
         All-time sessions: {t.sessionsAllTime.toLocaleString()} · Data refreshes on each page load
       </p>
     </div>
@@ -264,7 +264,7 @@ function StatCard({
     amber: 'bg-amber-50 text-amber-900 border border-amber-200',
   };
   return (
-    <div className={`rounded-2xl p-4 ${tones[tone]}`}>
+    <div className={`rounded-lg p-4 ${tones[tone]}`}>
       <div className="flex items-center justify-between mb-2">
         <Icon size={18} className="opacity-80" />
         <span
@@ -288,7 +288,7 @@ function StatCard({
 function Th({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
   return (
     <th
-      className={`px-4 py-2.5 text-[10px] uppercase tracking-wider text-gray-500 font-semibold ${
+      className={`px-4 py-2.5 text-[10px] uppercase tracking-wider text-[#55666E] font-semibold ${
         align === 'right' ? 'text-right' : 'text-left'
       }`}
       style={{ fontFamily: 'var(--font-mono)' }}

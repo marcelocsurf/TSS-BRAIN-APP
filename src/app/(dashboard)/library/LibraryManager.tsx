@@ -57,7 +57,7 @@ export function LibraryManager({ initial }: { initial: LibraryOverview }) {
         <button
           type="button"
           onClick={() => setShowAdd(true)}
-          className="w-full rounded-2xl border-2 border-dashed border-gray-300 py-3.5 text-sm font-semibold text-gray-500 hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] transition-colors inline-flex items-center justify-center gap-1.5"
+          className="w-full rounded-lg border-2 border-dashed border-[#DCD7C6] py-3.5 text-sm font-semibold text-[#55666E] hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] transition-colors inline-flex items-center justify-center gap-1.5"
         >
           <Plus size={16} /> Add to the library — PDF, video or link
         </button>
@@ -65,7 +65,7 @@ export function LibraryManager({ initial }: { initial: LibraryOverview }) {
 
       {/* ── Items ── */}
       {items.length === 0 && (
-        <p className="text-sm text-gray-400 text-center py-8">Nothing in the library yet — add your first item above.</p>
+        <p className="text-sm text-[#55666E] text-center py-8">Nothing in the library yet — add your first item above.</p>
       )}
       {items.map((it) => (
         <ItemCard
@@ -108,10 +108,10 @@ function AddItemPanel({ pending, onAddPdf, onAddLink, onCancel }: {
   };
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm space-y-3">
+    <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-4 shadow-sm space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm font-bold text-[var(--tss-navy)]">New library item</p>
-        <button type="button" onClick={onCancel} className="text-xs text-gray-400 hover:text-[var(--tss-navy)]">Cancel</button>
+        <button type="button" onClick={onCancel} className="text-xs text-[#55666E] hover:text-[var(--tss-navy)]">Cancel</button>
       </div>
       <div className="flex gap-1.5">
         {(['pdf', 'video', 'link'] as const).map((m) => {
@@ -121,8 +121,8 @@ function AddItemPanel({ pending, onAddPdf, onAddLink, onCancel }: {
               key={m}
               type="button"
               onClick={() => setMode(m)}
-              className={`flex-1 py-2 rounded-xl text-xs font-semibold border transition-all inline-flex items-center justify-center gap-1.5 ${
-                mode === m ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'bg-white text-gray-600 border-gray-200'
+              className={`flex-1 py-2 rounded-[5px] text-xs font-semibold border transition-all inline-flex items-center justify-center gap-1.5 ${
+                mode === m ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6]'
               }`}
             >
               <meta.Icon size={13} /> {meta.label}
@@ -130,16 +130,16 @@ function AddItemPanel({ pending, onAddPdf, onAddLink, onCancel }: {
           );
         })}
       </div>
-      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-      <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description (optional)" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+      <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
+      <input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description (optional)" className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
       {mode === 'pdf' ? (
-        <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="w-full text-sm text-gray-600" />
+        <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className="w-full text-sm text-[#55666E]" />
       ) : (
-        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={mode === 'video' ? 'Video URL (YouTube, Vimeo, Drive…)' : 'https://…'} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+        <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder={mode === 'video' ? 'Video URL (YouTube, Vimeo, Drive…)' : 'https://…'} className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
       )}
       {/* Who is this for? Grants outside the audience are refused server-side. */}
       <div>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">Who is this for?</p>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">Who is this for?</p>
         <div className="flex gap-1.5">
           {([
             { v: 'both', label: 'Everyone' },
@@ -151,7 +151,7 @@ function AddItemPanel({ pending, onAddPdf, onAddLink, onCancel }: {
               type="button"
               onClick={() => setAudience(o.v)}
               className={`flex-1 py-1.5 rounded-lg text-[11px] font-semibold border transition-all ${
-                audience === o.v ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'bg-white text-gray-600 border-gray-200'
+                audience === o.v ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]' : 'bg-[#F7F9FA] text-[#55666E] border-[#DCD7C6]'
               }`}
             >
               {o.label}
@@ -163,7 +163,7 @@ function AddItemPanel({ pending, onAddPdf, onAddLink, onCancel }: {
         type="button"
         disabled={pending}
         onClick={submit}
-        className="w-full py-2.5 rounded-xl bg-[var(--tss-navy)] text-white text-sm font-semibold disabled:opacity-50"
+        className="w-full py-2.5 rounded-[5px] bg-[var(--tss-navy)] text-white text-sm font-semibold disabled:opacity-50"
       >
         {pending ? 'Saving…' : 'Add to library'}
       </button>
@@ -183,9 +183,9 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
   const meta = KIND_META[item.kind] ?? KIND_META.link;
 
   return (
-    <div className={`rounded-2xl border bg-white shadow-sm overflow-hidden ${item.active ? 'border-gray-100' : 'border-gray-200 opacity-60'}`}>
+    <div className={`rounded-lg border bg-[#F7F9FA] shadow-sm overflow-hidden ${item.active ? 'border-[#DCD7C6]' : 'border-[#DCD7C6] opacity-60'}`}>
       <div className="p-4 flex items-start gap-3">
-        <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${meta.tint}14`, color: meta.tint }}>
+        <span className="w-10 h-10 rounded-[5px] flex items-center justify-center shrink-0" style={{ background: `${meta.tint}14`, color: meta.tint }}>
           <meta.Icon size={18} strokeWidth={1.75} />
         </span>
         <div className="min-w-0 flex-1">
@@ -201,10 +201,10 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
             <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: `${meta.tint}14`, color: meta.tint }}>{meta.label}</span>
             {item.audience === 'coaches' && <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600">Coaches only</span>}
             {item.audience === 'students' && <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-sky-50 text-sky-600">Students only</span>}
-            {!item.active && <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">Archived</span>}
+            {!item.active && <span className="text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#EDF3F5] text-[#55666E]">Archived</span>}
           </div>
-          {item.description && <p className="text-[11px] text-gray-500 leading-snug mt-0.5">{item.description}</p>}
-          <p className="text-[11px] text-gray-400 mt-1">
+          {item.description && <p className="text-[11px] text-[#55666E] leading-snug mt-0.5">{item.description}</p>}
+          <p className="text-[11px] text-[#55666E] mt-1">
             <Users size={11} className="inline -mt-0.5 mr-1" />
             {item.coachIds.length} coach{item.coachIds.length === 1 ? '' : 'es'} · {item.studentIds.length} student{item.studentIds.length === 1 ? '' : 's'}
           </p>
@@ -227,10 +227,10 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
                 else router.refresh();
               });
             }}
-            className="w-12 px-1.5 py-1 border border-gray-200 rounded-lg text-xs text-center"
+            className="w-12 px-1.5 py-1 border border-[#DCD7C6] rounded-lg text-xs text-center"
           />
           {item.open_url && (
-            <a href={item.open_url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg text-gray-400 hover:bg-gray-100" title="Open">
+            <a href={item.open_url} target="_blank" rel="noopener noreferrer" className="p-2 rounded-lg text-[#55666E] hover:bg-[#EDF3F5]" title="Open">
               <ExternalLink size={15} />
             </a>
           )}
@@ -242,7 +242,7 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
               if (!r.ok) { alert(r.error); return; }
               onLocal({ active: !item.active });
             })}
-            className="p-2 rounded-lg text-gray-400 hover:bg-gray-100"
+            className="p-2 rounded-lg text-[#55666E] hover:bg-[#EDF3F5]"
             title={item.active ? 'Archive' : 'Restore'}
           >
             {item.active ? <Archive size={15} /> : <ArchiveRestore size={15} />}
@@ -258,7 +258,7 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
                 onRemove();
               });
             }}
-            className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50"
+            className="p-2 rounded-lg text-[#55666E] hover:text-red-500 hover:bg-red-50"
             title="Delete"
           >
             <Trash2 size={15} />
@@ -269,14 +269,14 @@ function ItemCard({ item, roster, onLocal, onRemove }: {
       <button
         type="button"
         onClick={() => setShowGrants(!showGrants)}
-        className="w-full px-4 py-2.5 border-t border-gray-50 flex items-center justify-between text-[11px] font-semibold text-[var(--tss-navy)]"
+        className="w-full px-4 py-2.5 border-t border-[#DCD7C6] flex items-center justify-between text-[11px] font-semibold text-[var(--tss-navy)]"
       >
         <span>Manage access</span>
-        <ChevronDown size={14} className={`text-gray-400 transition ${showGrants ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`text-[#55666E] transition ${showGrants ? 'rotate-180' : ''}`} />
       </button>
 
       {showGrants && (
-        <div className={`px-4 pb-4 grid gap-4 border-t border-gray-50 pt-3 ${item.audience === 'both' ? 'sm:grid-cols-2' : ''}`}>
+        <div className={`px-4 pb-4 grid gap-4 border-t border-[#DCD7C6] pt-3 ${item.audience === 'both' ? 'sm:grid-cols-2' : ''}`}>
           {item.audience !== 'students' && (
           <GrantColumn
             label="Coaches"
@@ -336,14 +336,14 @@ function GrantColumn({ label, people, grantedIds, onToggle, onAll, pending }: {
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{label} · {grantedIds.length}/{people.length}</p>
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">{label} · {grantedIds.length}/{people.length}</p>
         <button type="button" disabled={pending} onClick={onAll} className="text-[10px] font-semibold text-[var(--tss-navy)] underline underline-offset-2 disabled:opacity-50">
           Grant all
         </button>
       </div>
       <div className="relative mb-1.5">
-        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-300" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${label.toLowerCase()}…`} className="w-full pl-7 pr-2 py-1.5 border border-gray-200 rounded-lg text-xs" />
+        <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#B8B1A0]" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${label.toLowerCase()}…`} className="w-full pl-7 pr-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs" />
       </div>
       <div className="max-h-44 overflow-y-auto space-y-0.5 pr-1">
         {filtered.map((p) => {
@@ -354,16 +354,16 @@ function GrantColumn({ label, people, grantedIds, onToggle, onAll, pending }: {
               type="button"
               disabled={pending}
               onClick={() => onToggle(p.id, !on)}
-              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-colors ${on ? 'bg-emerald-50 text-emerald-800' : 'hover:bg-gray-50 text-gray-700'}`}
+              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs transition-colors ${on ? 'bg-emerald-50 text-emerald-800' : 'hover:bg-[#F7F9FA] text-[#10263B]'}`}
             >
-              <span className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${on ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300'}`}>
+              <span className={`w-4 h-4 rounded flex items-center justify-center shrink-0 border ${on ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-[#DCD7C6]'}`}>
                 {on && <Check size={11} strokeWidth={3} />}
               </span>
               <span className="truncate">{p.name}</span>
             </button>
           );
         })}
-        {filtered.length === 0 && <p className="text-[11px] text-gray-400 px-2 py-2">No matches.</p>}
+        {filtered.length === 0 && <p className="text-[11px] text-[#55666E] px-2 py-2">No matches.</p>}
       </div>
     </div>
   );

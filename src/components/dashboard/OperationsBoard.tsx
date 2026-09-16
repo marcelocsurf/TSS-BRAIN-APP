@@ -187,7 +187,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
     <div className="mb-6 space-y-4">
       {/* ── Row 1: hero + attention ── */}
       <div className="grid gap-4 md:grid-cols-2 md:items-stretch">
-        <div className="rounded-3xl p-6 flex flex-col justify-between min-h-64" style={{ background: '#061C2B' }}>
+        <div className="rounded-lg p-6 flex flex-col justify-between min-h-64" style={{ background: '#061C2B' }}>
           <div>
             <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Coordination · today</p>
             <h2 className="text-[34px] mt-2" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{dayName}<br />operations</h2>
@@ -207,30 +207,30 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
           </div>
         </div>
 
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4" style={{ borderTop: '3px solid #FF6B6B' }}>
+        <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] shadow-sm p-4" style={{ borderTop: '3px solid #FF6B6B' }}>
           <p className="text-[11px] mb-1 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#FF6B6B' }}>
             <AlertTriangle size={12} /> Needs attention
           </p>
           {attention.length === 0 && studentAlerts.length === 0 ? (
-            <p className="text-sm text-gray-400 mt-3">All clear — every service is following the process. 🤙</p>
+            <p className="text-sm text-[#55666E] mt-3">All clear — every service is following the process. 🤙</p>
           ) : (
             <>
               {attention.length > 0 && (
                 <div className="divide-y divide-gray-50">
                   {attention.slice(0, 4).map((a, i) => (
-                    <Link key={i} href={a.href} className="block py-2 hover:bg-gray-50 rounded-lg px-1 -mx-1">
+                    <Link key={i} href={a.href} className="block py-2 hover:bg-[#F7F9FA] rounded-lg px-1 -mx-1">
                       <p className="text-[13px] font-bold text-[var(--tss-navy)]">
                         {a.title}{' '}
                         <span className={`text-[11px] font-bold rounded-full px-2 py-0.5 align-middle ${a.sev === 'red' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700'}`}>{a.chip}</span>
                       </p>
-                      <p className="text-[11px] text-gray-400">{a.detail}</p>
+                      <p className="text-[11px] text-[#55666E]">{a.detail}</p>
                     </Link>
                   ))}
                 </div>
               )}
               {studentAlerts.length > 0 && (
-                <div className={attention.length > 0 ? 'mt-2 pt-2 border-t border-gray-100' : ''}>
-                  <p className="text-[11px] text-gray-400 mb-1 inline-flex items-center gap-1" style={F_LABEL}><UserX size={10} /> Students</p>
+                <div className={attention.length > 0 ? 'mt-2 pt-2 border-t border-[#DCD7C6]' : ''}>
+                  <p className="text-[11px] text-[#55666E] mb-1 inline-flex items-center gap-1" style={F_LABEL}><UserX size={10} /> Students</p>
                   <div className="flex flex-wrap gap-1.5">
                     {studentAlerts.map((a) => (
                       <Link key={a.label} href={a.href}
@@ -247,15 +247,15 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
       </div>
 
       {/* ── Row 2: today's pipeline ── */}
-      <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+      <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] shadow-sm p-4">
         <div className="flex items-baseline justify-between mb-1">
           <p className="text-[12px] inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>
             <Waves size={12} /> Today · service pipeline
           </p>
-          <p className="text-[11px] text-gray-300" style={F_LABEL}>Plan → Open → Close → Feedback</p>
+          <p className="text-[11px] text-[#B8B1A0]" style={F_LABEL}>Plan → Open → Close → Feedback</p>
         </div>
         {todayRows.length === 0 ? (
-          <p className="text-sm text-gray-400 py-3">No services scheduled today.</p>
+          <p className="text-sm text-[#55666E] py-3">No services scheduled today.</p>
         ) : (
           <div className="divide-y divide-gray-50">
             {todayRows.map((r) => {
@@ -266,13 +266,13 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
                 : r.opened
                 ? { t: 'In progress', c: 'bg-sky-50 text-sky-700' }
                 : r.planned
-                ? { t: 'Planned', c: 'bg-gray-100 text-gray-500' }
+                ? { t: 'Planned', c: 'bg-[#EDF3F5] text-[#55666E]' }
                 : { t: 'No plan', c: 'bg-red-50 text-red-700' };
               return (
-                <Link key={r.id} href={`/camps/${r.campId}`} className="flex items-center gap-3 py-2.5 hover:bg-gray-50 rounded-lg px-1 -mx-1">
+                <Link key={r.id} href={`/camps/${r.campId}`} className="flex items-center gap-3 py-2.5 hover:bg-[#F7F9FA] rounded-lg px-1 -mx-1">
                   <div className="w-56 min-w-56">
                     <p className="text-[13px] font-bold text-[var(--tss-navy)] truncate">{r.name}{r.dayNumber && r.kind === 'surf_camp' ? ` · D${r.dayNumber}` : ''}</p>
-                    <p className="text-[12px] text-gray-400 truncate">{r.coach ?? '—'}{r.time ? ` · ${r.time}` : ''} · {r.students} student{r.students === 1 ? '' : 's'}</p>
+                    <p className="text-[12px] text-[#55666E] truncate">{r.coach ?? '—'}{r.time ? ` · ${r.time}` : ''} · {r.students} student{r.students === 1 ? '' : 's'}</p>
                   </div>
                   <Dot state={r.planned ? 'ok' : isClass ? 'no' : 'late'} dash={isClass && !r.planned} />
                   <Bar on={r.planned} />
@@ -291,16 +291,16 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
 
       {/* ── Row 3: week matrix + discipline ── */}
       <div className="grid gap-4 md:grid-cols-2 md:items-start">
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4 overflow-x-auto">
+        <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] shadow-sm p-4 overflow-x-auto">
           <p className="text-[12px] mb-2.5 inline-flex items-center gap-1.5" style={{ ...F_LABEL, color: '#0090B0' }}>
             <CalendarCheck2 size={12} /> This week · process
           </p>
           <table className="w-full text-[11px]">
             <thead>
               <tr>
-                <td className="text-[11px] text-gray-400 p-1" style={F_LABEL}>Service</td>
+                <td className="text-[11px] text-[#55666E] p-1" style={F_LABEL}>Service</td>
                 {dayLetters.map((l, i) => (
-                  <td key={i} className={`text-[11px] text-center ${weekDates[i] === today ? 'text-[var(--tss-navy)] font-bold' : 'text-gray-400'}`} style={F_LABEL}>{l}</td>
+                  <td key={i} className={`text-[11px] text-center ${weekDates[i] === today ? 'text-[var(--tss-navy)] font-bold' : 'text-[#55666E]'}`} style={F_LABEL}>{l}</td>
                 ))}
               </tr>
             </thead>
@@ -309,7 +309,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
                 <tr key={id}>
                   <td className="py-1.5 pr-2">
                     <Link href={`/camps/${id}`} className="font-semibold text-[var(--tss-navy)] hover:underline">{c.name}</Link>
-                    <span className="text-gray-400"> · {c.coach ?? '—'}</span>
+                    <span className="text-[#55666E]"> · {c.coach ?? '—'}</span>
                   </td>
                   {weekDates.map((d) => {
                     const r = c.byDate.get(d);
@@ -323,7 +323,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
               ))}
             </tbody>
           </table>
-          <p className="text-[11px] text-gray-400 mt-2">
+          <p className="text-[11px] text-[#55666E] mt-2">
             <span className="inline-block w-3 h-3 rounded align-[-2px]" style={{ background: '#06D6A0' }} /> complete ·{' '}
             <span className="inline-block w-3 h-3 rounded align-[-2px]" style={{ background: '#FFD166' }} /> no feedback ·{' '}
             <span className="inline-block w-3 h-3 rounded align-[-2px]" style={{ background: '#FF6B6B' }} /> incomplete ·{' '}
@@ -331,10 +331,10 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
           </p>
         </div>
 
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-sm p-4">
+        <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] shadow-sm p-4">
           <p className="text-[12px] mb-2.5" style={{ ...F_LABEL, color: '#0090B0' }}>Coach discipline · this week</p>
           {discipline.length === 0 ? (
-            <p className="text-sm text-gray-400">No sessions run yet this week.</p>
+            <p className="text-sm text-[#55666E]">No sessions run yet this week.</p>
           ) : (
             <div className="divide-y divide-gray-50">
               {discipline.map((d) => {
@@ -344,7 +344,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
                   <div key={d.coach} className="flex items-center justify-between gap-2 py-2">
                     <p className="text-[13px] font-semibold text-[var(--tss-navy)] min-w-0 truncate">{d.coach}</p>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="w-24 h-1.5 rounded-full bg-gray-100 overflow-hidden inline-block">
+                      <span className="w-24 h-1.5 rounded-full bg-[#EDF3F5] overflow-hidden inline-block">
                         <span className="block h-full rounded-full" style={{ width: `${Math.round(d.pct * 100)}%`, background: color }} />
                       </span>
                       <span className="text-[12px] font-extrabold" style={{ color: txt }}>{d.done}/{d.total}</span>
@@ -354,7 +354,7 @@ export async function OperationsBoard({ academyId }: { academyId: string }) {
               })}
             </div>
           )}
-          <p className="text-[11px] text-gray-400 mt-2">Days with the full process (plan · open · close · feedback) / days with a service.</p>
+          <p className="text-[11px] text-[#55666E] mt-2">Days with the full process (plan · open · close · feedback) / days with a service.</p>
         </div>
       </div>
     </div>

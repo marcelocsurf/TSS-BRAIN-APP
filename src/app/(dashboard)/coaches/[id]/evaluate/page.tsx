@@ -31,7 +31,7 @@ export default async function CoachEvaluatePage({ params }: Props) {
 
   return (
     <div className="max-w-xl mx-auto py-6">
-      <Link href={`/coaches/${coach.id}`} className="text-sm text-gray-500 hover:text-gray-700 inline-flex items-center gap-1 mb-3">
+      <Link href={`/coaches/${coach.id}`} className="text-sm text-[#55666E] hover:text-[#10263B] inline-flex items-center gap-1 mb-3">
         <ArrowLeft size={14} strokeWidth={1.75} />
         {coach.display_name}
       </Link>

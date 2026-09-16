@@ -51,7 +51,7 @@ export default async function CoachesPage() {
         <div>
           <p
             className="text-[10px] tracking-[0.22em] text-[var(--tss-cyan,#5AC3E7)] uppercase mb-1 font-semibold"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             The Surf Sequence
           </p>
@@ -61,14 +61,14 @@ export default async function CoachesPage() {
           >
             Team Management
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-[#55666E] mt-1">
             {activeCoaches.length} active · {inactiveCoaches.length} inactive
           </p>
         </div>
         {canCreateCoach && (
           <Link
             href="/coaches/new"
-            className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-xl hover:brightness-110 transition-all shadow-sm"
+            className="px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm font-medium rounded-[5px] hover:brightness-110 transition-all shadow-sm"
           >
             + Add Coach
           </Link>
@@ -87,15 +87,15 @@ export default async function CoachesPage() {
           return (
             <div
               key={role}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center border-t-[3px]"
+              className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 text-center border-t-[3px]"
               style={{ borderTopColor: colors[role] }}
             >
               <p className="text-2xl font-bold text-[var(--tss-navy)]">
                 {activeCoaches.filter(c => c.role === role).length}
               </p>
               <p
-                className="text-[10px] uppercase tracking-wider text-gray-400 mt-1"
-                style={{ fontFamily: 'DM Mono, monospace' }}
+                className="text-[10px] uppercase tracking-wider text-[#55666E] mt-1"
+                style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
               >
                 {ROLE_LABELS[role]}s
               </p>
@@ -124,7 +124,7 @@ export default async function CoachesPage() {
             <Link
               key={coach.id}
               href={`/coaches/${coach.id}`}
-              className="block bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-gray-300 hover:shadow transition-all overflow-hidden"
+              className="block bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm hover:border-[#DCD7C6] hover:shadow transition-all overflow-hidden"
             >
               <div className="px-5 py-4 flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -149,7 +149,7 @@ export default async function CoachesPage() {
                         coach.role === 'admin' ? 'bg-red-50 text-[var(--tss-danger)]' :
                         coach.role === 'coordinator' ? 'bg-[var(--tss-cyan,#5AC3E7)]/15 text-[var(--tss-navy)]' :
                         coach.role === 'coach' ? 'bg-emerald-50 text-emerald-700' :
-                        'bg-gray-50 text-gray-500'
+                        'bg-[#F7F9FA] text-[#55666E]'
                       }`}>
                         {ROLE_LABELS[coach.role] || coach.role}
                       </span>
@@ -161,7 +161,7 @@ export default async function CoachesPage() {
                             ? 'bg-emerald-50 text-emerald-700'
                             : onboarding === 'invited'
                             ? 'bg-amber-50 text-amber-700'
-                            : 'bg-gray-100 text-gray-500'
+                            : 'bg-[#EDF3F5] text-[#55666E]'
                         }`}
                         title={
                           onboarding === 'active'
@@ -173,24 +173,24 @@ export default async function CoachesPage() {
                       >
                         {onboarding === 'active' ? '● Active' : onboarding === 'invited' ? '○ Invited' : '· No auth'}
                       </span>
-                      <span className="text-gray-200">·</span>
-                      <span className="text-xs text-gray-500">Max: {coach.max_belt_permission?.replace('_', ' ')}</span>
+                      <span className="text-[#DCD7C6]">·</span>
+                      <span className="text-xs text-[#55666E]">Max: {coach.max_belt_permission?.replace('_', ' ')}</span>
                       {coach.certification_level && (
                         <>
-                          <span className="text-gray-200">·</span>
-                          <span className="text-xs text-gray-500">{coach.certification_level}</span>
+                          <span className="text-[#DCD7C6]">·</span>
+                          <span className="text-xs text-[#55666E]">{coach.certification_level}</span>
                         </>
                       )}
                       {canCreateCoach && onboarding !== 'active' && coach.email && (
                         <>
-                          <span className="text-gray-200">·</span>
+                          <span className="text-[#DCD7C6]">·</span>
                           <ResendInviteButton coachId={coach.id} coachEmail={coach.email} />
                         </>
                       )}
                     </div>
                   </div>
                 </div>
-                <ChevronRight size={16} strokeWidth={1.75} className="text-gray-300 shrink-0" />
+                <ChevronRight size={16} strokeWidth={1.75} className="text-[#B8B1A0] shrink-0" />
               </div>
             </Link>
           );
@@ -199,8 +199,8 @@ export default async function CoachesPage() {
         {inactiveCoaches.length > 0 && (
           <div className="pt-4">
             <p
-              className="text-[10px] tracking-[0.22em] text-gray-400 uppercase mb-3 font-semibold"
-              style={{ fontFamily: 'DM Mono, monospace' }}
+              className="text-[10px] tracking-[0.22em] text-[#55666E] uppercase mb-3 font-semibold"
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
             >
               Inactive
             </p>
@@ -208,15 +208,15 @@ export default async function CoachesPage() {
               <Link
                 key={coach.id}
                 href={`/coaches/${coach.id}`}
-                className="block bg-white rounded-2xl border border-gray-100 opacity-50 hover:opacity-75 transition-opacity mb-2"
+                className="block bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] border border-[#DCD7C6] opacity-50 hover:opacity-75 transition-opacity mb-2"
               >
                 <div className="px-5 py-3 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
+                  <div className="w-8 h-8 rounded-full bg-[#DCD7C6] flex items-center justify-center text-xs font-bold text-[#55666E]">
                     {coach.first_name?.[0]}{coach.last_name?.[0]}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-500">{coach.display_name}</p>
-                    <p className="text-xs text-gray-400">{coach.email}</p>
+                    <p className="text-sm font-medium text-[#55666E]">{coach.display_name}</p>
+                    <p className="text-xs text-[#55666E]">{coach.email}</p>
                   </div>
                 </div>
               </Link>
@@ -226,10 +226,10 @@ export default async function CoachesPage() {
       </div>
 
       {coaches?.length === 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
-          <p className="text-gray-500 text-sm">No coaches yet.</p>
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-12 text-center">
+          <p className="text-[#55666E] text-sm">No coaches yet.</p>
           {canCreateCoach && (
-            <Link href="/coaches/new" className="mt-3 inline-block px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm rounded-xl hover:brightness-110 transition-all">
+            <Link href="/coaches/new" className="mt-3 inline-block px-4 py-2.5 bg-[var(--tss-navy)] text-white text-sm rounded-[5px] hover:brightness-110 transition-all">
               Add First Coach
             </Link>
           )}

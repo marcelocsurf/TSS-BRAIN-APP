@@ -11,7 +11,7 @@ export function Step15Focus({ formState, onSelect }: Props) {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-[#1A1A2E]">Focus Rating</h3>
-      <p className="text-xs text-gray-400">Rate the student's focus during the session (1-5)</p>
+      <p className="text-xs text-[#55666E]">Rate the student's focus during the session (1-5)</p>
 
       <div className="flex justify-center gap-3">
         {[1, 2, 3, 4, 5].map((n) => {
@@ -24,7 +24,7 @@ export function Step15Focus({ formState, onSelect }: Props) {
               className={`w-14 h-14 rounded-full text-lg font-bold transition-all ${
                 isSelected
                   ? 'bg-[#5AC3E7] text-white scale-110'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  : 'bg-[#EDF3F5] text-[#55666E] hover:bg-[#DCD7C6]'
               }`}
             >
               {n}
@@ -33,7 +33,7 @@ export function Step15Focus({ formState, onSelect }: Props) {
         })}
       </div>
 
-      <p className="text-center text-xs text-gray-400">
+      <p className="text-center text-xs text-[#55666E]">
         1 = Very distracted &middot; 5 = Fully focused
       </p>
     </div>

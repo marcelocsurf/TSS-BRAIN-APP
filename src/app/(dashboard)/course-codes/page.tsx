@@ -31,7 +31,7 @@ export default async function CourseCodesPage() {
         >
           Course Access Codes
         </h1>
-        <p className="text-sm text-gray-600 mt-1">
+        <p className="text-sm text-[#55666E] mt-1">
           Vouchers de un solo uso para vender o regalar el <strong>curso online</strong> (Masterclass)
           a personas fuera de un camp. Quien lo canjea crea su cuenta y obtiene el curso al instante;
           cada canje queda contado en facturación a tu academia.

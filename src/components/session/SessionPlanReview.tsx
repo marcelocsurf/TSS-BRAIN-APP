@@ -34,7 +34,7 @@ export function SessionPlanReview({ formState, pilarParts, drills, onContinueToC
       </div>
 
       {/* Student Card */}
-      <div className="bg-[var(--tss-gray-50)] rounded-xl p-4 mb-4 border border-[var(--tss-gray-100)]">
+      <div className="bg-[#F7F9FA] rounded-[5px] p-4 mb-4 border border-[var(--tss-gray-100)]">
         <div className="flex items-center gap-3 mb-3">
           {beltInfo && (
             <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
@@ -99,13 +99,13 @@ export function SessionPlanReview({ formState, pilarParts, drills, onContinueToC
       <div className="flex gap-3 mt-6">
         <button
           onClick={onBackToPlanning}
-          className="flex-1 py-3 border border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] text-sm rounded-xl hover:bg-[var(--tss-gray-50)] transition-all"
+          className="flex-1 py-3 border border-[var(--tss-gray-200)] text-[var(--tss-gray-700)] text-sm rounded-[5px] hover:bg-[#F7F9FA] transition-all"
         >
           ← Edit Plan
         </button>
         <button
           onClick={onContinueToClose}
-          className="flex-1 py-3 bg-[var(--tss-navy)] text-white text-sm font-semibold rounded-xl hover:brightness-110 transition-all shadow-sm"
+          className="flex-1 py-3 bg-[var(--tss-navy)] text-white text-sm font-semibold rounded-[5px] hover:brightness-110 transition-all shadow-sm"
         >
           Start Close →
         </button>
@@ -118,7 +118,7 @@ export function SessionPlanReview({ formState, pilarParts, drills, onContinueToC
 
 function PlanSection({ title, color, children }: { title: string; color: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-[var(--tss-gray-100)] overflow-hidden shadow-sm">
+    <div className="bg-[#F7F9FA] rounded-[5px] border border-[var(--tss-gray-100)] overflow-hidden shadow-sm">
       <div className="px-4 py-2 border-b border-[var(--tss-gray-50)] flex items-center gap-2">
         <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
         <span className="text-xs font-semibold text-[var(--tss-navy)] uppercase tracking-wider" style={{ fontFamily: 'var(--font-mono)' }}>
