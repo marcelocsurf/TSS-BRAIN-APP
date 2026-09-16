@@ -582,47 +582,47 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     };
     return (
       <div className="space-y-4 pb-32 max-w-lg">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
             {isTrip ? '🚐 Surf trip · guided' : '🧘 Class · no TSS evaluation'}
           </p>
           <p className="text-lg font-bold text-[var(--tss-navy)] mt-1">{data.camp.camp_name}</p>
-          <p className="text-[12px] text-gray-500">{students.length} participant{students.length === 1 ? '' : 's'}
+          <p className="text-[12px] text-[#55666E]">{students.length} participant{students.length === 1 ? '' : 's'}
             {state === 'closed' ? ' · ✓ cerrado' : state === 'in_progress' ? ' · en curso' : ''}</p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 space-y-3">
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Hora de inicio</p>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Hora de inicio</p>
             <input type="time" defaultValue={plan.class_start_time ?? ''} disabled={state === 'closed'}
               onBlur={(e) => commitPlanField('class_start_time', e.target.value || null)}
-              className="w-40 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              className="w-40 px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
           </div>
           {isTrip && (
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Spot elegido</p>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Spot elegido</p>
               <input type="text" defaultValue={plan.surf_venue ?? ''} disabled={state === 'closed'}
                 onBlur={(e) => commitPlanField('surf_venue', e.target.value || null)}
                 placeholder="Punta Roca, K59…"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
             </div>
           )}
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
               Nota general {state !== 'closed' ? '· le llega a todos al cerrar' : ''}
             </p>
             <textarea defaultValue={plan.notes_general ?? ''} disabled={state === 'closed'} rows={3}
               onBlur={(e) => commitPlanField('notes_general', e.target.value || null)}
               placeholder={isTrip ? 'Condiciones épicas, surfeamos 2h en Punta Roca…' : 'Gran clase, buena energía…'}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              className="w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm" />
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">Participants</p>
+        <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-2">Participants</p>
           <div className="flex flex-wrap gap-1.5">
             {students.map((st) => (
-              <span key={st.student_id} className="text-[12px] font-semibold px-2.5 py-1 rounded-full bg-gray-50 border border-gray-100 text-[var(--tss-navy)]">
+              <span key={st.student_id} className="text-[12px] font-semibold px-2.5 py-1 rounded-full bg-[#F7F9FA] border border-[#DCD7C6] text-[var(--tss-navy)]">
                 {st.display_name}
               </span>
             ))}
@@ -646,7 +646,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             {isTrip ? 'Cerrar el trip ✓' : 'Cerrar la clase ✓'}
           </button>
         ) : (
-          <p className="text-center text-[12px] text-gray-400 py-2">✓ Cerrado — los participantes recibieron tu nota y su encuesta.</p>
+          <p className="text-center text-[12px] text-[#55666E] py-2">✓ Cerrado — los participantes recibieron tu nota y su encuesta.</p>
         )}
       </div>
     );
@@ -660,7 +660,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           ir a darlo. Sin ese cierre el alumno no tiene sesión, ni horas de
           agua, ni encuesta del coach. */}
       {pendingDaysBlock.length > 0 && (
-        <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3.5">
+        <div className="rounded-lg border-2 border-amber-300 bg-amber-50 px-4 py-3.5">
           <p className="text-[13px] font-bold text-amber-900">
             📌 Faltan cerrar {pendingDaysBlock.length === 1 ? 'un día' : `${pendingDaysBlock.length} días`}
           </p>
@@ -689,7 +689,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         <button
           type="button"
           onClick={() => setShowFinalEval(true)}
-          className="w-full text-left rounded-2xl border-2 border-amber-300 bg-amber-50 px-4 py-3.5 flex items-center justify-between gap-3"
+          className="w-full text-left rounded-lg border-2 border-amber-300 bg-amber-50 px-4 py-3.5 flex items-center justify-between gap-3"
         >
           <div>
             <p className="text-[13px] font-bold text-amber-900">
@@ -714,11 +714,11 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           <button
             type="button"
             onClick={() => setShowWeek(true)}
-            className="w-full text-left rounded-2xl border border-gray-200 bg-white px-4 py-3 flex items-center justify-between gap-2 hover:border-[var(--tss-cyan,#5AC3E7)]"
+            className="w-full text-left rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] px-4 py-3 flex items-center justify-between gap-2 hover:border-[var(--tss-cyan,#5AC3E7)]"
           >
             <div>
-              <p className="text-[12px] font-semibold text-gray-700">📅 Vista semana · planear todo el camp</p>
-              <p className="text-[10.5px] text-gray-500 mt-0.5">Clase, lugar, transporte, espacios y tablas — día por día, de un vistazo.</p>
+              <p className="text-[12px] font-semibold text-[#10263B]">📅 Vista semana · planear todo el camp</p>
+              <p className="text-[10.5px] text-[#55666E] mt-0.5">Clase, lugar, transporte, espacios y tablas — día por día, de un vistazo.</p>
             </div>
             <span className="text-[11px] text-[var(--tss-cyan,#5AC3E7)] font-semibold shrink-0">Abrir →</span>
           </button>
@@ -738,16 +738,16 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           const todaySummary = data.daySummaries.find((d) => d.session_date === svToday);
           const todayClosed = !todaySummary || todaySummary.completion_state === 'closed';
           return (
-        <div className="rounded-2xl border border-gray-200 bg-white px-4 py-3">
+        <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] px-4 py-3">
           <button type="button" onClick={() => setEarlyPickerOpen(!earlyPickerOpen)}
             className="w-full text-left flex items-center justify-between gap-2">
-            <p className="text-[12px] font-semibold text-gray-700">🏁 ¿Un alumno termina HOY su short camp?</p>
+            <p className="text-[12px] font-semibold text-[#10263B]">🏁 ¿Un alumno termina HOY su short camp?</p>
             <span className="text-[11px] text-[var(--tss-cyan,#5AC3E7)] font-semibold shrink-0">{earlyPickerOpen ? 'Ocultar' : 'Cerrarlo →'}</span>
           </button>
           {earlyPickerOpen && (
             <div className="mt-2.5 space-y-2">
               {todayClosed ? (
-                <p className="text-[10.5px] text-gray-500 leading-snug">
+                <p className="text-[10.5px] text-[#55666E] leading-snug">
                   Elegí al alumno: hacés su <b>evaluación oficial</b> ahora y sus encuestas le salen hoy — el resto del grupo sigue normal.
                 </p>
               ) : (
@@ -759,7 +759,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 {students.filter((st) => !finalSaved.has(st.student_id)).map((st) => (
                   <button key={st.student_id} type="button" disabled={!todayClosed}
                     onClick={() => setEarlyStudentId(st.student_id)}
-                    className="rounded-full border border-gray-200 px-3 py-1.5 text-[11px] font-semibold text-gray-700 hover:border-[var(--tss-cyan,#5AC3E7)] disabled:opacity-40">
+                    className="rounded-full border border-[#DCD7C6] px-3 py-1.5 text-[11px] font-semibold text-[#10263B] hover:border-[var(--tss-cyan,#5AC3E7)] disabled:opacity-40">
                     {st.display_name}
                   </button>
                 ))}
@@ -869,7 +869,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
       </button>
 
       {/* Header */}
-      <div className="rounded-2xl p-4 text-white" style={{ background: BRAND.colors.navy }}>
+      <div className="rounded-lg p-4 text-white" style={{ background: BRAND.colors.navy }}>
         <p className="text-[10px] font-mono uppercase tracking-wider opacity-80">
           {data.camp.service_kind?.replace(/_/g, ' ') || 'Service'} ·{' '}
           {state === 'planned' ? 'planning' : state === 'in_progress' ? 'in progress' : 'closed'}
@@ -913,10 +913,10 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 type="button"
                 onClick={() => onSwitchDay?.(d.day_number)}
                 disabled={isActive}
-                className={`shrink-0 px-3 py-2 rounded-xl text-[11px] font-semibold transition-all border ${
+                className={`shrink-0 px-3 py-2 rounded-[5px] text-[11px] font-semibold transition-all border ${
                   isActive
                     ? 'bg-[var(--tss-navy)] text-white border-[var(--tss-navy)]'
-                    : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
+                    : 'bg-[#F7F9FA] text-[#10263B] border-[#DCD7C6] hover:border-[#55666E]'
                 }`}
               >
                 <span className="block">Day {d.day_number}</span>
@@ -952,7 +952,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               const allEmpty = students.every((s) => s.blocks.length === 0 || s.blocks.every((b) => !b.step_id && !b.land_drill_id && !b.water_drill_id));
               if (data.templatePlan.length > 0 && allEmpty) {
                 return (
-                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3">
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
                     <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-1">
                       Template empty for day {data.selectedDay.day_number}
                     </p>
@@ -983,20 +983,20 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                       : b.pilar_part || 'Activity';
                     const edpf = b.explain_md || b.demonstrate_md || b.simulate_md;
                     return (
-                      <div key={i} className="rounded-lg border border-gray-200 bg-white p-2 text-[11px] space-y-0.5">
-                        <p className="font-mono uppercase tracking-wider text-gray-400">
+                      <div key={i} className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] p-2 text-[11px] space-y-0.5">
+                        <p className="font-mono uppercase tracking-wider text-[#55666E]">
                           Block {b.block_order}{heading ? ` · ${heading}` : ''}
                         </p>
                         {b.pilar_part && b.pilar_part !== heading && (
-                          <p className="text-gray-700">{b.pilar_part}</p>
+                          <p className="text-[#10263B]">{b.pilar_part}</p>
                         )}
-                        {stepTitle && (<p><span className="text-gray-500">Step · </span>{b.step_id} — {stepTitle}</p>)}
-                        {missionTitle && (<p><span className="text-gray-500">Mission · </span>{missionTitle}</p>)}
-                        {drillTitle && (<p><span className="text-gray-500">Drill · </span>{drillTitle}</p>)}
+                        {stepTitle && (<p><span className="text-[#55666E]">Step · </span>{b.step_id} — {stepTitle}</p>)}
+                        {missionTitle && (<p><span className="text-[#55666E]">Mission · </span>{missionTitle}</p>)}
+                        {drillTitle && (<p><span className="text-[#55666E]">Drill · </span>{drillTitle}</p>)}
                         {!stepTitle && !missionTitle && !drillTitle && edpf && (
-                          <p className="text-gray-600 leading-snug">{String(edpf).slice(0, 90)}</p>
+                          <p className="text-[#55666E] leading-snug">{String(edpf).slice(0, 90)}</p>
                         )}
-                        {b.mission_time && (<p className="text-gray-400">{b.mission_time} min{b.equipment ? ` · ${b.equipment}` : ''}</p>)}
+                        {b.mission_time && (<p className="text-[#55666E]">{b.mission_time} min{b.equipment ? ` · ${b.equipment}` : ''}</p>)}
                       </div>
                     );
                   })}
@@ -1071,16 +1071,16 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               {/* Stacked (not a 2-col grid): the native iOS time picker renders
                   wider than its cell and used to overlap the beach field. */}
               <label className="block min-w-0">
-                <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Class starts at</span>
+                <span className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Class starts at</span>
                 <input
                   type="time"
                   value={plan.class_start_time ?? ''}
                   onChange={(e) => commitPlanField('class_start_time', e.target.value || null)}
-                  className="w-full min-w-0 text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+                  className="w-full min-w-0 text-sm px-3 py-2 rounded-lg border border-[#DCD7C6] focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
                 />
               </label>
               <label className="block min-w-0">
-                <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Surf spot / beach</span>
+                <span className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Surf spot / beach</span>
                 <VenuePicker
                   value={plan.surf_venue}
                   onChange={(v) => commitPlanField('surf_venue', v)}
@@ -1088,7 +1088,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               </label>
 
               <div>
-                <span className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">Transport needed?</span>
+                <span className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Transport needed?</span>
                 <div className="grid grid-cols-2 gap-2">
                   {([
                     { v: false, label: 'No — on site' },
@@ -1112,14 +1112,14 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               </div>
 
               {plan.transport_needed === true && (
-                <div className="grid grid-cols-2 gap-2 rounded-xl bg-sky-50 border border-sky-200 p-3">
+                <div className="grid grid-cols-2 gap-2 rounded-[5px] bg-sky-50 border border-sky-200 p-3">
                   <label className="block min-w-0">
                     <span className="block text-[10px] font-mono uppercase tracking-wider text-sky-700 mb-1">Departure</span>
                     <input
                       type="time"
                       value={plan.transport_depart ?? ''}
                       onChange={(e) => commitPlanField('transport_depart', e.target.value || null)}
-                      className="w-full min-w-0 text-sm px-3 py-2 rounded-lg border border-sky-200 bg-white focus:outline-none"
+                      className="w-full min-w-0 text-sm px-3 py-2 rounded-lg border border-sky-200 bg-[#F7F9FA] focus:outline-none"
                     />
                   </label>
                   <label className="block min-w-0">
@@ -1128,7 +1128,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                       type="time"
                       value={plan.transport_return ?? ''}
                       onChange={(e) => commitPlanField('transport_return', e.target.value || null)}
-                      className="w-full min-w-0 text-sm px-3 py-2 rounded-lg border border-sky-200 bg-white focus:outline-none"
+                      className="w-full min-w-0 text-sm px-3 py-2 rounded-lg border border-sky-200 bg-[#F7F9FA] focus:outline-none"
                     />
                   </label>
                   <p className="col-span-2 text-[11px] text-sky-700">
@@ -1187,8 +1187,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 
               {/* Everything else is optional context — tucked away so the common
                   case is just the go/no-go call + wave size. */}
-              <details className="group rounded-lg border border-gray-100 bg-gray-50/60">
-                <summary className="cursor-pointer list-none px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-gray-500 flex items-center gap-1.5">
+              <details className="group rounded-lg border border-[#DCD7C6] bg-[#F7F9FA]/60">
+                <summary className="cursor-pointer list-none px-3 py-2 text-[11px] font-mono uppercase tracking-wider text-[#55666E] flex items-center gap-1.5">
                   <ChevronRight size={13} className="transition-transform group-open:rotate-90" /> Más detalles (opcional)
                 </summary>
                 <div className="px-3 pb-3 space-y-2">
@@ -1203,7 +1203,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 
                   {/* M48 — Hazards multi-select. Comma-joined string in the existing TEXT column. */}
                   <div>
-                    <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+                    <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
                       Hazards (tap any that apply)
                     </label>
                     <div className="flex flex-wrap gap-1.5">
@@ -1219,7 +1219,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                               commitPlanField('venue_hazards', next.length > 0 ? next.join(', ') : null);
                             }}
                             className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors ${
-                              isOn ? 'bg-[var(--tss-navy)] text-white' : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-400'
+                              isOn ? 'bg-[var(--tss-navy)] text-white' : 'bg-[#F7F9FA] text-[#55666E] border border-[#DCD7C6] hover:border-[#55666E]'
                             }`}
                           >
                             {h.label}
@@ -1299,8 +1299,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                       const yesterday = st.profile?.next_recommended_focus ?? null;
                       const setFocus = (next: Set<string>) => commitStudentBlock(st.student_id, 0, { objective_text: next.size ? `Focus: ${Array.from(next).join(' · ')}` : `Whole line · ${sequenceTag(groupSeq)}` } as any);
                       return (
-                        <div key={st.student_id} className="rounded-xl border border-gray-200 p-2.5">
-                          <p className="text-[12.5px] font-semibold" style={{ color: '#061C2B' }}>{st.display_name} <span className="text-[10px] font-normal text-gray-500">· {chosen.size ? `focus: ${Array.from(chosen).join(' · ')}` : 'whole line'}</span></p>
+                        <div key={st.student_id} className="rounded-[5px] border border-[#DCD7C6] p-2.5">
+                          <p className="text-[12.5px] font-semibold" style={{ color: '#061C2B' }}>{st.display_name} <span className="text-[10px] font-normal text-[#55666E]">· {chosen.size ? `focus: ${Array.from(chosen).join(' · ')}` : 'whole line'}</span></p>
                           {yesterday && !chosen.size && (
                             <button type="button" onClick={() => setFocus(new Set([yesterday]))} className="mt-1 text-[11px] px-2.5 py-1 rounded-full" style={{ background: '#FFF8E7', color: '#9A6A12' }}>Yesterday's mission: {yesterday} → use it</button>
                           )}
@@ -1366,10 +1366,10 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           {/* ═══ SI QUERÉS PLANEAR MÁS (auditoría coach 2026-09-10): lo mínimo
               para hoy va arriba; calentamiento, mental hack y notas quedan
               plegados. Nada de esto es obligatorio para cerrar. ═══ */}
-          <details className="group rounded-2xl border border-dashed border-gray-300 bg-white/60">
-            <summary className="cursor-pointer list-none px-4 py-3 text-[12px] font-semibold text-gray-700 flex items-center justify-between">
+          <details className="group rounded-lg border border-dashed border-[#DCD7C6] bg-[#F7F9FA]/60">
+            <summary className="cursor-pointer list-none px-4 py-3 text-[12px] font-semibold text-[#10263B] flex items-center justify-between">
               <span>If you want to plan more · warm-up, mental hack, notes</span>
-              <ChevronDown size={16} className="text-gray-400 transition group-open:rotate-180" />
+              <ChevronDown size={16} className="text-[#55666E] transition group-open:rotate-180" />
             </summary>
             <div className="px-2 pb-2 space-y-3">
           {/* 2. GROUP WARM-UP */}
@@ -1406,7 +1406,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     key={opt.id}
                     type="button"
                     onClick={() => commitPlanField('mental_hack', opt.id)}
-                    className="py-3 rounded-xl text-xs font-medium transition-all border"
+                    className="py-3 rounded-[5px] text-xs font-medium transition-all border"
                     style={
                       isSelected
                         ? { background: BRAND.colors.navy, color: 'white', borderColor: BRAND.colors.navy }
@@ -1520,7 +1520,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             >
               <div className="space-y-2">
                 {incidents.length === 0 ? (
-                  <p className="text-[11px] text-gray-500 italic">
+                  <p className="text-[11px] text-[#55666E] italic">
                     No incidents reported. Skip and finalize when ready.
                   </p>
                 ) : (
@@ -1543,7 +1543,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+                          <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">
                             Student
                           </label>
                           <select
@@ -1551,7 +1551,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                             onChange={(e) =>
                               updateIncident(inc.id, { student_id: e.target.value })
                             }
-                            className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white"
+                            className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA]"
                           >
                             {students.map((s) => (
                               <option key={s.student_id} value={s.student_id}>
@@ -1602,7 +1602,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
       {/* Sticky footer — sits at the very bottom (the global tab-nav is hidden
           while the planner is open), with iPhone safe-area padding. */}
       <div
-        className="fixed bottom-0 left-0 right-0 px-4 pt-2 z-40 border-t border-gray-200"
+        className="fixed bottom-0 left-0 right-0 px-4 pt-2 z-40 border-t border-[#DCD7C6]"
         style={{ background: 'white', paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}
       >
         <div className="max-w-lg md:max-w-4xl mx-auto flex gap-2">
@@ -1612,7 +1612,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               type="button"
               onClick={start}
               disabled={pending}
-              className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl inline-flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 text-white text-sm font-semibold rounded-[5px] inline-flex items-center justify-center gap-1.5"
               style={{ background: BRAND.colors.navy }}
             >
               <Lock size={14} strokeWidth={1.75} />
@@ -1628,7 +1628,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 setEditingPlan(false);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl inline-flex items-center justify-center gap-1.5"
+              className="flex-1 py-2.5 text-white text-sm font-semibold rounded-[5px] inline-flex items-center justify-center gap-1.5"
               style={{ background: BRAND.colors.navy }}
             >
               <Check size={14} strokeWidth={2} />
@@ -1648,7 +1648,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 type="button"
                 onClick={() => { flash('✓ Saved — finish it whenever'); onBack(); }}
                 disabled={pending}
-                className="shrink-0 py-2.5 px-3 text-[12px] font-semibold rounded-xl border inline-flex flex-col items-center gap-0.5 leading-none"
+                className="shrink-0 py-2.5 px-3 text-[12px] font-semibold rounded-[5px] border inline-flex flex-col items-center gap-0.5 leading-none"
                 style={{ borderColor: '#CBD5E1', color: '#475569' }}
                 title="Save & finish later"
               >
@@ -1662,7 +1662,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
                 disabled={pending}
-                className="shrink-0 py-2.5 px-3 text-[12px] font-semibold rounded-xl border inline-flex flex-col items-center gap-0.5 leading-none"
+                className="shrink-0 py-2.5 px-3 text-[12px] font-semibold rounded-[5px] border inline-flex flex-col items-center gap-0.5 leading-none"
                 style={{ borderColor: BRAND.colors.navy, color: BRAND.colors.navy }}
                 title="Edit plan"
               >
@@ -1673,7 +1673,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 type="button"
                 onClick={finalize}
                 disabled={pending}
-                className="flex-1 py-2.5 text-white text-sm font-semibold rounded-xl inline-flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 text-white text-sm font-semibold rounded-[5px] inline-flex items-center justify-center gap-1.5"
                 style={{ background: '#10B981' }}
               >
                 <Flag size={14} strokeWidth={1.75} />
@@ -1683,7 +1683,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           )}
 
           {state === 'closed' && (
-            <div className="flex-1 py-2.5 text-center text-sm font-semibold rounded-xl bg-emerald-50 text-emerald-700 inline-flex items-center justify-center gap-1.5">
+            <div className="flex-1 py-2.5 text-center text-sm font-semibold rounded-[5px] bg-emerald-50 text-emerald-700 inline-flex items-center justify-center gap-1.5">
               <Flag size={14} strokeWidth={1.75} />
               Finalized{plan.closed_at ? ` · ${displayDate(plan.closed_at)}` : ''}
             </div>
@@ -1755,14 +1755,14 @@ function GeneralPlanSummary({
         <SummaryRow label="Venue call" value={goLabel} />
         {conditions.length > 0 && (
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
               Conditions
             </p>
             <div className="flex flex-wrap gap-1">
               {conditions.map((c, i) => (
                 <span
                   key={i}
-                  className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 inline-flex items-center gap-1"
+                  className="text-[11px] px-2 py-0.5 rounded-full bg-[#EDF3F5] text-[#10263B] inline-flex items-center gap-1"
                 >
                   <c.Icon size={11} strokeWidth={1.75} />
                   {c.value}
@@ -1793,19 +1793,19 @@ function GeneralPlanSummary({
             each student is set to surf, not just the group read. */}
         {students.some((s) => s.missions.length > 0) && (
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1 inline-flex items-center gap-1">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1 inline-flex items-center gap-1">
               <Users size={11} strokeWidth={1.75} /> Missions per student
             </p>
             <div className="space-y-1">
               {students.map((s, i) => (
-                <div key={i} className="rounded-lg bg-gray-50 border border-gray-100 px-2.5 py-1.5">
+                <div key={i} className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] px-2.5 py-1.5">
                   <p className="text-[12px] font-semibold text-[var(--tss-navy)] leading-tight">{s.name}</p>
                   {s.missions.length > 0 ? (
                     s.missions.map((m, j) => (
-                      <p key={j} className="text-[11px] text-gray-600 leading-snug">🌊 {m}</p>
+                      <p key={j} className="text-[11px] text-[#55666E] leading-snug">🌊 {m}</p>
                     ))
                   ) : (
-                    <p className="text-[11px] text-gray-400 italic">No mission set yet</p>
+                    <p className="text-[11px] text-[#55666E] italic">No mission set yet</p>
                   )}
                 </div>
               ))}
@@ -1820,10 +1820,10 @@ function GeneralPlanSummary({
 function SummaryRow({ label, value }: { label: React.ReactNode; value: string }) {
   return (
     <div>
-      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 inline-flex items-center gap-1">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] inline-flex items-center gap-1">
         {label}
       </p>
-      <p className="text-sm text-gray-800 mt-0.5 whitespace-pre-wrap">{value}</p>
+      <p className="text-sm text-[#10263B] mt-0.5 whitespace-pre-wrap">{value}</p>
     </div>
   );
 }
@@ -1844,16 +1844,16 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 space-y-3">
       <div>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 inline-flex items-center gap-1.5">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] inline-flex items-center gap-1.5">
           {Icon ? (
             <Icon size={11} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
           ) : null}
           {!Icon && emoji ? <span>{emoji}</span> : null}
           {title}
         </p>
-        {subtitle && <p className="text-[11px] text-gray-500 mt-0.5">{subtitle}</p>}
+        {subtitle && <p className="text-[11px] text-[#55666E] mt-0.5">{subtitle}</p>}
       </div>
       {children}
     </div>
@@ -1924,7 +1924,7 @@ function VenuePicker({ value, onChange }: { value: string | null; onChange: (v: 
           if (v === '__other__') { setCustom(true); onChange(text || null); }
           else { setCustom(false); onChange(v || null); }
         }}
-        className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+        className="w-full text-sm px-3 py-2 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA] focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
       >
         <option value="">—</option>
         {SURF_SPOT_OPTIONS.map((s) => (
@@ -1939,7 +1939,7 @@ function VenuePicker({ value, onChange }: { value: string | null; onChange: (v: 
           onChange={(e) => setText(e.target.value)}
           onBlur={() => onChange(text.trim() || null)}
           placeholder="Type the spot"
-          className="w-full text-sm px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+          className="w-full text-sm px-3 py-2 rounded-lg border border-[#DCD7C6] focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
         />
       )}
     </div>
@@ -1964,7 +1964,7 @@ function SmallField({
   return (
     <div>
       {label && (
-        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+        <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">
           {label}
         </label>
       )}
@@ -1975,7 +1975,7 @@ function SmallField({
         onBlur={() => local !== (value ?? '') && onBlur(local)}
         placeholder={placeholder}
         disabled={disabled}
-        className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs disabled:bg-gray-50"
+        className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs disabled:bg-[#F7F9FA]"
       />
     </div>
   );
@@ -1997,14 +1997,14 @@ function SelectField({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+      <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">
         {label}
       </label>
       <select
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value || null)}
         disabled={disabled}
-        className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white disabled:bg-gray-50"
+        className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA] disabled:bg-[#F7F9FA]"
       >
         <option value="">—</option>
         {options.map((o) => (
@@ -2037,7 +2037,7 @@ function TextArea({
   return (
     <div>
       {label && (
-        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+        <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">
           {label}
         </label>
       )}
@@ -2048,7 +2048,7 @@ function TextArea({
         placeholder={placeholder}
         disabled={disabled}
         rows={rows}
-        className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs resize-none disabled:bg-gray-50"
+        className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs resize-none disabled:bg-[#F7F9FA]"
       />
     </div>
   );
@@ -2083,14 +2083,14 @@ function PickerOrCustom({
               className={`w-full text-left px-3 py-2 rounded-lg border text-[12px] transition-colors ${
                 selectedId === o.id
                   ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
-                  : 'border-gray-200 hover:border-gray-400'
+                  : 'border-[#DCD7C6] hover:border-[#55666E]'
               }`}
             >
               <div className="font-medium">{o.label}</div>
               {o.sublabel && (
                 <div
                   className={`text-[10px] mt-0.5 ${
-                    selectedId === o.id ? 'text-white/70' : 'text-gray-500'
+                    selectedId === o.id ? 'text-white/70' : 'text-[#55666E]'
                   }`}
                 >
                   {o.sublabel}
@@ -2137,7 +2137,7 @@ function StudentAvatar({
       <img
         src={url}
         alt={name}
-        className="w-9 h-9 rounded-full object-cover shrink-0 border border-gray-200"
+        className="w-9 h-9 rounded-full object-cover shrink-0 border border-[#DCD7C6]"
       />
     );
   }
@@ -2247,7 +2247,7 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
   const visibleSessions = showAllDays ? recentSessions : recentSessions.slice(0, 3);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white">
+    <div className="rounded-lg border border-[#DCD7C6] bg-[#F7F9FA]">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -2256,8 +2256,8 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
         <span className="text-[11px] font-semibold text-[var(--tss-navy)] inline-flex items-center gap-1.5">
           <ClipboardList size={12} strokeWidth={1.75} />
           Profile & bitácora
-          {beltLevel && <span className="ml-1 text-[11px] font-normal text-gray-600">· {beltLevel.replace(/_belt$/, '').replace(/_/g, ' ')}</span>}
-          {profile.swim_level && <span className="text-[11px] font-normal text-gray-600">· swim {profile.swim_level}</span>}
+          {beltLevel && <span className="ml-1 text-[11px] font-normal text-[#55666E]">· {beltLevel.replace(/_belt$/, '').replace(/_/g, ' ')}</span>}
+          {profile.swim_level && <span className="text-[11px] font-normal text-[#55666E]">· swim {profile.swim_level}</span>}
           {hasMedical && (
             <span className="ml-1 text-[10px] text-red-600 inline-flex items-center gap-0.5">
               <AlertTriangle size={10} strokeWidth={2} />
@@ -2268,19 +2268,19 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
         <ChevronDown
           size={14}
           strokeWidth={2}
-          className={`text-gray-400 transition ${open ? 'rotate-180' : ''}`}
+          className={`text-[#55666E] transition ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
       {open && (
-        <div className="px-2.5 pb-2.5 space-y-2.5 border-t border-gray-100 pt-2">
+        <div className="px-2.5 pb-2.5 space-y-2.5 border-t border-[#DCD7C6] pt-2">
           {/* Quick facts */}
           {quickFacts.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {quickFacts.map((f, i) => (
                 <span
                   key={i}
-                  className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-[#EDF3F5] text-[#10263B]"
                 >
                   {f}
                 </span>
@@ -2296,7 +2296,7 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
           {/* Self-assessment vs coach rating */}
           {hasRatings && (
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5 inline-flex items-center gap-1">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5 inline-flex items-center gap-1">
                 <Star size={10} strokeWidth={1.75} className="text-amber-500" />
                 Self-assessment
               </p>
@@ -2361,24 +2361,24 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
 
           {/* Recent training history — coach + self, fold-down for more days */}
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
               Recent training
             </p>
             {recentSessions.length === 0 ? (
-              <p className="text-[11px] text-gray-400 italic">No sessions logged yet.</p>
+              <p className="text-[11px] text-[#55666E] italic">No sessions logged yet.</p>
             ) : (
               <>
                 <div className="space-y-1">
                   {visibleSessions.map((rs, i) => (
                     <div key={i} className="flex items-start gap-2 text-[11px]">
-                      <span className="shrink-0 text-gray-400">
+                      <span className="shrink-0 text-[#55666E]">
                         {rs.type === 'coach' ? (
                           <Waves size={11} strokeWidth={1.75} />
                         ) : (
                           <User size={11} strokeWidth={1.75} />
                         )}
                       </span>
-                      <span className="shrink-0 text-gray-400 w-14">
+                      <span className="shrink-0 text-[#55666E] w-14">
                         {rs.date
                           ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(rs.date) ? rs.date + 'T00:00:00' : rs.date).toLocaleDateString('en-US', {
                               month: 'short',
@@ -2386,9 +2386,9 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
                             })
                           : '—'}
                       </span>
-                      <span className="flex-1 text-gray-700">
+                      <span className="flex-1 text-[#10263B]">
                         {rs.label}
-                        <span className="text-gray-400">
+                        <span className="text-[#55666E]">
                           {' '}· {rs.type === 'coach' ? 'with coach' : 'self'}
                           {rs.status ? ` · ${rs.status}` : ''}
                         </span>
@@ -2419,7 +2419,7 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
           {/* Goals */}
           {goals.length > 0 && (
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5 inline-flex items-center gap-1">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5 inline-flex items-center gap-1">
                 <Target size={10} strokeWidth={1.75} />
                 Goals
               </p>
@@ -2432,7 +2432,7 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
           {/* Watch out */}
           {(profile.fears_phobias || profile.biggest_barrier) && (
             <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5 inline-flex items-center gap-1">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5 inline-flex items-center gap-1">
                 <Zap size={10} strokeWidth={1.75} />
                 Watch out
               </p>
@@ -2447,7 +2447,7 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
           <div className="space-y-2">
             {(profile.current_focus_area || profile.next_recommended_focus) && (
               <div>
-                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">
                   Coach notes
                 </p>
                 {profile.current_focus_area && <ProfileLine label="Focus now" value={profile.current_focus_area} />}
@@ -2484,7 +2484,7 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
             </div>
           )}
           {quickFacts.length === 0 && !hasMedical && goals.length === 0 && (profile as any).intake_completed_at && (
-            <p className="text-[11px] text-gray-400 italic">
+            <p className="text-[11px] text-[#55666E] italic">
               No profile data filled in for this student yet.
             </p>
           )}
@@ -2506,11 +2506,11 @@ function ProfileLine({
   return (
     <div className="flex gap-2 text-[11px]">
       <span
-        className={`shrink-0 w-20 inline-flex items-center gap-1 ${danger ? 'text-red-500' : 'text-gray-400'}`}
+        className={`shrink-0 w-20 inline-flex items-center gap-1 ${danger ? 'text-red-500' : 'text-[#55666E]'}`}
       >
         {label}
       </span>
-      <span className={`flex-1 ${danger ? 'text-red-800' : 'text-gray-700'}`}>
+      <span className={`flex-1 ${danger ? 'text-red-800' : 'text-[#10263B]'}`}>
         {value}
       </span>
     </div>
@@ -2572,14 +2572,14 @@ function StudentPlanCard({
       } as ServicePlanBlock];
 
   return (
-    <div className="bg-gray-50/60 rounded-xl border border-gray-200 p-3 space-y-3">
+    <div className="bg-[#F7F9FA]/60 rounded-[5px] border border-[#DCD7C6] p-3 space-y-3">
       <div className="flex items-center gap-2 min-w-0">
         <StudentAvatar url={student.photo_url} name={student.display_name} />
         <div className="min-w-0">
           <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
             {student.display_name}
           </p>
-          <p className="text-[10px] text-gray-500 capitalize">
+          <p className="text-[10px] text-[#55666E] capitalize">
             {student.belt_level?.replace(/_/g, ' ')}
           </p>
         </div>
@@ -2593,9 +2593,9 @@ function StudentPlanCard({
       {(() => {
         const firstBlock = blocks[0];
         return (
-          <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-2">
+          <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-2.5 space-y-2">
             <div className="flex items-baseline justify-between gap-2">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
                 Board for today
               </p>
               {/* Reference from intake: the board the student said they
@@ -2615,7 +2615,7 @@ function StudentPlanCard({
                 const ref = [p.board_type, size, vol].filter(Boolean).join(' · ');
                 if (!ref) return null;
                 return (
-                  <p className="text-[10px] text-gray-400 truncate">
+                  <p className="text-[10px] text-[#55666E] truncate">
                     Usually rides:{' '}
                     <span className="font-semibold text-[var(--tss-navy)]">
                       {ref}
@@ -2675,15 +2675,15 @@ function StudentPlanCard({
                     </div>
                   </div>
                   {mode === 'academy' && picked && (
-                    <p className="text-[10px] text-gray-500">Asignada: <span className="font-semibold">{picked.code}</span>{firstBlock.board_size_feet ? ` · ${firstBlock.board_size_feet}'${firstBlock.board_size_inches ?? ''}` : ''}</p>
+                    <p className="text-[10px] text-[#55666E]">Asignada: <span className="font-semibold">{picked.code}</span>{firstBlock.board_size_feet ? ` · ${firstBlock.board_size_feet}'${firstBlock.board_size_inches ?? ''}` : ''}</p>
                   )}
                   {mode === 'own' && (
-                    <p className="text-[10px] text-gray-500">
+                    <p className="text-[10px] text-[#55666E]">
                       Own board{firstBlock.board_size_feet ? ` · ${firstBlock.board_size_feet}'${firstBlock.board_size_inches ?? ''}` : ''}
                     </p>
                   )}
                   <details className="group">
-                    <summary className="cursor-pointer list-none text-[10px] font-mono uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                    <summary className="cursor-pointer list-none text-[10px] font-mono uppercase tracking-wider text-[#55666E] flex items-center gap-1">
                       <ChevronRight size={11} className="transition-transform group-open:rotate-90" /> Adjust manually
                     </summary>
                     <div className="grid grid-cols-3 gap-2 mt-2">
@@ -2745,7 +2745,7 @@ function StudentPlanCard({
           <>
             {collapsible && (
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
                   {showFullPlan ? `Full plan · ${blocks.length} blocks` : `🌊 Water missions · ${waterBlocks.length} of ${blocks.length} blocks`}
                 </p>
                 <button
@@ -2777,7 +2777,7 @@ function StudentPlanCard({
               <button
                 type="button"
                 onClick={onAddBlock}
-                className="w-full py-2 rounded-lg border-2 border-dashed border-gray-300 text-[12px] text-gray-500 hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] transition-colors"
+                className="w-full py-2 rounded-lg border-2 border-dashed border-[#DCD7C6] text-[12px] text-[#55666E] hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] transition-colors"
               >
                 + Add another block
               </button>
@@ -2831,9 +2831,9 @@ function BlockEditor({
     : null;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-2">
+    <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-2.5 space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
           Block {blockNumber}
         </p>
         {canRemove && (
@@ -2858,31 +2858,31 @@ function BlockEditor({
             {templateBlock.mission_time ? ` · ${templateBlock.mission_time} min` : ''}
           </p>
           {templateBlock.pilar_part && (
-            <p className="text-[12px] font-medium text-gray-800">{templateBlock.pilar_part}</p>
+            <p className="text-[12px] font-medium text-[#10263B]">{templateBlock.pilar_part}</p>
           )}
           {(templateBlock.step_title || templateBlock.step_id) && (
-            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Step · </span>{templateBlock.step_id}{templateBlock.step_title ? ` — ${templateBlock.step_title}` : ''}</p>
+            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Step · </span>{templateBlock.step_id}{templateBlock.step_title ? ` — ${templateBlock.step_title}` : ''}</p>
           )}
           {(templateBlock.mission?.title || templateBlock.mission_custom) && (
-            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Mission · </span>{templateBlock.mission?.title ?? templateBlock.mission_custom}</p>
+            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Mission · </span>{templateBlock.mission?.title ?? templateBlock.mission_custom}</p>
           )}
           {(templateBlock.drill?.title || templateBlock.drill_custom) && (
-            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Drill · </span>{templateBlock.drill?.title ?? templateBlock.drill_custom}</p>
+            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Drill · </span>{templateBlock.drill?.title ?? templateBlock.drill_custom}</p>
           )}
           {templateBlock.explain_md && (
-            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Explain · </span>{templateBlock.explain_md}</p>
+            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Explain · </span>{templateBlock.explain_md}</p>
           )}
           {templateBlock.demonstrate_md && (
-            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Demonstrate · </span>{templateBlock.demonstrate_md}</p>
+            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Demonstrate · </span>{templateBlock.demonstrate_md}</p>
           )}
           {templateBlock.simulate_md && (
-            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Simulate · </span>{templateBlock.simulate_md}</p>
+            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Simulate · </span>{templateBlock.simulate_md}</p>
           )}
           {templateBlock.feedback_md && (
-            <p className="text-[11px] text-gray-600"><span className="text-gray-400">Feedback · </span>{templateBlock.feedback_md}</p>
+            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Feedback · </span>{templateBlock.feedback_md}</p>
           )}
           {templateBlock.equipment && (
-            <p className="text-[10px] text-gray-400">{templateBlock.equipment}</p>
+            <p className="text-[10px] text-[#55666E]">{templateBlock.equipment}</p>
           )}
         </div>
       )}
@@ -2892,7 +2892,7 @@ function BlockEditor({
       <button
         type="button"
         onClick={() => setShowAdjust((v) => !v)}
-        className="text-[10px] text-gray-400 hover:text-[var(--tss-navy)]"
+        className="text-[10px] text-[#55666E] hover:text-[var(--tss-navy)]"
       >
         {showAdjust ? '▴ Hide adjustments' : '▾ Adjust for this student (optional)'}
       </button>
@@ -2901,13 +2901,13 @@ function BlockEditor({
 
       {/* Sequence focus */}
       <div>
-        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-0.5">
+        <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">
           Sequence focus
         </label>
         <select
           value={block.step_id ?? ''}
           onChange={(e) => onCommit({ step_id: e.target.value || null })}
-          className="w-full px-2 py-1.5 border border-gray-200 rounded-lg text-xs"
+          className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs"
         >
           <option value="">— pick a step —</option>
           {/* Agrupado por SECUENCIA con el rótulo de la fuente única. */}
@@ -2926,7 +2926,7 @@ function BlockEditor({
       {/* Land drill */}
       <div>
         <div className="flex items-center justify-between mb-0.5">
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400">
+          <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
             Land drill
           </label>
           {block.land_drill_id && (
@@ -2943,14 +2943,14 @@ function BlockEditor({
           <button
             type="button"
             onClick={() => setShowLandPicker(true)}
-            className="w-full text-left px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white hover:bg-gray-50"
+            className="w-full text-left px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA] hover:bg-[#F7F9FA]"
           >
             {landLabel || block.land_drill_custom || (
-              <span className="text-gray-400 italic">— tap to pick —</span>
+              <span className="text-[#55666E] italic">— tap to pick —</span>
             )}
           </button>
         ) : (
-          <div className="space-y-1.5 bg-gray-50 p-2 rounded-lg border border-gray-200">
+          <div className="space-y-1.5 bg-[#F7F9FA] p-2 rounded-lg border border-[#DCD7C6]">
             {stepDrills.length > 0 ? (
               stepDrills.map((d) => (
                 <button
@@ -2960,13 +2960,13 @@ function BlockEditor({
                     onCommit({ land_drill_id: d.id, land_drill_custom: null });
                     setShowLandPicker(false);
                   }}
-                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-white"
+                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-[#F7F9FA]"
                 >
                   <strong>{d.id}</strong> · {d.title}
                 </button>
               ))
             ) : (
-              <p className="text-[10px] text-gray-400 italic">No drills indexed for this step. Use custom below.</p>
+              <p className="text-[10px] text-[#55666E] italic">No drills indexed for this step. Use custom below.</p>
             )}
             <SmallField
               label=""
@@ -2980,7 +2980,7 @@ function BlockEditor({
             <button
               type="button"
               onClick={() => setShowLandPicker(false)}
-              className="text-[10px] text-gray-500 hover:text-gray-700"
+              className="text-[10px] text-[#55666E] hover:text-[#10263B]"
             >
               cancel
             </button>
@@ -2991,7 +2991,7 @@ function BlockEditor({
       {/* Water mission */}
       <div>
         <div className="flex items-center justify-between mb-0.5">
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400">
+          <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
             In-water mission
           </label>
           {block.water_drill_id && (
@@ -3008,14 +3008,14 @@ function BlockEditor({
           <button
             type="button"
             onClick={() => setShowWaterPicker(true)}
-            className="w-full text-left px-2 py-1.5 border border-gray-200 rounded-lg text-xs bg-white hover:bg-gray-50"
+            className="w-full text-left px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA] hover:bg-[#F7F9FA]"
           >
             {waterLabel || block.water_drill_custom || (
-              <span className="text-gray-400 italic">— tap to pick —</span>
+              <span className="text-[#55666E] italic">— tap to pick —</span>
             )}
           </button>
         ) : (
-          <div className="space-y-1.5 bg-gray-50 p-2 rounded-lg border border-gray-200">
+          <div className="space-y-1.5 bg-[#F7F9FA] p-2 rounded-lg border border-[#DCD7C6]">
             {stepMissions.length > 0 ? (
               stepMissions.map((d) => (
                 <button
@@ -3025,13 +3025,13 @@ function BlockEditor({
                     onCommit({ water_drill_id: d.id, water_drill_custom: null });
                     setShowWaterPicker(false);
                   }}
-                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-white"
+                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-[#F7F9FA]"
                 >
                   <strong>{d.id}</strong> · {d.title}
                 </button>
               ))
             ) : (
-              <p className="text-[10px] text-gray-400 italic">No missions indexed for this step. Use custom below.</p>
+              <p className="text-[10px] text-[#55666E] italic">No missions indexed for this step. Use custom below.</p>
             )}
             <SmallField
               label=""
@@ -3045,7 +3045,7 @@ function BlockEditor({
             <button
               type="button"
               onClick={() => setShowWaterPicker(false)}
-              className="text-[10px] text-gray-500 hover:text-gray-700"
+              className="text-[10px] text-[#55666E] hover:text-[#10263B]"
             >
               cancel
             </button>
@@ -3110,7 +3110,7 @@ function StudentEvalCard({
   const genOrder = blocks[0]?.order_index ?? 0;
 
   return (
-    <div className="bg-gray-50/60 rounded-xl border border-gray-200 p-3 space-y-2.5">
+    <div className="bg-[#F7F9FA]/60 rounded-[5px] border border-[#DCD7C6] p-3 space-y-2.5">
       {/* Student header + summary pill */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -3119,7 +3119,7 @@ function StudentEvalCard({
             <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
               {student.display_name}
             </p>
-            <p className="text-[10px] text-gray-500 capitalize">
+            <p className="text-[10px] text-[#55666E] capitalize">
               {student.belt_level?.replace(/_/g, ' ')}
             </p>
           </div>
@@ -3134,7 +3134,7 @@ function StudentEvalCard({
       {/* Always available — works for belt camps AND simple lessons (Discover
           Surfing) that have no planned blocks. Saved on block 0. */}
       {(
-        <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-3">
+        <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-2.5 space-y-3">
           <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[var(--tss-cyan,#5AC3E7)] font-semibold">
             Session summary — general analysis
           </p>
@@ -3142,7 +3142,7 @@ function StudentEvalCard({
           {/* Session-level objective completion (one per student, not per block).
               STP star grading moved to the end-of-camp evaluation. */}
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
               Did they meet today&apos;s objective?
             </label>
             <div className="grid grid-cols-3 gap-1">
@@ -3170,7 +3170,7 @@ function StudentEvalCard({
           </div>
 
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
               Focus level — how present were they today?
             </label>
             <div className="grid grid-cols-5 gap-1">
@@ -3192,13 +3192,13 @@ function StudentEvalCard({
               ))}
             </div>
             <div className="flex justify-between mt-0.5">
-              <span className="text-[9px] text-gray-400">Distracted</span>
-              <span className="text-[9px] text-gray-400">Locked in</span>
+              <span className="text-[9px] text-[#55666E]">Distracted</span>
+              <span className="text-[9px] text-[#55666E]">Locked in</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
               Flow channel — was the demand right today?
             </label>
             <div className="grid grid-cols-5 gap-1">
@@ -3227,7 +3227,7 @@ function StudentEvalCard({
                 </button>
               ))}
             </div>
-            <p className="text-[9px] text-gray-400 mt-0.5 italic text-center">
+            <p className="text-[9px] text-[#55666E] mt-0.5 italic text-center">
               Center is the goal. Extremes mean dial reps + difficulty up or down.
             </p>
           </div>
@@ -3340,9 +3340,9 @@ function BlockEvalSection({
   const water = block.water_drill_id ? drillTitle(block.water_drill_id) : block.water_drill_custom;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-2.5 space-y-2">
+    <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-2.5 space-y-2">
       <div className="flex items-center justify-between">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-500">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
           Block {blockNumber}
         </p>
         {block.status && (
@@ -3389,7 +3389,7 @@ function BlockEvalSection({
         <>
           {/* Status buttons */}
           <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
               Did they hit the objective?
             </label>
             <div className="grid grid-cols-3 gap-1.5">
@@ -3430,13 +3430,13 @@ function BlockEvalSection({
               readOnly={isClosed}
               onChange={onRateStep}
             />
-            <p className="text-[10px] text-gray-500 mt-0.5 italic">
+            <p className="text-[10px] text-[#55666E] mt-0.5 italic">
               Rates {studentFirstName}'s {block.step_id} officially in their sequence.
             </p>
           </div>
         </>
       ) : (
-        <p className="text-[10px] text-gray-400 italic">
+        <p className="text-[10px] text-[#55666E] italic">
           Not a sequence step — executed only, no grading.
         </p>
       )}
@@ -3457,7 +3457,7 @@ function EvalRow({
 }) {
   return (
     <div className="flex gap-2 text-xs">
-      <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400 shrink-0 w-24 pt-0.5 inline-flex items-center gap-1">
+      <span className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] shrink-0 w-24 pt-0.5 inline-flex items-center gap-1">
         {label}
       </span>
       {onClick ? (
@@ -3465,7 +3465,7 @@ function EvalRow({
           type="button"
           onClick={onClick}
           className={`flex-1 text-left whitespace-pre-wrap underline decoration-dotted decoration-gray-300 hover:text-[var(--tss-navy)] ${
-            highlight ? 'font-semibold text-[var(--tss-navy)]' : 'text-gray-700'
+            highlight ? 'font-semibold text-[var(--tss-navy)]' : 'text-[#10263B]'
           }`}
         >
           {value}
@@ -3473,7 +3473,7 @@ function EvalRow({
       ) : (
         <span
           className={`flex-1 whitespace-pre-wrap ${
-            highlight ? 'font-semibold text-[var(--tss-navy)]' : 'text-gray-700'
+            highlight ? 'font-semibold text-[var(--tss-navy)]' : 'text-[#10263B]'
           }`}
         >
           {value}
@@ -3542,26 +3542,26 @@ function PlannerSpaces({ token, date, defaultStart, title }: {
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
       {/* Línea plegada — cero carga visual hasta que el coach la toca. */}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-[#F7F9FA] transition-colors"
       >
         <span className="text-sm font-semibold text-[var(--tss-navy)]">
           🏛 Espacios · Reservar para esta clase
           {bookings && bookings.length > 0 ? ` (${bookings.length})` : ''}
         </span>
-        <span className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{open ? 'Cerrar' : 'Abrir'}</span>
+        <span className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">{open ? 'Cerrar' : 'Abrir'}</span>
       </button>
 
       {open && (
-        <div className="px-4 pb-4 space-y-3 border-t border-gray-50 pt-3">
+        <div className="px-4 pb-4 space-y-3 border-t border-[#DCD7C6] pt-3">
           {spaces === null ? (
-            <p className="text-[12px] text-gray-400">Cargando espacios…</p>
+            <p className="text-[12px] text-[#55666E]">Cargando espacios…</p>
           ) : spaces.length === 0 ? (
-            <p className="text-[12px] text-gray-400">Tu academia aún no tiene espacios configurados.</p>
+            <p className="text-[12px] text-[#55666E]">Tu academia aún no tiene espacios configurados.</p>
           ) : (
             <>
               <div className="flex flex-wrap gap-1.5">
@@ -3582,12 +3582,12 @@ function PlannerSpaces({ token, date, defaultStart, title }: {
 
               {sel && (
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="text-[11px] text-gray-500">Desde</label>
+                  <label className="text-[11px] text-[#55666E]">Desde</label>
                   <input type="time" value={from} onChange={(e) => setFrom(e.target.value)}
-                    className="px-2 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white" />
-                  <label className="text-[11px] text-gray-500">Hasta</label>
+                    className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-[12px] bg-[#F7F9FA]" />
+                  <label className="text-[11px] text-[#55666E]">Hasta</label>
                   <input type="time" value={to} onChange={(e) => setTo(e.target.value)}
-                    className="px-2 py-1.5 border border-gray-200 rounded-lg text-[12px] bg-white" />
+                    className="px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-[12px] bg-[#F7F9FA]" />
                   <button type="button" disabled={busy} onClick={book}
                     className="px-4 py-2 rounded-full text-[12px] font-bold text-white disabled:opacity-50"
                     style={{ background: 'var(--tss-navy, #061C2B)' }}>
@@ -3600,11 +3600,11 @@ function PlannerSpaces({ token, date, defaultStart, title }: {
 
               {bookings && bookings.length > 0 && (
                 <div className="space-y-1.5">
-                  <p className="text-[9px] font-mono uppercase tracking-wider text-gray-400">Reservado para este día</p>
+                  <p className="text-[9px] font-mono uppercase tracking-wider text-[#55666E]">Reservado para este día</p>
                   {bookings.map((b) => (
-                    <div key={b.id} className="flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-[12px]"
+                    <div key={b.id} className="flex items-center justify-between gap-2 rounded-[5px] px-3 py-2 text-[12px]"
                       style={{ background: 'rgba(6,214,160,.08)' }}>
-                      <span className="min-w-0 truncate text-gray-700">
+                      <span className="min-w-0 truncate text-[#10263B]">
                         <strong>{spaceName(b.space_id)}</strong> · {fmtT(b.starts_at)}–{fmtT(b.ends_at)}
                         {b.title ? ` · ${b.title}` : ''}{b.coach_name ? ` — ${b.coach_name}` : ''}
                       </span>
@@ -3616,7 +3616,7 @@ function PlannerSpaces({ token, date, defaultStart, title }: {
                   ))}
                 </div>
               )}
-              <p className="text-[10px] text-gray-400 italic">
+              <p className="text-[10px] text-[#55666E] italic">
                 Podés reservar varios espacios a distintas horas. Si uno choca con otra reserva, la app te avisa. Editable también en la pestaña Espacios.
               </p>
             </>

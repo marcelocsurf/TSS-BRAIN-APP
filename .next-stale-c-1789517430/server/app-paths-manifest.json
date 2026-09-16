@@ -1,0 +1,4 @@
+{
+  "/page": "app/page.js",
+  "/coach-portal/[token]/page": "app/coach-portal/[token]/page.js"
+}

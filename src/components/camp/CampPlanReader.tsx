@@ -91,7 +91,7 @@ export function CampPlanReader({
 
   if (!templateMeta.id || templatePlan.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-center text-sm text-gray-400 italic">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-5 text-center text-sm text-[#55666E] italic">
         No plan attached to this service — pick a template at creation time, or
         ask the admin to seed the days.
       </div>
@@ -101,10 +101,10 @@ export function CampPlanReader({
   return (
     <div className="space-y-3">
       {/* ── Header: template name + summary/detail toggle ── */}
-      <div className="bg-[var(--tss-navy)] text-white rounded-2xl p-5 shadow-md">
+      <div className="bg-[var(--tss-navy)] text-white rounded-lg p-5 shadow-md">
         <p
           className="text-[10px] uppercase tracking-[0.2em] text-[var(--tss-cyan)] font-bold"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           The Plan
         </p>
@@ -140,7 +140,7 @@ export function CampPlanReader({
                   ? 'bg-[var(--tss-cyan)] text-[var(--tss-navy)]'
                   : 'bg-transparent text-white/70 hover:text-white'
               }`}
-              style={{ fontFamily: 'DM Mono, monospace' }}
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
             >
               {m}
             </button>
@@ -155,18 +155,18 @@ export function CampPlanReader({
           return (
             <div
               key={d.day_number}
-              className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+              className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden"
             >
               {/* Day header — always visible */}
               <button
                 type="button"
                 onClick={() => toggleDay(d.day_number)}
-                className="w-full flex items-start justify-between gap-3 px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+                className="w-full flex items-start justify-between gap-3 px-5 py-4 hover:bg-[#F7F9FA] transition-colors text-left"
               >
                 <div className="min-w-0 flex-1">
                   <p
                     className="text-[10px] uppercase tracking-wider text-[var(--tss-cyan)] font-bold"
-                    style={{ fontFamily: 'DM Mono, monospace' }}
+                    style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                   >
                     Day {d.day_number}
                   </p>
@@ -176,7 +176,7 @@ export function CampPlanReader({
                   >
                     {d.day_goal || 'No goal set'}
                   </h3>
-                  <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[10px] text-gray-500" style={{ fontFamily: 'DM Mono, monospace' }}>
+                  <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[10px] text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
                     {d.venue_default && (
                       <span className="inline-flex items-center gap-1 uppercase tracking-wider">
                         <Compass size={10} strokeWidth={1.75} />
@@ -193,7 +193,7 @@ export function CampPlanReader({
                     )}
                   </div>
                 </div>
-                <span className="shrink-0 text-gray-400 mt-1">
+                <span className="shrink-0 text-[#55666E] mt-1">
                   {isOpen ? (
                     <ChevronDown size={16} strokeWidth={2} />
                   ) : (
@@ -210,7 +210,7 @@ export function CampPlanReader({
                     const n = d.blocks.filter((b) => momentOf(b) === m).length;
                     if (!n) return null;
                     return (
-                      <span key={m} className="text-[10px] font-semibold uppercase tracking-wide text-gray-500 bg-gray-50 border border-gray-200 rounded-full px-2 py-0.5" style={{ fontFamily: 'DM Mono, monospace' }}>
+                      <span key={m} className="text-[10px] font-semibold uppercase tracking-wide text-[#55666E] bg-[#F7F9FA] border border-[#DCD7C6] rounded-full px-2 py-0.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
                         {m} · {n}
                       </span>
                     );
@@ -220,13 +220,13 @@ export function CampPlanReader({
 
               {/* Day body — visible in detail mode or when expanded */}
               {isOpen && (
-                <div className="border-t border-gray-100 px-5 py-4 space-y-4 bg-gray-50/30">
+                <div className="border-t border-[#DCD7C6] px-5 py-4 space-y-4 bg-[#F7F9FA]">
                   {/* M77 — per-day support material (PPT / video / image / diagram) */}
                   {d.media && d.media.length > 0 && (
                     <div>
                       <p
-                        className="text-[10px] uppercase tracking-wider text-gray-400 font-bold mb-2"
-                        style={{ fontFamily: 'DM Mono, monospace' }}
+                        className="text-[10px] uppercase tracking-wider text-[#55666E] font-bold mb-2"
+                        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                       >
                         Support material
                       </p>
@@ -235,10 +235,10 @@ export function CampPlanReader({
                   )}
 
                   {d.evaluation_focus && (
-                    <div className="bg-white border-l-4 border-[var(--tss-cyan)] rounded-r-lg px-3 py-2">
+                    <div className="bg-[#F7F9FA] border-l-4 border-[var(--tss-cyan)] rounded-r-lg px-3 py-2">
                       <p
-                        className="text-[10px] uppercase tracking-wider text-gray-500 font-semibold"
-                        style={{ fontFamily: 'DM Mono, monospace' }}
+                        className="text-[10px] uppercase tracking-wider text-[#55666E] font-semibold"
+                        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
                       >
                         Evaluation focus
                       </p>
@@ -249,30 +249,30 @@ export function CampPlanReader({
                   )}
 
                   {d.blocks.length === 0 ? (
-                    <p className="text-xs text-gray-400 italic">No blocks defined for this day yet.</p>
+                    <p className="text-xs text-[#55666E] italic">No blocks defined for this day yet.</p>
                   ) : (
                     MOMENTS.map((m) => {
                       const list = d.blocks.filter((b) => momentOf(b) === m);
                       if (!list.length) return null;
                       return (
                         <div key={m}>
-                          <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--tss-cyan)] mb-1.5" style={{ fontFamily: 'DM Mono, monospace' }}>{m}</p>
+                          <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--tss-cyan)] mb-1.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{m}</p>
                           <div className="space-y-1.5 mb-3">
                             {list.map((b) => {
                               const k = d.day_number + ':' + b.block_order;
                               const open = openBlocks.has(k);
                               return (
-                                <div key={b.block_order} className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+                                <div key={b.block_order} className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg overflow-hidden">
                                   <button type="button" onClick={() => toggleBlock(k)}
                                     className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left">
                                     <span className="text-[13px] font-semibold text-[var(--tss-navy)] truncate">{blockTitle(b)}</span>
                                     <span className="flex items-center gap-2 shrink-0">
-                                      {b.mission_time && <span className="text-[10px] text-gray-400" style={{ fontFamily: 'DM Mono, monospace' }}>{b.mission_time}m</span>}
-                                      <ChevronRight size={14} className={`text-gray-400 transition-transform ${open ? 'rotate-90' : ''}`} />
+                                      {b.mission_time && <span className="text-[10px] text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{b.mission_time}m</span>}
+                                      <ChevronRight size={14} className={`text-[#55666E] transition-transform ${open ? 'rotate-90' : ''}`} />
                                     </span>
                                   </button>
                                   {open && (
-                                    <div className="border-t border-gray-100 p-2">
+                                    <div className="border-t border-[#DCD7C6] p-2">
                                       <BlockCard block={b} coachToken={coachToken} />
                                     </div>
                                   )}
@@ -286,7 +286,7 @@ export function CampPlanReader({
                   )}
 
                   {d.day_notes && (
-                    <div className="text-[11px] text-gray-500 italic border-t border-gray-200 pt-2">
+                    <div className="text-[11px] text-[#55666E] italic border-t border-[#DCD7C6] pt-2">
                       {d.day_notes}
                     </div>
                   )}
@@ -331,7 +331,7 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
 
   return (
     <div
-      className="bg-white rounded-xl border border-gray-100 p-4 space-y-3 border-l-4"
+      className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4 space-y-3 border-l-4"
       style={{ borderLeftColor: activityType.color }}
     >
       {/* Header — order + activity type label + sub-type chip */}
@@ -339,7 +339,7 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
         <div className="min-w-0">
           <p
             className="text-[9px] uppercase tracking-wider"
-            style={{ fontFamily: 'DM Mono, monospace', color: activityType.color }}
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: activityType.color }}
           >
             Block {block.block_order} · {activityType.label}
             {subtypeLabel ? ` · ${subtypeLabel}` : ''}
@@ -370,7 +370,7 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
 
       {/* Free-form body / description for non-EDPF, non-Water-Games types */}
       {!hasEdpf && !isWaterGames && block.mission_custom && (
-        <p className="text-sm text-gray-700 whitespace-pre-wrap">{block.mission_custom}</p>
+        <p className="text-sm text-[#10263B] whitespace-pre-wrap">{block.mission_custom}</p>
       )}
 
       {/* Land Drill EDPF stack — 4 sections */}
@@ -397,7 +397,7 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
           {block.drill ? (
             <DrillMissionBody item={block.drill} />
           ) : (
-            <p className="text-sm text-gray-700">{block.drill_custom}</p>
+            <p className="text-sm text-[#10263B]">{block.drill_custom}</p>
           )}
         </Section>
       )}
@@ -408,7 +408,7 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
           {block.mission ? (
             <DrillMissionBody item={block.mission} />
           ) : (
-            <p className="text-sm text-gray-700">{block.mission_custom}</p>
+            <p className="text-sm text-[#10263B]">{block.mission_custom}</p>
           )}
         </Section>
       )}
@@ -418,7 +418,7 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
         <div className="bg-cyan-50 rounded-lg px-3 py-2">
           <p
             className="text-[9px] uppercase tracking-wider text-cyan-700 font-bold"
-            style={{ fontFamily: 'DM Mono, monospace' }}
+            style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
           >
             STP sequence
           </p>
@@ -441,8 +441,8 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
 
       {/* Per-block evaluation focus */}
       {block.evaluation_focus && (
-        <div className="text-[11px] text-gray-600 border-t border-gray-100 pt-2">
-          <span className="font-semibold uppercase tracking-wider text-gray-400 text-[9px]" style={{ fontFamily: 'DM Mono, monospace' }}>
+        <div className="text-[11px] text-[#55666E] border-t border-[#DCD7C6] pt-2">
+          <span className="font-semibold uppercase tracking-wider text-[#55666E] text-[9px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
             Eval focus:
           </span>{' '}
           {block.evaluation_focus}
@@ -458,11 +458,11 @@ function EdpfSection({ label, body }: { label: string; body: string }) {
     <div className="border-l-2 border-amber-300 pl-3">
       <p
         className="text-[9px] uppercase tracking-wider text-amber-700 font-bold mb-0.5"
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       >
         {label}
       </p>
-      <p className="text-[12px] text-gray-700 leading-snug whitespace-pre-wrap">{body}</p>
+      <p className="text-[12px] text-[#10263B] leading-snug whitespace-pre-wrap">{body}</p>
     </div>
   );
 }
@@ -472,7 +472,7 @@ function Section({ title, titleColor, children }: { title: string; titleColor: s
     <div>
       <p
         className={`text-[10px] uppercase tracking-wider font-bold ${titleColor} mb-1`}
-        style={{ fontFamily: 'DM Mono, monospace' }}
+        style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
       >
         {title}
       </p>
@@ -497,7 +497,7 @@ function DrillMissionBody({
       <p className="text-sm font-semibold text-[var(--tss-navy)]">
         {item.title}
         {item.time_estimate && (
-          <span className="ml-2 text-[10px] text-gray-400 font-normal" style={{ fontFamily: 'DM Mono, monospace' }}>
+          <span className="ml-2 text-[10px] text-[#55666E] font-normal" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
             · {item.time_estimate}
           </span>
         )}
@@ -508,7 +508,7 @@ function DrillMissionBody({
           {item.key_words.map((k, i) => (
             <span
               key={i}
-              className="text-[10px] px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-600"
+              className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#EDF3F5] text-[#55666E]"
             >
               {k}
             </span>
@@ -516,7 +516,7 @@ function DrillMissionBody({
         </div>
       )}
       {item.success_criteria && item.success_criteria.length > 0 && (
-        <ul className="space-y-0.5 text-[12px] text-gray-700 mt-1">
+        <ul className="space-y-0.5 text-[12px] text-[#10263B] mt-1">
           {item.success_criteria.map((c, i) => (
             <li key={i} className="flex gap-1.5">
               <span className="text-emerald-500">✓</span>
@@ -532,8 +532,8 @@ function DrillMissionBody({
 function Chip({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <span
-      className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
-      style={{ fontFamily: 'DM Mono, monospace' }}
+      className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-[#EDF3F5] text-[#10263B]"
+      style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
     >
       {icon}
       {children}
