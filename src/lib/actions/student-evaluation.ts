@@ -18,6 +18,9 @@ export async function closeStudentEvaluation(input: {
   studentId: string;
   coachId: string;
   nextFocus: string;
+  /** Foco ELEGIBLE (2026-09-16): secuencia + paso opcional; el Home lo abre. */
+  nextFocusSequenceId?: string | null;
+  nextFocusStepId?: string | null;
   studentVisibleNote?: string;
   coachPrivateNote?: string;
   readinessSummary?: string;
@@ -50,7 +53,7 @@ export async function closeStudentEvaluation(input: {
   // El foco también viaja al portal del alumno, como al cerrar un camp.
   await admin
     .from('students')
-    .update({ next_recommended_focus: focus })
+    .update({ next_recommended_focus: focus, next_focus_sequence_id: input.nextFocusSequenceId || null, next_focus_step_id: input.nextFocusStepId || null })
     .eq('id', input.studentId);
 
   revalidatePath(`/students/${input.studentId}`);

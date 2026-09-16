@@ -443,7 +443,9 @@ export function CourseTab({ data }: { data: CourseData }) {
       {/* Las seis cintas: hasta la tuya en color pleno, el resto apagadas. */}
       <div className="mx-2 mt-4 flex gap-1">
         {(['#E8ECEF', '#F5C518', '#1E9BE0', '#7B4FBE', '#7D4E27', '#0F1A22'] as const).map((c, i) => (
-          <i key={c} className="flex-1 h-1.5 rounded-sm" style={{ background: c, opacity: i <= beltIndex ? 1 : 0.25, boxShadow: c === '#0F1A22' ? 'inset 0 0 0 1px rgba(247,249,250,.25)' : undefined }} />
+          // Contorno claro en TODAS (Marcelo 2026-09-16: café y negra se perdían
+          // sobre el ink) y las no alcanzadas menos apagadas.
+          <i key={c} className="flex-1 h-1.5 rounded-sm" style={{ background: c, opacity: i <= beltIndex ? 1 : 0.5, boxShadow: 'inset 0 0 0 1px rgba(247,249,250,.35)' }} />
         ))}
       </div>
 
@@ -567,9 +569,9 @@ export function CourseTab({ data }: { data: CourseData }) {
         <div className="space-y-3 pt-2">
           <GroupHeader
             theme={beltTheme}
-            eyebrow="The loop · every sequence starts and ends in posture"
+            eyebrow="The loop · every maneuver starts and ends in posture"
             title="The Infinite Circle"
-            subtitle="The language of the sequences that follow: posture → rail → projection → maneuver → back to posture."
+            subtitle="The language of the sequences that follow: posture → rail → projection → maneuver → back to posture. A sequence can start earlier — the loop begins the moment you are in posture."
             videoUrl={null}
           />
           <SectionBlock

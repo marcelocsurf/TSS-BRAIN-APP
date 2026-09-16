@@ -11,6 +11,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { X } from 'lucide-react';
 import { BRAND } from '@/lib/constants/brand';
 import { StarRating } from '@/components/sequence/StarRating';
+import { NextFocusPicker, focusLabel, EMPTY_FOCUS, type NextFocusValue, type NextFocusGroup } from '@/components/evaluation/NextFocusPicker';
 import { closeCampFinal, getCampWeekMissionsByToken } from '@/lib/actions/service-planner';
 import type { ServicePlanData, ServicePlanStudent } from '@/lib/actions/service-planner';
 import { BELT_DISPLAY, BELT_RANK, type BeltLevel } from '@/lib/constants/belts';
@@ -235,7 +236,16 @@ export function FinalCampEvaluation({
   // 🎯 FOCUS PARA SU PRÓXIMA ETAPA (obligatorio — pedido de Marcelo 2026-08-09):
   // el cierre final debe dejar claro QUÉ debe seguir trabajando cada alumno.
   // La app sugiere los STPs que quedaron débiles (<4★) como punto de partida.
-  const [nextFocus, setNextFocus] = useState<Record<string, string>>({});
+  // Foco ELEGIBLE (Marcelo 2026-09-16): secuencia + paso opcional + nota
+  // opcional. El texto que ven las fichas viejas se arma solo (focusLabel).
+  const [focusSel, setFocusSel] = useState<Record<string, NextFocusValue>>({});
+  const focusGroups: NextFocusGroup[] = seqGroups.map((g) => ({
+    id: g.id, name: g.name, order: g.order,
+    steps: g.rows.map((r) => ({ id: r.step_id, title: r.step_title ?? r.step_id })),
+  }));
+  const nextFocus: Record<string, string> = Object.fromEntries(
+    Object.entries(focusSel).map(([sid, v]) => [sid, focusLabel(focusGroups, v)]),
+  );
   const weakStps = (studentId: string): string[] =>
     stpCatalog
       .filter((stp) => {
@@ -244,10 +254,11 @@ export function FinalCampEvaluation({
       })
       .slice(0, 3)
       .map((stp) => stp.title || stp.id);
+  // Sugerencia = el primer paso débil (<4★): su secuencia y ese paso.
   const suggestFocus = (studentId: string) => {
-    const weak = weakStps(studentId);
-    if (weak.length === 0) return;
-    setNextFocus((prev) => ({ ...prev, [studentId]: `Keep working on: ${weak.join(', ')}` }));
+    const weak = stpCatalog.find((stp) => { const r = ratings[studentId]?.[stp.id] ?? 0; return r > 0 && r < rule.stpThreshold; });
+    if (!weak || !weak.wb_sequence_id) return;
+    setFocusSel((prev) => ({ ...prev, [studentId]: { sequenceId: weak.wb_sequence_id as string, stepId: weak.id, note: prev[studentId]?.note ?? '' } }));
   };
 
   const buildStudentPayload = (s: ServicePlanStudent) => {
@@ -263,6 +274,8 @@ export function FinalCampEvaluation({
       student_visible_note: notes[s.student_id]?.visible?.trim() ?? '',
       coach_private_note: notes[s.student_id]?.private?.trim() ?? '',
       next_focus: nextFocus[s.student_id]?.trim() ?? '',
+      next_focus_sequence_id: focusSel[s.student_id]?.sequenceId || null,
+      next_focus_step_id: focusSel[s.student_id]?.stepId || null,
     };
     const promos = willPromote(s) ? [{ student_id: s.student_id, belt_level: targetBelt as string }] : [];
     return { ratingsPayload, result, promos };
@@ -343,6 +356,8 @@ export function FinalCampEvaluation({
       student_visible_note: notes[s.student_id]?.visible?.trim() ?? '',
       coach_private_note: notes[s.student_id]?.private?.trim() ?? '',
       next_focus: nextFocus[s.student_id]?.trim() ?? '',
+      next_focus_sequence_id: focusSel[s.student_id]?.sequenceId || null,
+      next_focus_step_id: focusSel[s.student_id]?.stepId || null,
     }));
 
     const promotionsPayload = students
@@ -671,14 +686,14 @@ export function FinalCampEvaluation({
                           </button>
                         )}
                       </div>
-                      <textarea
-                        id={`next-focus-${s.student_id}`}
-                        value={nextFocus[s.student_id] ?? ''}
-                        onChange={(e) => setNextFocus((prev) => ({ ...prev, [s.student_id]: e.target.value }))}
-                        rows={2}
-                        className="w-full px-3 py-2 border border-cyan-200 bg-cyan-50/40 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--tss-cyan,#5AC3E7)]"
-                        placeholder="What should they keep working on after this camp? e.g. Bottom turn timing + reading the wave down the line"
-                      />
+                      <div id={`next-focus-${s.student_id}`}>
+                        <NextFocusPicker
+                          groups={focusGroups}
+                          value={focusSel[s.student_id] ?? EMPTY_FOCUS}
+                          onChange={(v) => setFocusSel((prev) => ({ ...prev, [s.student_id]: v }))}
+                          label=""
+                        />
+                      </div>
                     </div>
 
                     {/* Written notes — one the student sees, one private */}

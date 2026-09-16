@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { setOfficialStepRating } from '@/lib/actions/evaluations';
 import { SequenceEvaluation } from '@/components/evaluation/SequenceEvaluation';
 import { closeStudentEvaluation } from '@/lib/actions/student-evaluation';
+import { NextFocusPicker, focusLabel, EMPTY_FOCUS, type NextFocusValue, type NextFocusGroup } from '@/components/evaluation/NextFocusPicker';
+import { groupBySequence, isMethodSequence } from '@/lib/constants/learning-blocks';
 
 // Coach-facing panel on /students/[id]. Lets the coach assign OFFICIAL
 // stars (1-5) to any active STP for the student. Persisted in
@@ -42,7 +44,12 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSeque
   // Cada evaluación tiene que dejar el "qué trabajar después". Acá no había
   // ningún cierre: el coach ponía estrellas y se iba, sin que quedara una
   // palabra. Es lo que el alumno ve y con lo que el próximo coach planea.
-  const [focus, setFocus] = useState('');
+  // Foco ELEGIBLE (Marcelo 2026-09-16): secuencia + paso opcional + nota.
+  const [focusSel, setFocusSel] = useState<NextFocusValue>(EMPTY_FOCUS);
+  const focusGroups: NextFocusGroup[] = groupBySequence(local).groups
+    .filter((g) => isMethodSequence(g.id))
+    .map((g) => ({ id: g.id, name: g.name, order: g.order, steps: g.rows.map((r) => ({ id: r.step_id, title: r.step_title ?? r.step_id })) }));
+  const focus = focusLabel(focusGroups, focusSel);
   const [visibleNote, setVisibleNote] = useState('');
   const [privateNote, setPrivateNote] = useState('');
   const [closing, setClosing] = useState(false);
@@ -113,23 +120,19 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSeque
         onRate={(changes) => changes.forEach((c) => rate(c.stepId, c.stars))}
         studentId={studentId}
         studentSequenceRatings={studentSequenceRatings}
-        onFocusSaved={(_stepId, f) => { if (f) setFocus(f); }}
+        onFocusSaved={(_stepId, f) => { if (f) setFocusSel((prev) => ({ ...prev, note: f })); }}
       />
 
       {/* Cerrar la evaluación. Lo mismo que se pide al cerrar un camp: un
           comentario obligatorio y dos opcionales. */}
       <div className="rounded-[5px] border border-[#DCD7C6] p-3.5 space-y-2.5" style={{ background: '#FBF2DF' }}>
         <div>
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-amber-800">
-            🎯 Qué trabajar después · obligatorio
-          </label>
-          <p className="text-[11px] text-[#55666E] mb-1">El alumno lo ve en su portal, y el próximo coach planea con eso.</p>
-          <textarea
-            value={focus}
-            onChange={(e) => setFocus(e.target.value)}
-            rows={2}
-            placeholder="Una línea concreta — p. ej. Bottom turn frontside: sostener el hold antes de proyectar."
-            className="w-full px-2.5 py-2 border border-amber-200 rounded-lg text-[13px] bg-[#F7F9FA]"
+          <NextFocusPicker
+            groups={focusGroups}
+            value={focusSel}
+            onChange={setFocusSel}
+            label="🎯 Qué trabajar después · obligatorio"
+            hint="Elegí la secuencia (y el paso, si hace falta). El alumno la abre directo en Let's Play; el próximo coach planea con eso."
           />
         </div>
         <details>
@@ -153,7 +156,7 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSeque
         </details>
         <button
           type="button"
-          disabled={closing || focus.trim().length < 5}
+          disabled={closing || (!focusSel.sequenceId && focus.trim().length < 5)}
           onClick={() => {
             setClosing(true);
             setError('');
@@ -161,6 +164,8 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSeque
               studentId,
               coachId,
               nextFocus: focus,
+              nextFocusSequenceId: focusSel.sequenceId || null,
+              nextFocusStepId: focusSel.stepId || null,
               studentVisibleNote: visibleNote,
               coachPrivateNote: privateNote,
               readinessSummary: `${ratedCount}/${local.length} pasos evaluados`,

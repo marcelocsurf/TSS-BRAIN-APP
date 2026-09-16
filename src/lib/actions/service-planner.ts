@@ -1400,7 +1400,7 @@ export async function closeCampFinal(
   token: string,
   campInstanceId: string,
   ratings?: Array<{ student_id: string; step_id: string; rating: number }>,
-  results?: Array<{ student_id: string; approved: boolean; readiness_summary?: string; ocean_level?: string; student_visible_note: string; coach_private_note: string; next_focus?: string }>,
+  results?: Array<{ student_id: string; approved: boolean; readiness_summary?: string; ocean_level?: string; student_visible_note: string; coach_private_note: string; next_focus?: string; next_focus_sequence_id?: string | null; next_focus_step_id?: string | null }>,
   promotions?: Array<{ student_id: string; belt_level: string }>,
   opts?: { finalize?: boolean },
 ): Promise<{ ok: boolean; error?: string; waterPending?: string[] }> {
@@ -1611,7 +1611,7 @@ export async function closeCampFinal(
         }
         for (const r of withFocus) {
           const focus = (r.next_focus as string).trim();
-          await admin.from('students').update({ next_recommended_focus: focus }).eq('id', r.student_id);
+          await admin.from('students').update({ next_recommended_focus: focus, next_focus_sequence_id: (r as any).next_focus_sequence_id || null, next_focus_step_id: (r as any).next_focus_step_id || null }).eq('id', r.student_id);
           const ssrId = latestByStudent.get(r.student_id);
           if (ssrId) await admin.from('student_session_results').update({ whats_next: focus }).eq('id', ssrId);
         }

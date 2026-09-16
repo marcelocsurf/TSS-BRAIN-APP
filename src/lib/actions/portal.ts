@@ -671,6 +671,23 @@ export async function getCoachFocusState(
     const studentId = await studentIdFromPortalToken(portalToken);
     if (!studentId) return { flagged: 0, pending: 0, clearedByStudent: false, firstPendingStepId: null };
     const admin = createAdminClient();
+    // Foco ELEGIBLE del coach (2026-09-16): si eligió secuencia (+ paso), se
+    // apaga cuando el alumno lleva ESE paso (o toda la secuencia) a 4★ solo.
+    const { data: stu } = await admin.from('students').select('next_focus_sequence_id, next_focus_step_id').eq('id', studentId).maybeSingle();
+    if (stu?.next_focus_sequence_id) {
+      let stepIds: string[] = [];
+      if (stu.next_focus_step_id) stepIds = [stu.next_focus_step_id];
+      else {
+        const { data: ls } = await admin.from('lessons').select('id').eq('wb_sequence_id', stu.next_focus_sequence_id).eq('active', true);
+        stepIds = (ls ?? []).map((l: any) => l.id);
+      }
+      const { data: rs } = stepIds.length
+        ? await admin.from('student_step_ratings').select('step_id, current_rating').eq('student_id', studentId).in('step_id', stepIds)
+        : { data: [] as any[] };
+      const byStep = new Map((rs ?? []).map((r: any) => [r.step_id, r.current_rating ?? 0]));
+      const pending = stepIds.filter((id) => (byStep.get(id) ?? 0) < 4);
+      return { flagged: stepIds.length, pending: pending.length, clearedByStudent: stepIds.length > 0 && pending.length === 0, firstPendingStepId: pending[0] ?? null };
+    }
     const { data } = await admin
       .from('student_step_ratings')
       .select('step_id, coach_rating, current_rating')

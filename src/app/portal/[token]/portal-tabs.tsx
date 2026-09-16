@@ -220,6 +220,8 @@ interface PortalData {
   /** La primera secuencia sin lograr y el paso que la frena. */
   /** ¿Sigue pendiente lo que el coach dejó para trabajar? */
   coachFocusState?: { flagged: number; pending: number; clearedByStudent: boolean };
+  /** Foco ELEGIBLE del coach: secuencia (+ paso) que el Home abre en Let's Play. */
+  coachFocusPick?: { sequenceId: string; stepId: string | null; label: string; note: string | null } | null;
   /** The Lineup: el canal de la comunidad (null si falló la carga). */
   lineup?: import('@/lib/actions/community').LineupData | null;
   nextMove?: {
@@ -412,7 +414,22 @@ function nextMoveRows(
   const coachFocus: string | null = (data as any).standaloneEvaluation?.focus || student?.next_recommended_focus || null;
   const coachCleared = !!coachFocus && !!(data as any).coachFocusState?.clearedByStudent;
   const rows: NextMoveRow[] = [];
-  if (coachFocus && !coachCleared) {
+  const pick = (data as any).coachFocusPick as PortalData['coachFocusPick'];
+  if (pick && !coachCleared) {
+    // Foco ELEGIBLE (2026-09-16): la fila abre la secuencia (o el paso) en
+    // Let's Play; la nota del coach, si la hay, va como razón.
+    const noteOnly = pick.note && pick.note !== pick.label && !pick.note.startsWith(pick.label) ? pick.note : (pick.note?.includes(' — ') ? pick.note.split(' — ').slice(1).join(' — ') : null);
+    const pendingStep: string | null = (data as any).coachFocusState?.firstPendingStepId ?? pick.stepId ?? null;
+    rows.push({
+      key: 'coach', label: 'From your coach', title: pick.label, accent: BRAND.colors.cyan,
+      reason: noteOnly || 'Stays here until you take it to 4★ on your own.',
+      action: 'Train it →',
+      onClick: () => {
+        if (onTrainSequence) onTrainSequence({ sequenceId: pick.sequenceId, mode: pick.stepId || pendingStep ? 'step_focus' : 'sequence_run', focusStepId: pick.stepId || pendingStep || undefined, intention: noteOnly || undefined });
+        else if (pendingStep) onOpenStep?.(pendingStep);
+      },
+    });
+  } else if (coachFocus && !coachCleared) {
     // Si el coach dejó pasos bajo 4★, la fila abre el primero pendiente en
     // Let's Play; si solo dejó una nota en texto, queda como aviso.
     const coachStep: string | null = (data as any).coachFocusState?.firstPendingStepId ?? null;

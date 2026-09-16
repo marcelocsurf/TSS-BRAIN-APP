@@ -232,6 +232,23 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           // ¿Lo que el coach dejó para trabajar sigue pendiente, o el alumno ya
           // lo llevó a 4 por su cuenta?
           coachFocusState,
+          // Foco ELEGIBLE del coach (2026-09-16): secuencia + paso; el Home lo
+          // abre en Let's Play en vez de mostrar solo texto.
+          coachFocusPick: await (async () => {
+            const seqId = (student as any).next_focus_sequence_id as string | null;
+            if (!seqId) return null;
+            try {
+              const { createAdminClient } = await import('@/lib/supabase/admin');
+              const admin = createAdminClient();
+              const stepId = (student as any).next_focus_step_id as string | null;
+              const { data: ls } = await admin.from('lessons').select('id, title, wb_sequence_name, wb_sequence_order').eq('wb_sequence_id', seqId).limit(60);
+              const meta = (ls ?? [])[0] as any;
+              const st = stepId ? (ls ?? []).find((l: any) => l.id === stepId) as any : null;
+              const { sequenceLabel } = await import('@/lib/constants/learning-blocks');
+              const seqLabel = meta ? sequenceLabel(seqId, meta.wb_sequence_order, meta.wb_sequence_name ?? seqId) : seqId;
+              return { sequenceId: seqId, stepId: stepId || null, label: st ? `${seqLabel} · ${st.title}` : seqLabel, note: (student as any).next_recommended_focus ?? null };
+            } catch { return null; }
+          })(),
           // The Lineup: el canal de la comunidad. Si falla, el portal sigue.
           lineup: lineupRes,
         }}

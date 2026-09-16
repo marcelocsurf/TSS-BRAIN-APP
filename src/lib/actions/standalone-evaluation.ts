@@ -14,7 +14,7 @@ import { revalidatePath } from 'next/cache';
 export async function closeStandaloneEvaluation(
   studentId: string,
   ratings: Array<{ student_id: string; step_id: string; rating: number }>,
-  results: Array<{ student_id: string; approved: boolean; readiness_summary?: string; ocean_level?: string; student_visible_note: string; coach_private_note?: string; next_focus?: string }>,
+  results: Array<{ student_id: string; approved: boolean; readiness_summary?: string; ocean_level?: string; student_visible_note: string; coach_private_note?: string; next_focus?: string; next_focus_sequence_id?: string | null; next_focus_step_id?: string | null }>,
   promotions: Array<{ student_id: string; belt_level: string }>,
 ): Promise<{ ok: boolean; error?: string; waterPending?: string[] }> {
   const coach = await getCurrentCoach();
@@ -54,7 +54,7 @@ export async function closeStandaloneEvaluation(
   if (actaErr) return { ok: false, error: actaErr.message };
 
   // 3. Next focus → lo ve el alumno y el próximo coach
-  await admin.from('students').update({ next_recommended_focus: result.next_focus!.trim() }).eq('id', studentId);
+  await admin.from('students').update({ next_recommended_focus: result.next_focus!.trim(), next_focus_sequence_id: result.next_focus_sequence_id || null, next_focus_step_id: result.next_focus_step_id || null }).eq('id', studentId);
 
   // 4. Nivel de océano (autonomía) — mismo camino que el cierre del camp
   const { data: stu } = await admin.from('students').select('first_name, belt_level, ocean_level, ocean_level_provisional').eq('id', studentId).single();
