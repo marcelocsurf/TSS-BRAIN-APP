@@ -11,7 +11,7 @@ Actualizada: 2026-09-05. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico
 - [ ] **Dos secretos en GitHub** (repo TSS-BRAIN-APP → Settings → Secrets and variables → Actions → New repository secret), mismos valores que en Vercel: `NEXT_PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`.
 - [ ] Opcionales del backup: `SUPABASE_DB_URL` (Supabase → Connect → Session pooler, con la contraseña de la base → agrega un pg_dump completo con logins de coaches) y `BACKUP_PASSPHRASE` (frase larga guardada en el gestor de contraseñas → cifra el paquete).
 - [ ] **Primer backup a mano**: GitHub → Actions → "Backup semanal" → Run workflow → verlo en verde y bajar el artifact una vez para saber dónde queda.
-- [ ] **Plan de Supabase**: Settings → Billing. Free no tiene backups propios; Pro guarda 7 días. Decidir si se sube a Pro (~$25/mes) y confirmar que la tarjeta no vence.
+- [x] **Plan de Supabase**: la organización ya está en Pro (verificado 2026-09-16): backups diarios de 7 días del lado de Supabase. Solo queda confirmar que la tarjeta no vence.
 - [ ] **Verificación en dos pasos** en Google (el Gmail que sostiene todo), GitHub, Vercel y Supabase + correo de recuperación distinto en Google.
 - [ ] **Gestor de contraseñas**: guardar los 9 secretos de `.env.local` (lista en `RECUPERACION.md` §2), la contraseña de la base de Supabase, el token de GitHub y la `BACKUP_PASSPHRASE`.
 - [ ] Vercel → marcar las llaves como *Sensitive*; Supabase → Auth → activar *leaked password protection*.
