@@ -530,9 +530,6 @@ function BlockSection({
   const prefix = sequencePrefix(blockId, blockNumber);
   // Los momentos de la línea debajo de cada lección (de la página de la secuencia).
   const moments = asSequence && blockId ? momentsByStep(blockId, items.map((i) => ({ id: i.step_id, title: i.step_title }))) : {};
-  const seqEyebrow = prefix
-    ? `${beltWord} Belt · ${prefix.startsWith('#') ? `Sequence ${prefix}` : prefix}`
-    : `${beltWord} Belt`;
 
   return (
     <details
@@ -548,7 +545,9 @@ function BlockSection({
         ) : null}
         <div className="flex-1 min-w-0">
           <div className="text-[10px]" style={{ ...F_M, letterSpacing: '0.12em', color: 'rgba(247,249,250,.40)' }}>
-            {asSequence ? (prefix?.startsWith('#') ? `${beltWord} Belt` : seqEyebrow) : `${beltWord} Belt · Block ${blockNumber}`}
+            {/* Solo la cinta: el nombre de la etapa ("Getting to the wave") repetía
+                lo que ya dice el título grande (Marcelo 2026-09-16). */}
+            {asSequence ? `${beltWord} Belt` : `${beltWord} Belt · Block ${blockNumber}`}
           </div>
           <div className="text-[15.5px] font-semibold mt-0.5 flex items-center gap-1.5 leading-tight" style={{ color: PAPER }}>{blockName}<SideChip side={asSequence ? side : null} small dark /></div>
           {promise && (

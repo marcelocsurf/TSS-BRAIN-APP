@@ -406,7 +406,7 @@ export function CourseTab({ data }: { data: CourseData }) {
           <span className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.045em', color: 'rgba(214,225,231,.7)' }}>{data.studentName}</span>
         </div>
         <h2 className="mt-2 leading-[1.08] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, fontSize: 36, letterSpacing: '-0.022em', color: '#F7F9FA' }}>{activeCourse.label.replace(/ Masterclass$/, '')}</h2>
-        <p className="mt-1 text-[17px] font-semibold leading-[1.35]" style={{ color: '#D6E1E7' }}>Think it here. Feel it in the drills. Do it in the water with your coach.</p>
+        <p className="mt-1 text-[17px] font-semibold leading-[1.35]" style={{ color: '#D6E1E7' }}>Think it here. Feel it in the drills. Do it in the water — on your own or with your coach.</p>
         <div className="mt-4 rounded-[8px] p-3" style={{ border: '1px solid rgba(0,210,255,.45)', background: 'rgba(0,210,255,.05)' }}>
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.045em', color: '#00D2FF' }}>Course progress</span>
