@@ -12,9 +12,9 @@ Actualizada: 2026-09-05. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico
 - [ ] Opcionales del backup: `SUPABASE_DB_URL` (Supabase → Connect → Session pooler, con la contraseña de la base → agrega un pg_dump completo con logins de coaches) y `BACKUP_PASSPHRASE` (frase larga guardada en el gestor de contraseñas → cifra el paquete).
 - [ ] **Primer backup a mano**: GitHub → Actions → "Backup semanal" → Run workflow → verlo en verde y bajar el artifact una vez para saber dónde queda.
 - [x] **Plan de Supabase**: la organización ya está en Pro (verificado 2026-09-16): backups diarios de 7 días del lado de Supabase. Solo queda confirmar que la tarjeta no vence.
-- [ ] **Verificación en dos pasos** en Google (el Gmail que sostiene todo), GitHub, Vercel y Supabase + correo de recuperación distinto en Google.
+- [x] **Verificación en dos pasos** en Google, GitHub, Vercel y Supabase — HECHO 2026-09-16 (Supabase no da códigos de recuperación: Google Authenticator con sincronización en la nube).
 - [ ] **Gestor de contraseñas**: guardar los 9 secretos de `.env.local` (lista en `RECUPERACION.md` §2), la contraseña de la base de Supabase, el token de GitHub y la `BACKUP_PASSPHRASE`.
-- [ ] Vercel → marcar las llaves como *Sensitive*; Supabase → Auth → activar *leaked password protection*.
+- [x] Vercel llaves *Sensitive* (ya lo eran desde julio) y Supabase *leaked password protection* ENABLED — verificado 2026-09-16.
 
 **Legal (con abogado)**
 - [ ] Mandar a revisar con abogado salvadoreño: `/legal/privacy`, `/legal/terms` y los dos waivers (alumno y coach). Confirmar razón social y domicilio de Enkrateia, S.A. de C.V.
