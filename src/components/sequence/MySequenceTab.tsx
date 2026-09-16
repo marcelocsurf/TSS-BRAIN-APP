@@ -41,7 +41,9 @@ function SideChip({ side, small = false, dark = false }: { side: SequenceSide | 
   return (
     <span
       className={`inline-flex items-center rounded ${small ? 'px-1 text-[12px]' : 'px-1.5 py-0.5 text-[12px]'} font-bold`}
-      style={{ ...F_M, letterSpacing: '0.08em', background: dark ? 'rgba(0,210,255,.18)' : 'rgba(6,28,43,.08)', color: dark ? '#00D2FF' : '#0A2532' }}
+      // Chip SÓLIDO (Marcelo 2026-09-16: "cyan sobre celeste se pierde"): sobre
+      // claro ink+cyan, sobre oscuro cyan+ink — contraste alto en los dos casos.
+      style={{ ...F_M, letterSpacing: '0.08em', background: dark ? '#00D2FF' : '#061C2B', color: dark ? '#061C2B' : '#00D2FF' }}
       title={side === 'both' ? 'Frontside and backside' : SIDE_WORD[side]}
     >
       {txt}
