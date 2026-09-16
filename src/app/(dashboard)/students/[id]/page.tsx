@@ -1,6 +1,7 @@
 import { getStudent, checkCoachAccessToStudent } from '@/lib/actions/students';
 import { getStudentLevelAccess } from '@/lib/actions/access';
 import { getQuizAttempts } from '@/lib/actions/quiz-lead';
+import { V2_SCENES, V2_BOARD_LABEL, V2_NEEDS } from '@/lib/quiz/surf-level-v2-scenes';
 import { getStudentVisitStats } from '@/lib/actions/students';
 import { PriorVisitsEditor } from '@/components/student/PriorVisitsEditor';
 import { getOceanLevelHistory } from '@/lib/actions/evaluations';
@@ -996,6 +997,39 @@ export default async function StudentProfilePage({ params, searchParams }: Props
                         <span className="text-[12px] text-[#55666E] w-8 text-right shrink-0">{s.pct}%</span>
                       </div>
                     ))}
+                  </div>
+                </div>
+              );
+            })()}
+            {/* Respuestas escena por escena del V2 (Marcelo 2026-09-16: "¿dónde veo
+                el score y las respuestas de su quiz?"). Solo si la ficha trae el
+                payload v2 (el v1 no guardaba respuestas). */}
+            {(() => {
+              const v2 = (student as any).level_quiz_v2 as null | { score: number; mar: number; ola: number; board?: string | null; needs?: number[]; answers: number[]; level_name: string; capped_by: string | null; capped_gaps?: string[]; uncapped_name?: string };
+              if (!v2 || !Array.isArray(v2.answers)) return null;
+              return (
+                <div className="pt-3 mt-2 border-t border-[#DCD7C6]">
+                  <p className="text-[12px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">Quiz v2 · answers</p>
+                  <p className="text-[13px] text-[var(--tss-navy)] mb-2">
+                    <strong>{v2.level_name}</strong> · {v2.score}/100 · ocean {v2.mar}/50 · wave {v2.ola}/50
+                    {v2.board ? ` · ${V2_BOARD_LABEL[v2.board] ?? v2.board}` : ''}
+                    {v2.capped_by ? ` · reached ${v2.uncapped_name}, capped by ${v2.capped_by === 'water' ? 'water self-sufficiency' : 'declared skills'}${(v2.capped_gaps ?? []).length ? ` (${(v2.capped_gaps ?? []).join(', ')})` : ''}` : ''}
+                  </p>
+                  {(v2.needs ?? []).length > 0 && (
+                    <p className="text-[12px] text-[#55666E] mb-2">Wants to work on: {(v2.needs ?? []).map((n) => V2_NEEDS[n] ?? n).join(' · ')}</p>
+                  )}
+                  <div className="space-y-1.5">
+                    {V2_SCENES.map((sc, i) => {
+                      const a = v2.answers[i];
+                      const opt = sc.options[a];
+                      return (
+                        <div key={i} className="text-[12px] leading-snug">
+                          <span className="font-mono uppercase tracking-wider text-[#00A8CC]">{i + 1}. {sc.phase}</span>
+                          <span className="text-[#55666E]"> · {sc.scene}</span>
+                          <p className="text-[var(--tss-navy)]">{opt ? `"${opt.t}"` : '—'} <span className="text-[#55666E]">· {opt ? opt.s : '?'}/10</span></p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
