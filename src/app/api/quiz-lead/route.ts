@@ -24,6 +24,15 @@ export function OPTIONS() {
 // Level NAME ("Beginner".."Elite") → TSS belt key, using the shared LEVELS table.
 
 export async function POST(req: NextRequest) {
+  // CERRADO (Marcelo 2026-09-16): el quiz v1 (/70) quedó sustituido por el v2
+  // (/quiz). Ninguna copia vieja del HTML puede seguir mandando resultados
+  // inflados. 410 Gone con la dirección del oficial.
+  if (process.env.QUIZ_V1_API_OPEN !== '1') {
+    return NextResponse.json(
+      { ok: false, error: 'This quiz was replaced. Take the official one at https://app.thesurfsequence.com/quiz' },
+      { status: 410, headers: CORS },
+    );
+  }
   try {
     // Mismo rate limit que /api/quiz-v2-lead (revisión 2026-09-01): este
     // endpoint legacy comparte el costo real (insert + email de aviso).
