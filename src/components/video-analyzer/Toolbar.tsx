@@ -15,7 +15,7 @@ const TOOLS: { id: Tool; label: string }[] = [
 // Paleta elegida para leerse SOBRE AGUA. El rojo puro se apaga contra el
 // azul del mar; estos tonos son más saturados y claros, y con el contorno
 // oscuro que ahora lleva cada trazo resaltan con sol o con sombra.
-const COLORS = ["#FF3B5C", "#00E5FF", "#FFD166", "#39D98A", "#FFFFFF"];
+const COLORS = ["#FF3B5C", "#00D2FF", "#FFD166", "#39D98A", "#FFFFFF"];
 const WIDTHS = [3, 5, 8];
 
 type Props = {
@@ -63,7 +63,7 @@ export default function Toolbar({
             key={String(d.v)}
             onClick={() => onChange({ ...settings, dur: d.v })}
             className={`${btn} ${
-              (settings.dur ?? null) === d.v ? "bg-cyan-500" : "bg-white/10"
+              (settings.dur ?? null) === d.v ? "bg-[#00D2FF] text-[#061C2B]" : "bg-white/10"
             }`}
           >
             {d.label}
@@ -78,7 +78,7 @@ export default function Toolbar({
         onClick={() => onChange({ ...settings, hold: !settings.hold })}
         disabled={(settings.dur ?? null) === null}
         title="Pausar el video al llegar a la línea"
-        className={`${btn} disabled:opacity-30 ${settings.hold ? "bg-amber-400 text-[#0B1B2B]" : "bg-white/10"}`}
+        className={`${btn} disabled:opacity-30 ${settings.hold ? "bg-amber-400 text-[#061C2B]" : "bg-white/10"}`}
       >
         ⏸ Pausa
       </button>
@@ -90,12 +90,12 @@ export default function Toolbar({
         <div className="relative">
           <button
             onClick={() => setStickersOpen((v) => !v)}
-            className={`${btn} ${stickersOpen ? "bg-cyan-500" : "bg-white/10"}`}
+            className={`${btn} ${stickersOpen ? "bg-[#00D2FF] text-[#061C2B]" : "bg-white/10"}`}
           >
             🏷 Stickers
           </button>
           {stickersOpen && (
-            <div className="absolute bottom-full left-0 z-30 mb-1.5 grid w-[264px] grid-cols-4 gap-1.5 rounded-xl border border-white/15 bg-[#0B1B2B] p-2 shadow-2xl">
+            <div className="absolute bottom-full left-0 z-30 mb-1.5 grid w-[264px] grid-cols-4 gap-1.5 rounded-lg border border-white/15 bg-[#061C2B] p-2 shadow-2xl">
               {STICKERS.map((k) => (
                 <button
                   key={k.id}
@@ -115,8 +115,8 @@ export default function Toolbar({
           a nadie — van con palabra. Girar NO está acá: es el tirador redondo
           de arriba del sticker, y se avisa. */}
       {stickerAlpha != null && (
-        <div className="flex items-center gap-1.5 rounded-lg bg-cyan-500/25 px-2 py-1 ring-1 ring-cyan-400/50">
-          <span className="text-[10px] uppercase tracking-wider font-bold text-cyan-200">Sticker</span>
+        <div className="flex items-center gap-1.5 rounded-lg bg-[#00D2FF] text-[#061C2B]/25 px-2 py-1 ring-1 ring-cyan-400/50">
+          <span className="text-[10px] uppercase tracking-wider font-bold text-[#7DE3FF]">Sticker</span>
           <span className="text-[10px] text-white/50">transp.</span>
           <input
             type="range" min={0.15} max={1} step={0.05} value={stickerAlpha}
@@ -134,7 +134,7 @@ export default function Toolbar({
             title="Espejo vertical — lo da vuelta de arriba a abajo">
             ⇅ Invertir
           </button>
-          <span className="text-[10px] text-cyan-200/70 px-1">girá con el tirador ↻ de arriba</span>
+          <span className="text-[10px] text-[#7DE3FF]/70 px-1">girá con el tirador ↻ de arriba</span>
           <button onClick={onDeleteSticker} className={`${btn} bg-white/15`} title="Quitar sticker">✕ Quitar</button>
         </div>
       )}
@@ -145,7 +145,7 @@ export default function Toolbar({
             key={t.id}
             onClick={() => onChange({ ...settings, tool: t.id })}
             className={`${btn} ${
-              settings.tool === t.id ? "bg-cyan-500" : "bg-white/10"
+              settings.tool === t.id ? "bg-[#00D2FF] text-[#061C2B]" : "bg-white/10"
             }`}
           >
             {t.label}
@@ -173,7 +173,7 @@ export default function Toolbar({
             key={w}
             onClick={() => onChange({ ...settings, width: w })}
             className={`${btn} ${
-              settings.width === w ? "bg-cyan-500" : "bg-white/10"
+              settings.width === w ? "bg-[#00D2FF] text-[#061C2B]" : "bg-white/10"
             }`}
           >
             {w}px
@@ -188,7 +188,7 @@ export default function Toolbar({
         <button className={`${btn} bg-white/10`} onClick={onClear}>
           Limpiar
         </button>
-        <button className={`${btn} bg-emerald-600`} onClick={onExport}>
+        <button className={`${btn} bg-[#06D6A0] text-[#061C2B]`} onClick={onExport}>
           Exportar PNG
         </button>
       </div>

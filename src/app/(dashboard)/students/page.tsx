@@ -245,14 +245,19 @@ export default async function StudentRosterPage({ searchParams }: Props) {
               style={{ borderLeftWidth: '3px', borderLeftColor: BELT_DISPLAY[s.belt_level]?.color || '#C8D0DC' }}
             >
               {/* Photo or initials */}
+              {/* Iniciales: sin apellido no imprime "undefined"; sobre cinta White
+                  (fondo claro) van en ink, no en blanco (Marcelo 2026-09-16). */}
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
-                style={{ backgroundColor: BELT_DISPLAY[s.belt_level]?.color || '#999' }}
+                className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 border border-[#DCD7C6]"
+                style={{
+                  backgroundColor: BELT_DISPLAY[s.belt_level]?.color || '#999',
+                  color: s.belt_level === 'white_belt' ? '#10263B' : '#fff',
+                }}
               >
                 {s.photo_url ? (
                   <img src={s.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                 ) : (
-                  `${s.first_name[0]}${s.last_name[0]}`
+                  `${s.first_name?.[0] ?? ''}${s.last_name?.[0] ?? ''}`.toUpperCase() || '·'
                 )}
               </div>
 

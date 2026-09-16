@@ -392,17 +392,17 @@ export default function VideoPanel({
 
   return (
     <div
-      className={`flex h-full flex-col rounded-2xl border ${
+      className={`flex h-full flex-col rounded-lg border ${
         isActive ? "border-cyan-400" : "border-white/10"
       } bg-black/40`}
     >
       <div className="flex items-center justify-between px-2.5 py-1.5">
-        <span className="text-xs font-bold text-cyan-300">{title}</span>
+        <span className="text-xs font-bold text-[#00D2FF]">{title}</span>
         {onPickFile && (
           // A <label> opens the file picker via a native tap — reliable on iOS
           // Safari/iPad, where a display:none input triggered by a programmatic
           // .click() often fails to open the picker at all.
-          <label className={`${btn} bg-cyan-600 cursor-pointer`}>
+          <label className={`${btn} bg-[#00A8CC] text-[#061C2B] cursor-pointer`}>
             Importar video
             <input
               type="file"
@@ -518,7 +518,7 @@ export default function VideoPanel({
             className="w-full accent-cyan-400"
           />
           <div className="flex flex-wrap items-center gap-1.5">
-            <button className={`${btn} bg-cyan-600`} onClick={togglePlay}>
+            <button className={`${btn} bg-[#00A8CC] text-[#061C2B]`} onClick={togglePlay}>
               {playing ? "Pausa" : "Play"}
             </button>
             <button className={`${btn} bg-white/10`} onClick={() => step(-1 / 30)}>
@@ -540,14 +540,14 @@ export default function VideoPanel({
                 +
               </button>
               <button
-                className={`${btn} ${panMode ? "bg-cyan-500" : "bg-white/10"}`}
+                className={`${btn} ${panMode ? "bg-[#00D2FF] text-[#061C2B]" : "bg-white/10"}`}
                 onClick={() => setPanMode((v) => !v)}
                 title="Mover el video (paneo)"
               >
                 ✋
               </button>
               <button
-                className={`${btn} ${mirrored ? "bg-cyan-500" : "bg-white/10"}`}
+                className={`${btn} ${mirrored ? "bg-[#00D2FF] text-[#061C2B]" : "bg-white/10"}`}
                 onClick={() => setMirrored((v) => !v)}
                 title="Mirror — flip the image horizontally"
               >
@@ -564,7 +564,7 @@ export default function VideoPanel({
                   key={s}
                   onClick={() => changeSpeed(s)}
                   className={`${btn} ${
-                    speed === s ? "bg-cyan-500" : "bg-white/10"
+                    speed === s ? "bg-[#00D2FF] text-[#061C2B]" : "bg-white/10"
                   }`}
                 >
                   {s}x

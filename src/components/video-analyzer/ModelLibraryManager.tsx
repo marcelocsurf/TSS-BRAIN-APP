@@ -125,7 +125,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
   return (
     <div className="space-y-6">
       {/* Uploader */}
-      <form onSubmit={submit} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+      <form onSubmit={submit} className="bg-white rounded-lg border border-gray-100 shadow-sm p-5 space-y-4">
         <div>
           <h2 className="text-base font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>
             Add a model clip
@@ -141,7 +141,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#00D2FF)]"
             >
               {MODEL_BELTS.map((c) => (
                 <option key={c.slug} value={c.slug}>{c.name}</option>
@@ -155,7 +155,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Take Off — front view"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#00D2FF)]"
             />
           </div>
         </div>
@@ -167,7 +167,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               placeholder="e.g. Sequence 4"
-              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+              className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#00D2FF)]"
             />
           </div>
         )}
@@ -179,7 +179,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What to look at in this clip — key points, what the student should notice."
             rows={2}
-            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
+            className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#00D2FF)]"
           />
         </div>
 
@@ -194,12 +194,12 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
           />
         </div>
 
-        {error && <p className="text-sm text-red-700 bg-red-50 p-3 rounded-xl">{error}</p>}
+        {error && <p className="text-sm text-red-700 bg-red-50 p-3 rounded-lg">{error}</p>}
 
         <button
           type="submit"
           disabled={pending}
-          className="w-full inline-flex items-center justify-center gap-2 py-3 text-white text-sm font-semibold rounded-xl disabled:opacity-50"
+          className="w-full inline-flex items-center justify-center gap-2 py-3 text-white text-sm font-semibold rounded-lg disabled:opacity-50"
           style={{ background: 'var(--tss-navy)' }}
         >
           <Upload size={16} strokeWidth={1.9} />
@@ -210,7 +210,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
       {/* Existing clips by category */}
       <div className="space-y-4">
         {byCat.map((c) => (
-          <div key={c.slug} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div key={c.slug} className="bg-white rounded-lg border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-50 flex items-center justify-between">
               <h3 className="text-sm font-bold text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-heading)' }}>{c.name}</h3>
               <span className="text-[10px] font-mono text-gray-400">{c.items.length}</span>
@@ -224,7 +224,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
                     /* Editar sin volver a subir el video: título, detalle y
                        categoría (reclasificar). Pedido de Marcelo 2026-08-25 —
                        antes la única salida era borrar y re-subir. */
-                    <div key={clip.id} className="px-4 py-3 space-y-2 bg-gray-50/60">
+                    <div key={clip.id} className="px-4 py-3 space-y-2 bg-[#F7F9FA]/60">
                       <input
                         value={eTitle}
                         onChange={(e) => setETitle(e.target.value)}
@@ -278,7 +278,7 @@ export function ModelLibraryManager({ clips }: { clips: ModelClipRow[] }) {
                     </div>
                   ) : (
                   <div key={clip.id} className="px-4 py-2.5 flex items-center gap-3">
-                    <Video size={15} className="text-[var(--tss-cyan,#5AC3E7)] shrink-0" strokeWidth={1.9} />
+                    <Video size={15} className="text-[#00D2FF] shrink-0" strokeWidth={1.9} />
                     <div className="flex-1 min-w-0">
                       <a href={clip.video_url} target="_blank" rel="noreferrer" className="text-sm text-gray-700 truncate block hover:underline">
                         {clip.title}

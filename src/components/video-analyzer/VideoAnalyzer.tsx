@@ -546,13 +546,13 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
     : 0;
 
   return (
-    <div className="flex h-full w-full flex-col bg-[#0B1B2B] text-white">
+    <div className="flex h-full w-full flex-col bg-[#061C2B] text-white">
       {/* ── Sesión anterior encontrada ──────────────────────────────
           Si la app se cerró (o el coach cerró sin querer), acá está su
           trabajo esperándolo. No se restaura solo: él decide. */}
       {prev && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 p-6">
-          <div className="w-full max-w-sm rounded-2xl bg-[#12293F] p-5 text-center">
+          <div className="w-full max-w-sm rounded-lg bg-[#0A2532] p-5 text-center">
             <p className="text-2xl">↻</p>
             <h2 className="mt-1 text-base font-bold">Tenés una sesión sin terminar</h2>
             <p className="mt-1.5 text-[13px] text-white/70">
@@ -568,14 +568,14 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
             <button
               type="button"
               onClick={restorePrev}
-              className="mt-4 w-full rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-bold text-[#0B1B2B] active:scale-95"
+              className="mt-4 w-full rounded-lg bg-[#00D2FF] text-[#061C2B] px-4 py-2.5 text-sm font-bold text-[#061C2B] active:scale-95"
             >
               Recuperar mi sesión
             </button>
             <button
               type="button"
               onClick={discardPrev}
-              className="mt-2 w-full rounded-xl bg-white/10 px-4 py-2 text-[13px] active:scale-95"
+              className="mt-2 w-full rounded-lg bg-white/10 px-4 py-2 text-[13px] active:scale-95"
             >
               Empezar de cero
             </button>
@@ -588,14 +588,14 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
             for this path, showing a broken image. New URL forces a re-fetch. */}
         <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-8 w-auto shrink-0" />
         <h1
-          className="text-lg font-bold tracking-tight"
-          style={{ fontFamily: 'var(--font-heading, Playfair Display), serif' }}
+          className="text-lg uppercase tracking-tight"
+          style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontWeight: 900 }}
         >
           Video Analyzer
         </h1>
         <span
-          className="hidden sm:inline text-[10px] uppercase tracking-[0.15em] text-[#5AC3E7]"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          className="hidden sm:inline text-[10px] uppercase tracking-[0.15em] text-[#00D2FF]"
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           The Surf Sequence
         </span>
@@ -603,7 +603,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
             (not a stale cached PWA shell). */}
         <span
           className="text-[10px] tracking-[0.15em] text-white/40"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
         >
           build jun24c
         </span>
@@ -618,7 +618,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
               key={key}
               onClick={() => setLayout(key)}
               className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold active:scale-95 ${
-                layout === key ? "bg-cyan-500" : "bg-white/10"
+                layout === key ? "bg-[#00D2FF] text-[#061C2B]" : "bg-white/10"
               }`}
             >
               {label}
@@ -633,7 +633,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
             onClick={toggleSync}
             title={synced ? "Los dos videos se mueven juntos" : "Poné los dos en el mismo momento de la ola y tocá acá"}
             className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold active:scale-95 ${
-              synced ? "bg-amber-400 text-[#0B1B2B]" : "bg-white/10"
+              synced ? "bg-amber-400 text-[#061C2B]" : "bg-white/10"
             }`}
           >
             {synced ? "🔗 Sincronizados" : "🔗 Sincronizar"}
@@ -658,12 +658,12 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
           />
         )}
         {showLibrary && (
-          <aside className="absolute inset-y-0 left-0 z-20 flex w-64 max-w-[85%] shrink-0 flex-col border-r border-white/10 bg-[#0B1B2B] md:static md:z-auto md:w-44 md:max-w-none md:bg-transparent">
+          <aside className="absolute inset-y-0 left-0 z-20 flex w-64 max-w-[85%] shrink-0 flex-col border-r border-white/10 bg-[#061C2B] md:static md:z-auto md:w-44 md:max-w-none md:bg-transparent">
             <div className="flex gap-1 p-2">
               <button
                 onClick={() => setSidebarTab("students")}
                 className={`flex-1 rounded-lg px-2 py-2 text-xs font-semibold ${
-                  sidebarTab === "students" ? "bg-cyan-500" : "bg-white/10"
+                  sidebarTab === "students" ? "bg-[#00D2FF] text-[#061C2B]" : "bg-white/10"
                 }`}
               >
                 Alumnos
@@ -671,7 +671,7 @@ export default function VideoAnalyzer({ scope }: { scope?: string }) {
               <button
                 onClick={() => setSidebarTab("models")}
                 className={`flex-1 rounded-lg px-2 py-2 text-xs font-semibold ${
-                  sidebarTab === "models" ? "bg-cyan-500" : "bg-white/10"
+                  sidebarTab === "models" ? "bg-[#00D2FF] text-[#061C2B]" : "bg-white/10"
                 }`}
               >
                 Modelos

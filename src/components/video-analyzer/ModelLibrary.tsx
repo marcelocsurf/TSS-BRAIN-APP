@@ -15,7 +15,7 @@ export default function ModelLibrary({ selectedSrc, onSelect, library }: Props) 
 
   return (
     <div className="flex h-full flex-col gap-1 overflow-y-auto p-2">
-      <h2 className="px-1 pb-1 text-sm font-bold text-cyan-300">
+      <h2 className="px-1 pb-1 text-sm font-bold text-[#00D2FF]">
         The Surf Sequence Model Library
       </h2>
       {cats.length === 0 && (
@@ -24,7 +24,7 @@ export default function ModelLibrary({ selectedSrc, onSelect, library }: Props) 
       {cats.map((cat) => {
         const open = openCat === cat.id;
         return (
-          <div key={cat.id} className="rounded-xl bg-white/5">
+          <div key={cat.id} className="rounded-lg bg-white/5">
             <button
               onClick={() => setOpenCat(open ? null : cat.id)}
               className="flex w-full items-center justify-between px-3 py-3 text-left text-sm font-semibold"
@@ -40,7 +40,7 @@ export default function ModelLibrary({ selectedSrc, onSelect, library }: Props) 
                     onClick={() => onSelect(clip.src, clip.title)}
                     className={`w-full rounded-lg px-3 py-2 text-left text-xs ${
                       selectedSrc === clip.src
-                        ? "bg-cyan-500 font-semibold"
+                        ? "bg-[#00D2FF] text-[#061C2B] font-semibold"
                         : "bg-white/10"
                     }`}
                   >

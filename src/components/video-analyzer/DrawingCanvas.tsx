@@ -163,9 +163,9 @@ function StickerNode({ shape, scale, selected, onSelect, onChange, opacity }: {
           rotateEnabled
           keepRatio={false}
           anchorSize={14 / scale}
-          borderStroke="#00E5FF"
-          anchorStroke="#00E5FF"
-          anchorFill="#0B1B2B"
+          borderStroke="#00D2FF"
+          anchorStroke="#00D2FF"
+          anchorFill="#061C2B"
           boundBoxFunc={(oldBox, newBox) => (newBox.width < 24 || newBox.height < 24 ? oldBox : newBox)}
         />
       )}

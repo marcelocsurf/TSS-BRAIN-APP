@@ -43,7 +43,7 @@ export default function StudentClips({
 
   return (
     <div className="flex h-full flex-col gap-2 overflow-hidden p-2">
-      <h2 className="px-1 text-sm font-bold text-cyan-300">Alumnos</h2>
+      <h2 className="px-1 text-sm font-bold text-[#00D2FF]">Alumnos</h2>
 
       {/* Group tabs */}
       <div className="flex flex-wrap gap-1">
@@ -53,7 +53,7 @@ export default function StudentClips({
             onClick={() => onSelectGroup(g.id)}
             onDoubleClick={() => onRenameGroup(g.id)}
             className={`rounded-lg px-2 py-2 text-xs font-semibold ${
-              g.id === activeGroupId ? "bg-cyan-500" : "bg-white/10"
+              g.id === activeGroupId ? "bg-[#00D2FF] text-[#061C2B]" : "bg-white/10"
             }`}
             title="Doble toque para renombrar"
           >
@@ -74,12 +74,12 @@ export default function StudentClips({
       {full ? (
         <button
           disabled
-          className="rounded-xl px-3 py-3 text-sm font-semibold bg-white/10 text-white/40"
+          className="rounded-lg px-3 py-3 text-sm font-semibold bg-white/10 text-white/40"
         >
           Grupo lleno (20)
         </button>
       ) : (
-        <label className="rounded-xl px-3 py-3 text-sm font-semibold active:scale-95 bg-cyan-600 cursor-pointer text-center">
+        <label className="rounded-lg px-3 py-3 text-sm font-semibold active:scale-95 bg-[#00A8CC] text-[#061C2B] cursor-pointer text-center">
           ＋ Agregar videos
           <input
             type="file"
@@ -105,8 +105,8 @@ export default function StudentClips({
         {group?.clips.map((c, i) => (
           <div
             key={c.id}
-            className={`flex items-center gap-2 rounded-xl p-1 ${
-              currentClipId === c.id ? "bg-cyan-500/30 ring-1 ring-cyan-400" : "bg-white/5"
+            className={`flex items-center gap-2 rounded-lg p-1 ${
+              currentClipId === c.id ? "bg-[#00D2FF] text-[#061C2B]/30 ring-1 ring-cyan-400" : "bg-white/5"
             }`}
           >
             {/* Clip recuperado sin su archivo: en vez de un botón muerto, el
