@@ -213,6 +213,8 @@ interface PortalData {
   canTrack?: boolean;
   /** Tiene el libro ONE WAVE otorgado. */
   hasBook?: boolean;
+  /** Ya hizo el quiz de nivel (v1 o v2). Si no, el Home lo invita. */
+  levelQuizDone?: boolean;
   /** Membresía = la herramienta de entrenamiento. Cada curso trae 12 meses. */
   membership?: { active: boolean; ends_at: string | null; pending_request: boolean };
   /** La primera secuencia sin lograr y el paso que la frena. */
@@ -1407,6 +1409,29 @@ function HomeTab({
           </button>
         );
       })()}
+      {/* ── Find your level: invitación al quiz v2 (Marcelo 2026-09-16, caso
+          Gustavo Dias: lo hizo por fuera y quedó en un duplicado). Con ?t=
+          el resultado se ata a esta ficha y &from=portal lo trae de vuelta. ── */}
+      {data.levelQuizDone === false && (
+        <a
+          href={`/quiz-v2.html?t=${encodeURIComponent(data.token)}&from=portal`}
+          className="block w-full text-left rounded-lg overflow-hidden"
+          style={{ background: T_CREAM, border: `1px solid ${T_BORDER}`, textDecoration: 'none' }}
+        >
+          <div className="flex items-center gap-4 p-4">
+            <div className="min-w-0 flex-1">
+              <p style={{ ...T_LABEL, color: T_MUTED }}>Optional · 3 minutes</p>
+              <p className="text-[22px] font-black leading-tight mt-0.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: T_INK }}>Find your level</p>
+              <p className="text-[14px] mt-1 leading-snug" style={{ color: T_INK }}>
+                Ten quick scenes from a surf session. You get a level to start from — your coach confirms it in the water.
+              </p>
+            </div>
+            <span className="shrink-0 inline-flex items-center gap-1 text-[15px] font-bold" style={{ color: T_INK }}>
+              Start <ArrowRight size={15} />
+            </span>
+          </div>
+        </a>
+      )}
       {reader && (
         <MaterialReader token={data.token} resourceId={reader.id} title={reader.title} onClose={() => setReader(null)} />
       )}

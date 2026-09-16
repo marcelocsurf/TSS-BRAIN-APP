@@ -570,6 +570,7 @@ function renderResult(r){
    <div class="center" style="margin-top:14px"><button class="btn ghost" onclick="location.reload()">Retake</button></div>
    ${r.syncFailed?`<p class="center" style="color:var(--gold);font-size:.78rem;max-width:400px;margin:16px auto 0">We could not sync this result to your profile \u2014 check your connection and retake it, or tell your coach.</p>`:''}
    ${TOKEN&&FROM==='intake'?`<div class="center" style="margin-top:20px"><a class="btn" href="/intake/${encodeURIComponent(TOKEN)}" style="text-decoration:none">Continue your intake \u2192</a></div>`:''}
+   ${TOKEN&&FROM==='portal'?`<div class="center" style="margin-top:20px"><a class="btn" href="/portal/${encodeURIComponent(TOKEN)}" style="text-decoration:none">Back to your portal \u2192</a></div>`:''}
    <div class="cobrand">
      <img class="cb-puro" src="${PURO_LOGO}" alt="Puro Surf">
      <span class="cb-div"></span>

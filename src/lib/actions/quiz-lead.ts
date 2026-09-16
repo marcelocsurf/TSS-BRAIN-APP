@@ -136,7 +136,9 @@ export async function createLeadFromQuiz(input: {
         .limit(50);
       // ilike sin comodines = igualdad sin distinguir mayúsculas.
       q = col === 'email' ? q.eq('email', value) : q.eq('phone', value);
-      if (academyId) q = q.eq('academy_id', academyId);
+      // Sin filtro por academia (2026-09-16): Gustavo Dias canjeó el libro
+      // (ficha sin academia) y al hacer el quiz con slug puro-surf se creó
+      // un duplicado. El match ya exige email/teléfono + nombre completo.
       const { data } = await q;
       candidates.push(...((data ?? []) as typeof candidates));
     };

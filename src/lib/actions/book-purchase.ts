@@ -66,6 +66,10 @@ export async function grantBookAccess(input: {
         current_step_order: 1,
         status: 'active',
         waiver_signed: false,
+        // Cinta PROVISIONAL (Marcelo 2026-09-16): nadie la confirmó; el quiz
+        // de nivel puede escribir su resultado y el coach la confirma después.
+        belt_level: 'white_belt',
+        belt_provisional: true,
       })
       .select('id, portal_token, first_name, status')
       .single();
