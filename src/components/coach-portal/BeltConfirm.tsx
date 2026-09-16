@@ -41,7 +41,7 @@ export function BeltConfirm({
     });
 
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
       <p className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-amber-700 font-semibold">
         <ShieldAlert size={12} strokeWidth={2.5} /> Provisional — set by the level quiz
         {quizScore != null && <span className="ml-auto normal-case tracking-normal">quiz {quizScore}/70</span>}
@@ -55,7 +55,7 @@ export function BeltConfirm({
         <select
           value={belt}
           onChange={(e) => setBelt(e.target.value)}
-          className="flex-1 px-3 py-2 border border-amber-200 rounded-lg text-sm bg-white text-[var(--tss-navy)]"
+          className="flex-1 px-3 py-2 border border-amber-200 rounded-lg text-sm bg-[#F7F9FA] text-[var(--tss-navy)]"
         >
           {BELTS.map((b) => (
             <option key={b} value={b}>{BELT_DISPLAY[b]?.en ?? b}</option>

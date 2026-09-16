@@ -36,7 +36,7 @@ export function OceanConfirm({
     });
 
   return (
-    <div className="bg-cyan-50 border border-cyan-200 rounded-2xl p-4">
+    <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-4">
       <p className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-cyan-800 font-semibold">
         <Waves size={12} strokeWidth={2.5} /> Ocean level — not confirmed yet
       </p>
@@ -49,7 +49,7 @@ export function OceanConfirm({
         <select
           value={level}
           onChange={(e) => setLevel(e.target.value)}
-          className="flex-1 px-3 py-2 border border-cyan-200 rounded-lg text-sm bg-white text-[var(--tss-navy)]"
+          className="flex-1 px-3 py-2 border border-cyan-200 rounded-lg text-sm bg-[#F7F9FA] text-[var(--tss-navy)]"
         >
           {OCEAN_LEVELS.map((l) => (
             <option key={l} value={l}>{OCEAN_LEVEL_INFO[l as OceanLevel].name}</option>

@@ -83,7 +83,7 @@ export function CoachProfileForm({ token, initial }: Props) {
   return (
     <form onSubmit={submit} className="space-y-4">
       {savedAt && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 flex items-start gap-2.5">
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-start gap-2.5">
           <CheckCircle2 size={18} className="text-emerald-700 flex-shrink-0 mt-0.5" />
           <p className="text-xs text-emerald-900 leading-relaxed">
             Profile saved. Last updated {displayDate(savedAt)}.
@@ -225,30 +225,30 @@ export function CoachProfileForm({ token, initial }: Props) {
       </Card>
 
       {/* Waiver — full coach agreement (liability + confidentiality/IP + membership) */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-4">
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] p-4 space-y-4">
         <WaiverContent variant="coach" />
         <label className="flex items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
             checked={form.waiver}
             onChange={(e) => update('waiver', e.target.checked)}
-            className="mt-0.5 w-4 h-4 rounded text-[var(--tss-cyan)] border-gray-300 focus:ring-[var(--tss-cyan)]"
+            className="mt-0.5 w-4 h-4 rounded text-[var(--tss-cyan)] border-[#DCD7C6] focus:ring-[var(--tss-cyan)]"
           />
-          <span className="text-[12.5px] text-gray-700 leading-relaxed">
+          <span className="text-[12.5px] text-[#10263B] leading-relaxed">
             He leído y ACEPTO este acuerdo, incluyendo la confidencialidad del Material TSS y el uso exclusivo para miembros al día.{' '}
-            <span className="text-gray-400 italic">I have read and I AGREE to this agreement, including the confidentiality of the TSS Material and members-only use.</span> <span className="text-red-500">*</span>
+            <span className="text-[#55666E] italic">I have read and I AGREE to this agreement, including the confidentiality of the TSS Material and members-only use.</span> <span className="text-red-500">*</span>
           </span>
         </label>
       </div>
 
       {error && (
-        <p className="text-sm text-red-700 bg-red-50 p-3 rounded-xl">{error}</p>
+        <p className="text-sm text-red-700 bg-red-50 p-3 rounded-[5px]">{error}</p>
       )}
 
       <button
         type="submit"
         disabled={loading || !form.waiver}
-        className="w-full py-3 bg-[var(--tss-cyan)] text-[var(--tss-navy)] rounded-xl text-sm font-semibold disabled:opacity-50 active:scale-[0.98] transition-all"
+        className="w-full py-3 bg-[var(--tss-cyan)] text-[var(--tss-navy)] rounded-[5px] text-sm font-semibold disabled:opacity-50 active:scale-[0.98] transition-all"
       >
         {loading ? 'Saving…' : savedAt ? 'Save changes' : 'Submit profile'}
       </button>
@@ -257,12 +257,12 @@ export function CoachProfileForm({ token, initial }: Props) {
 }
 
 const inputCls =
-  'w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] bg-white';
+  'w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] bg-[#F7F9FA]';
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-4 space-y-3">
-      <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">{title}</p>
+    <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg p-4 space-y-3">
+      <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">{title}</p>
       {children}
     </div>
   );
@@ -274,7 +274,7 @@ function Field({
   return (
     <label className="block">
       <span
-        className="block text-xs font-medium text-gray-500 mb-1 uppercase tracking-wider"
+        className="block text-xs font-medium text-[#55666E] mb-1 uppercase tracking-wider"
         style={{ fontFamily: 'var(--font-mono)' }}
       >
         {label} {required && <span className="text-[var(--tss-cyan)]">*</span>}

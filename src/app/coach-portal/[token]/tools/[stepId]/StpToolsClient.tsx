@@ -36,8 +36,8 @@ export function StpToolsClient({ detail }: { detail: CoachStpDetail }) {
               onClick={() => setTab(t.key)}
               className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all ${
                 isActive
-                  ? 'bg-white text-[var(--tss-navy)] border border-gray-300 shadow-sm'
-                  : 'text-gray-400 hover:text-gray-600'
+                  ? 'bg-[#F7F9FA] text-[var(--tss-navy)] border border-[#DCD7C6] shadow-sm'
+                  : 'text-[#55666E] hover:text-[#55666E]'
               }`}
             >
               <t.Icon
@@ -48,7 +48,7 @@ export function StpToolsClient({ detail }: { detail: CoachStpDetail }) {
               <span>{t.label}</span>
               <span
                 className={`text-[10px] font-mono px-1.5 py-0.5 rounded-full ${
-                  isActive ? 'bg-[var(--tss-cyan,#5AC3E7)]/10 text-[var(--tss-navy)]' : 'bg-gray-100 text-gray-500'
+                  isActive ? 'bg-[var(--tss-cyan,#5AC3E7)]/10 text-[var(--tss-navy)]' : 'bg-[#EDF3F5] text-[#55666E]'
                 }`}
               >
                 {t.count}
@@ -68,7 +68,7 @@ export function StpToolsClient({ detail }: { detail: CoachStpDetail }) {
 function ToolList({ items, kind }: { items: any[]; kind: 'drill' | 'mission' }) {
   if (items.length === 0) {
     return (
-      <p className="text-sm text-gray-400 italic px-1">
+      <p className="text-sm text-[#55666E] italic px-1">
         No {kind}s indexed for this step yet.
       </p>
     );
@@ -84,16 +84,16 @@ function ToolList({ items, kind }: { items: any[]; kind: 'drill' | 'mission' }) 
 
 function ToolCard({ tool }: { tool: any }) {
   return (
-    <article className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 space-y-3">
+    <article className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm p-4 space-y-3">
       <header className="space-y-1">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
           {tool.id}
           {tool.block_name ? ` · ${tool.block_name}` : ''}
         </p>
         <h3 className="text-base font-bold text-[var(--tss-navy)] leading-tight">
           {tool.title}
         </h3>
-        <div className="flex flex-wrap gap-3 text-[11px] text-gray-500">
+        <div className="flex flex-wrap gap-3 text-[11px] text-[#55666E]">
           {tool.time_estimate && <span>⏱ {tool.time_estimate}</span>}
           {tool.reps_recommended && <span>↻ {tool.reps_recommended}</span>}
         </div>
@@ -101,7 +101,7 @@ function ToolCard({ tool }: { tool: any }) {
 
       {tool.description_md && (
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
             How it works
           </p>
           <MarkdownContent markdown={tool.description_md} />
@@ -110,12 +110,12 @@ function ToolCard({ tool }: { tool: any }) {
 
       {tool.success_criteria && tool.success_criteria.length > 0 && (
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
             Success criteria
           </p>
           <ul className="space-y-1">
             {tool.success_criteria.map((c: string, i: number) => (
-              <li key={i} className="text-sm text-gray-700 flex gap-2">
+              <li key={i} className="text-sm text-[#10263B] flex gap-2">
                 <span className="text-emerald-500">✓</span>
                 <span>{c}</span>
               </li>
@@ -126,14 +126,14 @@ function ToolCard({ tool }: { tool: any }) {
 
       {tool.key_words && tool.key_words.length > 0 && (
         <div>
-          <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
             Key words
           </p>
           <div className="flex flex-wrap gap-1.5">
             {tool.key_words.map((k: string, i: number) => (
               <span
                 key={i}
-                className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700"
+                className="text-[11px] px-2 py-0.5 rounded-full bg-[#EDF3F5] text-[#10263B]"
               >
                 {k}
               </span>

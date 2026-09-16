@@ -57,7 +57,7 @@ export default async function CoachStudentDetailPage({ params }: Props) {
             </h1>
             <p
               className="text-[10px] text-white/60 mt-1 tracking-[0.2em] uppercase"
-              style={{ fontFamily: 'DM Mono, monospace' }}
+              style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}
             >
               {belt?.en}
               {s.belt_provisional ? ' · PROVISIONAL' : ''}
@@ -70,7 +70,7 @@ export default async function CoachStudentDetailPage({ params }: Props) {
         </div>
       </div>
 
-      <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
+      <div className="max-w-lg md:max-w-4xl mx-auto px-4 py-4 grid grid-cols-1 md:grid-cols-2 gap-4 md:items-start">
         {/* OCÉANO sin confirmar: va PRIMERO — la regla del agua exige el
             océano confirmado antes de poder confirmar una cinta Blue+. */}
         {s.ocean_level_provisional !== false && (
@@ -118,7 +118,7 @@ export default async function CoachStudentDetailPage({ params }: Props) {
           accent={hasSafetyFlag ? 'amber' : 'cyan'}
         >
           {hasSafetyFlag && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-3 flex items-start gap-2">
+            <div className="bg-amber-50 border border-amber-200 rounded-[5px] p-3 mb-3 flex items-start gap-2">
               <AlertTriangle size={14} className="text-amber-700 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-amber-900 leading-relaxed">
                 This student has medical or risk notes. Read them before any session.
@@ -176,7 +176,7 @@ export default async function CoachStudentDetailPage({ params }: Props) {
           <Section title={`Level quiz · ${s.level_quiz_score}/${s.level_quiz_v2 ? 100 : 70}`} Icon={Activity}>
             {s.level_quiz_v2 && (
               <div className="mb-3 space-y-1">
-                <p className="text-[11px] text-gray-600 font-mono">
+                <p className="text-[11px] text-[#55666E] font-mono">
                   THE OCEAN {s.level_quiz_v2.mar}/50 · THE WAVE {s.level_quiz_v2.ola}/50
                   {s.level_quiz_v2.board ? ` · ${s.level_quiz_v2.board.toUpperCase()}` : ''}
                 </p>
@@ -190,15 +190,15 @@ export default async function CoachStudentDetailPage({ params }: Props) {
             <div className="space-y-1.5">
               {s.level_quiz_skillmap.map((sk) => (
                 <div key={sk.name} className="flex items-center gap-2">
-                  <span className="w-24 text-right text-[10px] text-gray-500 shrink-0">{sk.name}</span>
-                  <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                  <span className="w-24 text-right text-[10px] text-[#55666E] shrink-0">{sk.name}</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-[#EDF3F5] overflow-hidden">
                     <div className="h-full rounded-full" style={{ width: `${sk.pct}%`, background: sk.pct >= 70 ? '#0090B0' : '#C8D0DC' }} />
                   </div>
-                  <span className="w-8 text-[10px] text-gray-400 font-mono text-right">{sk.pct}%</span>
+                  <span className="w-8 text-[10px] text-[#55666E] font-mono text-right">{sk.pct}%</span>
                 </div>
               ))}
             </div>
-            <p className="text-[11px] text-gray-400 mt-2 leading-snug">
+            <p className="text-[11px] text-[#55666E] mt-2 leading-snug">
               Self-reported before arriving — compare it with what you see in the water.
             </p>
           </Section>
@@ -239,20 +239,20 @@ export default async function CoachStudentDetailPage({ params }: Props) {
             )}
             {s.self_assessed.length > 0 && (
               <div className="py-1">
-                <p className="text-[11px] text-gray-500 mb-1">Self-assessed, not surfed yet — confirm it in the water</p>
+                <p className="text-[11px] text-[#55666E] mb-1">Self-assessed, not surfed yet — confirm it in the water</p>
                 <ul className="space-y-0.5">
                   {s.self_assessed.map((r) => (
-                    <li key={r.step_id} className="text-[13px] text-gray-800">{r.title} <span className="font-semibold">· {r.rating}★</span> <span className="text-[11px] text-gray-400">self-assessed</span></li>
+                    <li key={r.step_id} className="text-[13px] text-[#10263B]">{r.title} <span className="font-semibold">· {r.rating}★</span> <span className="text-[11px] text-[#55666E]">self-assessed</span></li>
                   ))}
                 </ul>
               </div>
             )}
             {s.own_tasks.length > 0 && (
               <div className="py-1">
-                <p className="text-[11px] text-gray-500 mb-1">Their list — what they chose to work on</p>
+                <p className="text-[11px] text-[#55666E] mb-1">Their list — what they chose to work on</p>
                 <ul className="space-y-0.5">
                   {s.own_tasks.map((t, i) => (
-                    <li key={i} className="text-[13px] text-gray-800">{t.step_title}{t.detail ? <span className="text-gray-600"> · {t.detail}</span> : null}</li>
+                    <li key={i} className="text-[13px] text-[#10263B]">{t.step_title}{t.detail ? <span className="text-[#55666E]"> · {t.detail}</span> : null}</li>
                   ))}
                 </ul>
               </div>
@@ -277,8 +277,8 @@ function Section({
 }) {
   const color = accent === 'amber' ? 'text-amber-700' : 'text-[var(--tss-cyan)]';
   return (
-    <section className="bg-white border border-gray-100 rounded-2xl shadow-sm">
-      <header className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
+    <section className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg shadow-sm overflow-hidden">
+      <header className="px-4 py-3 border-b border-[#DCD7C6] flex items-center gap-2 bg-[#F7F9FA]">
         <Icon size={16} strokeWidth={1.75} className={color} />
         <h2 className="text-sm font-semibold text-[var(--tss-navy)]">{title}</h2>
       </header>
@@ -300,14 +300,14 @@ function KV({
   return (
     <div className="flex items-baseline gap-3 text-sm">
       <span
-        className="text-[10px] font-mono uppercase tracking-wider text-gray-400 w-32 flex-shrink-0"
+        className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] w-32 flex-shrink-0"
         style={{ fontFamily: 'var(--font-mono)' }}
       >
         {label}
       </span>
       <span
         className={`flex-1 leading-relaxed whitespace-pre-line ${
-          empty ? 'text-gray-300 italic' : danger ? 'text-red-700 font-semibold' : 'text-[var(--tss-navy)]'
+          empty ? 'text-[#B8B1A0] italic' : danger ? 'text-red-700 font-semibold' : 'text-[var(--tss-navy)]'
         }`}
       >
         {empty ? '—' : value}

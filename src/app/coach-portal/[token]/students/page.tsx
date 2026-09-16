@@ -39,7 +39,7 @@ export default async function CoachStudentsListPage({ params }: Props) {
 
       <div className="max-w-lg mx-auto px-4 py-4 space-y-2">
         {students.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-8">
+          <p className="text-sm text-[#55666E] text-center py-8">
             Once a coordinator schedules you into a camp, your students will show up here.
           </p>
         ) : (
@@ -49,7 +49,7 @@ export default async function CoachStudentsListPage({ params }: Props) {
               <Link
                 key={s.id}
                 href={`/coach-portal/${token}/students/${s.id}`}
-                className="flex items-center gap-3 bg-white rounded-2xl p-3 border border-gray-100 shadow-sm hover:border-gray-300 hover:shadow transition-all"
+                className="flex items-center gap-3 bg-[#F7F9FA] rounded-lg p-3 border border-[#DCD7C6] shadow-sm hover:border-[#DCD7C6] hover:shadow transition-all"
                 style={{ borderLeftWidth: '3px', borderLeftColor: belt?.color || '#C8D0DC' }}
               >
                 <div
@@ -67,7 +67,7 @@ export default async function CoachStudentsListPage({ params }: Props) {
                   <p className="text-sm font-semibold text-[var(--tss-navy)] truncate">
                     {s.first_name} {s.last_name}
                   </p>
-                  <p className="text-[11px] text-gray-500">
+                  <p className="text-[11px] text-[#55666E]">
                     {belt?.en} ·{' '}
                     {s.last_session_date
                       ? `Last session ${new Date(s.last_session_date).toLocaleDateString()}`

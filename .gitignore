@@ -17,3 +17,4 @@ wb-course-export.json
 scripts/*.mjs
 public/uploads/iconos/*.png
 public/uploads/iconos/*.PNG
+.next-stale-*
