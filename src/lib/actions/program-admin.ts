@@ -743,6 +743,10 @@ export async function adminAssignProgram(
       coach_id: coachId ?? null,
     });
     if (error) throw error;
+    // Asignar un programa ENCIENDE el acceso HP (Marcelo 2026-09-16: "le asigno
+    // un programa y no aparece en su portal"): la llave del bloque HP es
+    // students.hp_access y quedaba apagada.
+    await admin.from('students').update({ hp_access: true }).eq('id', studentId);
     return { ok: true, hpAccessOff: await hpAccessMissing(admin, studentId) };
   } catch (e) {
     console.error('[program-admin] adminAssignProgram failed', e);
