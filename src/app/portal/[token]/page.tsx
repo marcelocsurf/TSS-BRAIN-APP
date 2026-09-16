@@ -217,7 +217,9 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           hasBook: (hbPresentations ?? []).some((p: any) => p.id === 'f50677a2-72b1-4abd-9335-fe0c99c80333'),
           // Invitación al quiz de nivel v2 desde el Home (Marcelo 2026-09-16):
           // solo si nunca lo hizo; el resultado se ata a SU ficha (?t=token).
-          levelQuizDone: !!(student as any).level_quiz_completed_at,
+          // Una cinta CONFIRMADA por un coach ya no necesita quiz (Androide, Purple,
+          // veía la tarjeta): se marca como 'hecho' para que el Home no la ofrezca.
+          levelQuizDone: !!(student as any).level_quiz_completed_at || (student as any).belt_provisional === false,
           // El próximo movimiento: la primera secuencia sin lograr y el paso
           // que la frena. Sale de las notas que el coach ya puso.
           nextMove: await getNextMove(token, activeCourse?.belt ?? 'white'),
