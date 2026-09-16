@@ -2044,7 +2044,10 @@ function PlanTab({
                                 </span>
                                 <span className="shrink-0 text-[13px]" style={{ color: '#00D2FF' }}>→</span>
                               </button>
-                              {/* Transporte del próximo día en dos toques (sin abrir el planner) */}
+                              {/* Transporte del próximo día en dos toques (sin abrir el planner).
+                                  Solo si el servicio sale a la playa: Ice Bath, Yoga, Skate… se dan
+                                  en la academia (needs_venue=false, Marcelo 2026-09-16). */}
+                              {tpl?.needs_venue !== false && (
                               <button
                                 type="button"
                                 onClick={() => openTransport(s.id)}
@@ -2054,6 +2057,7 @@ function PlanTab({
                               >
                                 🚐
                               </button>
+                              )}
                             </div>
                             {/* Quiénes van — fotos + ficha a un toque */}
                             <ServiceRoster token={token} roster={s.roster ?? []} />

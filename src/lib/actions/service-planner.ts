@@ -36,6 +36,7 @@ export interface ServicePlanData {
     scheduled_time: string | null;
     template_name: string | null;
     service_kind: string | null;
+    needs_venue: boolean;
     target_belt: string | null;
     // Accreditation context for the final evaluation UI.
     coach_max_belt: string | null;
@@ -318,7 +319,7 @@ export async function getServicePlan(
   const { data: camp } = await admin
     .from('camp_instances')
     .select(
-      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, template_id, academy_id, camp_templates:template_id(template_name, service_kind, duration_days, includes_course_key)'
+      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, template_id, academy_id, camp_templates:template_id(template_name, service_kind, duration_days, includes_course_key, needs_venue)'
     )
     .eq('id', campInstanceId)
     .single();
@@ -749,6 +750,8 @@ export async function getServicePlan(
       scheduled_time: camp.scheduled_time ?? null,
       template_name: tpl?.template_name ?? null,
       service_kind: tpl?.service_kind ?? null,
+      // false = se da en la academia: el planner no pide playa ni transporte.
+      needs_venue: tpl?.needs_venue !== false,
       target_belt: tpl?.includes_course_key ?? null,
       coach_max_belt: coach.max_belt_permission ?? null,
       viewer_is_head_coach: camp.head_coach_id === coach.id,

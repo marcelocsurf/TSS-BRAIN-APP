@@ -110,6 +110,8 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
     initialData?.service_kind ?? '',
   );
   const [capacityMax, setCapacityMax] = useState<number>(initialData?.capacity_max ?? 4);
+  // ¿Sale a la playa? Ice Bath, Yoga, Skate… se dan en la academia: sin playa ni transporte.
+  const [needsVenue, setNeedsVenue] = useState<boolean>(initialData?.needs_venue !== false);
   const initialMinutes = initialData?.session_duration_minutes ?? null;
   const [sessionHours, setSessionHours] = useState<number>(
     initialMinutes != null ? Math.floor(initialMinutes / 60) : 0,
@@ -267,6 +269,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
         service_kind: serviceKind || null,
         capacity_max: capacityMax > 0 ? capacityMax : null,
         session_duration_minutes: totalMinutes > 0 ? totalMinutes : null,
+        needs_venue: needsVenue,
         card_color: cardColor || null,
         accent_color: accentColor || null,
       };
@@ -358,6 +361,15 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
             <p className="text-[10px] text-[#55666E] mt-1">
               Drives the colour of the card on the calendar.
             </p>
+            <label className="flex items-center gap-2 text-sm mt-3">
+              <input
+                type="checkbox"
+                checked={needsVenue}
+                onChange={(e) => setNeedsVenue(e.target.checked)}
+                className="rounded border-[#DCD7C6]"
+              />
+              <span className="text-xs text-[#55666E]">Goes to a beach — the coach picks the spot and can request transport. Untick for on-site services (ice bath, yoga, skate).</span>
+            </label>
           </div>
 
           <div>

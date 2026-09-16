@@ -1896,6 +1896,8 @@ export interface CreateTemplateInput {
   service_kind?: 'surf_lesson' | 'surf_camp' | 'class' | 'trip' | 'custom' | null;
   capacity_max?: number | null;
   session_duration_minutes?: number | null;
+  /** false = el servicio se da en la academia (Ice Bath, Yoga…): sin playa ni transporte. */
+  needs_venue?: boolean | null;
   card_color?: string | null;
   accent_color?: string | null;
 }
@@ -1930,6 +1932,7 @@ export async function createCampTemplate(input: CreateTemplateInput) {
       service_kind: input.service_kind ?? null,
       capacity_max: input.capacity_max ?? null,
       session_duration_minutes: input.session_duration_minutes ?? null,
+      needs_venue: input.needs_venue ?? true,
       card_color: input.card_color ?? null,
       accent_color: input.accent_color ?? null,
       active_status: true,
@@ -2045,6 +2048,7 @@ export async function updateCampTemplate(templateId: string, input: CreateTempla
       service_kind: input.service_kind ?? null,
       capacity_max: input.capacity_max ?? null,
       session_duration_minutes: input.session_duration_minutes ?? null,
+      needs_venue: input.needs_venue ?? true,
       card_color: input.card_color ?? null,
       accent_color: input.accent_color ?? null,
     })
@@ -2182,6 +2186,7 @@ export async function duplicateCampTemplate(templateId: string) {
     service_kind: original.service_kind ?? null,
     capacity_max: original.capacity_max ?? null,
     session_duration_minutes: original.session_duration_minutes ?? null,
+    needs_venue: original.needs_venue ?? true,
     card_color: original.card_color ?? null,
     accent_color: original.accent_color ?? null,
     days: detail.days.map((day: any) => {

@@ -1079,6 +1079,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   className="w-full min-w-0 text-sm px-3 py-2 rounded-lg border border-[#DCD7C6] focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan,#5AC3E7)]"
                 />
               </label>
+              {/* Playa + transporte solo si el servicio sale a la playa. Ice Bath,
+                  Yoga, Skate… se dan en la academia (needs_venue=false, 2026-09-16). */}
+              {data.camp.needs_venue !== false && (<>
               <label className="block min-w-0">
                 <span className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Surf spot / beach</span>
                 <VenuePicker
@@ -1143,6 +1146,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 date={data.selectedDay.session_date}
                 onPickTime={(hhmm) => commitPlanField('class_start_time', hhmm)}
               />
+              </>)}
             </div>
           </Section>
 
