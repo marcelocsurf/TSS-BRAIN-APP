@@ -483,9 +483,10 @@ function Piece({ p, href = null, canTrack }: { p?: PieceRow; href?: string | nul
     <div className="mt-2 rounded-[5px] px-3 py-2.5" style={{ background: PAPER, border: `1px solid ${BORDER}` }}>
       <p className="text-[15px] font-bold m-0" style={{ color: INK }}>{p.title}</p>
       {/* Los drills de White/Yellow vienen en markdown (## What you'll train…):
-          se renderizan como en el curso, no como texto plano. */}
+          se renderizan como en el curso, con los temas plegables (el primero
+          abierto) para que el alumno vaya directo a lo que busca (Marcelo 2026-09-17). */}
       {md && (md.startsWith('#') || /\n\s*[-*] /.test(md)
-        ? <div className="mt-1"><MarkdownContent markdown={md} /></div>
+        ? <div className="mt-1"><MarkdownContent markdown={md} collapsible /></div>
         : <p className="text-[14px] mt-1 mb-0 leading-snug" style={{ color: INK }}>{md}</p>)}
       <div className="flex items-center gap-3 mt-1.5 text-[12px]" style={{ color: MUTED }}>
         {p.time_estimate && <span>{p.time_estimate}</span>}
