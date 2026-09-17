@@ -3,7 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { pickWeakestCriterion, type CriterionEvaluationItem } from '@/lib/utils/criteria';
 import { studentIdFromPortalToken } from '@/lib/portal/student-token';
-import { THREE_CIRCLES_GAME_IDS, THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
+import { THREE_CIRCLES_GAME_IDS, THREE_CIRCLES_SEQUENCE_ID, gameContext } from '@/lib/sequence-pages/three-circles';
 import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import {
   COURSE_SEQUENCE_ORDER,
@@ -1096,7 +1096,7 @@ export async function threeCirclesSequence(portalToken: string): Promise<Sequenc
       block_number: 0, block_name: 'The Three Circles', display_order: i,
     };
     return {
-      step_id: g.id, step_title: g.title, pillar: null, belt: g.belt ?? 'yellow', block_number: 0, block_name: 'The Three Circles', display_order: i,
+      step_id: g.id, step_title: `${gameContext(g.id)?.label ?? 'The Three Circles'} — ${g.title}`, pillar: gameContext(g.id)?.circle ?? null, belt: g.belt ?? 'yellow', block_number: 0, block_name: 'The Three Circles', display_order: i,
       drill: null, mission: row, rating: pr?.lastStars ?? null, rating_count: pr?.plays ?? 0, last_rated: pr?.lastAt ?? null,
       coach_rating: null, coach_rated_at: null, self_source: 'executed', last_practiced: pr?.lastAt ?? null,
     };

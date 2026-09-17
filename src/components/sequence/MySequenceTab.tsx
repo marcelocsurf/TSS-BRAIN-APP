@@ -9,7 +9,7 @@ import { Dumbbell, Waves, Target } from 'lucide-react';
 import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constants/belt-theme';
 import { sequencePrefix } from '@/lib/constants/learning-blocks';
 import { sequencePageFor } from '@/lib/sequence-pages';
-import { THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
+import { THREE_CIRCLES_SEQUENCE_ID, gameContext } from '@/lib/sequence-pages/three-circles';
 import { SEQUENCE_ROLE, SIDE_SHORT, SIDE_WORD, type SequenceSide } from '@/lib/constants/learning-blocks';
 import { sideBalance } from '@/lib/sequence-sides';
 import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
@@ -247,6 +247,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                 <div key={g.id} className="flex items-center gap-2.5 rounded-[5px] px-3 py-2" style={{ background: PAPER, border: '1px solid #DCD7C6' }}>
                   <span className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[12px] font-black" style={{ background: (g.lastStars ?? 0) >= 4 ? '#00A8CC' : INK, color: '#F7F9FA' }}>{i + 1}</span>
                   <div className="min-w-0 flex-1">
+                    <p className="text-[11px]" style={{ ...F_M, letterSpacing: '0.08em', color: '#00A8CC' }}>{gameContext(g.id)?.label ?? 'The Three Circles'}</p>
                     <p className="text-[14px] font-bold leading-tight truncate" style={{ color: '#10263B' }}>{g.title}</p>
                     <p className="text-[11px]" style={{ color: '#55666E' }}>{g.plays === 0 ? 'Not played yet' : `Last: ${g.lastStars ?? '—'}★ · played ${g.plays}×`}</p>
                   </div>
@@ -281,25 +282,63 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           ) : (
             <p className="text-[23px] mt-1" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>{owned} of {levelSeqs.length} sequences are yours</p>
           )}
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {levelSeqs.map((sq) => {
-              const st = sq.state === 'owned' ? '#0A7C5D' : sq.state === 'unrated' ? '#55666E' : '#FFD166';
-              const pre = sequencePrefix(sq.id, sq.order);
-              return (
-                <a key={sq.id} href={pageHrefOf(sq.id) ?? undefined} className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6', color: '#10263B' }}>
-                  <i className="inline-block w-2 h-2 rounded-full" style={{ background: st }} />
-                  {pre?.startsWith('#') ? `${pre} ` : ''}{sq.name}
-                  <SideChip side={sq.side} small dark />
-                  {sq.state === 'owned' ? ' ✓' : sq.side === 'both' && sq.sideRatings ? ` ${starsOf(sq.sideRatings.fs)} · ${starsOf(sq.sideRatings.bs)}` : sq.minRating !== null ? ` ${sq.minRating}★` : ''}
-                </a>
-              );
-            })}
+          {/* UNA tarjeta por movimiento (Marcelo 2026-09-17: los chips y "Both
+              sides" decían lo mismo dos veces). Un movimiento de dos lados va
+              en una fila con FS y BS; las de un solo lado o de entrada, en su
+              propia fila. Cada celda abre su secuencia. */}
+          <div className="mt-2.5 space-y-1.5">
+            {(() => {
+              const pairedIds = new Set<string>();
+              for (const pr of sides.pairs) { if (pr.fs) pairedIds.add(pr.fs.id); if (pr.bs) pairedIds.add(pr.bs.id); }
+              type Cell = { id: string; label: string; value: number | null; owned: boolean };
+              const rows: { key: string; title: string; sub: string | null; cells: Cell[]; gap: number | null }[] = [];
+              for (const sq of levelSeqs) {
+                if (pairedIds.has(sq.id)) continue;
+                const pre = sequencePrefix(sq.id, sq.order);
+                rows.push({ key: sq.id, title: `${pre?.startsWith('#') ? `${pre} ` : ''}${sq.name}`, sub: null, gap: null,
+                  cells: [{ id: sq.id, label: sq.side === 'fs' || sq.side === 'bs' ? SIDE_SHORT[sq.side] : '', value: sq.minRating, owned: sq.state === 'owned' }] });
+              }
+              for (const pr of sides.pairs) {
+                const ownedOf = (id: string | undefined) => !!id && levelSeqs.find((x) => x.id === id)?.state === 'owned';
+                const cells: Cell[] = [];
+                if (pr.fs) cells.push({ id: pr.fs.id, label: `FS${pr.both ? '' : ` · ${pr.fs.label.split(' ')[0]}`}`, value: pr.fs.value, owned: pr.both ? (pr.fs.value ?? 0) >= 4 : ownedOf(pr.fs.id) });
+                if (pr.bs) cells.push({ id: pr.bs.id, label: `BS${pr.both ? '' : ` · ${pr.bs.label.split(' ')[0]}`}`, value: pr.bs.value, owned: pr.both ? (pr.bs.value ?? 0) >= 4 : ownedOf(pr.bs.id) });
+                rows.push({ key: `pair:${pr.move}`, title: pr.move, sub: pr.both ? 'one sequence · both sides' : 'two sequences · one per side', cells, gap: pr.gap });
+              }
+              // Orden del curso: por el número de la primera secuencia de la fila.
+              const orderOf = (r: (typeof rows)[number]) => Math.min(...r.cells.map((c) => levelSeqs.find((x) => x.id === c.id)?.order ?? 99));
+              rows.sort((a, b) => orderOf(a) - orderOf(b));
+              return rows.map((r) => (
+                <div key={r.key} className="rounded-[5px] px-3 py-2 flex items-center gap-3" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-bold leading-tight" style={{ color: '#10263B' }}>{r.title}</p>
+                    {r.sub && <p className="text-[11px]" style={{ color: '#55666E' }}>{r.sub}</p>}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {r.cells.map((c) => {
+                      const href = pageHrefOf(c.id);
+                      const inner = (
+                        <>
+                          {c.label && <span className="block text-[10px]" style={{ ...F_M, letterSpacing: '0.08em', color: c.owned ? '#F7F9FA' : '#55666E' }}>{c.label}</span>}
+                          <span className="block text-[14px] font-black leading-tight" style={{ color: c.owned ? '#F7F9FA' : '#10263B' }}>{c.owned ? '✓' : c.value == null ? 'not yet' : `${c.value}★`}</span>
+                        </>
+                      );
+                      const style = { background: c.owned ? '#0A7C5D' : '#fff', border: `1px solid ${c.owned ? '#0A7C5D' : '#DCD7C6'}`, minWidth: 64 };
+                      return href
+                        ? <a key={c.id} href={href} className="block rounded-[5px] px-2.5 py-1.5 text-center no-underline" style={style}>{inner}</a>
+                        : <span key={c.id} className="block rounded-[5px] px-2.5 py-1.5 text-center" style={style}>{inner}</span>;
+                    })}
+                    {r.gap != null && r.gap >= 1 && <span className="text-[11px] font-semibold" style={{ color: '#10263B' }}>gap {r.gap}</span>}
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
           {/* Por lado: una línea es tuya cuando es tuya de los dos lados. */}
           {(sides.fs != null || sides.bs != null) && (
             <div className="mt-3 pt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1" style={{ borderTop: '1px solid rgba(6,28,43,.12)' }}>
               {/* Las notas por lado viven en "Both sides" (auditoría 2026-09-15: salían tres veces). Acá solo el consejo. */}
-              {sides.advice ? <span className="basis-full text-[13px] leading-snug font-semibold" style={{ color: '#10263B' }}>{sides.advice.text}</span> : <span className="text-[12px]" style={{ color: '#55666E' }}>Frontside and backside, side by side, below in Both sides.</span>}
+              {sides.advice ? <span className="basis-full text-[13px] leading-snug font-semibold" style={{ color: '#10263B' }}>{sides.advice.text}</span> : <span className="text-[12px]" style={{ color: '#55666E' }}>A move is complete when both sides are yours.</span>}
             </div>
           )}
           {/* El próximo paso vive en UNA sola tarjeta: "Your next moves" arriba
@@ -331,42 +370,6 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                   className="shrink-0 h-11 px-2.5 rounded-[5px] text-[12px] font-semibold" style={{ color: '#10263B', border: '1px solid #DCD7C6', background: '#F7F9FA' }}>Done</button>
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      {/* BOTH SIDES (Marcelo 2026-09-10): la misma línea, de los dos lados.
-          Empareja #8↔#9, #10↔#11, #12↔#13 y muestra las de dos lados (#7) con
-          sus dos notas. No reemplaza la lista numerada: la resume. */}
-      {sides.pairs.length > 0 && (
-        <div className="rounded-lg overflow-hidden" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
-          <div className="px-4 pt-3.5 pb-2">
-            <p className="text-[23px]" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>Both sides</p>
-            <p className="text-[13px] mt-0.5" style={{ color: '#10263B' }}>Each sequence is one side: frontside or backside. Here the same move sits side by side — a move is complete when both sequences are yours.</p>
-          </div>
-          <div className="px-3 pb-3 space-y-1.5">
-            {sides.pairs.map((p) => {
-              const cell = (sd: 'fs' | 'bs', c: { id: string; label: string; value: number | null } | null) => {
-                if (!c) return <span className="text-[12px]" style={{ color: '#55666E' }}>—</span>;
-                const weak = p.gap != null && p.gap >= 1 && (c.value ?? 0) < ((sd === 'fs' ? p.bs?.value : p.fs?.value) ?? 0);
-                const inner = (
-                  <>
-                    <span className="block text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: weak ? '#10263B' : '#55666E' }}>{SIDE_SHORT[sd]}{p.both ? '' : ` · ${c.label.split(' ')[0]}`}</span>
-                    <span className="block text-[16px] font-bold" style={{ color: c.value == null ? '#55666E' : weak ? '#10263B' : '#10263B' }}>{c.value == null ? 'not yet' : `${c.value}★`}</span>
-                  </>
-                );
-                const href = pageHrefOf(c.id);
-                return href ? <a href={href} className="block">{inner}</a> : <span className="block">{inner}</span>;
-              };
-              return (
-                <div key={p.move} className="grid items-center rounded-[5px] px-3 py-2" style={{ gridTemplateColumns: '1.2fr 1fr 1fr auto', background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
-                  <span className="text-[14px] font-bold" style={{ color: '#10263B' }}>{p.move}{p.both && <span className="block text-[12px] font-normal" style={{ color: '#55666E' }}>one sequence · both sides</span>}</span>
-                  {cell('fs', p.fs)}
-                  {cell('bs', p.bs)}
-                  <span className="text-[12px] text-right" style={{ color: p.gap != null && p.gap >= 1 ? '#10263B' : '#55666E' }}>{p.gap == null ? '' : `gap ${p.gap}`}</span>
-                </div>
-              );
-            })}
           </div>
         </div>
       )}

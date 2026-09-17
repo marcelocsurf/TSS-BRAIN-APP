@@ -13,7 +13,7 @@ import { useState } from 'react';
 import { markLessonComplete } from '@/lib/actions/course';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { WaveBoard, COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
-import { CIRCLES, CIRCLES_INTRO, type Circle } from '@/lib/sequence-pages/three-circles';
+import { CIRCLES, CIRCLES_INTRO, gameContext, type Circle } from '@/lib/sequence-pages/three-circles';
 import type { WaveBoardData } from '@/lib/sequence-pages/types';
 import type { PieceRow } from './SequencePage';
 
@@ -60,7 +60,7 @@ function Game({ p, portal }: { p?: PieceRow; portal?: string }) {
   const md = (p.description_md ?? '').replace(/^## The game\s*/m, '').trim();
   return (
     <div className="mt-2 rounded-[5px] px-3 py-3" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.35)' }}>
-      <p style={{ ...MONO, color: '#00D2FF' }}>Play it · in the water</p>
+      <p style={{ ...MONO, color: '#00D2FF' }}>Play it · in the water{gameContext(p.id) ? ` · ${gameContext(p.id)!.label}` : ''}</p>
       <p className="text-[20px] leading-[1.05] uppercase mt-1" style={{ fontWeight: 900, letterSpacing: '-0.01em', color: '#F7F9FA' }}>{p.title}</p>
       <div className="mt-2 text-[14px] leading-[1.45] tss-game-body" style={{ color: 'rgba(247,249,250,.92)' }}><MarkdownContent markdown={md} /></div>
       {/* Al flujo de Let's Play (plan → surf → evaluate) con este juego como foco (Marcelo 2026-09-17). */}

@@ -196,3 +196,16 @@ export const CIRCLES: Circle[] = [
     },
   },
 ];
+
+/** Qué parte de los Tres Círculos trabaja un juego: círculo + subtema
+ *  (Marcelo 2026-09-17: "que se entienda que se está trabajando una parte
+ *  específica de los tres círculos y su subtema"). */
+export function gameContext(gameId: string): { circle: string; topic: string; label: string } | null {
+  for (const c of CIRCLES) {
+    for (const m of c.moves ?? []) {
+      if ((m.play ?? []).includes(gameId)) return { circle: c.label, topic: m.name, label: `${c.label} · ${m.name}` };
+    }
+    if ((c.play ?? []).includes(gameId)) return { circle: c.label, topic: c.sub, label: `${c.label} · ${c.sub}` };
+  }
+  return null;
+}
