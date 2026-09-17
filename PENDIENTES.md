@@ -7,10 +7,10 @@ Actualizada: 2026-09-17. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico
 ## 0. LO QUE SOLO PUEDE HACER MARCELO — esta semana
 
 **Seguridad y respaldo (30 minutos en total)**
-- [ ] **Token de GitHub con permiso `workflow`**: GitHub → Settings → Developer settings → Personal access tokens → tu token → Edit → marcar **workflow** → Update. Sin esto el archivo `.github/workflows/backup.yml` no se puede subir (hoy está en la Mac, sin subir). Avisar a Claude y lo sube.
-- [ ] **Dos secretos en GitHub** (repo TSS-BRAIN-APP → Settings → Secrets and variables → Actions → New repository secret), mismos valores que en Vercel: `NEXT_PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`.
+- [x] **Token de GitHub con permiso `workflow`** — HECHO 2026-09-17; workflow subido.: GitHub → Settings → Developer settings → Personal access tokens → tu token → Edit → marcar **workflow** → Update. Sin esto el archivo `.github/workflows/backup.yml` no se puede subir (hoy está en la Mac, sin subir). Avisar a Claude y lo sube.
+- [x] **Dos secretos en GitHub** — HECHO 2026-09-17. (repo TSS-BRAIN-APP → Settings → Secrets and variables → Actions → New repository secret), mismos valores que en Vercel: `NEXT_PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`.
 - [ ] Opcionales del backup: `SUPABASE_DB_URL` (Supabase → Connect → Session pooler, con la contraseña de la base → agrega un pg_dump completo con logins de coaches) y `BACKUP_PASSPHRASE` (frase larga guardada en el gestor de contraseñas → cifra el paquete).
-- [ ] **Primer backup a mano**: GitHub → Actions → "Backup semanal" → Run workflow → verlo en verde y bajar el artifact una vez para saber dónde queda.
+- [x] **Primer backup a mano** — HECHO 2026-09-17: run #3 en verde (3 min), artifact de 90 días. Desde ahora corre solo los domingos 00:00.: GitHub → Actions → "Backup semanal" → Run workflow → verlo en verde y bajar el artifact una vez para saber dónde queda.
 - [x] **Plan de Supabase**: la organización ya está en Pro (verificado 2026-09-16): backups diarios de 7 días del lado de Supabase. Solo queda confirmar que la tarjeta no vence.
 - [x] **Verificación en dos pasos** en Google, GitHub, Vercel y Supabase — HECHO 2026-09-16 (Supabase no da códigos de recuperación: Google Authenticator con sincronización en la nube).
 - [ ] **Gestor de contraseñas**: guardar los 9 secretos de `.env.local` (lista en `RECUPERACION.md` §2), la contraseña de la base de Supabase, el token de GitHub y la `BACKUP_PASSPHRASE`.
@@ -96,7 +96,7 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 - [ ] Links de video de cada servicio (Marcelo) y video de Discover Surfing.
 
 ## 7. OPERACIÓN Y ADMIN
-- [ ] Backup semanal: construido y probado (125 tablas, 70 archivos, 0 errores); encenderlo = sección 0. Después de Claude: subir el workflow, correrlo y confirmar el primer artifact; escribir `scripts/restore-json.mjs` (restauración desde los JSON en orden de dependencias) el día que se quiera ensayar una restauración completa.
+- [x] Backup semanal ENCENDIDO 2026-09-17 (run #3 verde). Después de Claude: subir el workflow, correrlo y confirmar el primer artifact; escribir `scripts/restore-json.mjs` (restauración desde los JSON en orden de dependencias) el día que se quiera ensayar una restauración completa.
 - [ ] Ensayo de restauración: una vez al trimestre, bajar el artifact y restaurarlo en un proyecto Supabase de prueba (`RECUPERACION.md` §3) para comprobar que el backup sirve.
 - [ ] Alerta de vencimiento de tarjeta (Supabase y Vercel) en el calendario.
 - [ ] Planificación de capacidad y ocupación de ventas agregada en Services.
