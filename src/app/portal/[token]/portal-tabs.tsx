@@ -265,7 +265,7 @@ function OpenSessionCard({ data, onFinish, onDiscard }: { data: PortalData; onFi
         <p className="text-[12px]" style={{ ...F_LABEL, color: stale ? '#FFD166' : '#06D6A0' }}>{stale ? 'Still open' : 'Session in the water'} · planned {when}</p>
         <p className="text-[15px] font-semibold text-white mt-0.5 leading-snug">{os.sequenceName}</p>
         <p className="text-[12px] text-white/80 mt-0.5 leading-snug">
-          {os.mode === 'step_focus' && os.focusTitle ? `Focus: ${os.focusTitle}` : 'The whole line'}{os.focusMoment ? ` · ${os.focusMoment}` : ''}{measure ? ` · ${measure}` : ''}
+          {os.mode === 'step_focus' && os.focusTitle ? `Focus: ${os.focusTitle}` : 'The whole sequence'}{os.focusMoment ? ` · ${os.focusMoment}` : ''}{measure ? ` · ${measure}` : ''}
         </p>
         {os.intention && <p className="text-[12px] mt-1 leading-snug" style={{ color: '#FFD166' }}>Your word: {os.intention}</p>}
         <div className="flex items-center gap-2 mt-3">

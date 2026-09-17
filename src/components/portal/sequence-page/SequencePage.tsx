@@ -278,18 +278,18 @@ export function SequencePage({
                 const focusStep = chosen?.deeper?.lessonId ?? null;
                 const word = chosen ? chosen.title.replace(/^\d+ · /, '') : '';
                 if (!canTrack) return <p className="inline-flex items-center gap-2 mt-3 mb-0 text-[13px]" style={{ color: MUTED }}><Lock size={13} /> Training and logging come with your training tool.</p>;
-                if (!lp) return pieces[cfg.do.missionId] ? <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="tss-primary no-underline"><Play size={16} /> Start the mission in Let&apos;s Play</a> : null;
+                if (!lp) return pieces[cfg.do.missionId] ? <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="tss-primary no-underline">Start the mission in Let&apos;s Play</a> : null;
                 const runHref = `${portal}?tab=sequence&seq=${lp}&mode=sequence_run`;
                 const focusHref = focusStep ? `${portal}?tab=sequence&seq=${lp}&mode=step_focus&focus=${focusStep}&word=${encodeURIComponent(word)}` : null;
                 return (
                   <div className="mt-1">
                     {focusHref ? (
-                      <a href={focusHref} className="tss-primary no-underline" style={chosen?.command ? { background: COMMAND_COLORS[chosen.command], color: chosen.command === 'projection' ? NAVY : WHITE } : undefined}><Play size={16} /> Train it in Let&apos;s Play · focus: {word}</a>
+                      <a href={focusHref} className="tss-primary no-underline" style={chosen?.command ? { background: COMMAND_COLORS[chosen.command], color: chosen.command === 'projection' ? NAVY : WHITE } : undefined}>Train it in Let&apos;s Play · focus: {word}</a>
                     ) : (
-                      <a href={runHref} className="tss-primary no-underline"><Play size={16} /> Train the whole line in Let&apos;s Play</a>
+                      <a href={runHref} className="tss-primary no-underline">Train the whole sequence in Let&apos;s Play</a>
                     )}
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
-                      {focusHref && <Go href={runHref} small>or the whole line, no focus</Go>}
+                      {focusHref && <Go href={runHref} small>or the whole sequence, no focus</Go>}
                       {pieces[cfg.do.missionId] && <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="text-[13px] no-underline" style={{ color: MUTED }}>Log the mission only</a>}
                     </div>
                   </div>
@@ -297,7 +297,7 @@ export function SequencePage({
               })()}
             </Card>
             <Card title="Choose a focus · optional">
-              <p className="text-[14px] mt-0 mb-2" style={{ color: INK }}>The mission is always the whole line. These are the steps your body runs; if one of them is breaking, pick it and it rides along as your word for the session. Pick nothing and just surf the line.</p>
+              <p className="text-[14px] mt-0 mb-2" style={{ color: INK }}>The mission is always the whole sequence. These are the steps your body runs; if one of them is breaking, pick it and it rides along as your word for the session. Pick nothing and just surf the line.</p>
               <div className="flex flex-wrap gap-2">
                 {cfg.details.map((d) => (
                   <button key={d.key} type="button" onClick={() => setFocus(focus === d.key ? null : d.key)} aria-pressed={focus === d.key}

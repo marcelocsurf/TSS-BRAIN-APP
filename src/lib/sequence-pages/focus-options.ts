@@ -28,7 +28,7 @@ export function coachFocusOptions(stepIds: string[], stepTitles: Record<string, 
       for (const m of ms[st.id] ?? []) opts.push({ label: m.short, text: `${seqTag(c)} · ${st.title} · ${m.short}` });
       if (!(ms[st.id] ?? []).length) opts.push({ label: st.title, text: `${seqTag(c)} · ${st.title}` });
     }
-    opts.push({ label: `Whole line · ${seqTag(c)}`, text: `${seqTag(c)} · run the whole line` });
+    opts.push({ label: `Whole sequence · ${seqTag(c)}`, text: `${seqTag(c)} · run the whole sequence` });
     const next = all.filter((n) => n.belt === c.belt && n.number > c.number).sort((a, b) => a.number - b.number)[0];
     if (next) opts.push({ label: `Start ${seqTag(next)}`, text: `Start ${seqTag(next)} · ${seqTag(c)} is yours` });
     groups.push({ title: seqTag(c), options: opts });
