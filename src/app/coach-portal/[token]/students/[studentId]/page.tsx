@@ -72,6 +72,38 @@ export default async function CoachStudentDetailPage({ params }: Props) {
       </div>
 
       <div className="max-w-lg md:max-w-4xl mx-auto px-4 py-4 grid grid-cols-1 md:grid-cols-2 gap-4 md:items-start">
+        {/* ── RETURNING (Marcelo 2026-09-17): el alumno vuelve después de 14+
+            días. Arriba de todo: cuánto pasó, qué le dijiste, qué hizo en el
+            medio, y el botón para arrancar desde ahí. ── */}
+        {s.returning && (
+          <section className="md:col-span-2 rounded-lg overflow-hidden" style={{ background: '#E9E2D2', border: '1px solid #00A8CC', borderLeft: '6px solid #00D2FF' }}>
+            <div className="px-4 py-3">
+              <p className="text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00A8CC' }}>
+                Returning · {s.returning.days_since} days since your last session{s.returning.last_by ? ` · ${s.returning.last_by}` : ''}
+              </p>
+              <p className="text-[20px] font-black uppercase leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', color: '#10263B' }}>
+                Start from where you left off
+              </p>
+              {s.returning.last_focus ? (
+                <p className="text-[14px] mt-2 leading-snug" style={{ color: '#10263B' }}>
+                  <span className="font-bold">Last time you said:</span> {s.returning.last_focus}
+                </p>
+              ) : (
+                <p className="text-[14px] mt-2" style={{ color: '#55666E' }}>No next focus was written last time.</p>
+              )}
+              <p className="text-[13px] mt-2 leading-snug" style={{ color: '#55666E' }}>
+                <span className="font-bold" style={{ color: '#10263B' }}>Since then:</span>{' '}
+                {s.returning.since.visits} portal visit{s.returning.since.visits === 1 ? '' : 's'}
+                {s.returning.since.last_seen ? ` · last seen ${new Date(s.returning.since.last_seen).toLocaleDateString()}${s.returning.since.last_screen ? ` (${s.returning.since.last_screen})` : ''}` : ''}
+                {' · '}{s.returning.since.lets_play} Let&apos;s Play session{s.returning.since.lets_play === 1 ? '' : 's'}
+                {' · '}{s.returning.since.lessons} lesson{s.returning.since.lessons === 1 ? '' : 's'} completed
+              </p>
+              <Link href={`/coach-portal/${token}?tab=plan`} className="inline-flex items-center justify-center mt-3 rounded-[5px] px-4 py-2.5 text-[13px] font-black uppercase tracking-wide" style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
+                Plan today from here →
+              </Link>
+            </div>
+          </section>
+        )}
         {/* OCÉANO sin confirmar: va PRIMERO — la regla del agua exige el
             océano confirmado antes de poder confirmar una cinta Blue+. */}
         {s.ocean_level_provisional !== false && (

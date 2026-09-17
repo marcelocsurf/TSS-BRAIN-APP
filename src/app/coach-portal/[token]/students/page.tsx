@@ -81,6 +81,11 @@ export default async function CoachStudentsListPage({ params }: Props) {
                   </p>
                 </div>
                 <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                  {s.is_returning && (
+                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider" style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }} title={`${s.days_since_session} days since the last session`}>
+                      Returning · {s.days_since_session}d
+                    </span>
+                  )}
                   {s.has_safety_flag && (
                     <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-semibold" title="Has medical / safety notes">
                       <AlertTriangle size={10} strokeWidth={2} />

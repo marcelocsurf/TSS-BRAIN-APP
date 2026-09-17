@@ -31,7 +31,17 @@ export type CoachStudentSummary = {
   portal_last_seen_at: string | null;
   portal_last_screen: string | null;
   portal_visit_count: number;
+  /** Vuelve: tiene historial y su última sesión fue hace 14+ días (Marcelo 2026-09-17). */
+  is_returning: boolean;
+  days_since_session: number | null;
 };
+
+/** Días desde una fecha ISO (entero, nunca negativo). */
+function daysSince(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000));
+}
+export const RETURNING_AFTER_DAYS = 14;
 
 async function resolveCoachByToken(token: string): Promise<{
   id: string;
@@ -122,6 +132,8 @@ export async function listCoachStudents(
     portal_last_seen_at: (s as any).portal_last_seen_at ?? null,
     portal_last_screen: (s as any).portal_last_screen ?? null,
     portal_visit_count: (s as any).portal_visit_count ?? 0,
+    is_returning: (daysSince(s.last_session_date) ?? -1) >= RETURNING_AFTER_DAYS,
+    days_since_session: daysSince(s.last_session_date),
   }));
 }
 
@@ -205,6 +217,14 @@ export type CoachStudentDetail = {
   last_session_work: { sequence_id: string; sequence_name: string; rated: number; total: number; complete: boolean; weakest: { step_id: string; title: string; rating: number } | null }[];
   last_session_by: string | null;
   next_focus_label: string | null;
+  /** Tarjeta de regreso (Marcelo 2026-09-17): cuánto pasó, qué le dijiste,
+   *  qué hizo en el medio. null si no vuelve (sin historial o sesión reciente). */
+  returning: {
+    days_since: number;
+    last_by: string | null;
+    last_focus: string | null;
+    since: { visits: number; last_seen: string | null; last_screen: string | null; lets_play: number; lessons: number };
+  } | null;
 };
 
 export async function getCoachStudentDetail(
@@ -283,8 +303,26 @@ export async function getCoachStudentDetail(
   }
   const nfSeq = (data as any).next_focus_sequence_id as string | null; const nfStep = (data as any).next_focus_step_id as string | null;
   const nextFocusLabel = nfSeq || nfStep ? [nfSeq ? (seqName.get(nfSeq) ?? nfSeq) : null, nfStep ? (title.get(nfStep) ?? nfStep) : null].filter(Boolean).join(' · ') : null;
+  // Tarjeta de regreso: solo si hay historial y pasaron 14+ días.
+  const ds = daysSince((data as any).last_session_date);
+  let returning: CoachStudentDetail['returning'] = null;
+  if (ds != null && ds >= RETURNING_AFTER_DAYS) {
+    const since = (data as any).last_session_date as string;
+    const [{ count: visits }, { count: plays }, { count: lessonsDone }] = await Promise.all([
+      admin.from('portal_visits').select('id', { count: 'exact', head: true }).eq('student_id', studentId).gt('seen_at', since),
+      admin.from('self_training_sessions').select('id', { count: 'exact', head: true }).eq('student_id', studentId).eq('status', 'done').gt('created_at', since),
+      admin.from('lesson_progress').select('lesson_id', { count: 'exact', head: true }).eq('student_id', studentId).eq('completed', true).gt('completed_at', since),
+    ]);
+    returning = {
+      days_since: ds,
+      last_by: lastBy,
+      last_focus: nextFocusLabel ? `${nextFocusLabel}${(data as any).next_recommended_focus ? ` — ${(data as any).next_recommended_focus}` : ''}` : ((data as any).next_recommended_focus ?? null),
+      since: { visits: visits ?? 0, last_seen: (data as any).portal_last_seen_at ?? null, last_screen: (data as any).portal_last_screen ?? null, lets_play: plays ?? 0, lessons: lessonsDone ?? 0 },
+    };
+  }
   return {
     ...(data as unknown as CoachStudentDetail),
+    returning,
     self_assessed: (assessed ?? []).map((r: any) => ({ step_id: r.step_id, title: title.get(r.step_id) ?? r.step_id, rating: r.current_rating, at: r.assessed_at ?? null })),
     own_tasks: (tasks ?? []).map((t: any) => ({ step_title: title.get(t.step_id) ?? t.step_id, detail: t.detail ?? null, sequence_id: t.sequence_id })),
     open_session: open ? { name: open.drill_name ?? 'Session', planned_at: open.planned_at ?? null } : null,
