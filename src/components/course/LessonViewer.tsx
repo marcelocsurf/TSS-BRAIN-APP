@@ -80,9 +80,9 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
         <BookOpen
           size={36}
           strokeWidth={1.75}
-          className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan,#5AC3E7)]"
+          className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan,#00D2FF)]"
         />
-        <p className="text-gray-500 text-sm">Loading lesson...</p>
+        <p className="text-[#55666E] text-sm">Loading lesson...</p>
       </div>
     );
   }
@@ -91,8 +91,8 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
   if (!data || !data.lesson) {
     return (
       <div className="text-center py-20 space-y-3">
-        <p className="text-gray-500 text-sm">This lesson is not available.</p>
-        <button type="button" onClick={onBack} className="text-xs font-semibold text-[var(--tss-cyan,#5AC3E7)]">
+        <p className="text-[#55666E] text-sm">This lesson is not available.</p>
+        <button type="button" onClick={onBack} className="text-xs font-semibold text-[var(--tss-cyan,#00D2FF)]">
           ← Back to the course
         </button>
       </div>
@@ -117,35 +117,35 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
       <div className="space-y-4 pb-8">
         <button
           onClick={onBack}
-          className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1"
+          className="text-[12px] uppercase tracking-wider flex items-center gap-1" style={{ fontFamily: 'var(--font-plex)', color: 'rgba(247,249,250,.75)' }}
         >
           ← Back to course
         </button>
 
-        <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200 rounded-xl p-6">
+        <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg p-6">
           <div className="flex items-start gap-3 mb-3">
-            <Hourglass size={28} strokeWidth={1.75} className="text-amber-700 shrink-0 mt-0.5" />
+            <Hourglass size={28} strokeWidth={1.75} className="text-[#55666E] shrink-0 mt-0.5" />
             <div className="flex-1">
-              <div className="text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-1">
+              <div className="text-[10px] uppercase tracking-wider text-[#55666E] font-bold mb-1">
                 {lesson.pc_section_name || 'Coming soon'}
                 {lesson.is_test && ' · Gate Test'}
               </div>
-              <h1 className="text-xl font-bold text-amber-900">{lesson.title}</h1>
+              <h1 className="text-xl font-bold text-[#10263B]">{lesson.title}</h1>
               {lesson.pc_section_name && (
-                <p className="text-sm text-amber-700 mt-1">{lesson.pc_section_name}</p>
+                <p className="text-sm text-[#55666E] mt-1">{lesson.pc_section_name}</p>
               )}
             </div>
           </div>
 
-          <div className="bg-white/60 rounded-lg p-4 mt-4">
-            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-2">
+          <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg p-4 mt-4">
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-[#55666E] font-bold mb-2">
               <ClipboardList size={14} strokeWidth={1.75} />
               Status
             </div>
-            <p className="text-sm text-amber-900 font-semibold mb-2">
+            <p className="text-sm text-[#10263B] font-semibold mb-2">
               Coming in v1.5
             </p>
-            <p className="text-xs text-amber-800 leading-relaxed">
+            <p className="text-xs text-[#10263B] leading-relaxed">
               Marcelo will release the full canonical content
               {lesson.is_test
                 ? ' — including test specifications, evaluation rubric, accepted formats, and retake policy —'
@@ -156,7 +156,7 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
 
           <button
             onClick={onBack}
-            className="mt-4 w-full py-3 rounded-lg bg-amber-200 hover:bg-amber-300 transition-colors text-sm font-bold text-amber-900"
+            className="mt-4 w-full py-3 rounded-[5px] bg-[var(--tss-navy)] text-white text-sm font-bold"
           >
             ← Back to {lesson.pc_section_name || 'course'}
           </button>
@@ -171,7 +171,8 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
   };
 
   const isFormOrTest = lesson.lesson_type === 'form' || lesson.lesson_type === 'test';
-  const cardCls = 'bg-white rounded-xl shadow-sm border border-gray-200 px-5 py-6';
+  // v10.1 documento: tarjeta sand sobre papel, radio 8 px (Marcelo 2026-09-17).
+  const cardCls = 'rounded-lg border border-[#DCD7C6] bg-[#E9E2D2] px-5 py-6';
 
   return (
     <div className="space-y-4 pb-8">
@@ -179,29 +180,29 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
       <div>
         <button
           onClick={onBack}
-          className="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1 mb-3"
+          className="text-[12px] uppercase tracking-wider flex items-center gap-1 mb-3" style={{ fontFamily: 'var(--font-plex)', color: 'rgba(247,249,250,.75)' }}
         >
           ← Back to course
         </button>
-        <div className="bg-gradient-to-br from-[var(--tss-navy)] to-[var(--tss-navy-dark,#0a1628)] text-white rounded-xl p-5">
+        <div className="text-white rounded-lg p-5" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.25)' }}>
           {/* El código interno de la lección (VAL-001, PC-PRE-07…) no se le
               muestra al alumno: no significa nada para él. Los coaches sí lo
               ven, en su propio portal. */}
           {lesson.pc_section_name && (
-            <div className="text-xs text-white/60 mb-1">{lesson.pc_section_name}</div>
+            <div className="text-[11px] uppercase tracking-[0.18em] mb-1.5" style={{ fontFamily: 'var(--font-plex)', color: '#00D2FF' }}>{lesson.pc_section_name}</div>
           )}
-          <h1 className="text-xl font-bold">{lesson.title}</h1>
+          <h1 className="text-[24px] font-black uppercase leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900 }}>{lesson.title}</h1>
           {lesson.subtitle && (
-            <p className="text-sm text-white/80 mt-1 italic">{lesson.subtitle}</p>
+            <p className="text-[14px] mt-1.5" style={{ color: 'rgba(247,249,250,.8)' }}>{lesson.subtitle}</p>
           )}
           {lesson.pillar && (
-            <p className="text-xs text-[var(--tss-cyan,#5AC3E7)] mt-2">
+            <p className="text-xs text-[var(--tss-cyan,#00D2FF)] mt-2">
               Pillar: {lesson.pillar}
             </p>
           )}
           {progress?.completed && (
             <div className="flex items-center gap-3 mt-3 text-[11px] text-white/70">
-              <span className="flex items-center gap-1 text-green-300">
+              <span className="flex items-center gap-1 text-[#39D98A]">
                 <CheckCircle2 size={13} strokeWidth={1.75} />
                 Completed
               </span>
@@ -214,13 +215,13 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
       {onOpenLesson && SEQUENCE_TO_INTRO[lesson.id] && (
         <button
           onClick={() => onOpenLesson(SEQUENCE_TO_INTRO[lesson.id].id)}
-          className="w-full flex items-center gap-3 rounded-xl border border-[var(--tss-cyan,#5AC3E7)]/40 bg-[var(--tss-cyan,#5AC3E7)]/10 px-4 py-3 text-left hover:bg-[var(--tss-cyan,#5AC3E7)]/20 transition-colors"
+          className="w-full flex items-center gap-3 rounded-lg border border-[#DCD7C6] bg-[#E9E2D2] px-4 py-3 text-left"
         >
           <BookOpen size={18} strokeWidth={1.75} className="flex-shrink-0 text-[var(--tss-navy)]" />
           <span className="flex-1 text-sm text-[var(--tss-navy)]">
             This is the same lesson as{' '}
             <span className="font-bold">{SEQUENCE_TO_INTRO[lesson.id].label}</span> in your Pre-Course.
-            <span className="block text-xs text-[var(--tss-navy)]/70">Open the full Pre-Course version →</span>
+            <span className="block text-xs text-[#55666E]">Open the full Pre-Course version →</span>
           </span>
         </button>
       )}
@@ -280,9 +281,9 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
                to actually practice it and follow the flow. */
             <a
               href={`?tab=sequence&step=${(canonicalDrill || canonicalMission).step_id || lesson.id}`}
-              className="flex items-center justify-center gap-2 w-full rounded-xl bg-[var(--tss-navy)] text-white py-4 text-sm font-semibold hover:opacity-90"
+              className="flex items-center justify-center gap-2 w-full rounded-[5px] bg-[var(--tss-navy)] text-white py-4 text-sm font-bold hover:opacity-90"
             >
-              <PlayCircle size={18} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+              <PlayCircle size={18} strokeWidth={1.75} className="text-[var(--tss-cyan,#00D2FF)]" />
               Let&apos;s practice drills &amp; missions in Let&apos;s Play →
             </a>
           ) : lesson.drill_md ? (
@@ -308,8 +309,8 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
 
 function SectionLabel({ icon: Icon, text }: { icon: IconType; text: string }) {
   return (
-    <p className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-2">
-      <Icon size={13} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+    <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-[#55666E] mb-2" style={{ fontFamily: 'var(--font-plex)' }}>
+      <Icon size={13} strokeWidth={1.75} className="text-[var(--tss-cyan,#00D2FF)]" />
       {text}
     </p>
   );
@@ -331,8 +332,8 @@ function MarkDoneButton({
     <button
       onClick={handle}
       disabled={completed || saving}
-      className={`w-full py-3.5 rounded-xl text-sm font-bold transition-colors inline-flex items-center justify-center gap-2 ${
-        completed ? 'bg-green-100 text-green-700 cursor-default' : 'bg-[var(--tss-navy)] text-white hover:opacity-90'
+      className={`w-full py-3.5 rounded-[5px] text-sm font-bold transition-colors inline-flex items-center justify-center gap-2 ${
+        completed ? 'bg-[#DCEFE3] text-[#1B5E3A] cursor-default' : 'bg-[var(--tss-navy)] text-white hover:opacity-90'
       }`}
     >
       {completed ? (<><Check size={16} strokeWidth={2} /> Completed</>) : saving ? 'Saving…' : (<><Check size={16} strokeWidth={2} /> Mark as done</>)}
@@ -368,9 +369,9 @@ function VideoSection({
   if (videos.length === 0) {
     return (
       <div className="text-center py-12">
-        <Video size={48} strokeWidth={1.75} className="mx-auto mb-3 text-gray-300" />
+        <Video size={48} strokeWidth={1.75} className="mx-auto mb-3 text-[#B8C7D1]" />
         <h3 className="font-bold text-base mb-2">Video Coming Soon</h3>
-        <p className="text-sm text-gray-500 max-w-sm mx-auto">
+        <p className="text-sm text-[#55666E] max-w-sm mx-auto">
           The video for this lesson is being filmed. In the meantime, you can review the theory, drill, and errors below.
         </p>
       </div>
@@ -390,10 +391,10 @@ function VideoSection({
               key={v.id ?? i}
               type="button"
               onClick={() => setActiveIdx(i)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
+              className={`px-3 py-1.5 text-xs font-bold rounded-[5px] whitespace-nowrap transition-colors ${
                 activeIdx === i
                   ? 'bg-[var(--tss-navy)] text-white'
-                  : 'bg-gray-100 text-gray-600'
+                  : 'bg-[#F7F9FA] text-[#55666E] border border-[#DCD7C6]'
               }`}
             >
               {v.label || `Video ${i + 1}`}
@@ -420,7 +421,7 @@ function VideoSection({
       </div>
 
       {current.label && (
-        <p className="flex items-center gap-1 text-[11px] text-gray-500 italic mb-3">
+        <p className="flex items-center gap-1 text-[11px] text-[#55666E] italic mb-3">
           <Play size={11} strokeWidth={1.75} />
           {current.label}
         </p>
@@ -429,9 +430,9 @@ function VideoSection({
       <button
         onClick={handleMarkWatched}
         disabled={progress?.video_watched || marking}
-        className={`w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${
+        className={`w-full py-2.5 rounded-[5px] text-sm font-bold transition-colors ${
           progress?.video_watched
-            ? 'bg-green-100 text-green-700 cursor-default'
+            ? 'bg-[#DCEFE3] text-[#1B5E3A] cursor-default'
             : 'bg-[var(--tss-navy)] text-white hover:opacity-90'
         }`}
       >
@@ -474,7 +475,7 @@ function ContentSection({
 
   if (!content) {
     return (
-      <div className="text-center py-8 text-sm text-gray-500">
+      <div className="text-center py-8 text-sm text-[#55666E]">
         No content available for this section.
       </div>
     );
@@ -487,13 +488,13 @@ function ContentSection({
       </div>
 
       {!hideMarkRead && (
-        <div className="mt-6 pt-4 border-t border-gray-100">
+        <div className="mt-6 pt-4 border-t border-[#DCD7C6]">
           <button
             onClick={handleMarkRead}
             disabled={alreadyRead || marking}
-            className={`w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`w-full py-2.5 rounded-[5px] text-sm font-bold transition-colors ${
               alreadyRead
-                ? 'bg-green-100 text-green-700 cursor-default'
+                ? 'bg-[#DCEFE3] text-[#1B5E3A] cursor-default'
                 : 'bg-[var(--tss-navy)] text-white hover:opacity-90'
             }`}
           >
@@ -589,9 +590,9 @@ function SetGoalForm({
         <MarkdownContent markdown={lesson.description_md} />
       </div>
 
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+      <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg p-4">
         <h4 className="font-bold text-sm mb-2">Your Goal</h4>
-        <p className="text-xs text-gray-600 mb-3">
+        <p className="text-xs text-[#55666E] mb-3">
           Write your personal goal as clearly as possible. Be specific. This will be visible to your coach.
         </p>
         <textarea
@@ -599,17 +600,17 @@ function SetGoalForm({
           onChange={(e) => setGoal(e.target.value)}
           rows={5}
           placeholder="In 6 months I want to..."
-          className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
+          className="w-full px-3 py-2 border border-[#DCD7C6] bg-[#F7F9FA] rounded-[5px] text-sm text-[#10263B]"
           disabled={isCompleted}
         />
-        <div className="text-[10px] text-gray-400 mt-1">{goal.length} / 500 characters</div>
+        <div className="text-[10px] text-[#55666E] mt-1">{goal.length} / 500 characters</div>
 
         <button
           onClick={handleSave}
           disabled={saving || isCompleted || goal.length < 20}
-          className={`mt-3 w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${
+          className={`mt-3 w-full py-2.5 rounded-[5px] text-sm font-bold transition-colors ${
             isCompleted
-              ? 'bg-green-100 text-green-700 cursor-default'
+              ? 'bg-[#DCEFE3] text-[#1B5E3A] cursor-default'
               : 'bg-[var(--tss-navy)] text-white hover:opacity-90 disabled:opacity-50'
           }`}
         >
@@ -655,9 +656,9 @@ function GoofyOrRegularForm({
         <MarkdownContent markdown={lesson.description_md} />
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg p-4">
         <h4 className="font-bold text-sm mb-3">Which foot leads?</h4>
-        <p className="text-xs text-gray-600 mb-4">
+        <p className="text-xs text-[#55666E] mb-4">
           After doing the physical test described above, select your stance:
         </p>
 
@@ -665,10 +666,10 @@ function GoofyOrRegularForm({
           <button
             onClick={() => setStance('regular')}
             disabled={isCompleted}
-            className={`p-4 rounded-lg border-2 transition-all ${
+            className={`p-4 rounded-[5px] border-2 transition-all ${
               stance === 'regular'
                 ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
-                : 'border-gray-200 bg-white hover:border-gray-300'
+                : 'border-[#DCD7C6] bg-[#F7F9FA]'
             }`}
           >
             <Footprints size={24} strokeWidth={1.75} className="mx-auto mb-1" />
@@ -679,10 +680,10 @@ function GoofyOrRegularForm({
           <button
             onClick={() => setStance('goofy')}
             disabled={isCompleted}
-            className={`p-4 rounded-lg border-2 transition-all ${
+            className={`p-4 rounded-[5px] border-2 transition-all ${
               stance === 'goofy'
                 ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
-                : 'border-gray-200 bg-white hover:border-gray-300'
+                : 'border-[#DCD7C6] bg-[#F7F9FA]'
             }`}
           >
             <Footprints size={24} strokeWidth={1.75} className="mx-auto mb-1 -scale-x-100" />
@@ -694,9 +695,9 @@ function GoofyOrRegularForm({
         <button
           onClick={handleSave}
           disabled={saving || isCompleted || !stance}
-          className={`mt-4 w-full py-2.5 rounded-lg text-sm font-medium transition-colors ${
+          className={`mt-4 w-full py-2.5 rounded-[5px] text-sm font-bold transition-colors ${
             isCompleted
-              ? 'bg-green-100 text-green-700 cursor-default'
+              ? 'bg-[#DCEFE3] text-[#1B5E3A] cursor-default'
               : 'bg-[var(--tss-navy)] text-white hover:opacity-90 disabled:opacity-50'
           }`}
         >
@@ -739,10 +740,10 @@ function DrillMissionVideos({
               key={v.id ?? i}
               type="button"
               onClick={() => setActiveIdx(i)}
-              className={`px-3 py-1 text-[11px] font-medium rounded-md whitespace-nowrap ${
+              className={`px-3 py-1 text-[11px] font-bold rounded-[5px] whitespace-nowrap ${
                 activeIdx === i
                   ? 'bg-[var(--tss-navy)] text-white'
-                  : 'bg-gray-100 text-gray-600'
+                  : 'bg-[#F7F9FA] text-[#55666E] border border-[#DCD7C6]'
               }`}
             >
               {v.label || `Video ${i + 1}`}
@@ -767,7 +768,7 @@ function DrillMissionVideos({
         )}
       </div>
       {current.label && videos.length === 1 && (
-        <p className="flex items-center gap-1 text-[11px] text-gray-500 italic mt-1.5">
+        <p className="flex items-center gap-1 text-[11px] text-[#55666E] italic mt-1.5">
           <Play size={11} strokeWidth={1.75} />
           {current.label}
         </p>
@@ -784,12 +785,12 @@ function PracticeSection({ item }: { item: any }) {
   return (
     <div className="space-y-4">
       <div>
-        <p className="text-[10px] font-mono uppercase tracking-wider text-gray-400">
+        <p className="text-[10px] uppercase tracking-[0.18em] font-mono text-[#55666E]">
           {item.id}
           {item.time_estimate ? ` · ${item.time_estimate}` : ''}
           {item.reps_recommended ? ` · ${item.reps_recommended}` : ''}
         </p>
-        <h3 className="text-base font-bold text-[var(--tss-navy)] mt-1">
+        <h3 className="text-[18px] font-black uppercase text-[var(--tss-navy)] mt-1 leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900 }}>
           {item.title}
         </h3>
       </div>
@@ -797,11 +798,11 @@ function PracticeSection({ item }: { item: any }) {
       {videos.length > 0 && <DrillMissionVideos videos={videos} title={item.title} />}
 
       {item.key_words && item.key_words.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700">
+        <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg p-3">
+          <p className="text-[10px] uppercase tracking-[0.18em] font-mono text-[#55666E]">
             5 Key Words
           </p>
-          <p className="text-sm font-bold text-amber-900 mt-1 tracking-wide">
+          <p className="text-sm font-bold text-[#10263B] mt-1 tracking-wide">
             {item.key_words.join(' · ')}
           </p>
         </div>
@@ -814,11 +815,11 @@ function PracticeSection({ item }: { item: any }) {
       )}
 
       {item.success_criteria && item.success_criteria.length > 0 && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-emerald-700">
+        <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg p-3">
+          <p className="text-[10px] uppercase tracking-[0.18em] font-mono text-[#55666E]">
             How you know you got it
           </p>
-          <ul className="text-xs text-emerald-900 mt-1 space-y-1">
+          <ul className="text-xs text-[#10263B] mt-1 space-y-1">
             {item.success_criteria.map((c: string, i: number) => (
               <li key={i}>• {c}</li>
             ))}
@@ -830,13 +831,13 @@ function PracticeSection({ item }: { item: any }) {
       {isMission ? (
         <a
           href={`?tab=sequence&drill=${item.id}`}
-          className="flex items-center justify-center gap-1.5 w-full py-3 rounded-xl bg-[var(--tss-navy)] text-white text-sm font-semibold text-center hover:opacity-90"
+          className="flex items-center justify-center gap-1.5 w-full py-3 rounded-[5px] bg-[var(--tss-navy)] text-white text-sm font-bold text-center hover:opacity-90"
         >
-          <PlayCircle size={16} strokeWidth={1.75} className="text-[var(--tss-cyan,#5AC3E7)]" />
+          <PlayCircle size={16} strokeWidth={1.75} className="text-[var(--tss-cyan,#00D2FF)]" />
           {ctaLabel}
         </a>
       ) : (
-        <p className="text-[11px] text-gray-500 leading-snug">Rehearsal: do it as many times as you need, on land or on the skate. No need to log it — what you log is the mission, in the water.</p>
+        <p className="text-[11px] text-[#55666E] leading-snug">Rehearsal: do it as many times as you need, on land or on the skate. No need to log it — what you log is the mission, in the water.</p>
       )}
     </div>
   );

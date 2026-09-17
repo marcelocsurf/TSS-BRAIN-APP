@@ -14,14 +14,14 @@ const CALLOUTS: Record<
   string,
   { label: string; border: string; bg: string; text: string; accent: string }
 > = {
-  CRITICAL: { label: 'Critical', border: '#FCA5A5', bg: '#FEF2F2', text: '#7F1D1D', accent: '#DC2626' },
-  DOCTRINE: { label: 'Doctrinal Note', border: '#CBD5E1', bg: '#F8FAFC', text: '#0F2A43', accent: '#475569' },
-  TEACH: { label: 'How you teach it', border: '#93C5FD', bg: '#EFF6FF', text: '#1E3A8A', accent: '#2563EB' },
-  CORRECT: { label: 'How you correct it', border: '#FCD34D', bg: '#FFFBEB', text: '#78350F', accent: '#D97706' },
-  VALIDATE: { label: 'How you validate it', border: '#6EE7B7', bg: '#ECFDF5', text: '#065F46', accent: '#059669' },
-  CUE: { label: 'Coach cue', border: '#67E8F9', bg: '#ECFEFF', text: '#155E75', accent: '#0891B2' },
-  MANTRA: { label: 'Mantra', border: '#D8B4FE', bg: '#FAF5FF', text: '#581C87', accent: '#9333EA' },
-  KEYWORDS: { label: '5 Key Words', border: '#FCD34D', bg: '#FFFBEB', text: '#78350F', accent: '#D97706' },
+  CRITICAL: { label: 'Critical', border: '#FF6B6B', bg: '#F7F9FA', text: '#10263B', accent: '#C0392B' },
+  DOCTRINE: { label: 'Doctrinal Note', border: '#DCD7C6', bg: '#F7F9FA', text: '#10263B', accent: '#55666E' },
+  TEACH: { label: 'How you teach it', border: '#00A8CC', bg: '#F7F9FA', text: '#10263B', accent: '#00A8CC' },
+  CORRECT: { label: 'How you correct it', border: '#DCD7C6', bg: '#F7F9FA', text: '#10263B', accent: '#55666E' },
+  VALIDATE: { label: 'How you validate it', border: '#39D98A', bg: '#F7F9FA', text: '#10263B', accent: '#1B5E3A' },
+  CUE: { label: 'Coach cue', border: '#00D2FF', bg: '#F7F9FA', text: '#10263B', accent: '#00A8CC' },
+  MANTRA: { label: 'Mantra', border: '#10263B', bg: '#F7F9FA', text: '#10263B', accent: '#10263B' },
+  KEYWORDS: { label: '5 Key Words', border: '#00D2FF', bg: '#F7F9FA', text: '#10263B', accent: '#00A8CC' },
 };
 
 interface MarkdownContentProps {
@@ -34,7 +34,7 @@ export function MarkdownContent({ markdown }: MarkdownContentProps) {
   const blocks = parseMarkdown(markdown);
 
   return (
-    <div className="markdown-content text-[15px] leading-[1.8] text-gray-700 max-w-[68ch]">
+    <div className="markdown-content text-[15px] leading-[1.8] text-[#10263B] max-w-[68ch]">
       {blocks.map((block, idx) => renderBlock(block, idx))}
     </div>
   );
@@ -204,8 +204,8 @@ function isBlockStart(line: string): boolean {
 const INLINE_RULES: { re: RegExp; node: (content: string, key: number) => React.ReactNode }[] = [
   { re: /\*\*(.+?)\*\*/, node: (c, k) => <strong key={k} className="font-bold text-[var(--tss-navy)]">{renderInline(c)}</strong> },
   { re: /\*(.+?)\*/, node: (c, k) => <em key={k} className="italic">{renderInline(c)}</em> },
-  { re: /==(.+?)==/, node: (c, k) => <mark key={k} className="bg-[#FEF08A] text-[var(--tss-navy)] px-1 rounded-[3px] font-medium">{renderInline(c)}</mark> },
-  { re: /`([^`]+?)`/, node: (c, k) => <code key={k} className="bg-gray-100 text-[var(--tss-navy)] px-1 py-0.5 rounded text-[12px]">{c}</code> },
+  { re: /==(.+?)==/, node: (c, k) => <mark key={k} className="bg-[#B3F1FF] text-[var(--tss-navy)] px-1 rounded-[3px] font-medium">{renderInline(c)}</mark> },
+  { re: /`([^`]+?)`/, node: (c, k) => <code key={k} className="bg-[#F7F9FA] text-[var(--tss-navy)] px-1 py-0.5 rounded text-[12px]">{c}</code> },
 ];
 
 function renderInline(text: string): React.ReactNode {
@@ -245,7 +245,7 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
       return (
         <h1
           key={idx}
-          className="text-[22px] font-bold mt-8 mb-3 text-[var(--tss-navy)] leading-tight tracking-tight"
+          className="text-[22px] font-black uppercase mt-8 mb-3 text-[var(--tss-navy)] leading-tight tracking-tight"
           style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%' }}
         >
           {renderInline(block.content)}
@@ -255,7 +255,7 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
       return (
         <h2
           key={idx}
-          className="text-[18px] font-bold mt-7 mb-2.5 text-[var(--tss-navy)] leading-snug border-b border-gray-100 pb-1.5"
+          className="text-[18px] font-black uppercase mt-7 mb-2.5 text-[var(--tss-navy)] leading-snug border-b border-[#DCD7C6] pb-1.5"
           style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%' }}
         >
           {renderInline(block.content)}
@@ -274,21 +274,21 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
       return (
         <h4
           key={idx}
-          className="text-[13px] font-semibold mt-4 mb-1.5 text-gray-600 uppercase tracking-wide"
-          style={{ fontFamily: 'DM Mono, monospace' }}
+          className="text-[13px] font-semibold mt-4 mb-1.5 text-[#55666E] uppercase tracking-wide"
+          style={{ fontFamily: 'var(--font-plex)' }}
         >
           {renderInline(block.content)}
         </h4>
       );
     case 'p':
       return (
-        <p key={idx} className="my-3 leading-[1.8] text-gray-700">
+        <p key={idx} className="my-3 leading-[1.8] text-[#10263B]">
           {renderInline(block.content)}
         </p>
       );
     case 'ul':
       return (
-        <ul key={idx} className="list-disc pl-5 my-3 space-y-1.5 text-gray-700">
+        <ul key={idx} className="list-disc pl-5 my-3 space-y-1.5 text-[#10263B]">
           {block.items.map((it, j) => (
             <li key={j} className="leading-[1.7]">{renderInline(it)}</li>
           ))}
@@ -296,7 +296,7 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
       );
     case 'ol':
       return (
-        <ol key={idx} className="list-decimal pl-5 my-3 space-y-1.5 text-gray-700">
+        <ol key={idx} className="list-decimal pl-5 my-3 space-y-1.5 text-[#10263B]">
           {block.items.map((it, j) => (
             <li key={j} className="leading-[1.7]">{renderInline(it)}</li>
           ))}
@@ -306,7 +306,7 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
       return (
         <blockquote
           key={idx}
-          className="border-l-4 border-[var(--tss-cyan,#5AC3E7)] bg-[var(--tss-cyan,#5AC3E7)]/5 pl-4 pr-3 py-2 my-4 italic text-gray-600 rounded-r-lg"
+          className="border-l-4 border-[var(--tss-cyan,#00D2FF)] bg-[var(--tss-cyan,#00D2FF)]/5 pl-4 pr-3 py-2 my-4 italic text-[#55666E] rounded-r-[5px]"
         >
           {renderInline(block.content)}
         </blockquote>
@@ -317,12 +317,12 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
       return (
         <div
           key={idx}
-          className="my-4 rounded-xl border px-4 py-3"
+          className="my-4 rounded-lg border px-4 py-3"
           style={{ borderColor: c.border, background: c.bg }}
         >
           <p
             className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1.5"
-            style={{ color: c.accent, fontFamily: 'DM Mono, monospace' }}
+            style={{ color: c.accent, fontFamily: 'var(--font-plex)' }}
           >
             {c.label}
           </p>
@@ -335,8 +335,8 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
                 .map((w, j) => (
                   <span
                     key={j}
-                    className="text-[11px] font-semibold rounded-full px-2.5 py-0.5"
-                    style={{ background: '#fff', border: `1px solid ${c.border}`, color: c.text }}
+                    className="text-[11px] font-semibold rounded-[5px] px-2.5 py-0.5"
+                    style={{ background: '#F7F9FA', border: `1px solid ${c.border}`, color: c.text }}
                   >
                     {w}
                   </span>
@@ -357,12 +357,12 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
       );
     }
     case 'hr':
-      return <hr key={idx} className="my-4 border-gray-200" />;
+      return <hr key={idx} className="my-4 border-[#DCD7C6]" />;
     case 'code':
       return (
         <pre
           key={idx}
-          className="bg-gray-50 border border-gray-200 rounded-lg p-3 my-3 text-[12px] overflow-x-auto"
+          className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg p-3 my-3 text-[12px] overflow-x-auto"
         >
           <code>{block.content}</code>
         </pre>
@@ -370,11 +370,11 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
     case 'table':
       return (
         <div key={idx} className="my-3 overflow-x-auto">
-          <table className="min-w-full text-[12px] border border-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full text-[12px] border border-[#DCD7C6]">
+            <thead className="bg-[#F7F9FA]">
               <tr>
                 {block.rows[0].map((cell, j) => (
-                  <th key={j} className="px-3 py-2 text-left font-bold border-b border-gray-200">
+                  <th key={j} className="px-3 py-2 text-left font-bold border-b border-[#DCD7C6]">
                     {renderInline(cell)}
                   </th>
                 ))}
@@ -382,7 +382,7 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
             </thead>
             <tbody>
               {block.rows.slice(1).map((row, j) => (
-                <tr key={j} className="border-b border-gray-100">
+                <tr key={j} className="border-b border-[#DCD7C6]">
                   {row.map((cell, k) => (
                     <td key={k} className="px-3 py-2">
                       {renderInline(cell)}
