@@ -8,6 +8,7 @@ import { getCurrentCoach } from '@/lib/actions/sessions';
 import { getCurrentCoach as getAuthCoach, isCoordinatorOrAbove } from '@/lib/actions/auth';
 import { getCoachesForAssignment, type CoachForAssignment } from '@/lib/actions/cascade-sessions';
 import { BELT_DISPLAY } from '@/lib/constants/belts';
+import { campBeltFromTemplate, coachClearance } from '@/lib/constants/coach-clearance';
 import { TidePlannerHint } from '@/components/camp/TidePlannerHint';
 
 export default function NewCampPage() {
@@ -257,12 +258,27 @@ export default function NewCampPage() {
               <option value="">Select head coach...</option>
               {coaches
                 .filter(c => c.role === 'coach' || c.role === 'assistant')
-                .map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.display_name} ({c.role})
-                  </option>
-                ))}
+                .map(c => {
+                  const cl = coachClearance(c.max_belt_permission, campBeltFromTemplate(selectedTemplate as any));
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {c.display_name} ({c.role}){cl.ok ? '' : ` · not cleared for ${cl.campLevel}`}
+                    </option>
+                  );
+                })}
             </select>
+            {(() => {
+              // Habilitación por nivel: nota, no bloqueo (Marcelo 2026-09-17).
+              const sel = coaches.find(c => c.id === form.head_coach_id);
+              if (!sel) return null;
+              const cl = coachClearance(sel.max_belt_permission, campBeltFromTemplate(selectedTemplate as any));
+              if (cl.ok) return null;
+              return (
+                <p className="text-[11px] text-amber-800 mt-1.5 rounded-[5px] px-2.5 py-2" style={{ background: '#FFF8E7', border: '1px solid #F1E3B8' }}>
+                  ⚠ {cl.note}
+                </p>
+              );
+            })()}
           </div>
 
           {/* ── Dates: smart per service type ── */}

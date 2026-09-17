@@ -8,6 +8,8 @@ import { useState, useEffect, useTransition } from 'react';
 import { getCoachesForAssignment, type CoachForAssignment } from '@/lib/actions/cascade-sessions';
 import { updateCampHeadCoach } from '@/lib/actions/camps';
 import { useRouter } from 'next/navigation';
+import { coachClearance, type CoachClearance } from '@/lib/constants/coach-clearance';
+import type { BeltLevel } from '@/lib/constants/belts';
 
 interface Props {
   campInstanceId: string;
@@ -15,6 +17,9 @@ interface Props {
   currentHeadCoachName: string | null;
   currentStatus?: string | null;
   responseNote?: string | null;
+  /** Cinta que exige la plantilla del servicio (null = sin nivel, p. ej. yoga). */
+  campBelt?: BeltLevel | null;
+  currentHeadCoachMaxBelt?: string | null;
 }
 
 export function CampHeadCoachManager({
@@ -23,7 +28,10 @@ export function CampHeadCoachManager({
   currentHeadCoachName,
   currentStatus,
   responseNote,
+  campBelt = null,
+  currentHeadCoachMaxBelt = null,
 }: Props) {
+  const currentClearance: CoachClearance = currentHeadCoachId ? coachClearance(currentHeadCoachMaxBelt, campBelt) : { ok: true };
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [coaches, setCoaches] = useState<CoachForAssignment[]>([]);
@@ -117,6 +125,9 @@ export function CampHeadCoachManager({
                     {c.role}
                     {c.max_belt_permission ? ` · up to ${c.max_belt_permission.replace(/_/g, ' ')}` : ''}
                   </p>
+                  {(() => { const cl = coachClearance(c.max_belt_permission, campBelt); return cl.ok ? null : (
+                    <p className="text-[10px] text-amber-700 font-semibold">Not cleared for {cl.campLevel}</p>
+                  ); })()}
                 </div>
                 {isCurrent && (
                   <span className="text-[10px] font-semibold text-emerald-700">
@@ -127,6 +138,12 @@ export function CampHeadCoachManager({
             );
           })}
         </div>
+      )}
+
+      {!currentClearance.ok && (
+        <p className="w-full text-[11px] text-amber-800 mt-1 rounded-[5px] px-2.5 py-2" style={{ background: '#FFF8E7', border: '1px solid #F1E3B8' }}>
+          ⚠ {currentClearance.note}
+        </p>
       )}
 
       {currentStatus === 'rejected' && responseNote && (

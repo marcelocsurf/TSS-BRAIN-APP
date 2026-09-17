@@ -1,3 +1,4 @@
+import { campBeltFromTemplate } from '@/lib/constants/coach-clearance';
 import { CampCostPanel } from '@/components/camps/CampCostPanel';
 import { getCampDetail, getCampEvaluations, getScheduledEvaluations, getCampDayStatus } from '@/lib/actions/camps';
 import { getCampPlanForRead } from '@/lib/actions/service-planner';
@@ -123,6 +124,8 @@ export default async function CampDetailPage({ params }: Props) {
           }
           currentStatus={(instance as any).head_coach_status ?? null}
           responseNote={(instance as any).head_coach_response_note ?? null}
+          campBelt={campBeltFromTemplate((instance as any).camp_templates)}
+          currentHeadCoachMaxBelt={headCoach?.max_belt_permission ?? null}
         />
 
         {/* Scheduled time — coordinator sets / edits start + end so the

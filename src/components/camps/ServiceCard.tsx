@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { Check, AlertTriangle } from 'lucide-react';
 import { CampStatusBadge } from './CampStatusBadge';
 import { ServiceQuickPanel } from './ServiceQuickPanel';
+import { campBeltFromTemplate, coachClearance } from '@/lib/constants/coach-clearance';
 
 const NEUTRAL_BG = '#F3F4F6';
 const NEUTRAL_ACCENT = '#9CA3AF';
@@ -64,6 +65,7 @@ type ServiceCardProps = {
     camp_templates: {
       template_name: string;
       level_name: string;
+      includes_course_key?: string | null;
       service_kind: 'surf_lesson' | 'surf_camp' | 'custom' | null;
       capacity_max: number;
       duration_days: number | null;
@@ -71,7 +73,7 @@ type ServiceCardProps = {
       card_color: string | null;
       accent_color: string | null;
     } | null;
-    head_coach: { display_name: string } | null;
+    head_coach: { display_name: string; max_belt_permission?: string | null } | null;
     head_coach_id?: string | null;
     head_coach_status?: string | null;
     coaches: { display_name: string } | null;
@@ -211,6 +213,20 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
             amber alert + "No coach" when missing so a coordinator who
             scans the calendar instantly spots services without a coach. */}
         <div className="mt-1.5 space-y-0.5">
+          {(() => {
+            // Habilitación por nivel: nota, no bloqueo (Marcelo 2026-09-17).
+            if (!camp.head_coach) return null;
+            const cl = coachClearance(camp.head_coach.max_belt_permission, campBeltFromTemplate(tpl));
+            if (cl.ok) return null;
+            return (
+              <div className="flex items-center gap-1 truncate" title={cl.note}>
+                <AlertTriangle size={11} strokeWidth={2.5} className="text-amber-600 shrink-0" />
+                <p className="text-[10px] font-semibold truncate text-amber-700" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>
+                  Coach not cleared for {cl.campLevel} · up to {cl.coachLevel}
+                </p>
+              </div>
+            );
+          })()}
           {camp.head_coach_status === 'rejected' && (
             <div className="flex items-center gap-1 truncate">
               <AlertTriangle size={11} strokeWidth={2.5} className="text-amber-600 shrink-0" />
