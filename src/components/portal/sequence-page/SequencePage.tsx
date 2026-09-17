@@ -153,7 +153,7 @@ export function SequencePage({
                 ))}
               </Card>
             )}
-            <Card title="01 · What it is">
+            <Card title="01 · What it is" collapsible defaultOpen={true}>
               <p className="tss-intro">{cfg.think.whatIs.headline}</p>
               {video && cfg.think.board && <div className="mb-2"><WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} kitSequence={WAVE_KIT_SEQUENCE[cfg.id]} /></div>}
               <Row k="The line">{cfg.think.whatIs.line}</Row>
@@ -161,7 +161,7 @@ export function SequencePage({
               <Row k="What for">{cfg.think.whatIs.whatFor}</Row>
             </Card>
             {cfg.kind === 'entry' && (
-              <Card title="02 · The steps · what each one is">
+              <Card title="02 · The steps · what each one is" collapsible defaultOpen={false}>
                 {stepGroups.map((g, i) => (
                   <div key={g.ids.join('+')} className="py-2.5" style={{ borderTop: i ? `1px solid ${BORDER}` : undefined }}>
                     <p className="text-[15px] font-bold m-0" style={{ color: INK }}><span className="mr-2" style={{ ...MONO, fontSize: 13 }}>{String(i + 1).padStart(2, '0')}</span>{g.title}</p>
@@ -178,7 +178,7 @@ export function SequencePage({
               </Card>
             )}
             {cfg.think.feet && (
-            <Card title="02 · Feet · what changes with the back foot">
+            <Card title="02 · Feet · what changes with the back foot" collapsible defaultOpen={false}>
               <div className="flex gap-4 items-start">
                 <div className="shrink-0 rounded-[5px] p-1" style={{ background: PAPER, border: `1px solid ${BORDER}` }}>
                   <BoardMap compact active={cfg.think.feet!.recommended?.length ? cfg.think.feet!.recommended : undefined} />
@@ -203,13 +203,13 @@ export function SequencePage({
               <Callout>{cfg.think.feet.rule}</Callout>
             </Card>
             )}
-            <Card title="03 · The sequence · how your body does it">
+            <Card title="03 · The sequence · how your body does it" collapsible defaultOpen={false}>
               {(cfg.think.bodyMarkdown ?? body?.body) ? <MarkdownContent markdown={cfg.think.bodyMarkdown ?? body!.body} /> : <p className="m-0" style={{ color: MUTED }}>Coming soon.</p>}
             </Card>
-            <Card title="04 · The rules that hold it together">
+            <Card title="04 · The rules that hold it together" collapsible defaultOpen={false}>
               {(cfg.think.rulesMarkdown ?? body?.rules) ? <MarkdownContent markdown={cfg.think.rulesMarkdown ?? body!.rules} /> : <p className="m-0" style={{ color: MUTED }}>Coming soon.</p>}
             </Card>
-            <Card title="05 · Key words">
+            <Card title="05 · Key words" collapsible defaultOpen={false}>
               {cfg.think.keyWords.map((k) => (
                 <div key={k.label} className="py-2" style={{ borderTop: `1px solid ${BORDER}` }}>
                   <p className="m-0 mb-1" style={{ ...MONO, color: MUTED }}>{k.label}</p>
@@ -425,7 +425,18 @@ function SequenceVideo({ url, title }: { url: string; title: string }) {
   return <video src={url} controls playsInline preload="metadata" className="w-full block rounded-[5px]" title={title} />;
 }
 
-function Card({ title, color, className = '', children }: { title?: string; color?: string; className?: string; children: React.ReactNode }) {
+function Card({ title, color, className = '', children, collapsible = false, defaultOpen = false }: { title?: string; color?: string; className?: string; children: React.ReactNode; /** Plegable: solo el título a la vista, se abre al tocar (Marcelo 2026-09-17: menos scroll). */ collapsible?: boolean; defaultOpen?: boolean }) {
+  if (collapsible && title) {
+    return (
+      <details className={`tss-card group ${className}`} style={color ? { borderTop: `4px solid ${color}` } : undefined} open={defaultOpen}>
+        <summary className="list-none cursor-pointer flex items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+          <h2 className="tss-section-title m-0" style={{ borderBottom: 'none', paddingBottom: 0 }}>{title}</h2>
+          <span aria-hidden className="shrink-0 text-[22px] leading-none transition-transform group-open:rotate-180" style={{ color: INK }}>⌄</span>
+        </summary>
+        <div className="mt-3">{children}</div>
+      </details>
+    );
+  }
   return (
     <section className={`tss-card ${className}`} style={color ? { borderTop: `4px solid ${color}` } : undefined}>
       {title && <h2 className="tss-section-title">{title}</h2>}
