@@ -1128,7 +1128,11 @@ function CoursesTab({
         <p className="text-[11px] uppercase tracking-[0.18em] mb-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>Sequences · as the student sees them</p>
         <p className="text-[12.5px] mb-3" style={{ color: 'rgba(247,249,250,.75)' }}>The same page your students open, with your layer on top: how you teach it, correct it and validate it. Switch it off to show the clean page on the beach.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {Object.values(SEQUENCE_PAGES).map((sq) => (
+          {/* En orden de cinta y número: White 1–5 · Yellow 6–7 · Blue entrada (0) y 8–13. */}
+          {Object.values(SEQUENCE_PAGES).slice().sort((a, b) => {
+            const belt = (k: string) => ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'].indexOf(k);
+            return belt(a.belt) - belt(b.belt) || a.number - b.number || (a.eyebrow ?? '').localeCompare(b.eyebrow ?? '');
+          }).map((sq) => (
             <a key={sq.id} href={`/coach-portal/${token}/seq/${sq.id}`} className="rounded-[5px] px-3 py-2.5 no-underline" style={{ background: '#061C2B', border: '1px solid rgba(247,249,250,.12)' }}>
               <p className="text-[10px] uppercase tracking-wider m-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>{sq.eyebrow ?? `Sequence #${sq.number}`} · {sq.belt.replace('_belt', '')}</p>
               <p className="text-[14px] font-bold m-0 mt-0.5" style={{ color: '#F7F9FA' }}>{sq.title} →</p>

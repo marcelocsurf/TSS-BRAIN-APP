@@ -560,10 +560,50 @@ function CoachCard({ title, layers, field, intro }: { title: string; layers: Coa
         return (
           <details key={l.stepId} className="tss-accordion" style={{ background: 'rgba(247,249,250,.06)', borderColor: 'rgba(255,255,255,.14)' }}>
             <summary style={{ color: PAPER }}><span className="flex-1">{l.title}</span><Chevron /></summary>
-            <div className="px-3 pb-3 seq-dark"><MarkdownContent markdown={md} /></div>
+            <div className="px-3 pb-3 seq-dark"><CoachMd md={md} /></div>
           </details>
         );
       })}
     </section>
   );
+}
+
+/** Markdown del coach sobre fondo ink. Las tablas "Error → what you see →
+ *  what you say → what you do" se muestran como tarjetas por error (en el
+ *  teléfono la tabla de 4 columnas no se leía — Marcelo 2026-09-17). */
+function CoachMd({ md }: { md: string }) {
+  const lines = md.split('\n');
+  const out: React.ReactNode[] = [];
+  let buf: string[] = [];
+  let i = 0, k = 0;
+  const flush = () => { if (buf.join('').trim()) out.push(<MarkdownContent key={`m${k++}`} markdown={buf.join('\n')} />); buf = []; };
+  const cell = (row: string) => row.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim().replace(/\*\*/g, ''));
+  while (i < lines.length) {
+    const ln = lines[i];
+    if (/^\s*\|/.test(ln) && i + 1 < lines.length && /^\s*\|?\s*:?-{2,}/.test(lines[i + 1])) {
+      flush();
+      const head = cell(ln); i += 2;
+      const rows: string[][] = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) { rows.push(cell(lines[i])); i += 1; }
+      out.push(
+        <div key={`t${k++}`} className="space-y-2 mt-2">
+          {rows.map((r, ri) => (
+            <div key={ri} className="rounded-[5px] px-3 py-2.5" style={{ background: 'rgba(247,249,250,.06)', border: '1px solid rgba(255,255,255,.14)' }}>
+              <p className="text-[15px] font-bold m-0 leading-snug" style={{ color: CYAN }}>{r[0]}</p>
+              {r.slice(1).map((c, ci) => c ? (
+                <p key={ci} className="m-0 mt-1.5 text-[14px] leading-snug" style={{ color: PAPER }}>
+                  <span className="block text-[10px] uppercase tracking-[0.16em]" style={{ ...MONO, fontSize: 10, color: ON_DARK }}>{head[ci + 1] ?? ''}</span>
+                  {c}
+                </p>
+              ) : null)}
+            </div>
+          ))}
+        </div>
+      );
+      continue;
+    }
+    buf.push(ln); i += 1;
+  }
+  flush();
+  return <>{out}</>;
 }
