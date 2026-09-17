@@ -1970,6 +1970,33 @@ function HomeTab({
                 : `Next class · ${startD.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`}
             </p>
             <p className="mt-1.5 text-lg" style={{ ...F_DISPLAY, color: '#061C2B' }}>{c.camp_name}</p>
+            {/* El plan del coach para la próxima sesión, en el idioma del curso
+                (Marcelo 2026-09-17): la secuencia y el foco, con Study it y
+                Rehearse it para llegar preparado. Solo si el coach ya lo armó. */}
+            {c.plan && (() => {
+              const sd = c.next_session?.session_date as string | undefined;
+              const when = (() => {
+                if (!sd) return 'Next session';
+                const d = new Date(sd + 'T00:00:00'); const t = new Date(); t.setHours(0, 0, 0, 0);
+                const diff = Math.round((d.getTime() - t.getTime()) / 86400000);
+                return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'long' });
+              })();
+              const seqHref = `/portal/${data.token}/seq/${c.plan.sequenceId}`;
+              return (
+                <div className="mt-3 rounded-lg p-3.5" style={{ background: T_NAVY, border: '1px solid rgba(0,210,255,.35)' }}>
+                  <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{when}{c.coach?.display_name ? ` with ${c.coach.display_name}` : ''} · you will work on</p>
+                  <p className="mt-1 text-[20px] leading-tight" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{c.plan.kind === 'entry' ? c.plan.title : `#${c.plan.number} · ${c.plan.title}`}</p>
+                  <p className="mt-1.5 text-[13.5px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
+                    {c.plan.focus.length > 0 ? <><span className="font-bold" style={{ color: '#F7F9FA' }}>Your focus:</span> {c.plan.focus.join(' · ')}</> : 'The whole sequence, start to finish.'}
+                  </p>
+                  {c.plan.notes && <p className="mt-1.5 text-[13px] italic" style={{ color: 'rgba(247,249,250,.75)' }}>"{c.plan.notes}"</p>}
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <a href={seqHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: '#00D2FF', color: T_NAVY, fontFamily: ARCHIVO }}>Study it</a>
+                    <a href={`${seqHref}?tab=feel`} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.5)', fontFamily: ARCHIVO }}>Rehearse it</a>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
               {c.scheduled_time && (
                 <span className="inline-flex items-center gap-1.5"><Clock size={14} style={{ color: '#0090B0' }} />{c.scheduled_time}</span>

@@ -7,6 +7,7 @@ import { computeSurfSplit, coachSessionMinutes } from '@/lib/utils/surf-hours';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
 import { getMaterialsForStudent } from '@/lib/constants/student-materials';
+import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 
 // ─── Get comprehensive student data for the portal ───
 
@@ -362,7 +363,7 @@ export async function getStudentPortalData(token: string) {
     if (nextSessionIds.length > 0) {
       const { data: previewBlocks } = await admin
         .from('service_plan_blocks')
-        .select('camp_session_id, step_id, land_drill_id, water_drill_id, objective_text, order_index')
+        .select('camp_session_id, step_id, step_ids, land_drill_id, water_drill_id, objective_text, notes_pre, order_index')
         .in('camp_session_id', nextSessionIds)
         .eq('student_id', student.id)
         .order('order_index');
@@ -374,9 +375,24 @@ export async function getStudentPortalData(token: string) {
       }
     }
     for (const [campId, sess] of nextSessionByCamp.entries()) {
+      // El plan del coach en el idioma de las secuencias (Marcelo 2026-09-17):
+      // el bloque 0 lleva step_ids = los pasos de la secuencia elegida y
+      // objective_text "Whole line · #3 Pop-Up" o "Focus: a · b". Se resuelve
+      // contra las páginas de secuencia para que el alumno pueda estudiarla.
+      const b0 = (blocksByCamp[campId] ?? []).find((b: any) => b.order_index === 0 && Array.isArray(b.step_ids) && b.step_ids.length > 0);
+      let plan: { sequenceId: string; number: number; title: string; kind: string; focus: string[]; notes: string | null } | null = null;
+      if (b0) {
+        const ids: string[] = b0.step_ids;
+        const cfg = Object.values(SEQUENCE_PAGES).find((c) => c.stepIds.length === ids.length && c.stepIds.every((id) => ids.includes(id)));
+        if (cfg) {
+          const txt = String(b0.objective_text ?? '');
+          plan = { sequenceId: cfg.id, number: cfg.number, title: cfg.title, kind: cfg.kind ?? 'sequence', focus: txt.startsWith('Focus: ') ? txt.slice(7).split(' · ').map((x) => x.trim()).filter(Boolean) : [], notes: b0.notes_pre ?? null };
+        }
+      }
       upcomingCampPreview[campId] = {
         next_session: sess,
         blocks: blocksByCamp[campId] ?? [],
+        plan,
       };
     }
   }
