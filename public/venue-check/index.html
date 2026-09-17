@@ -556,10 +556,16 @@ function renderSummary(){
   </ul></div>`;
 
   out+=`<p style="font-size:11px;color:var(--tide);text-align:center;margin-top:10px">Screenshot this plan 📸 · Your check is saved on this device</p>`;
+  // From the portal (Let's Play): the plan goes back to the session plan with the map.
+  if(Q.get('src')==='portal') out+=`<button class="btn cyan" id="toPortal" style="margin-top:6px">Back to your plan — take this with you →</button>`;
   document.getElementById('sumBody').innerHTML=out;
   // Same drawing, own gradient/marker ids (the live map is hidden, and hidden defs do not paint).
-  document.getElementById('sumMap').innerHTML=render().replace(/id="sea"/,'id="sea2"').replace(/url\(#sea\)/g,'url(#sea2)').replace(/id="arr"/,'id="arr2"').replace(/url\(#arr\)/g,'url(#arr2)');
+  const mapSvg=render().replace(/id="sea"/,'id="sea2"').replace(/url\(#sea\)/g,'url(#sea2)').replace(/id="arr"/,'id="arr2"').replace(/url\(#arr\)/g,'url(#arr2)');
+  document.getElementById('sumMap').innerHTML=mapSvg;
   document.querySelectorAll('.gono').forEach(el=>el.onclick=()=>{ S.go=el.dataset.v; save(); renderSummary(); });
+  const payload={type:'tss-venue-check', done:false, summary:{spot:S.spot||'', wave:S.wave, tide:S.tide, wind:S.wind, level:S.level, items:items.map(i=>i.replace(/<[^>]+>/g,''))}, svg:mapSvg};
+  try{ window.parent && window.parent!==window && window.parent.postMessage(payload,'*'); }catch(e){}
+  const tp=document.getElementById('toPortal'); if(tp) tp.onclick=()=>{ try{ window.parent.postMessage({...payload, done:true},'*'); }catch(e){} };
 }
 
 // mini conditions in the map topbar

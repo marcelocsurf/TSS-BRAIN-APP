@@ -528,6 +528,8 @@ export type PlanSequenceSessionInput = {
   planned_reps?: number | null;
   /** "Conditions fit my level and my expectations are right." */
   conditions_ok: boolean;
+  /** Lectura del spot (Venue Check) hecha desde el plan (2026-09-17). */
+  venue?: { spot?: string | null; wave?: string | null; tide?: string | null; wind?: string | null; notes?: string | null } | null;
 };
 
 export type OpenSession = {
@@ -606,6 +608,14 @@ export async function planSequenceSession(
         planned_reps: reps ?? 0,
         safety_check: true,
         planned_at: new Date().toISOString(),
+        // Venue Check desde el plan: el spot y su lectura viajan con la sesión.
+        ...(input.venue ? {
+          venue_type: clip(input.venue.spot, 60),
+          wave_conditions: clip(input.venue.wave, 40),
+          tide: clip(input.venue.tide, 60),
+          wind: clip(input.venue.wind, 40),
+          venue_notes: clip(input.venue.notes, 1500),
+        } : {}),
       })
       .select('id')
       .single();

@@ -24,7 +24,7 @@ import {
 import { getWeeklyPracticeCount, getLastPracticeHint, type CriterionResult } from '@/lib/actions/sequence';
 import { Target, Check, CircleDot, X, Flame, Dumbbell, Waves, Play, Clock, Repeat, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { MAX_OPEN_TASKS } from '@/lib/stars';
-import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
+import { VenueScoutLauncher, type VenueCheckResult } from '@/components/venue-scout/VenueScoutLauncher';
 import { sequenceLabel, SIDE_WORD } from '@/lib/constants/learning-blocks';
 import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
 import { MomentChips } from './MySequenceTab';
@@ -194,6 +194,9 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
   // Plan
   const [conditionsOk, setConditionsOk] = useState(!!openSession);
+  // Lectura del spot (Venue Check) hecha desde acá: el plan la lleva y la
+  // pantalla "Now go surf" la muestra con el mapa (Marcelo 2026-09-17).
+  const [venue, setVenue] = useState<VenueCheckResult | null>(null);
   const [measure, setMeasure] = useState<Measure>(openSession?.measure ?? 'time_reps');
   const [plannedDuration, setPlannedDuration] = useState(openSession?.plannedDuration ?? 20);
   const [plannedReps, setPlannedReps] = useState(openSession?.plannedReps ?? 5);
@@ -386,6 +389,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           planned_duration_minutes: wantsTime ? plannedDuration : null,
           planned_reps: wantsReps ? plannedReps : null,
           conditions_ok: conditionsOk,
+          venue: venue ? { spot: venue.summary.spot, wave: venue.summary.wave, tide: venue.summary.tide, wind: venue.summary.wind, notes: venue.summary.items.join('\n') } : undefined,
         });
         if (!res.ok) { setErrorMsg(res.error); return; }
         setSessionId(res.sessionId);
@@ -535,7 +539,8 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
               <span>Not sure? <b>Read the spot</b> first (optional)</span>
               <ChevronDown size={14} className="text-[#55666E]" />
             </summary>
-            <div className="mt-2"><VenueScoutLauncher variant="light" belt={_studentBelt} /></div>
+            <div className="mt-2"><VenueScoutLauncher variant="light" belt={_studentBelt} openDirect="check" onVenueCheck={(r) => { setVenue(r); setConditionsOk(true); }} title="Venue Check" subtitle="Read the spot in 3 steps — land references, hazards, your zone — and bring the plan back here." /></div>
+            {venue && <VenuePlanCard venue={venue} compact />}
           </details>
         </div>
 
@@ -631,8 +636,15 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             <p className="text-[13px] text-[#10263B]">{intention.trim() || focusMoment}</p>
           </div>
         )}
-        <div className="rounded-[5px] border border-[#DCD7C6] p-3.5">
-          <p className="text-[12.5px] text-[#55666E] leading-snug">Close the app and surf. When you are back, open it: <b>Home → Finish &amp; evaluate</b>. Your plan stays saved.</p>
+        {/* El plan del spot que el alumno dibujó en el Venue Check: mapa + estrategia. */}
+        {venue && <VenuePlanCard venue={venue} />}
+        <div className="rounded-lg p-4" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
+          <p className="text-[12px]" style={{ ...F_M, color: '#00A8CC' }}>What happens now</p>
+          <ol className="mt-1.5 space-y-1 text-[13.5px] text-[#10263B] list-decimal pl-5">
+            <li><b>Go to the water and run this plan.</b>{venue ? ' Get in where you marked, stay in your zone, respect your limit line.' : ''}</li>
+            <li>Close the app. Your plan stays saved.</li>
+            <li>When you are back: <b>Home → Finish &amp; evaluate</b>.</li>
+          </ol>
         </div>
         <button type="button" onClick={() => onDone('home')} className="w-full h-12 rounded-[5px] text-[14px] font-bold active:scale-[0.99]" style={{ background: INK, color: PAPER, ...F_D }}>
           Done — see you after the water
@@ -983,6 +995,26 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
           ← Back to Let&apos;s Play
         </button>
       </div>
+    </div>
+  );
+}
+
+/** La lectura del spot hecha en el Venue Check: mapa + condiciones + checklist. */
+function VenuePlanCard({ venue, compact = false }: { venue: VenueCheckResult; compact?: boolean }) {
+  const c = venue.summary;
+  return (
+    <div className="rounded-lg overflow-hidden" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.35)' }}>
+      <div className="px-3.5 pt-3">
+        <p className="text-[12px]" style={{ ...F_M, color: '#00D2FF' }}>Your spot plan{c.spot ? ` · ${c.spot}` : ''}</p>
+        <p className="text-[12px] mt-0.5" style={{ color: 'rgba(247,249,250,.75)' }}>{[c.wave, c.tide, c.wind].filter(Boolean).join(' · ')}</p>
+      </div>
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="block w-full mt-2" style={{ aspectRatio: compact ? '16 / 9' : '4 / 3' }} dangerouslySetInnerHTML={{ __html: venue.svg }} />
+      {!compact && c.items.length > 0 && (
+        <ul className="px-3.5 py-3 space-y-1 text-[12.5px] leading-snug" style={{ color: 'rgba(247,249,250,.9)' }}>
+          {c.items.map((it, i) => <li key={i}>{it}</li>)}
+        </ul>
+      )}
+      {compact && <p className="px-3.5 pb-3 pt-2 text-[12px]" style={{ color: 'rgba(247,249,250,.7)' }}>Saved with your plan — you will see it again on the next screen.</p>}
     </div>
   );
 }
