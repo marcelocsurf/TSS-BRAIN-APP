@@ -302,8 +302,11 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
           {lesson.errors_md && (
             <details className={`group ${cardCls}`}>
               <summary className="list-none cursor-pointer flex items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
-                <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-[#55666E] font-mono"><AlertTriangle size={13} strokeWidth={1.75} className="text-[#00D2FF]" />Review · common errors</span>
-                <span aria-hidden className="text-[#55666E] transition-transform group-open:rotate-180">⌄</span>
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-[#55666E] font-mono"><AlertTriangle size={13} strokeWidth={1.75} className="text-[#00D2FF]" />Review</span>
+                  <span className="block text-[18px] font-black uppercase leading-tight mt-1 text-[#10263B]" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%' }}>Common errors</span>
+                </span>
+                <span aria-hidden className="text-[#10263B] text-[20px] transition-transform group-open:rotate-180">⌄</span>
               </summary>
               <div className="prose prose-sm max-w-none mt-3"><MarkdownContent markdown={lesson.errors_md} /></div>
             </details>
