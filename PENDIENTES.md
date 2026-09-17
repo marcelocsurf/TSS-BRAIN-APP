@@ -24,7 +24,7 @@ Actualizada: 2026-09-17. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico
 - [ ] Revisar `INFO_DECRETO722.md` (sección 6, autoría) y enviarlo.
 
 **Producto (decisiones)**
-- [ ] Revisar paso a paso los 49 criterios White→Blue (artefacto `belts-criterios`): 41/49 marcados al 2026-09-17 (32 dale · 9 cambiar); faltan STP-026 y 043–049. Después "revisá" y Claude aplica.
+- [x] Revisar y aplicar los 49 criterios White→Blue — HECHO 2026-09-17: 39 Dale + 10 Cambiar aplicados a la base (misiones, drills, lecciones); respaldo `ops_criterios_backup_2026_09_17_*`; informes en `docs/criterios/`. Abierto: STP-041 (mano que cruza vs avioncito).
 - [ ] Decidir qué hacer con las 1,610 fichas con datos de salud sin consentimiento expreso (pedirlo por email o esperar a su próxima firma).
 
 ---
@@ -61,7 +61,7 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 - [ ] Unificar las key_words de las tarjetas con las de la lección (STP-037/038 hoy difieren).
 - [ ] El juego (imagen + regla) como tercera pieza de Do it — después, decisión de Marcelo.
 - [x] What it takes con tres caminos (White→Yellow, Yellow→Blue, Blue→Purple), regla de Purple agregada (2026-09-09). DECISIÓN: Blue se queda sin quizzes por lección; solo el quiz final de 10 preguntas.
-- [ ] **Revisión paso a paso de los 49 criterios White→Blue** (artefacto `belts-criterios`). Después: aplicar a la base (lecciones → criterios → títulos → drills; tipo "juego" después).
+- [x] **Revisión de los 49 criterios White→Blue** — aplicada 2026-09-17. Tipo `game` ya existe (migración 00204): 6 juegos de los Tres Círculos dictados por Marcelo en catálogo del coach; los 49 juegos propuestos siguen sin aplicar; falta mostrarlos en el portal.
 - [ ] Decisiones abiertas de contenido: STP-027 cinco palabras · STP-033 Stage 4 en la misión · STP-031 doctrina del peso en el pump · STP-044 mano en Tapaloco · key_words vs lección en STP-039/048/049 · nombre de la Secuencia #12.
 - [ ] 4 lecciones nuevas + 3 decisiones de Marcelo pendientes de la coherencia del curso (2026-08-31).
 - [ ] Objetivo elegible en el plan de práctica (criterio flojo / palabra del paso) en vez de texto libre.
