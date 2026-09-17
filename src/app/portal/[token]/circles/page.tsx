@@ -28,7 +28,7 @@ export default async function CirclesPage({ params }: { params: Promise<{ token:
   const owns = COURSE_OWNER_IDS.has(student.id) || !!(student as any).course_access_yellow || !!(student as any).course_access_blue;
   if (!owns) notFound();
 
-  const drillIds = CIRCLES.flatMap((c) => [...(c.feel ?? []), ...(c.moves ?? []).flatMap((m) => m.feel)]);
+  const drillIds = CIRCLES.flatMap((c) => [...(c.feel ?? []), ...(c.play ?? []), ...(c.moves ?? []).flatMap((m) => [...m.feel, ...(m.play ?? [])])]);
   const [{ data: pieceRows }, access, { data: videoRow }] = await Promise.all([
     admin.from('drills_missions').select('id, type, title, description_md, key_words, time_estimate, reps_recommended').eq('active', true).in('id', drillIds),
     getStudentAccess(student.id),

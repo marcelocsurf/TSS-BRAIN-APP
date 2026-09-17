@@ -29,6 +29,8 @@ export interface CircleMove {
   feels?: string;
   /** Drills existentes para sentirlo fuera del agua. */
   feel: string[];
+  /** Juegos (drills_missions type='game') para jugarlo en el agua — Marcelo 2026-09-17. */
+  play?: string[];
   /** Lección para ir más adentro. */
   lessonId: string;
   lessonLabel: string;
@@ -51,6 +53,8 @@ export interface Circle {
   /** Ola: la historia de la energía, en orden. */
   energy?: { title: string; note: string }[];
   feel?: string[];
+  /** Juegos del círculo (drills_missions type='game'). */
+  play?: string[];
   game?: { name: string; image: string; rule: string; how: string };
   lessonId: string;
   lessonLabel: string;
@@ -101,6 +105,7 @@ export const CIRCLES: Circle[] = [
           'Exhale in the position: relaxed and active at the same time. Every action starts here and ends here.',
         ],
         feel: ['DRL-WB-018-A'],
+        play: ['GAME-3C-POSTURE'],
         lessonId: 'STP-018', lessonLabel: 'Power Stance / Posture',
       },
       {
@@ -108,6 +113,7 @@ export const CIRCLES: Circle[] = [
         what: 'Kinetic activation to engage and change your rails.',
         think: ['Eyes → head → shoulders → hips → the power travels down to your feet. It always starts with the eyes.', 'The oblique is what turns the lean into a real rotation and puts you on the rail.', 'Frontside and backside use the same chain with a different arm shape.'],
         feel: ['DRL-WB-022-A', 'DRL-WB-021-A'],
+        play: ['GAME-3C-RAIL'],
         lessonId: 'STP-022', lessonLabel: 'Turn Frontside · Turn Backside',
       },
       {
@@ -115,6 +121,7 @@ export const CIRCLES: Circle[] = [
         what: 'One movement with two halves: you compress to absorb and load, you extend to release and project.',
         think: ['Compressing without extending stores energy you never use.', 'Flex · touch · push · extend: from posture, the knees bend, the chest goes toward them, and the extension sends you forward.', 'This is the engine of the projection: what you load in a turn is what you spend on the next line.'],
         feel: ['DRL-WB-019-A'],
+        play: ['GAME-3C-COMPACT'],
         lessonId: 'STP-019', lessonLabel: 'Forward Momentum',
       },
       {
@@ -123,6 +130,7 @@ export const CIRCLES: Circle[] = [
         think: ['Hold is the tool to keep positions: to navigate, to manage the energy and use it at the right moment.', 'It is also knowing how far: when you rotate, understand up to what point you can keep leaning — and there you hold. You do not keep leaning if you are going to fall. Understand until when, and at that point you wait.'],
         feels: 'In a bottom turn you feel the centrifugal force that wants to take you to the flat. The rail of your board and the fins let you fight that force, and the position of your body holds the energy so you can redirect it where you want, projecting it toward the line you want to draw. Those are the G forces you feel when you hold.',
         feel: ['DRL-BB-047'],
+        play: ['GAME-3C-HOLD'],
         lessonId: 'STP-047', lessonLabel: 'Hold',
       },
     ],
@@ -146,6 +154,7 @@ export const CIRCLES: Circle[] = [
     ],
     // Marcelo (2026-09-09): el shuffle de pies en tierra y en patineta, manteniendo la postura.
     feel: ['DRL-YB-FEET-01', 'DRL-YB-FEET-02'],
+    play: ['GAME-3C-BUTTON'],
   },
   {
     key: 'wave', n: 3, label: 'Wave', sub: 'the two energies',
@@ -169,7 +178,8 @@ export const CIRCLES: Circle[] = [
       { word: 'Pocket', note: 'The sweet spot. The closer you ride to it, the more speed you get; the closer your turns are to the breaking part, the more radical your surfing becomes.' },
       { word: 'The flat', note: 'Where the energy ends. Go there and the wave stops giving.' },
     ],
-    feel: ['DRL-YB-033', 'DRL-YB-028'],
+    feel: ['DRL-YB-033-03', 'DRL-YB-028-03'],
+    play: ['GAME-3C-POCKET-FOAM'],
     game: {
       name: 'The flat is fire',
       image: 'The face of the wave is your canvas and the flat, down there, is fire.',
