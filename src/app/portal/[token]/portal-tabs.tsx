@@ -1990,7 +1990,7 @@ function HomeTab({
                       const seqHref = `/portal/${data.token}/seq/${pl.sequenceId}`;
                       return (
                         <div key={pl.sequenceId} className={many ? 'rounded-[5px] px-3 py-2.5' : ''} style={many ? { background: 'rgba(247,249,250,.06)', border: '1px solid rgba(247,249,250,.14)' } : undefined}>
-                          <p className="text-[20px] leading-tight" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{many ? `${i + 1} · ` : ''}{pl.kind === 'entry' ? pl.title : `#${pl.number} · ${pl.title}`}</p>
+                          <p className="text-[20px] leading-tight" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{many ? `${i + 1} · ` : ''}{pl.label ?? (pl.kind === 'entry' ? pl.title : `#${pl.number} · ${pl.title}`)}</p>
                           <p className="mt-1.5 text-[13.5px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
                             {pl.focus.length > 0 ? <><span className="font-bold" style={{ color: '#F7F9FA' }}>Your focus:</span> {pl.focus.join(' · ')}</> : 'The whole sequence, start to finish.'}
                           </p>

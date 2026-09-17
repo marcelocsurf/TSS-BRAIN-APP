@@ -7,7 +7,7 @@ import { computeSurfSplit, coachSessionMinutes } from '@/lib/utils/surf-hours';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
 import { getMaterialsForStudent } from '@/lib/constants/student-materials';
-import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 
 // ─── Get comprehensive student data for the portal ───
 
@@ -381,32 +381,15 @@ export async function getStudentPortalData(token: string) {
       // Water Mission → el paso pertenece a una secuencia). Varias secuencias
       // en un día (camp beginner: 1 · 2 · 3) salen en orden, una por una.
       const dayBlocks = (blocksByCamp[campId] ?? []).slice().sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
-      const plans: { sequenceId: string; number: number; title: string; kind: string; focus: string[]; notes: string | null }[] = [];
+      const plans: { sequenceId: string; number: number; title: string; label: string; kind: string; focus: string[]; notes: string | null }[] = [];
       const seen = new Set<string>();
-      // Un paso puede vivir en más de una página (STP-016 está en White #3 y
-      // en la entrada Blue): gana la de la cinta del alumno, después las de
-      // abajo, y las páginas de entrada al final.
-      const beltOrder = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt', 'brown_belt', 'black_belt'];
-      const myBelt = beltOrder.indexOf(String((student as any).belt_level ?? 'white_belt'));
-      const rank = (c: (typeof SEQUENCE_PAGES)[string]) => {
-        const bi = beltOrder.indexOf(c.belt);
-        const beltScore = bi === myBelt ? 0 : bi < myBelt ? 1 + (myBelt - bi) : 10 + (bi - myBelt);
-        return beltScore * 2 + (c.kind === 'entry' ? 1 : 0);
-      };
-      const candidates = Object.values(SEQUENCE_PAGES).slice().sort((a, b) => rank(a) - rank(b));
+      const myBeltLevel = String((student as any).belt_level ?? 'white_belt');
       for (const b of dayBlocks) {
-        let cfg = null as (typeof SEQUENCE_PAGES)[string] | null;
-        if (Array.isArray(b.step_ids) && b.step_ids.length > 0) {
-          const ids: string[] = b.step_ids;
-          cfg = candidates.find((c) => c.stepIds.length === ids.length && c.stepIds.every((id) => ids.includes(id)))
-            ?? candidates.find((c) => ids.every((id) => c.stepIds.includes(id))) ?? null;
-        } else if (b.step_id) {
-          cfg = candidates.find((c) => c.stepIds.includes(b.step_id)) ?? null;
-        }
+        const cfg = resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, myBeltLevel);
         if (!cfg || seen.has(cfg.id)) continue;
         seen.add(cfg.id);
         const txt = String(b.objective_text ?? '');
-        plans.push({ sequenceId: cfg.id, number: cfg.number, title: cfg.title, kind: cfg.kind ?? 'sequence', focus: txt.startsWith('Focus: ') ? txt.slice(7).split(' · ').map((x) => x.trim()).filter(Boolean) : [], notes: b.notes_pre ?? null });
+        plans.push({ sequenceId: cfg.id, number: cfg.number, title: cfg.title, label: sequenceDisplayName(cfg), kind: cfg.kind ?? 'sequence', focus: txt.startsWith('Focus: ') ? txt.slice(7).split(' · ').map((x) => x.trim()).filter(Boolean) : [], notes: b.notes_pre ?? null });
       }
       const plan = plans[0] ?? null;
       upcomingCampPreview[campId] = {

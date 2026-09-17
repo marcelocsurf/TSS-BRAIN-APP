@@ -64,6 +64,7 @@ import { coachFocusOptions } from '@/lib/sequence-pages/focus-options';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
+import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
 import {
   listSpacesByToken, listBookingsForDayByToken, createBookingByToken, cancelBookingByToken,
@@ -1347,6 +1348,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   <StudentPlanCard
                     key={s.student_id}
                     student={s}
+                    token={token}
                     stpCatalog={data.stpCatalog}
                     availableDrills={data.availableDrills}
                     availableBoards={data.availableBoards}
@@ -2537,8 +2539,10 @@ function StudentPlanCard({
   onSaveNote,
   multiDay,
   onApplyBoardToWeek,
+  token,
 }: {
   student: ServicePlanStudent;
+  token: string;
   stpCatalog: ServicePlanData['stpCatalog'];
   availableDrills: ServicePlanData['availableDrills'];
   availableBoards: ServicePlanData['availableBoards'];
@@ -2588,6 +2592,32 @@ function StudentPlanCard({
           </p>
         </div>
       </div>
+
+      {/* Lo que el alumno ve en su portal ("Tomorrow you will work on"):
+          las secuencias del día, en orden, una por una. Misma resolución
+          que portal.ts, para que coach y alumno hablen el mismo idioma. */}
+      {(() => {
+        const seen = new Set<string>();
+        const seqs: string[] = [];
+        for (const b of blocks) {
+          const tb = templateBlocks.find((t) => t.block_order === b.order_index);
+          const cfg = resolveSequenceForSteps(
+            { stepIds: b.step_ids ?? tb?.step_ids ?? null, stepId: b.step_id ?? tb?.step_id ?? null },
+            student.belt_level,
+          );
+          if (!cfg || seen.has(cfg.id)) continue;
+          seen.add(cfg.id);
+          seqs.push(sequenceDisplayName(cfg));
+        }
+        if (seqs.length === 0) return null;
+        return (
+          <p className="text-[11px] text-[#10263B]">
+            <span className="font-mono uppercase tracking-wider text-[10px] text-[#55666E]">Today · </span>
+            {seqs.join('  →  ')}
+            <span className="text-[#55666E]"> · what the student sees</span>
+          </p>
+        );
+      })()}
 
       {/* Profile / bitácora — review before planning */}
       <StudentProfilePanel student={student} onSaveNote={onSaveNote} />
@@ -2771,6 +2801,8 @@ function StudentPlanCard({
                   stpCatalog={stpCatalog}
                   availableDrills={availableDrills}
                   templateBlock={templateBlocks.find((tb) => tb.block_order === b.order_index) ?? null}
+                  token={token}
+                  belt={student.belt_level}
                   onCommit={(patch) => onCommit(b.order_index, patch)}
                   onRemove={() => onRemoveBlock(b.order_index)}
                   onShowDrill={onShowDrill}
@@ -2803,6 +2835,8 @@ function BlockEditor({
   stpCatalog,
   availableDrills,
   templateBlock,
+  token,
+  belt,
   onCommit,
   onRemove,
   onShowDrill,
@@ -2813,6 +2847,8 @@ function BlockEditor({
   stpCatalog: ServicePlanData['stpCatalog'];
   availableDrills: ServicePlanData['availableDrills'];
   templateBlock: ServicePlanData['templatePlan'][number]['blocks'][number] | null;
+  token: string;
+  belt: string | null;
   onCommit: (patch: Partial<ServicePlanBlock>) => void;
   onRemove: () => void;
   onShowDrill: (drillId: string) => void;
@@ -2833,6 +2869,20 @@ function BlockEditor({
   const waterLabel = block.water_drill_id
     ? availableDrills.find((d) => d.id === block.water_drill_id)?.title
     : null;
+  // La secuencia del curso a la que apunta este bloque (plan simple o
+  // plantilla). Es lo que el alumno ve en su portal.
+  const seqCfg = resolveSequenceForSteps(
+    { stepIds: block.step_ids ?? templateBlock?.step_ids ?? null, stepId: block.step_id ?? templateBlock?.step_id ?? null },
+    belt,
+  );
+  const legacyMd = templateBlock
+    ? ([
+        ['Explain', templateBlock.explain_md],
+        ['Demonstrate', templateBlock.demonstrate_md],
+        ['Simulate', templateBlock.simulate_md],
+        ['Feedback', templateBlock.feedback_md],
+      ] as const).filter(([, v]) => !!v)
+    : [];
 
   return (
     <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-2.5 space-y-2">
@@ -2864,6 +2914,20 @@ function BlockEditor({
           {templateBlock.pilar_part && (
             <p className="text-[12px] font-medium text-[#10263B]">{templateBlock.pilar_part}</p>
           )}
+          {seqCfg && (
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-[12px] font-semibold text-[#10263B]">
+                <span className="font-mono uppercase tracking-wider text-[10px] text-[#55666E]">Sequence · </span>
+                {sequenceDisplayName(seqCfg)}
+              </p>
+              <a
+                href={`/coach-portal/${token}/seq/${seqCfg.id}`}
+                className="text-[11px] font-semibold text-[var(--tss-cyan,#0369A1)] underline underline-offset-2"
+              >
+                Open as the student sees it
+              </a>
+            </div>
+          )}
           {(templateBlock.step_title || templateBlock.step_id) && (
             <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Step · </span>{templateBlock.step_id}{templateBlock.step_title ? ` — ${templateBlock.step_title}` : ''}</p>
           )}
@@ -2873,21 +2937,34 @@ function BlockEditor({
           {(templateBlock.drill?.title || templateBlock.drill_custom) && (
             <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Drill · </span>{templateBlock.drill?.title ?? templateBlock.drill_custom}</p>
           )}
-          {templateBlock.explain_md && (
-            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Explain · </span>{templateBlock.explain_md}</p>
-          )}
-          {templateBlock.demonstrate_md && (
-            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Demonstrate · </span>{templateBlock.demonstrate_md}</p>
-          )}
-          {templateBlock.simulate_md && (
-            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Simulate · </span>{templateBlock.simulate_md}</p>
-          )}
-          {templateBlock.feedback_md && (
-            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Feedback · </span>{templateBlock.feedback_md}</p>
+          {legacyMd.length > 0 && (
+            <details className="text-[11px] text-[#55666E]">
+              <summary className="cursor-pointer text-[10px] font-mono uppercase tracking-wider">Template notes</summary>
+              <div className="mt-1 space-y-1">
+                {legacyMd.map(([k, v]) => (
+                  <p key={k}><span className="text-[#55666E]">{k} · </span>{v}</p>
+                ))}
+              </div>
+            </details>
           )}
           {templateBlock.equipment && (
             <p className="text-[10px] text-[#55666E]">{templateBlock.equipment}</p>
           )}
+        </div>
+      )}
+
+      {!templateBlock && seqCfg && (
+        <div className="rounded-lg bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan)] px-3 py-2 flex items-center justify-between gap-2 flex-wrap">
+          <p className="text-[12px] font-semibold text-[#10263B]">
+            <span className="font-mono uppercase tracking-wider text-[10px] text-[#55666E]">Sequence · </span>
+            {sequenceDisplayName(seqCfg)}
+          </p>
+          <a
+            href={`/coach-portal/${token}/seq/${seqCfg.id}`}
+            className="text-[11px] font-semibold text-[var(--tss-cyan,#0369A1)] underline underline-offset-2"
+          >
+            Open as the student sees it
+          </a>
         </div>
       )}
 
