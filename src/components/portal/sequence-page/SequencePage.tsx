@@ -15,7 +15,7 @@
 import { useState } from 'react';
 import { ArrowRight, Lock, Play } from 'lucide-react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
-import { WaveGuide } from './WaveGuide';
+import { WaveGuide, WAVE_KIT_SEQUENCE } from './WaveGuide';
 import { COMMAND_COLORS } from '@/lib/sequence-pages/wave-guide-svg';
 import { BoardMap } from './BoardMap';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
@@ -100,7 +100,7 @@ export function SequencePage({
         {/* Arriba de todo: la ejecución. El video cuando exista; si no, la línea sobre la ola. */}
         <Card className="mt-3">
           {video ? <SequenceVideo url={video.url} title={video.title} /> : cfg.think.board ? (
-            <WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} />
+            <WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} kitSequence={WAVE_KIT_SEQUENCE[cfg.id]} />
           ) : (
             <>
               {/* Sin tablero (secuencias de entrada): las lecciones, en orden, con su título. */}
@@ -158,7 +158,7 @@ export function SequencePage({
             )}
             <Card title="01 · What it is">
               <p className="tss-intro">{cfg.think.whatIs.headline}</p>
-              {video && cfg.think.board && <div className="mb-2"><WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} /></div>}
+              {video && cfg.think.board && <div className="mb-2"><WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} kitSequence={WAVE_KIT_SEQUENCE[cfg.id]} /></div>}
               <Row k="The line">{cfg.think.whatIs.line}</Row>
               <Row k="Where">{cfg.think.whatIs.where}</Row>
               <Row k="What for">{cfg.think.whatIs.whatFor}</Row>
