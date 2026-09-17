@@ -16,10 +16,12 @@ export const fetchCache = 'force-no-store';
 
 interface Props {
   params: Promise<{ token: string }>;
+  searchParams?: Promise<{ full?: string; basic?: string }>;
 }
 
-export default async function IntakePage({ params }: Props) {
+export default async function IntakePage({ params, searchParams }: Props) {
   const { token } = await params;
+  const sp = searchParams ? await searchParams : {};
   const student = await getStudentForIntake(token);
 
   if (!student) notFound();
@@ -48,9 +50,16 @@ export default async function IntakePage({ params }: Props) {
       const b = Date.parse(`${ci.end_date}T00:00:00Z`);
       return Number.isFinite(a) && Number.isFinite(b) ? Math.round((b - a) / 86_400_000) + 1 : 1;
     };
-    extendedRequired = live.some(({ ci }) => days(ci) >= 2);
+    // Regla (Marcelo 2026-09-17, caso Gabriel Nuñez): si TODAVÍA no está
+    // inscrito en nada, el link pide todo — el alumno de camp suele recibir
+    // el link antes de que exista su inscripción. Solo se queda corto cuando
+    // está inscrito únicamente en servicios de un día.
+    extendedRequired = live.length === 0 || live.some(({ ci }) => days(ci) >= 2);
     singleDayOnly = live.length > 0 && !extendedRequired;
   } catch { /* sin dato, el intake sigue como hasta hoy */ }
+  // Forzado por link: ?full=1 pide todo · ?basic=1 solo ficha + waiver.
+  if (sp.full === '1') { extendedRequired = true; singleDayOnly = false; }
+  if (sp.basic === '1') { extendedRequired = false; singleDayOnly = true; }
 
   return (
     <div className={`tss-v10 min-h-screen ${archivo.variable} ${plexMono.variable}`} style={{ background: '#F7F9FA' }}>
