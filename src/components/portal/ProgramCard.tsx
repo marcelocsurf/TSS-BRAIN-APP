@@ -23,7 +23,7 @@ import {
 // El visor abre como overlay a pantalla completa (sin tocar el sistema de
 // pestañas). Copy de cara al alumno en inglés, como todo el portal.
 
-const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
+const MONO: React.CSSProperties = { fontFamily: "var(--font-plex), 'IBM Plex Mono', monospace" };
 const ARCHIVO: React.CSSProperties = {
   fontFamily: 'var(--font-archivo), sans-serif',
   fontStretch: '125%' as any,
@@ -73,22 +73,22 @@ export function ProgramCard({ token, initial, season, appointments, todayExtras 
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full text-left rounded-2xl p-4"
-        style={{ background: 'rgba(255,209,102,.07)', border: '1px solid rgba(255,209,102,.4)' }}
+        className="w-full text-left rounded-lg p-4"
+        style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}
       >
         <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#FFD166' }}>
+          <span className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#00D2FF' }}>
             Training Program
           </span>
-          <span className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#FFD166' }}>
+          <span className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#00D2FF' }}>
             {data.position ? `Micro ${data.position.week} · Day ${data.position.day}` : 'Completed ✓'}
           </span>
         </div>
-        <p className="font-bold mt-1.5" style={{ ...ARCHIVO, color: '#f4f9fc', fontSize: 17 }}>
+        <p className="font-black uppercase mt-1.5 leading-tight" style={{ ...ARCHIVO, fontWeight: 900, color: '#F7F9FA', fontSize: 18 }}>
           {data.title}
         </p>
         <div className="mt-2 h-[5px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,.1)' }}>
-          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#FFD166' }} />
+          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#00D2FF' }} />
         </div>
         <p className="text-[11.5px] mt-2" style={{ color: '#b8cad8' }}>
           {current
@@ -96,7 +96,7 @@ export function ProgramCard({ token, initial, season, appointments, todayExtras 
             : 'Every day done. See you in the water.'}
         </p>
         {current && (
-          <p className="text-[11px] mt-2 font-semibold" style={{ color: '#FFD166' }}>
+          <p className="text-[11px] mt-2 font-semibold" style={{ color: '#00D2FF' }}>
             Open today&apos;s session →
           </p>
         )}
@@ -224,11 +224,11 @@ function ProgramViewer({
           {data.subtitle && (
             <p className="text-[12px] mt-0.5" style={{ color: '#8aa0b2' }}>{data.subtitle}</p>
           )}
-          <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: 'DM Mono, monospace', color: '#7BA2B5' }}>
+          <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: "var(--font-plex), 'IBM Plex Mono', monospace", color: '#7BA2B5' }}>
             Today is {new Date(data.today + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
           </p>
           {view !== 'season' && (data.week_labels?.[String(headerWeek)] || data.week_meta?.[String(headerWeek)]) && (
-            <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: 'DM Mono, monospace', color: '#FFD166' }}>
+            <p className="text-[10px] uppercase tracking-wider mt-1" style={{ fontFamily: "var(--font-plex), 'IBM Plex Mono', monospace", color: '#00D2FF' }}>
               Microcycle {headerWeek}
               {data.week_labels?.[String(headerWeek)] ? ` · ${data.week_labels[String(headerWeek)]}` : ''}
               {data.week_meta?.[String(headerWeek)]?.type ? ` · ${data.week_meta[String(headerWeek)].type}` : ''}
@@ -250,10 +250,10 @@ function ProgramViewer({
               type="button"
               disabled={id === 'today' && !currentDay}
               onClick={() => setView(id)}
-              className="flex-1 rounded-full py-2 text-[10px] uppercase tracking-wider font-bold disabled:opacity-30"
+              className="flex-1 rounded-[5px] py-2 text-[10px] uppercase tracking-wider font-bold disabled:opacity-30"
               style={{
                 ...MONO,
-                background: view === id ? '#FFD166' : 'rgba(255,255,255,.06)',
+                background: view === id ? '#00D2FF' : 'rgba(255,255,255,.06)',
                 color: view === id ? '#061C2B' : '#7BA2B5',
               }}
             >
@@ -273,7 +273,7 @@ function ProgramViewer({
           />
         ) : view === 'today' && currentDay ? (
           <>
-            <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#FFD166' }}>
+            <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#00D2FF' }}>
               Micro {currentDay.week_number} · Day {currentDay.day_number} — your session today
             </p>
 
@@ -378,14 +378,14 @@ function DayCard({
     background: 'rgba(255,255,255,.05)',
     border: '1px solid rgba(255,255,255,.08)',
   };
-  if (day.current) base.border = '1px solid rgba(255,209,102,.55)';
+  if (day.current) base.border = '1px solid rgba(0,210,255,.55)';
 
   return (
-    <div className="rounded-2xl p-3.5" style={{ ...base, opacity: day.locked || (day.done && !day.current) ? 0.55 : 1 }}>
+    <div className="rounded-lg p-3.5" style={{ ...base, opacity: day.locked || (day.done && !day.current) ? 0.55 : 1 }}>
       <div className="flex items-center justify-between">
         <span
           className="text-[10px] uppercase tracking-wider"
-          style={{ ...MONO, color: day.current ? '#FFD166' : '#7BA2B5' }}
+          style={{ ...MONO, color: day.current ? '#00D2FF' : '#7BA2B5' }}
         >
           {day.current ? `Today · Day ${day.day_number}` : `Day ${day.day_number}`} · {day.title}
         </span>
@@ -412,7 +412,7 @@ function DayCard({
                       <button
                         type="button"
                         onClick={() => setPlaying(playing === it.id ? null : it.id)}
-                        className="shrink-0 rounded-md flex items-center justify-center"
+                        className="shrink-0 rounded-[5px] flex items-center justify-center"
                         style={{ width: 34, height: 24, background: '#123244', border: '1px solid #1C3D4E' }}
                         aria-label={`Play video: ${it.title}`}
                       >
@@ -440,7 +440,7 @@ function DayCard({
                       type="button"
                       disabled={busyItem === it.id}
                       onClick={() => onToggleItem(it)}
-                      className="shrink-0 rounded-md flex items-center justify-center"
+                      className="shrink-0 rounded-[5px] flex items-center justify-center"
                       style={{
                         width: 22,
                         height: 22,
@@ -484,7 +484,7 @@ function DayCard({
               type="button"
               disabled={busyDay}
               onClick={() => onCompleteDay(day.id)}
-              className="w-full mt-3 rounded-full py-2.5 text-[11px] font-bold tracking-wide"
+              className="w-full mt-3 rounded-[5px] py-2.5 text-[11px] font-bold tracking-wide"
               style={{ background: '#00D2FF', color: '#061C2B', opacity: busyDay ? 0.6 : 1 }}
             >
               {busyDay ? 'SAVING…' : 'MARK DAY AS DONE ✓'}
@@ -516,7 +516,9 @@ function CheckinCard({
   const [nutriClean, setNutriClean] = useState<string>((t as any)?.nutrition_clean ?? '');
   const [surfH, setSurfH] = useState<number>(t?.surf_hours != null ? Number(t.surf_hours) : 0);
   const [goal, setGoal] = useState<string>(t?.goal_achieved ?? '');
-  const [focus, setFocus] = useState<number>(t?.focus ?? 0);
+  // Focus 0-3 con las mismas palabras que la autoevaluación del alumno (Marcelo 2026-09-17).
+  const [focus, setFocus] = useState<number | null>(t?.focus ?? null);
+  const [flow, setFlow] = useState<number | null>((t as any)?.flow_channel ?? null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -541,7 +543,8 @@ function CheckinCard({
       nutrition_clean: cfg.nutrition ? (nutriClean || null) : null,
       surf_hours: surfH > 0 || t?.surf_hours != null ? surfH : null,
       goal_achieved: goal || null,
-      focus: focus > 0 ? focus : null,
+      focus,
+      flow_channel: flow,
     });
     setSaving(false);
     if (!r.ok) setErr(r.error || 'Could not save.');
@@ -553,20 +556,20 @@ function CheckinCard({
   };
 
   // Energía en NÚMEROS con rampa de color (pedido Marcelo 2026-08-23:
-  // los símbolos se veían feos) — 1 rojo → 4 verde, escala 1-4 del ranking.
-  const ENERGY_COLORS = ['#FF6B6B', '#FFD166', '#00D2FF', '#39D98A'];
+  // los símbolos se veían feos) — 1 rojo → 5 verde (1-5 desde 2026-09-17).
+  const ENERGY_COLORS = ['#FF6B6B', '#FFA94D', '#00D2FF', '#7DE3FF', '#39D98A'];
 
   return (
     <div
-      className="rounded-2xl p-4"
+      className="rounded-lg p-4"
       style={{
-        background: 'linear-gradient(165deg, rgba(255,209,102,.12) 0%, rgba(0,210,255,.05) 70%)',
-        border: '1px solid rgba(255,209,102,.45)',
-        boxShadow: '0 0 24px rgba(255,209,102,.06) inset',
+        background: 'linear-gradient(165deg, rgba(0,210,255,.12) 0%, rgba(0,210,255,.05) 70%)',
+        border: '1px solid rgba(0,210,255,.45)',
+        boxShadow: '0 0 24px rgba(0,210,255,.06) inset',
       }}
     >
       <div className="flex items-center justify-between">
-        <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: '#FFD166' }}>
+        <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: '#00D2FF' }}>
           ⚡ Daily check-in
         </p>
         <span className="text-[9px] uppercase tracking-wider" style={{ ...MONO, color: '#7BA2B5' }}>
@@ -618,9 +621,9 @@ function CheckinCard({
       <div className="flex items-center justify-between mt-3 gap-2">
         <span className="text-[12px] shrink-0" style={{ color: '#b8cad8' }}>Today&apos;s goal</span>
         <div className="flex gap-1.5">
-          {([['si', 'Yes ✓', '#39D98A'], ['parcial', 'Halfway', '#FFD166'], ['no', 'Not yet', '#FF6B6B']] as const).map(([v, label, color]) => (
+          {([['si', 'Yes ✓', '#39D98A'], ['parcial', 'Halfway', '#00D2FF'], ['no', 'Not yet', '#FF6B6B']] as const).map(([v, label, color]) => (
             <button key={v} type="button" onClick={() => setGoal(goal === v ? '' : v)}
-              className="rounded-full px-3 py-1.5 text-[10.5px] font-bold"
+              className="rounded-[5px] px-3 py-1.5 text-[10.5px] font-bold"
               style={{
                 background: goal === v ? color : 'rgba(255,255,255,.06)',
                 color: goal === v ? '#061C2B' : '#7BA2B5',
@@ -632,21 +635,52 @@ function CheckinCard({
         </div>
       </div>
 
-      {/* 🧠 Enfoque 1-4 (misma rampa de color que Energy) */}
-      <div className="flex items-center justify-between mt-3">
+      {/* 🧠 Focus 0-3 — mismas 4 palabras que la autoevaluación después
+          de entrenar (LinkedTrainingFlow), para que el alumno responda igual
+          en los dos lados (Marcelo 2026-09-17). */}
+      <div className="mt-3">
         <span className="text-[12px]" style={{ color: '#b8cad8' }}>Focus</span>
-        <div className="flex gap-1.5">
-          {[1, 2, 3, 4].map((n) => (
-            <button key={n} type="button" onClick={() => setFocus(focus === n ? 0 : n)}
-              className="rounded-lg w-9 h-9 text-[13px] font-bold"
-              style={{
-                background: focus === n ? ['#FF6B6B', '#FFD166', '#00D2FF', '#39D98A'][n - 1] : 'rgba(255,255,255,.06)',
-                color: focus === n ? '#061C2B' : ['#FF6B6B', '#FFD166', '#00D2FF', '#39D98A'][n - 1],
-                border: `1px solid ${focus === n ? 'transparent' : '#2A4D5F'}`,
-              }}>
-              {n}
-            </button>
-          ))}
+        <div className="grid grid-cols-4 gap-1.5 mt-1.5">
+          {['Distracted', 'Some', 'Mostly', 'Locked in'].map((label, n) => {
+            const sel = focus === n;
+            return (
+              <button key={n} type="button" aria-pressed={sel} onClick={() => setFocus(sel ? null : n)}
+                className="py-2 rounded-[5px] flex flex-col items-center gap-0.5"
+                style={{
+                  ...MONO,
+                  background: sel ? '#00D2FF' : 'rgba(255,255,255,.06)',
+                  color: sel ? '#061C2B' : '#b8cad8',
+                  border: `1px solid ${sel ? '#00D2FF' : '#2A4D5F'}`,
+                }}>
+                <span className="text-[14px] font-bold leading-none">{n}</span>
+                <span className="text-[9px] leading-tight">{label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 🌊 How did training feel — Flow Channel 1-5, misma escala que la
+          autoevaluación y la encuesta; suma al Flow Channel del portal. */}
+      <div className="mt-3">
+        <span className="text-[12px]" style={{ color: '#b8cad8' }}>How did training feel today?</span>
+        <div className="grid grid-cols-5 gap-1.5 mt-1.5">
+          {[[1, 'Bored'], [2, 'Easy'], [3, 'Flow'], [4, 'Hard'], [5, 'Too much']].map(([n, label]) => {
+            const sel = flow === n;
+            return (
+              <button key={n} type="button" aria-pressed={sel} onClick={() => setFlow(sel ? null : (n as number))}
+                className="py-2 rounded-[5px] flex flex-col items-center gap-0.5"
+                style={{
+                  ...MONO,
+                  background: sel ? (n === 3 ? '#00D2FF' : '#F7F9FA') : 'rgba(255,255,255,.06)',
+                  color: sel ? '#061C2B' : '#b8cad8',
+                  border: `1px solid ${sel ? (n === 3 ? '#00D2FF' : '#F7F9FA') : '#2A4D5F'}`,
+                }}>
+                <span className="text-[14px] font-bold leading-none">{n}</span>
+                <span className="text-[9px] leading-tight">{label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -692,11 +726,11 @@ function CheckinCard({
                   key={n}
                   type="button"
                   onClick={() => setEnergy(active ? 0 : n)}
-                  aria-label={`Energy ${n} of 4`}
-                  className="rounded-xl font-bold transition-all"
+                  aria-label={`Energy ${n} of 5`}
+                  className="rounded-lg font-bold transition-all"
                   style={{
                     ...MONO,
-                    width: 36,
+                    width: 32,
                     height: 36,
                     fontSize: 14,
                     background: active ? color : 'rgba(255,255,255,.05)',
@@ -722,9 +756,9 @@ function CheckinCard({
           {/* "Not yet" acá sonaba a "todavía no comí" (revisión) — No es No. */}
           <span className="text-[12px] shrink-0" style={{ color: '#b8cad8' }}>Ate clean today?</span>
           <div className="flex gap-1.5">
-            {([['si', 'Yes ✓', '#39D98A'], ['parcial', 'Kind of', '#FFD166'], ['no', 'No', '#FF6B6B']] as const).map(([v, label, color]) => (
+            {([['si', 'Yes ✓', '#39D98A'], ['parcial', 'Kind of', '#00D2FF'], ['no', 'No', '#FF6B6B']] as const).map(([v, label, color]) => (
               <button key={v} type="button" onClick={() => setNutriClean(nutriClean === v ? '' : v)}
-                className="rounded-full px-3 py-1.5 text-[10.5px] font-bold"
+                className="rounded-[5px] px-3 py-1.5 text-[10.5px] font-bold"
                 style={{
                   background: nutriClean === v ? color : 'rgba(255,255,255,.06)',
                   color: nutriClean === v ? '#061C2B' : '#7BA2B5',
@@ -755,7 +789,7 @@ function CheckinCard({
         type="button"
         disabled={saving}
         onClick={save}
-        className="w-full mt-3.5 rounded-full py-3 text-[11px] font-bold"
+        className="w-full mt-3.5 rounded-[5px] py-3 text-[11px] font-bold"
         style={{ ...MONO, letterSpacing: '0.14em', background: saved ? '#39D98A' : 'linear-gradient(90deg, #00D2FF, #35E0FF)', color: '#061C2B', opacity: saving ? 0.6 : 1, boxShadow: saved ? 'none' : '0 4px 18px rgba(0,210,255,.25)' }}
       >
         {saved ? 'SAVED ✓ +POINTS' : saving ? 'SAVING…' : 'SAVE CHECK-IN'}

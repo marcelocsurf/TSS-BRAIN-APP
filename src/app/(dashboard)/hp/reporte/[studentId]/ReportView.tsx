@@ -139,7 +139,7 @@ export function ReportView({ studentId }: { studentId: string }) {
               <p>Check-ins: <b style={{ color: INK }}>{r.habits.checkins_last7}/7</b></p>
               <p>😴 Sueño prom.: <b style={{ color: INK }}>{r.habits.avg_sleep != null ? `${r.habits.avg_sleep} h` : '—'}</b></p>
               <p>💧 Agua prom.: <b style={{ color: INK }}>{r.habits.avg_water != null ? `${r.habits.avg_water}/8` : '—'}</b></p>
-              <p>⚡ Energía prom.: <b style={{ color: INK }}>{r.habits.avg_energy != null ? `${r.habits.avg_energy}/4` : '—'}</b></p>
+              <p>⚡ Energía prom.: <b style={{ color: INK }}>{r.habits.avg_energy != null ? `${r.habits.avg_energy}/5` : '—'}</b></p>
               <p>🍎 Dieta anotada: <b style={{ color: INK }}>{r.habits.nutrition_days} día{r.habits.nutrition_days === 1 ? '' : 's'}</b></p>
             </div>
           </div>

@@ -59,8 +59,9 @@ export interface MyProgramData {
     nutrition: string | null;
     nutrition_clean: string | null; // si | parcial | no — "¿comiste limpio?"
     surf_hours: number | null;
-    focus: number | null;
+    focus: number | null;        // 0-3 (misma escala que la autoevaluación)
     goal_achieved: string | null;
+    flow_channel: number | null; // 1-5 · 3 = flow
   } | null;
 }
 
@@ -144,7 +145,7 @@ export async function getMyProgram(
 
     const { data: checkin, error: ckErr } = await admin
       .from('program_checkins')
-      .select('water_glasses, sleep_hours, energy, comment, nutrition, nutrition_clean, surf_hours, focus, goal_achieved')
+      .select('water_glasses, sleep_hours, energy, comment, nutrition, nutrition_clean, surf_hours, focus, goal_achieved, flow_channel')
       .eq('assignment_id', assignment.id)
       .eq('checkin_date', elSalvadorToday())
       .maybeSingle();
@@ -357,8 +358,9 @@ export async function saveProgramCheckin(
     nutrition?: string | null;
     nutrition_clean?: string | null; // si | parcial | no
     surf_hours?: number | null;   // horas surfeadas HOY (paridad app HP)
-    focus?: number | null;        // 1-4
+    focus?: number | null;        // 0-3 (0 Distracted · 3 Locked in)
     goal_achieved?: string | null; // si | parcial | no
+    flow_channel?: number | null; // 1-5 (1 Bored · 3 Flow · 5 Too much)
   }
 ): Promise<{ ok: boolean; error?: string }> {
   try {
@@ -372,9 +374,10 @@ export async function saveProgramCheckin(
     const surf = input.surf_hours;
     if (water != null && (water < 0 || water > 12)) return { ok: false, error: 'Water must be 0–12 glasses.' };
     if (sleep != null && (sleep < 0 || sleep > 14)) return { ok: false, error: 'Sleep must be 0–14 hours.' };
-    if (energy != null && (energy < 1 || energy > 4)) return { ok: false, error: 'Energy must be 1–4.' };
+    if (energy != null && (energy < 1 || energy > 5)) return { ok: false, error: 'Energy must be 1–5.' };
     if (surf != null && (surf < 0 || surf > 14)) return { ok: false, error: 'Surf hours must be 0–14.' };
-    if (input.focus != null && (input.focus < 1 || input.focus > 4)) return { ok: false, error: 'Focus must be 1–4.' };
+    if (input.focus != null && (input.focus < 0 || input.focus > 3)) return { ok: false, error: 'Focus must be 0–3.' };
+    if (input.flow_channel != null && (input.flow_channel < 1 || input.flow_channel > 5)) return { ok: false, error: 'Flow must be 1–5.' };
     if (input.goal_achieved != null && !['si', 'parcial', 'no'].includes(input.goal_achieved)) return { ok: false, error: 'Invalid goal answer.' };
     if (input.nutrition_clean != null && !['si', 'parcial', 'no'].includes(input.nutrition_clean)) return { ok: false, error: 'Invalid nutrition answer.' };
 
@@ -395,6 +398,7 @@ export async function saveProgramCheckin(
         surf_hours: surf ?? null,
         focus: input.focus ?? null,
         goal_achieved: input.goal_achieved ?? null,
+        flow_channel: input.flow_channel ?? null,
       },
       { onConflict: 'assignment_id,checkin_date' }
     );

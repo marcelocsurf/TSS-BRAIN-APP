@@ -9,12 +9,12 @@ import { getMyAthleteScores, type MyAthleteScores } from '@/lib/actions/programs
 // Autocontenido: null si el alumno no tiene evaluaciones (los ~2.700 alumnos
 // no-HP ven el Home idéntico). Copy en inglés como todo el portal.
 
-const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
+const MONO: React.CSSProperties = { fontFamily: "var(--font-plex), 'IBM Plex Mono', monospace" };
 
 const PILLARS: Array<{ key: keyof MyAthleteScores['pillars']; label: string; color: string }> = [
   { key: 'fis', label: 'Physical', color: '#39D98A' },
   { key: 'tec', label: 'Technical', color: '#00D2FF' },
-  { key: 'tac', label: 'Tactical', color: '#9B7BFF' },
+  { key: 'tac', label: 'Tactical', color: '#00D2FF' },
   { key: 'men', label: 'Mental', color: '#FFA94D' },
 ];
 
@@ -44,8 +44,8 @@ export function AthleteScoreCard({ token, initial }: { token: string; initial?: 
 
   return (
     <div
-      className="rounded-2xl p-4"
-      style={{ background: 'rgba(0,210,255,.05)', border: '1px solid rgba(0,210,255,.25)' }}
+      className="rounded-lg p-4"
+      style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}
     >
       <div className="flex items-center justify-between">
         <span className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#00D2FF' }}>
@@ -93,7 +93,7 @@ export function AthleteScoreCard({ token, initial }: { token: string; initial?: 
       {data.score_capacity != null && (
         <div className="mt-1.5 flex items-center justify-between">
           <span className="text-[11px]" style={{ color: '#8aa0b2' }}>Scoring capacity</span>
-          <span className="text-[12px] font-bold" style={{ ...MONO, color: '#FFD166' }}>{data.score_capacity}/10</span>
+          <span className="text-[12px] font-bold" style={{ ...MONO, color: '#00D2FF' }}>{data.score_capacity}/10</span>
         </div>
       )}
     </div>

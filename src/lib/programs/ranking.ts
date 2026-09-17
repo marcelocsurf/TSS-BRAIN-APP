@@ -136,11 +136,11 @@ export async function computeWeekRanking(
     if (c.nutrition_clean === 'si') p += 15;
     else if (c.nutrition_clean === 'parcial') p += 8;
     else if (c.nutrition_clean == null && (c.nutrition ?? '').trim()) p += 15;
-    p += Math.min(5, (c.energy ?? 0) * 1.25);
+    p += Math.min(5, c.energy ?? 0); // energía 1-5 (antes 1-4 ×1.25)
     // Objetivo del día (paridad app HP: Sí > Parcial) + enfoque.
     if (c.goal_achieved === 'si') p += 8;
     else if (c.goal_achieved === 'parcial') p += 4;
-    p += Math.min(4, (c.focus ?? 0));
+    p += Math.min(4, Math.round(((c.focus ?? 0) * 4) / 3)); // foco 0-3 → 0-4 pts (filas viejas 1-4 quedan topadas en 4)
     const key = `${student}|${c.checkin_date}`;
     if (p > (checkinBest.get(key) ?? 0)) checkinBest.set(key, p);
   }

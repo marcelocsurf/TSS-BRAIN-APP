@@ -12,7 +12,7 @@ import { getMySeason, type MySeasonData } from '@/lib/actions/programs';
 // el alumno no tiene temporada activa. Student-facing: inglés. Paleta v10 —
 // dorado = línea Alto Rendimiento.
 
-const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
+const MONO: React.CSSProperties = { fontFamily: "var(--font-plex), 'IBM Plex Mono', monospace" };
 const ARCHIVO: React.CSSProperties = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%' as any };
 
 const PHASE_STYLE: Record<string, { border: string; text: string }> = {
@@ -132,17 +132,17 @@ function YearStrip({ data, mini }: { data: MySeasonData; mini?: boolean }) {
           const r = pctOf(ev.end_date as string, startMs, span);
           return (
             <div key={`r-${ev.id}`} className="absolute rounded-full"
-              style={{ left: `${l}%`, width: `${Math.max(r - l, 1)}%`, bottom: 2, height: 3, background: '#00D2FF' }} />
+              style={{ left: `${l}%`, width: `${Math.max(r - l, 1)}%`, bottom: 2, height: 3, background: '#FFD166' }} />
           );
         })}
         {/* Hoy */}
-        <div className="absolute top-0 bottom-0" style={{ left: `${todayPct}%`, width: 2, background: '#FFD166' }} />
+        <div className="absolute top-0 bottom-0" style={{ left: `${todayPct}%`, width: 2, background: '#00D2FF' }} />
       </div>
 
       {/* YOU + meses */}
       {!mini && (
         <div className="relative" style={{ height: 14 }}>
-          <span className="absolute -translate-x-1/2 text-[7px] font-bold uppercase" style={{ ...MONO, left: `${todayPct}%`, color: '#FFD166' }}>
+          <span className="absolute -translate-x-1/2 text-[7px] font-bold uppercase" style={{ ...MONO, left: `${todayPct}%`, color: '#00D2FF' }}>
             YOU
           </span>
           {months.map((m, i) => (
@@ -228,20 +228,20 @@ export function SeasonCard({ token, initial, embedded }: {
               <h2 className="font-bold" style={{ ...ARCHIVO, color: '#fff', fontSize: 22, letterSpacing: '-0.01em' }}>{data.title}</h2>
               {data.objective && <p className="text-[12px] mt-0.5" style={{ color: '#8aa0b2' }}>Goal: {data.objective}</p>}
               {data.days_to_peak != null && data.peak_name && (
-                <p className="text-[11px] mt-1 font-bold" style={{ ...MONO, color: '#FFD166' }}>
+                <p className="text-[11px] mt-1 font-bold" style={{ ...MONO, color: '#00D2FF' }}>
                   {data.days_to_peak} DAYS TO {data.peak_name.toUpperCase()}
                 </p>
               )}
             </div>
             {/* LA FRANJA DEL AÑO — también sin fases (marcadores + YOU solos) */}
             {(data.phases.length > 0 || road.length > 0) && (
-              <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
+              <div className="rounded-lg p-3.5" style={{ background: '#0A2532', border: '1px solid rgba(247,249,250,.12)' }}>
                 <p className="text-[9px] uppercase tracking-wider mb-1" style={{ ...MONO, color: '#7BA2B5' }}>
                   {fmtD(data.start_date)} → {fmtD(data.end_date)}
                 </p>
                 <YearStrip data={data} />
                 <p className="text-[9px] mt-1" style={{ ...MONO, color: '#7BA2B5' }}>
-                  <span style={{ color: '#FFD166' }}>▲</span> peak · 🏆 competition · ✈️ trip · <span style={{ color: '#00D2FF' }}>—</span> travel/camp span
+                  <span style={{ color: '#FFD166' }}>▲</span> peak · 🏆 competition · ✈️ trip · <span style={{ color: '#FFD166' }}>—</span> travel/camp span
                 </p>
               </div>
             )}
@@ -252,7 +252,7 @@ export function SeasonCard({ token, initial, embedded }: {
               const isNow = f.state === 'current';
               const inside = road.filter((it) => it.date >= f.start_date && it.date <= f.end_date);
               return (
-                <div key={f.id} className="rounded-2xl p-3.5"
+                <div key={f.id} className="rounded-lg p-3.5"
                   style={{
                     background: 'rgba(255,255,255,.05)',
                     border: `1px solid ${isNow ? st.border : 'rgba(255,255,255,.08)'}`,
@@ -292,8 +292,8 @@ export function SeasonCard({ token, initial, embedded }: {
 
             {/* El camino: todo el año fecha por fecha */}
             {road.length > 0 && (
-              <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,209,102,.07)', border: '1px solid rgba(255,209,102,.4)' }}>
-                <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#FFD166' }}>The road</p>
+              <div className="rounded-lg p-3.5" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}>
+                <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#00D2FF' }}>The road</p>
                 <div className="mt-2 space-y-1.5">
                   {road.map((it) => {
                     const past = (it.end ?? it.date) < data.today;
@@ -314,7 +314,7 @@ export function SeasonCard({ token, initial, embedded }: {
 
             {/* Aportes de los especialistas */}
             {data.contributions.length > 0 && (
-              <div className="rounded-2xl p-3.5" style={{ background: 'rgba(255,255,255,.05)', border: '1px solid rgba(255,255,255,.08)' }}>
+              <div className="rounded-lg p-3.5" style={{ background: '#0A2532', border: '1px solid rgba(247,249,250,.12)' }}>
                 <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#7BA2B5' }}>From your team</p>
                 <div className="mt-2 space-y-2.5">
                   {data.contributions.map((c) => (
@@ -349,20 +349,20 @@ export function SeasonCard({ token, initial, embedded }: {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full text-left rounded-2xl p-4"
-        style={{ background: 'rgba(255,209,102,.07)', border: '1px solid rgba(255,209,102,.4)' }}
+        className="w-full text-left rounded-lg p-4"
+        style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}
       >
         <div className="flex items-center justify-between">
-          <span className="text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: '#FFD166' }}>
+          <span className="text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: '#00D2FF' }}>
             <CalendarRange size={12} /> My year
           </span>
           {data.days_to_peak != null && (
-            <span className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: '#FFD166' }}>
+            <span className="text-[10px] uppercase tracking-wider font-bold" style={{ ...MONO, color: '#00D2FF' }}>
               {data.days_to_peak} days to peak
             </span>
           )}
         </div>
-        <p className="font-bold mt-1.5" style={{ ...ARCHIVO, color: '#f4f9fc', fontSize: 17 }}>{data.title}</p>
+        <p className="font-black uppercase mt-1.5 leading-tight" style={{ ...ARCHIVO, fontWeight: 900, color: '#F7F9FA', fontSize: 18 }}>{data.title}</p>
         {/* Mini franja del año — la visión completa a un vistazo */}
         {data.phases.length > 0 && <div className="mt-2"><YearStrip data={data} mini /></div>}
         <p className="text-[11.5px] mt-1.5" style={{ color: '#b8cad8' }}>

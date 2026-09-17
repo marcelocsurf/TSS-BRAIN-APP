@@ -1393,7 +1393,7 @@ function AthleteProfile({ studentId, onBack }: { studentId: string; onBack: () =
           {[
             { n: d.habits14.avg_sleep != null ? `${d.habits14.avg_sleep}h` : '—', l: '😴 Sueño' },
             { n: d.habits14.avg_water != null ? `${d.habits14.avg_water}/8` : '—', l: '💧 Agua' },
-            { n: d.habits14.avg_energy != null ? `${d.habits14.avg_energy}/4` : '—', l: '⚡ Energía' },
+            { n: d.habits14.avg_energy != null ? `${d.habits14.avg_energy}/5` : '—', l: '⚡ Energía' },
           ].map((x) => (
             <div key={x.l} className="rounded-[5px] py-2 text-center" style={{ background: 'rgba(255,255,255,.04)' }}>
               <p className="text-[15px] font-extrabold" style={{ color: GREEN }}>{x.n}</p>

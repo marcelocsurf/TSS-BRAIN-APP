@@ -10,9 +10,9 @@ import { getMyAthleteProfile, saveMyAthleteProfile, uploadMyAvatar, type MyProfi
 // Solo línea Alto Rendimiento (la acción devuelve null para el resto).
 // Student-facing → inglés. Brand v10.
 
-const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
+const MONO: React.CSSProperties = { fontFamily: "var(--font-plex), 'IBM Plex Mono', monospace" };
 const ARCHIVO: React.CSSProperties = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%' as any };
-const INK = '#061C2B', CYAN = '#00D2FF', GOLD = '#FFD166', GREEN = '#39D98A';
+const INK = '#061C2B', CYAN = '#00D2FF', GOLD = '#00D2FF', GREEN = '#39D98A';
 
 type StepKey = 'photo' | 'body' | 'docs' | 'health' | 'goals';
 const STEPS: Array<{ key: StepKey; icon: string; title: string; sub: string }> = [
@@ -37,7 +37,7 @@ function Field({ k, label, type = 'text', placeholder, f, set }: {
     <div>
       <label className="block text-[9.5px] uppercase tracking-wider mb-1" style={WIZ_LABEL}>{label}</label>
       <input type={type} value={f[k] ?? ''} onChange={(e) => set(k, e.target.value)} placeholder={placeholder}
-        className="w-full rounded-xl px-3 py-2.5 text-[14px]" style={WIZ_INPUT} />
+        className="w-full rounded-lg px-3 py-2.5 text-[14px]" style={WIZ_INPUT} />
     </div>
   );
 }
@@ -89,7 +89,7 @@ export function AthleteProfileCard({ token, placement }: { token: string; placem
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full text-left rounded-2xl p-4"
+        className="w-full text-left rounded-lg p-4"
         style={{
           background: complete ? 'rgba(57,217,138,.06)' : 'rgba(0,210,255,.06)',
           border: complete ? '1px solid rgba(57,217,138,.35)' : '1px solid rgba(0,210,255,.4)',
@@ -261,7 +261,7 @@ function ProfileWizard({ token, data, onClose }: { token: string; data: MyProfil
             <input ref={fileRef} type="file" accept="image/*" className="hidden"
               onChange={(e) => { const file = e.target.files?.[0]; if (file) pickPhoto(file); }} />
             <button type="button" disabled={busy} onClick={() => fileRef.current?.click()}
-              className="rounded-full px-6 py-3 text-[11px] font-bold uppercase tracking-wider disabled:opacity-50" style={{ ...MONO, background: CYAN, color: INK }}>
+              className="rounded-[5px] px-6 py-3 text-[11px] font-bold uppercase tracking-wider disabled:opacity-50" style={{ ...MONO, background: CYAN, color: INK }}>
               {busy ? 'Uploading…' : photoUrl ? 'Change photo' : 'Add your photo'}
             </button>
             <p className="text-[11px]" style={{ color: '#5f7a8c' }}>A clear face shot works best. Max 5MB.</p>
@@ -280,7 +280,7 @@ function ProfileWizard({ token, data, onClose }: { token: string; data: MyProfil
               <div className="grid grid-cols-4 gap-1.5">
                 {['O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-'].map((b) => (
                   <button key={b} type="button" onClick={() => set('blood_type', f.blood_type === b ? '' : b)}
-                    className="rounded-xl py-2.5 text-[13px] font-bold"
+                    className="rounded-lg py-2.5 text-[13px] font-bold"
                     style={{ background: f.blood_type === b ? CYAN : 'rgba(255,255,255,.06)', color: f.blood_type === b ? INK : '#b8cad8', border: '1px solid rgba(255,255,255,.12)' }}>
                     {b}
                   </button>
@@ -331,7 +331,7 @@ function ProfileWizard({ token, data, onClose }: { token: string; data: MyProfil
             <div>
               <label className="block text-[9.5px] uppercase tracking-wider mb-1" style={labelStyle}>🏆 Titles & results so far</label>
               <textarea value={f.palmares_historico ?? ''} onChange={(e) => set('palmares_historico', e.target.value)} rows={3}
-                className="w-full rounded-xl px-3 py-2.5 text-[13px]" style={inputStyle} />
+                className="w-full rounded-lg px-3 py-2.5 text-[13px]" style={inputStyle} />
             </div>
             <Field f={f} set={set} k="sponsors" label="Sponsors" />
           </div>
@@ -341,13 +341,13 @@ function ProfileWizard({ token, data, onClose }: { token: string; data: MyProfil
         <div className="flex gap-2 pt-2 pb-6">
           {s.key !== 'photo' ? (
             <button type="button" disabled={busy} onClick={next}
-              className="flex-1 rounded-full py-3.5 text-[11px] font-bold uppercase tracking-wider disabled:opacity-50"
+              className="flex-1 rounded-[5px] py-3.5 text-[11px] font-bold uppercase tracking-wider disabled:opacity-50"
               style={{ ...MONO, background: step === STEPS.length - 1 ? GREEN : CYAN, color: INK }}>
               {busy ? 'Saving…' : step === STEPS.length - 1 ? 'Save & finish ✓' : 'Save & continue →'}
             </button>
           ) : (
             <button type="button" onClick={() => setStep(1)}
-              className="flex-1 rounded-full py-3.5 text-[11px] font-bold uppercase tracking-wider"
+              className="flex-1 rounded-[5px] py-3.5 text-[11px] font-bold uppercase tracking-wider"
               style={{ ...MONO, background: CYAN, color: INK }}>
               {photoUrl ? 'Continue →' : 'Skip for now →'}
             </button>

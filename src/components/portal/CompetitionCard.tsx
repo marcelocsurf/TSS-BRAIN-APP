@@ -10,10 +10,10 @@ import { getMyCompetitions, saveMyHeatPrep, type MyCompetitionData, type MyHeatV
 // Portal del alumno = fondo OSCURO (#061C2B). Student-facing: inglés.
 // Autocontenida: null si no hay nada (cero impacto en los 2.727 sin HP).
 
-const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
-const ARCHIVO: React.CSSProperties = { fontFamily: 'Archivo, sans-serif', fontStretch: '125%' };
+const MONO: React.CSSProperties = { fontFamily: "var(--font-plex), 'IBM Plex Mono', monospace" };
+const ARCHIVO: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%' };
 
-const GOLD = '#FFD166';
+const GOLD = '#00D2FF';
 const INK = '#061C2B';
 
 const PREP_CHECKS: { key: string; label: string }[] = [
@@ -65,8 +65,8 @@ export function CompetitionCard({ token, initial }: { token: string; initial?: M
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="w-full text-left rounded-2xl p-4"
-        style={{ background: 'rgba(255,209,102,.07)', border: '1px solid rgba(255,209,102,.4)' }}
+        className="w-full text-left rounded-lg p-4"
+        style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}
       >
         <div className="flex items-center justify-between">
           <span className="text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: GOLD }}>
@@ -82,7 +82,7 @@ export function CompetitionCard({ token, initial }: { token: string; initial?: M
             </span>
           ) : null}
         </div>
-        <p className="font-bold mt-1.5" style={{ ...ARCHIVO, color: '#f4f9fc', fontSize: 17 }}>
+        <p className="font-black uppercase mt-1.5 leading-tight" style={{ ...ARCHIVO, fontWeight: 900, color: '#F7F9FA', fontSize: 18 }}>
           {up ? up.name : 'Weekly ranking'}
         </p>
         <p className="text-[11.5px] mt-1" style={{ color: '#b8cad8' }}>
@@ -109,7 +109,7 @@ export function CompetitionCard({ token, initial }: { token: string; initial?: M
             </div>
 
             {up && (
-              <div className="rounded-2xl p-4" style={{ background: 'rgba(255,209,102,.07)', border: '1px solid rgba(255,209,102,.4)' }}>
+              <div className="rounded-lg p-4" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}>
                 <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: GOLD }}>
                   {up.days_to === 0 ? 'TODAY' : `${up.days_to} DAYS TO GO`}
                 </p>
@@ -132,7 +132,7 @@ export function CompetitionCard({ token, initial }: { token: string; initial?: M
             )}
 
             {data.last_result && (
-              <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
+              <div className="rounded-lg p-4" style={{ background: '#0A2532', border: '1px solid rgba(247,249,250,.12)' }}>
                 <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#7BA2B5' }}>Last result</p>
                 <p className="text-[13.5px] font-semibold mt-1" style={{ color: '#f4f9fc' }}>
                   {data.last_result.name}
@@ -145,7 +145,7 @@ export function CompetitionCard({ token, initial }: { token: string; initial?: M
             )}
 
             {rk && (
-              <div className="rounded-2xl p-4" style={{ background: 'rgba(0,210,255,.05)', border: '1px solid rgba(0,210,255,.3)' }}>
+              <div className="rounded-lg p-4" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}>
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: '#00D2FF' }}>Weekly ranking</p>
                   {rk.my_position != null && (
@@ -206,7 +206,7 @@ function HeatBlock({ token, heat, onSaved }: { token: string; heat: MyHeatView; 
   const done = heat.status === 'done';
 
   return (
-    <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
+    <div className="rounded-lg p-4" style={{ background: '#0A2532', border: '1px solid rgba(247,249,250,.12)' }}>
       <div className="flex items-center justify-between">
         <p className="text-[13px] font-bold" style={{ color: '#f4f9fc' }}>
           Heat {heat.heat_number}{heat.round_name ? ` · ${heat.round_name}` : ''}
@@ -251,7 +251,7 @@ function HeatBlock({ token, heat, onSaved }: { token: string; heat: MyHeatView; 
                 const on = checks.includes(c.key);
                 return (
                   <button key={c.key} type="button" onClick={() => toggle(c.key)}
-                    className="text-left px-2.5 py-2 rounded-xl text-[11.5px]"
+                    className="text-left px-2.5 py-2 rounded-lg text-[11.5px]"
                     style={{
                       background: on ? 'rgba(6,214,160,.12)' : 'rgba(255,255,255,.04)',
                       border: `1px solid ${on ? 'rgba(6,214,160,.45)' : 'rgba(255,255,255,.09)'}`,
@@ -269,10 +269,10 @@ function HeatBlock({ token, heat, onSaved }: { token: string; heat: MyHeatView; 
             <div className="mt-1.5 flex gap-1.5">
               {LINEUPS.map((l) => (
                 <button key={l.key} type="button" onClick={() => setLineup(lineup === l.key ? '' : l.key)}
-                  className="flex-1 px-2 py-2 rounded-xl text-[11px] text-center"
+                  className="flex-1 px-2 py-2 rounded-lg text-[11px] text-center"
                   style={{
-                    background: lineup === l.key ? 'rgba(255,209,102,.12)' : 'rgba(255,255,255,.04)',
-                    border: `1px solid ${lineup === l.key ? 'rgba(255,209,102,.5)' : 'rgba(255,255,255,.09)'}`,
+                    background: lineup === l.key ? 'rgba(0,210,255,.12)' : 'rgba(255,255,255,.04)',
+                    border: `1px solid ${lineup === l.key ? 'rgba(0,210,255,.5)' : 'rgba(255,255,255,.09)'}`,
                     color: lineup === l.key ? GOLD : '#b8cad8',
                   }}
                   title={l.tip}>
@@ -287,10 +287,10 @@ function HeatBlock({ token, heat, onSaved }: { token: string; heat: MyHeatView; 
             <div className="mt-1.5 space-y-1.5">
               {STRATEGIES.map((s) => (
                 <button key={s.key} type="button" onClick={() => setStrategy(strategy === s.key ? '' : s.key)}
-                  className="w-full text-left px-3 py-2 rounded-xl"
+                  className="w-full text-left px-3 py-2 rounded-lg"
                   style={{
-                    background: strategy === s.key ? 'rgba(255,209,102,.12)' : 'rgba(255,255,255,.04)',
-                    border: `1px solid ${strategy === s.key ? 'rgba(255,209,102,.5)' : 'rgba(255,255,255,.09)'}`,
+                    background: strategy === s.key ? 'rgba(0,210,255,.12)' : 'rgba(255,255,255,.04)',
+                    border: `1px solid ${strategy === s.key ? 'rgba(0,210,255,.5)' : 'rgba(255,255,255,.09)'}`,
                   }}>
                   <span className="block text-[11.5px] font-bold" style={{ color: strategy === s.key ? GOLD : '#f4f9fc' }}>{s.label}</span>
                   <span className="block text-[10px] mt-0.5" style={{ color: '#8aa0b2' }}>{s.tip}</span>
@@ -304,7 +304,7 @@ function HeatBlock({ token, heat, onSaved }: { token: string; heat: MyHeatView; 
             onChange={(e) => setMantra(e.target.value)}
             placeholder="Your mantra / key word…"
             aria-label="Mantra or key word"
-            className="w-full rounded-xl px-3 py-2.5 text-[13px]"
+            className="w-full rounded-lg px-3 py-2.5 text-[13px]"
             style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.12)', color: '#eaf4fa' }}
             maxLength={60}
           />
@@ -316,7 +316,7 @@ function HeatBlock({ token, heat, onSaved }: { token: string; heat: MyHeatView; 
 
           {err && <p className="text-[11px]" style={{ color: '#FF6B6B' }}>{err}</p>}
           <button type="button" disabled={saving} onClick={save}
-            className="w-full rounded-full py-3 text-[10px] font-bold uppercase tracking-wider disabled:opacity-50"
+            className="w-full rounded-[5px] py-3 text-[10px] font-bold uppercase tracking-wider disabled:opacity-50"
             style={{ ...MONO, background: GOLD, color: '#412402' }}>
             {saving ? 'SAVING…' : saved ? 'SAVED ✓' : 'SAVE MY HEAT PREP'}
           </button>

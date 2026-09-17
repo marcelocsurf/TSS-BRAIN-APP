@@ -7,8 +7,8 @@ import { getMyTodayExtras, markMyStaffTaskDone, type MyTodayExtras } from '@/lib
 // Lo que la nutricionista y los especialistas dejan cae directo en SU día.
 // Autocontenido: null si no hay nada. Student-facing → inglés. Brand v10.
 
-const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
-const INK = '#061C2B', GOLD = '#FFD166', GREEN = '#39D98A';
+const MONO: React.CSSProperties = { fontFamily: "var(--font-plex), 'IBM Plex Mono', monospace" };
+const INK = '#061C2B', GOLD = '#00D2FF', GREEN = '#39D98A';
 
 const KIND_ICON: Record<string, string> = { fisico: '💪', mental: '🧠', tecnico: '🎯', nutricion: '🥗', otro: '📌' };
 
@@ -40,7 +40,7 @@ export function TodayExtras({ token, initial }: { token: string; initial?: MyTod
     <>
       {/* 🥗 Dieta del microciclo + nota de hoy */}
       {(data.diet_micro || data.diet_today) && (
-        <div className="rounded-2xl p-4" style={{ background: 'rgba(255,209,102,.07)', border: '1px solid rgba(255,209,102,.4)' }}>
+        <div className="rounded-lg p-4" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}>
           <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: GOLD }}>
             🥗 Nutrition — from your nutritionist
           </p>
@@ -48,7 +48,7 @@ export function TodayExtras({ token, initial }: { token: string; initial?: MyTod
               cuál es cuál: si no, el atleta lee dos textos sueltos y no sabe
               si el de arriba reemplaza al de abajo o se suman. */}
           {data.diet_today && (
-            <div className="mt-2 rounded-xl px-3 py-2" style={{ background: 'rgba(255,209,102,.12)' }}>
+            <div className="mt-2 rounded-lg px-3 py-2" style={{ background: 'rgba(0,210,255,.12)' }}>
               <p className="text-[9px] uppercase tracking-wide font-bold" style={{ ...MONO, color: GOLD }}>
                 Just for today
               </p>
@@ -70,13 +70,13 @@ export function TodayExtras({ token, initial }: { token: string; initial?: MyTod
 
       {/* 📌 Sesiones online / tareas del staff */}
       {data.tasks.length > 0 && (
-        <div className="rounded-2xl p-4" style={{ background: 'rgba(57,217,138,.06)', border: '1px solid rgba(57,217,138,.35)' }}>
+        <div className="rounded-lg p-4" style={{ background: 'rgba(57,217,138,.06)', border: '1px solid rgba(57,217,138,.35)' }}>
           <p className="text-[10px] uppercase tracking-wider" style={{ ...MONO, color: GREEN }}>
             📌 From your team · {data.tasks.length}
           </p>
           <div className="mt-2 space-y-2">
             {data.tasks.map((t) => (
-              <div key={t.id} className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(255,255,255,.05)' }}>
+              <div key={t.id} className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(255,255,255,.05)' }}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-[13px] font-semibold" style={{ color: '#eaf4fa' }}>
@@ -86,7 +86,7 @@ export function TodayExtras({ token, initial }: { token: string; initial?: MyTod
                     {t.due_date && <p className="text-[10px] mt-1" style={{ ...MONO, color: '#8aa0b2' }}>Due {t.due_date.slice(5)}</p>}
                   </div>
                   <button type="button" disabled={busy === t.id} onClick={() => done(t.id)}
-                    className="shrink-0 rounded-full px-3 py-1.5 text-[9.5px] font-bold uppercase tracking-wider disabled:opacity-50"
+                    className="shrink-0 rounded-[5px] px-3 py-1.5 text-[9.5px] font-bold uppercase tracking-wider disabled:opacity-50"
                     style={{ ...MONO, background: GREEN, color: INK }}>
                     Done ✓
                   </button>

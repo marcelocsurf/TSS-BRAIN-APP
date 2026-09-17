@@ -8,7 +8,7 @@ import { getMyAppointments, type MyAppointment } from '@/lib/actions/programs';
 // Mismo patrón autocontenido: null si no hay citas → Home idéntico para todos.
 // Student-facing: inglés.
 
-const MONO: React.CSSProperties = { fontFamily: 'DM Mono, monospace' };
+const MONO: React.CSSProperties = { fontFamily: "var(--font-plex), 'IBM Plex Mono', monospace" };
 
 const KIND_LABEL: Record<string, string> = {
   fisico: 'Physical session',
@@ -47,10 +47,10 @@ export function AppointmentCard({ token, initial }: { token: string; initial?: M
 
   return (
     <div
-      className="rounded-2xl p-4"
-      style={{ background: 'rgba(255,209,102,.07)', border: '1px solid rgba(255,209,102,.4)' }}
+      className="rounded-lg p-4"
+      style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}
     >
-      <p className="text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: '#FFD166' }}>
+      <p className="text-[10px] uppercase tracking-wider inline-flex items-center gap-1.5" style={{ ...MONO, color: '#00D2FF' }}>
         <CalendarClock size={12} /> Upcoming sessions
       </p>
       <div className="mt-2 space-y-2">
@@ -73,7 +73,7 @@ export function AppointmentCard({ token, initial }: { token: string; initial?: M
               )}
             </div>
             <div className="text-right shrink-0">
-              <p className="text-[12px] font-bold" style={{ color: '#FFD166' }}>{prettyDate(a.appointment_date)}</p>
+              <p className="text-[12px] font-bold" style={{ color: '#00D2FF' }}>{prettyDate(a.appointment_date)}</p>
               {a.appointment_time && (
                 <p className="text-[11px]" style={{ color: '#b8cad8' }}>{prettyTime(a.appointment_time)}</p>
               )}
