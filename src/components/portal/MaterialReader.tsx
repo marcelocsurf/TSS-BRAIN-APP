@@ -20,6 +20,7 @@ export function MaterialReader({ token, resourceId, title, onClose }: { token: s
   const [error, setError] = useState('');
   const [pages, setPages] = useState(0);
   const [page, setPage] = useState(1);
+  const [tick, setTick] = useState(0);
   const docRef = useRef<any>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -65,8 +66,15 @@ export function MaterialReader({ token, resourceId, title, onClose }: { token: s
       try { renderTask.current?.cancel?.(); } catch {}
       const pg = await docRef.current.getPage(page);
       if (cancelled) return;
-      const width = Math.min(wrapRef.current?.clientWidth ?? 800, 900);
       const base = pg.getViewport({ scale: 1 });
+      const wrap = wrapRef.current;
+      const wrapW = wrap?.clientWidth ?? 800;
+      let width = Math.min(wrapW, 900) - 16;
+      // En computadora la página ENTERA cabe en pantalla (Marcelo 2026-09-17:
+      // "que no se vea a medias"): se ajusta también a la altura disponible.
+      // En teléfono manda el ancho y la página se lee con scroll.
+      const availH = (wrap?.clientHeight ?? 0) - 24;
+      if (wrapW >= 768 && availH > 200) width = Math.min(width, availH * (base.width / base.height));
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const scale = width / base.width;
       const vp = pg.getViewport({ scale: scale * dpr });
@@ -81,7 +89,16 @@ export function MaterialReader({ token, resourceId, title, onClose }: { token: s
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, page]);
+  }, [status, page, tick]);
+
+  // Al cambiar el tamaño de la ventana (o girar el teléfono) se vuelve a
+  // dibujar la página al nuevo espacio.
+  useEffect(() => {
+    let t: any;
+    const onResize = () => { clearTimeout(t); t = setTimeout(() => setTick((v) => v + 1), 150); };
+    window.addEventListener('resize', onResize);
+    return () => { window.removeEventListener('resize', onResize); clearTimeout(t); };
+  }, []);
 
   // Teclado en escritorio.
   useEffect(() => {
