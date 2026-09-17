@@ -105,19 +105,11 @@ export function SequencePage({
             <WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} kitSequence={WAVE_KIT_SEQUENCE[cfg.id]} />
           ) : (
             <>
-              {/* Sin tablero (secuencias de entrada): las lecciones, en orden, con su título. */}
-              <h2 className="tss-section-title mb-1">The steps, in order</h2>
-              <ol className="m-0 p-0 list-none">
-                {stepGroups.map((g, i) => (
-                  <li key={g.ids.join('+')} className="flex items-start gap-3 py-2.5" style={{ borderTop: `1px solid ${BORDER}` }}>
-                    <Num n={i + 1} />
-                    <div className="min-w-0">
-                      <span className="text-[15px] font-semibold block" style={{ color: INK }}>{g.title}</span>
-                      {g.note && <span className="text-[13px] block mt-0.5 leading-snug" style={{ color: '#55666E' }}>{g.note}</span>}
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              {/* Sin tablero (secuencias de entrada): antes iba acá "The steps, in
+                  order" con las lecciones; se veía duplicado con "The steps that
+                  build it" justo debajo (Marcelo 2026-09-17). Queda una sola lista;
+                  las lecciones en orden viven en "02 · The steps · what each one is". */}
+              <p className="text-[14px] m-0" style={{ color: INK }}>{cfg.think.whatIs.line}</p>
             </>
           )}
           {/* Los pasos del cuerpo, con el color del comando (los mismos de Review). */}
