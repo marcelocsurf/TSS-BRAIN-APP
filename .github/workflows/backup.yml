@@ -1,0 +1,63 @@
+# Backup semanal de TSS BRAIN (base + archivos) fuera de Supabase.
+# Corre los domingos 06:00 UTC (00:00 El Salvador) y a mano desde la pestaña
+# Actions → "Backup semanal" → Run workflow.
+#
+# Secretos que tienen que existir en GitHub → Settings → Secrets → Actions:
+#   NEXT_PUBLIC_SUPABASE_URL     (obligatorio)
+#   SUPABASE_SERVICE_ROLE_KEY    (obligatorio)
+#   SUPABASE_DB_URL              (opcional: agrega un pg_dump real)
+#   BACKUP_PASSPHRASE            (opcional: cifra el archivo con AES-256)
+#
+# El resultado queda como "artifact" del run, 90 días (máximo de GitHub).
+# Para restaurar: ver RECUPERACION.md.
+
+name: Backup semanal
+
+on:
+  schedule:
+    - cron: '0 6 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      - name: Volcar base + storage
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: node scripts/backup.mjs ./backup-out
+
+      - name: Empaquetar (y cifrar si hay passphrase)
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          STAMP=$(date -u +%Y-%m-%d)
+          tar -czf "tss-backup-$STAMP.tar.gz" -C backup-out .
+          if [ -n "$BACKUP_PASSPHRASE" ]; then
+            openssl enc -aes-256-cbc -pbkdf2 -salt -in "tss-backup-$STAMP.tar.gz" -out "tss-backup-$STAMP.tar.gz.enc" -pass env:BACKUP_PASSPHRASE
+            rm "tss-backup-$STAMP.tar.gz"
+          fi
+          ls -la tss-backup-*
+          cat backup-out/MANIFEST.json | head -40
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tss-backup-${{ github.run_id }}
+          path: tss-backup-*
+          retention-days: 90
+          if-no-files-found: error
