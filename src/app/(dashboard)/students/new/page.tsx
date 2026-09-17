@@ -21,8 +21,13 @@ export default function AddStudentPage() {
   const [services, setServices] = useState<{ id: string; name: string; start: string; end: string; days: number }[]>([]);
   const [serviceId, setServiceId] = useState('');
   const [enrollNote, setEnrollNote] = useState<string | null>(null);
+  // Tres puertas (Marcelo 2026-09-17): clase de un día · camp · alumno que
+  // vuelve. La puerta decide qué pide el link (?basic=1 / ?full=1) y filtra
+  // la lista de servicios para no mostrar yoga, skate y jiujitsu a un camper.
+  const [kind, setKind] = useState<'camp' | 'class' | 'returning'>('camp');
   const chosen = services.find((x) => x.id === serviceId) ?? null;
-  const studentType: 'member' | 'dropin' = chosen && chosen.days < 2 ? 'dropin' : 'member';
+  const visibleServices = services.filter((sv) => (kind === 'class' ? sv.days < 2 : sv.days >= 2));
+  const studentType: 'member' | 'dropin' = kind === 'class' ? 'dropin' : 'member';
   useEffect(() => {
     const today = new Date(Date.now() - 6 * 3600_000).toISOString().slice(0, 10);
     const horizon = new Date(Date.now() + 60 * 86_400_000).toISOString().slice(0, 10);
@@ -78,7 +83,9 @@ export default function AddStudentPage() {
             setEnrollNote(`Profile created, but could not enroll: ${e?.message ?? 'error'}. Enroll from Services.`);
           }
         }
-        setCreatedUrl(res.leadFormUrl);
+        // El link lleva la puerta elegida: la clase pide ficha + waiver; el camp pide todo.
+        const url = res.leadFormUrl ? `${res.leadFormUrl}${res.leadFormUrl.includes('?') ? '&' : '?'}${kind === 'class' ? 'basic=1' : 'full=1'}` : res.leadFormUrl;
+        setCreatedUrl(url);
         setEmailSent(!!res.emailSent);
       } else if (res.duplicate) {
         const d = res.duplicate;
@@ -123,25 +130,52 @@ export default function AddStudentPage() {
           <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional)" className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]" />
 
           <div>
-            <select value={serviceId} onChange={(e) => setServiceId(e.target.value)} className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm bg-[#F7F9FA] focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]">
-              <option value="">Service · none yet (interested, not sold)</option>
-              {services.map((sv) => (
-                <option key={sv.id} value={sv.id}>{sv.name}{sv.start === 'por confirmar' ? '' : ` · ${sv.days === 1 ? sv.start : `${sv.start} → ${sv.end}`}`}</option>
+            <p className="text-[11px] uppercase tracking-[0.18em] mb-1.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#55666E' }}>What are they coming for?</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                ['camp', 'Camp', 'Profile + waiver + level quiz + goals'],
+                ['class', 'One class', 'Profile + waiver only'],
+                ['returning', 'Returning', 'Already has a profile'],
+              ] as const).map(([k, label, sub]) => (
+                <button key={k} type="button" aria-pressed={kind === k} onClick={() => { setKind(k); setServiceId(''); }}
+                  className="rounded-[5px] px-2 py-2.5 text-left border"
+                  style={kind === k ? { background: '#061C2B', borderColor: '#061C2B', color: '#F7F9FA' } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#10263B' }}>
+                  <span className="block text-[13px] font-bold">{label}</span>
+                  <span className="block text-[10.5px] leading-tight mt-0.5" style={{ opacity: .8 }}>{sub}</span>
+                </button>
               ))}
-            </select>
-            <p className="text-[12px] text-[#55666E] mt-1.5">
-              {chosen
-                ? (chosen.start === 'por confirmar'
-                  ? 'Wants a camp, level not known yet → member, enrolled as "level to confirm". The intake asks everything; assign the real camp once the quiz is in.'
-                  : chosen.days < 2
-                  ? 'One-day service → drop-in. The intake asks profile + waiver only.'
-                  : `${chosen.days}-day service → member. The intake asks profile + waiver + level quiz + goals.`)
-                : 'No service yet → member without enrollment. Enroll later from Services.'}
-            </p>
+            </div>
           </div>
 
+          {kind === 'returning' ? (
+            <div className="rounded-[5px] p-3" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
+              <p className="text-[13px] text-[#10263B]">A returning student already has a profile and a link. Do not create a second one: find them in Students, enroll them in their camp, and send them their same link. It asks only what is missing (Welcome back).</p>
+              <Link href="/students" className="inline-block mt-2 text-[13px] font-bold" style={{ color: '#00A8CC' }}>Find them in Students →</Link>
+            </div>
+          ) : (
+            <div>
+              <select value={serviceId} onChange={(e) => setServiceId(e.target.value)} className="w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm bg-[#F7F9FA] focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)]">
+                <option value="">{kind === 'camp' ? 'Camp · dates not set yet (enroll later)' : 'Class · not booked yet'}</option>
+                {visibleServices.map((sv) => (
+                  <option key={sv.id} value={sv.id}>{sv.name}{sv.start === 'por confirmar' ? '' : ` · ${sv.days === 1 ? sv.start : `${sv.start} → ${sv.end}`}`}</option>
+                ))}
+              </select>
+              <p className="text-[12px] text-[#55666E] mt-1.5">
+                {kind === 'camp'
+                  ? (chosen
+                    ? (chosen.start === 'por confirmar'
+                      ? 'Enrolled as "level to confirm"; assign the real camp once the quiz is in. The link asks everything.'
+                      : `Enrolled in ${chosen.name}. The link asks everything: profile, waiver, level quiz and goals.`)
+                    : 'The link asks everything: profile, waiver, level quiz and goals. Enroll them in the camp from Services when the dates are set.')
+                  : (chosen
+                    ? `Enrolled in ${chosen.name}. The link asks profile + waiver only.`
+                    : 'The link asks profile + waiver only. Book the class from Services.')}
+              </p>
+            </div>
+          )}
+
           {error && <p className="text-sm text-red-700 bg-red-50 p-3 rounded-[5px]">{error}</p>}
-          <button type="submit" disabled={loading} className="w-full py-3 text-white text-sm font-semibold rounded-[5px] disabled:opacity-50" style={{ background: 'var(--tss-navy)' }}>
+          <button type="submit" disabled={loading || kind === 'returning'} className="w-full py-3 text-white text-sm font-semibold rounded-[5px] disabled:opacity-50" style={{ background: 'var(--tss-navy)' }}>
             {loading ? 'Creating…' : 'Create & get link'}
           </button>
         </form>
@@ -150,7 +184,7 @@ export default function AddStudentPage() {
           <p className="text-2xl">✅</p>
           <p className="text-sm font-semibold text-[var(--tss-navy)]">Profile created</p>
           {enrollNote && <p className={`text-xs font-medium ${enrollNote.startsWith('Enrolled') ? 'text-emerald-700' : 'text-amber-700'}`}>{enrollNote}</p>}
-          <p className="text-xs text-[#55666E]">Send this ONE link to the student. The intake asks exactly what their service needs.</p>
+          <p className="text-xs text-[#55666E]">Send this ONE link to the student. {kind === 'class' ? 'It asks profile + waiver only.' : 'It asks profile, waiver, level quiz and goals.'}</p>
           {emailSent && (
             <p className="text-xs text-emerald-700 font-medium">✓ We also emailed the link to {email}.</p>
           )}
