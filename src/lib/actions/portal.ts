@@ -375,24 +375,45 @@ export async function getStudentPortalData(token: string) {
       }
     }
     for (const [campId, sess] of nextSessionByCamp.entries()) {
-      // El plan del coach en el idioma de las secuencias (Marcelo 2026-09-17):
-      // el bloque 0 lleva step_ids = los pasos de la secuencia elegida y
-      // objective_text "Whole line · #3 Pop-Up" o "Focus: a · b". Se resuelve
-      // contra las páginas de secuencia para que el alumno pueda estudiarla.
-      const b0 = (blocksByCamp[campId] ?? []).find((b: any) => b.order_index === 0 && Array.isArray(b.step_ids) && b.step_ids.length > 0);
-      let plan: { sequenceId: string; number: number; title: string; kind: string; focus: string[]; notes: string | null } | null = null;
-      if (b0) {
-        const ids: string[] = b0.step_ids;
-        const cfg = Object.values(SEQUENCE_PAGES).find((c) => c.stepIds.length === ids.length && c.stepIds.every((id) => ids.includes(id)));
-        if (cfg) {
-          const txt = String(b0.objective_text ?? '');
-          plan = { sequenceId: cfg.id, number: cfg.number, title: cfg.title, kind: cfg.kind ?? 'sequence', focus: txt.startsWith('Focus: ') ? txt.slice(7).split(' · ').map((x) => x.trim()).filter(Boolean) : [], notes: b0.notes_pre ?? null };
+      // El plan del coach en el idioma de las secuencias (Marcelo 2026-09-17).
+      // Cada bloque del día se resuelve a su secuencia: por step_ids (plan
+      // simple: los pasos de la secuencia elegida) o por step_id (plantilla:
+      // Water Mission → el paso pertenece a una secuencia). Varias secuencias
+      // en un día (camp beginner: 1 · 2 · 3) salen en orden, una por una.
+      const dayBlocks = (blocksByCamp[campId] ?? []).slice().sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
+      const plans: { sequenceId: string; number: number; title: string; kind: string; focus: string[]; notes: string | null }[] = [];
+      const seen = new Set<string>();
+      // Un paso puede vivir en más de una página (STP-016 está en White #3 y
+      // en la entrada Blue): gana la de la cinta del alumno, después las de
+      // abajo, y las páginas de entrada al final.
+      const beltOrder = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt', 'brown_belt', 'black_belt'];
+      const myBelt = beltOrder.indexOf(String((student as any).belt_level ?? 'white_belt'));
+      const rank = (c: (typeof SEQUENCE_PAGES)[string]) => {
+        const bi = beltOrder.indexOf(c.belt);
+        const beltScore = bi === myBelt ? 0 : bi < myBelt ? 1 + (myBelt - bi) : 10 + (bi - myBelt);
+        return beltScore * 2 + (c.kind === 'entry' ? 1 : 0);
+      };
+      const candidates = Object.values(SEQUENCE_PAGES).slice().sort((a, b) => rank(a) - rank(b));
+      for (const b of dayBlocks) {
+        let cfg = null as (typeof SEQUENCE_PAGES)[string] | null;
+        if (Array.isArray(b.step_ids) && b.step_ids.length > 0) {
+          const ids: string[] = b.step_ids;
+          cfg = candidates.find((c) => c.stepIds.length === ids.length && c.stepIds.every((id) => ids.includes(id)))
+            ?? candidates.find((c) => ids.every((id) => c.stepIds.includes(id))) ?? null;
+        } else if (b.step_id) {
+          cfg = candidates.find((c) => c.stepIds.includes(b.step_id)) ?? null;
         }
+        if (!cfg || seen.has(cfg.id)) continue;
+        seen.add(cfg.id);
+        const txt = String(b.objective_text ?? '');
+        plans.push({ sequenceId: cfg.id, number: cfg.number, title: cfg.title, kind: cfg.kind ?? 'sequence', focus: txt.startsWith('Focus: ') ? txt.slice(7).split(' · ').map((x) => x.trim()).filter(Boolean) : [], notes: b.notes_pre ?? null });
       }
+      const plan = plans[0] ?? null;
       upcomingCampPreview[campId] = {
         next_session: sess,
         blocks: blocksByCamp[campId] ?? [],
         plan,
+        plans,
       };
     }
   }
