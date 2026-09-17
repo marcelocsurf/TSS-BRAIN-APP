@@ -150,7 +150,11 @@ export function FreeSurfLogger({ token }: { token: string }) {
             try {
               await logFreeSurf(token, minutes, date || undefined, notes || undefined);
               setDone(true);
-              router.refresh();
+              // No router.refresh(): vuelve a pedir la página con la URL interna
+              // de Next, que puede traer ?tab=course de un deep-link anterior, y
+              // el alumno aterrizaba en el curso (Marcelo 2026-09-17). El logger
+              // vive en el Home: recargar datos quedándose en el Home.
+              router.replace(`${window.location.pathname}?tab=home`);
             } catch (e: any) {
               setError(e.message || 'Failed to save');
             }
