@@ -19,7 +19,7 @@ export type DrillMissionRow = {
   id: string;
   step_id: string;
   title: string;
-  type: 'drill' | 'mission';
+  type: 'drill' | 'mission' | 'game';
   time_estimate: string | null;
   reps_recommended: string | null;
   key_words: string[];
@@ -700,7 +700,10 @@ export async function saveLinkedTrainingSession(
   // Decisión 2026-09-02: el examen es la MISIÓN. El drill no lleva criterios,
   // estrella ni flow; la misión no lleva la pregunta del drill. La compuerta
   // es acá, no en el cliente (un bundle viejo sigue mandando la forma anterior).
-  const isMission = (drillMission as any).type === 'mission';
+  // Juego (Tres Círculos, Marcelo 2026-09-17): se registra como una misión
+  // (estrella + flow + criterios), pero NO mueve la estrella del paso.
+  const isGame = (drillMission as any).type === 'game';
+  const isMission = (drillMission as any).type === 'mission' || isGame;
   const executionRating = isMission ? data.execution_rating : undefined;
   const flowChannel = isMission ? data.flow_channel : undefined;
   const automaticity = isMission ? undefined : data.automaticity;
@@ -775,7 +778,7 @@ export async function saveLinkedTrainingSession(
 
   // Solo la MISIÓN mueve la estrella del paso: practicar en la arena no es
   // evidencia de que lo ejecutás en la ola.
-  if (isMission && executionRating) {
+  if (isMission && !isGame && executionRating) {
     await admin
       .from('student_step_ratings')
       .upsert({
@@ -1033,4 +1036,43 @@ async function currentCriterionText(
   const list: string[] = Array.isArray(data?.success_criteria) ? data!.success_criteria : [];
   if (list.length === 0) return fallback || null;
   return index >= 0 && index < list.length ? list[index] : null;
+}
+
+
+// ═══ THE THREE CIRCLES · juegos como primer requisito en la ola ═══
+// (Marcelo 2026-09-17). Los 6 juegos dictados (GAME-3C-*) se juegan y se
+// registran como misión en self_training_sessions (linked_drill_mission_id).
+// Orden = el de la página Three Circles (three-circles.ts).
+const THREE_CIRCLES_GAME_IDS = [
+  'GAME-3C-POSTURE', 'GAME-3C-RAIL', 'GAME-3C-COMPACT', 'GAME-3C-HOLD', 'GAME-3C-BUTTON', 'GAME-3C-POCKET-FOAM',
+];
+
+export interface ThreeCirclesGameProgress {
+  id: string;
+  title: string;
+  belt: string;
+  lastStars: number | null;
+  lastFlow: number | null;
+  lastAt: string | null;
+  plays: number;
+}
+
+export async function getThreeCirclesProgress(portalToken: string): Promise<ThreeCirclesGameProgress[]> {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return [];
+  const admin = createAdminClient();
+  const [{ data: games }, { data: sessions }] = await Promise.all([
+    admin.from('drills_missions').select('id, title, belt').in('id', THREE_CIRCLES_GAME_IDS).eq('active', true).eq('student_visible', true),
+    admin.from('self_training_sessions')
+      .select('linked_drill_mission_id, execution_rating, flow_channel, created_at')
+      .eq('student_id', studentId).eq('status', 'done').in('linked_drill_mission_id', THREE_CIRCLES_GAME_IDS)
+      .order('created_at', { ascending: false }).limit(200),
+  ]);
+  const byGame = new Map<string, any[]>();
+  for (const r of sessions ?? []) (byGame.get(r.linked_drill_mission_id) ?? byGame.set(r.linked_drill_mission_id, []).get(r.linked_drill_mission_id)!).push(r);
+  const map = new Map((games ?? []).map((g: any) => [g.id, g]));
+  return THREE_CIRCLES_GAME_IDS.filter((id) => map.has(id)).map((id) => {
+    const g = map.get(id)!; const runs = byGame.get(id) ?? []; const last = runs[0] ?? null;
+    return { id, title: g.title, belt: g.belt, lastStars: last?.execution_rating ?? null, lastFlow: last?.flow_channel ?? null, lastAt: last?.created_at ?? null, plays: runs.length };
+  });
 }

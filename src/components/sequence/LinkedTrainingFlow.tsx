@@ -162,7 +162,9 @@ export function LinkedTrainingFlow({
     );
   }
 
-  const isMission = drill.type === 'mission';
+  const isGame = drill.type === 'game';
+  // Un juego de los Tres Círculos se registra igual que una misión (en el agua).
+  const isMission = drill.type === 'mission' || isGame;
   const successCriteria = drill.success_criteria || [];
   const warmupOptions = SELF_TRAINING_WARMUPS[studentBelt] || SELF_TRAINING_WARMUPS['white_belt'];
   const allSafe = !isMission || SAFETY_CHECKS.every((c) => checks[c.key]);
@@ -175,7 +177,7 @@ export function LinkedTrainingFlow({
         {/* Misión: la protagonista, pre-cargada de My Sequence */}
         <div className="rounded-lg p-4" style={{ background: INK }}>
           <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>
-            Today’s {isMission ? 'mission (in water)' : 'drill (dry land)'} · {drill.step_id}
+            Today’s {isGame ? 'game (in water)' : isMission ? 'mission (in water)' : 'drill (dry land)'} · {isGame ? 'The Three Circles' : drill.step_id}
           </p>
           <p className="text-[20px] mt-1.5" style={{ ...F_D, color: PAPER }}>{drill.title}</p>
           {drill.key_words && drill.key_words.length > 0 && (
@@ -378,7 +380,7 @@ export function LinkedTrainingFlow({
 
         {/* El mantra vivo: tocá y respira con vos. Momento de marca, cero obligación. */}
         <BreathCard
-          kindLabel={isMission ? 'Mission' : 'Drill'}
+          kindLabel={isGame ? 'Game' : isMission ? 'Mission' : 'Drill'}
           keyWords={drill.key_words && drill.key_words.length > 0 ? drill.key_words.join(' · ') : null}
           selected={mentalHack}
           onSelect={setMentalHack}

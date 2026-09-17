@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getMySequence, type SequenceData, type SequenceItem } from '@/lib/actions/sequence';
+import { getMySequence, getThreeCirclesProgress, type SequenceData, type SequenceItem, type ThreeCirclesGameProgress } from '@/lib/actions/sequence';
 import { StarRating } from './StarRating';
 import { StepDetailView } from './StepDetailView';
 import { Dumbbell, Waves, Target } from 'lucide-react';
@@ -88,6 +88,10 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
   // Tus tareas (paso + detalle, máximo tres). Marcelo 2026-09-10.
   const [tasks, setTasks] = useState<StudentTask[]>([]);
   useEffect(() => { let m = true; getTasks(portalToken).then((t) => { if (m) setTasks(t); }).catch(() => {}); return () => { m = false; }; }, [portalToken]);
+  // The Three Circles (Marcelo 2026-09-17): los 6 juegos son el primer
+  // requisito en la ola para Yellow y Blue. Se juegan desde acá y se registran.
+  const [circles, setCircles] = useState<ThreeCirclesGameProgress[]>([]);
+  useEffect(() => { let m = true; getThreeCirclesProgress(portalToken).then((c) => { if (m) setCircles(c); }).catch(() => {}); return () => { m = false; }; }, [portalToken]);
   const [openStepId, setOpenStepId] = useState<string | null>(initialStepId || null);
   // Por secuencia es la entrada natural: es como se enseña en el curso.
   const [view, setView] = useState<'sequence' | 'all'>('sequence');
@@ -225,6 +229,38 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         </ol>
         <p className="text-[13px] mt-2.5 leading-snug" style={{ color: '#10263B' }}>A sequence is yours when every step is at 4★. Drills are rehearsal: do them in the course, no need to log them. Your coach confirms in the water.</p>
       </div>
+
+      {/* THE THREE CIRCLES · primer requisito en la ola (Yellow y Blue). Los
+          juegos se juegan en el agua y se registran como una misión; no mueven
+          la estrella de ningún paso: son la base sobre la que van las secuencias. */}
+      {(beltKey === 'yellow' || beltKey === 'blue') && circles.length > 0 && (() => {
+        const done = circles.filter((g) => (g.lastStars ?? 0) >= 4).length;
+        const played = circles.filter((g) => g.plays > 0).length;
+        return (
+          <div className="rounded-lg p-4" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
+            <p className="text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: '#55666E' }}>The Three Circles · your first requirement on the wave</p>
+            <p className="text-[23px] mt-1" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>{done === circles.length ? 'All six games at 4★' : played === 0 ? 'Six games · start here' : `${done} of ${circles.length} games at 4★`}</p>
+            <p className="text-[13px] mt-1 leading-snug" style={{ color: '#10263B' }}>Board · Body · Wave. Play each game in the water, then give it a star. Before any sequence, this is the base.</p>
+            <div className="mt-3 space-y-1.5">
+              {circles.map((g, i) => (
+                <div key={g.id} className="flex items-center gap-2.5 rounded-[5px] px-3 py-2" style={{ background: PAPER, border: '1px solid #DCD7C6' }}>
+                  <span className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[12px] font-black" style={{ background: (g.lastStars ?? 0) >= 4 ? '#00A8CC' : INK, color: '#F7F9FA' }}>{i + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-bold leading-tight truncate" style={{ color: '#10263B' }}>{g.title}</p>
+                    <p className="text-[11px]" style={{ color: '#55666E' }}>{g.plays === 0 ? 'Not played yet' : `Last: ${g.lastStars ?? '—'}★ · played ${g.plays}×`}</p>
+                  </div>
+                  {onPracticeDrill && (
+                    <button type="button" onClick={() => onPracticeDrill(g.id)} className="shrink-0 h-9 px-3 rounded-[5px] text-[12px] font-black uppercase" style={{ background: CYAN, color: INK, fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
+                      {g.plays === 0 ? 'Play it' : 'Play again'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <a href={`/portal/${portalToken}/circles`} className="inline-block mt-2.5 text-[13px] font-semibold underline underline-offset-2" style={{ color: '#10263B' }}>Read The Three Circles</a>
+          </div>
+        );
+      })()}
 
       {/* Dónde estás · qué necesitás · cómo entrenarlo */}
       {levelSeqs.length > 0 && (
