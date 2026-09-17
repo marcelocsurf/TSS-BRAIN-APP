@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { pickWeakestCriterion, type CriterionEvaluationItem } from '@/lib/utils/criteria';
 import { studentIdFromPortalToken } from '@/lib/portal/student-token';
+import { THREE_CIRCLES_GAME_IDS, THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
 import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import {
   COURSE_SEQUENCE_ORDER,
@@ -1043,9 +1044,6 @@ async function currentCriterionText(
 // (Marcelo 2026-09-17). Los 6 juegos dictados (GAME-3C-*) se juegan y se
 // registran como misión en self_training_sessions (linked_drill_mission_id).
 // Orden = el de la página Three Circles (three-circles.ts).
-const THREE_CIRCLES_GAME_IDS = [
-  'GAME-3C-POSTURE', 'GAME-3C-RAIL', 'GAME-3C-COMPACT', 'GAME-3C-HOLD', 'GAME-3C-BUTTON', 'GAME-3C-POCKET-FOAM',
-];
 
 export interface ThreeCirclesGameProgress {
   id: string;
@@ -1075,4 +1073,42 @@ export async function getThreeCirclesProgress(portalToken: string): Promise<Thre
     const g = map.get(id)!; const runs = byGame.get(id) ?? []; const last = runs[0] ?? null;
     return { id, title: g.title, belt: g.belt, lastStars: last?.execution_rating ?? null, lastFlow: last?.flow_channel ?? null, lastAt: last?.created_at ?? null, plays: runs.length };
   });
+}
+
+/** La secuencia virtual "The Three Circles" para el flujo de Let's Play:
+ *  cada juego es un "paso" cuya misión es el propio juego (criterios de la
+ *  tarjeta). La estrella que se ve es la del último registro del juego. */
+export async function threeCirclesSequence(portalToken: string): Promise<SequenceData['sequences'][number] | null> {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return null;
+  const admin = createAdminClient();
+  const [{ data: games }, progress] = await Promise.all([
+    admin.from('drills_missions').select('*').in('id', THREE_CIRCLES_GAME_IDS).eq('active', true).eq('student_visible', true),
+    getThreeCirclesProgress(portalToken),
+  ]);
+  const map = new Map((games ?? []).map((g: any) => [g.id, g]));
+  const prog = new Map(progress.map((p) => [p.id, p]));
+  const items: SequenceItem[] = THREE_CIRCLES_GAME_IDS.filter((id) => map.has(id)).map((id, i) => {
+    const g = map.get(id)!; const pr = prog.get(id);
+    const row: DrillMissionRow = {
+      id: g.id, step_id: g.id, title: g.title, type: 'game', time_estimate: g.time_estimate ?? null, reps_recommended: g.reps_recommended ?? null,
+      key_words: g.key_words ?? [], description_md: g.description_md ?? null, success_criteria: g.success_criteria ?? [], belt: g.belt ?? 'yellow',
+      block_number: 0, block_name: 'The Three Circles', display_order: i,
+    };
+    return {
+      step_id: g.id, step_title: g.title, pillar: null, belt: g.belt ?? 'yellow', block_number: 0, block_name: 'The Three Circles', display_order: i,
+      drill: null, mission: row, rating: pr?.lastStars ?? null, rating_count: pr?.plays ?? 0, last_rated: pr?.lastAt ?? null,
+      coach_rating: null, coach_rated_at: null, self_source: 'executed', last_practiced: pr?.lastAt ?? null,
+    };
+  });
+  if (items.length === 0) return null;
+  const ratings = items.map((i) => i.rating).filter((r): r is number => r != null);
+  const minRating = ratings.length === items.length ? Math.min(...ratings) : null;
+  const weakest = items.slice().sort((a, b) => (a.rating ?? 0) - (b.rating ?? 0))[0];
+  return {
+    id: THREE_CIRCLES_SEQUENCE_ID, order: 7.5, name: 'The Three Circles', promise: 'Board · Body · Wave — the base of every sequence.', belt: 'yellow',
+    items, state: ratings.length === 0 ? 'unrated' : ratings.length < items.length ? 'partial' : (minRating ?? 0) >= 4 ? 'owned' : 'working',
+    minRating, weakestStepId: weakest?.step_id ?? null, weakestTitle: weakest?.step_title ?? null, weakestIsOfficial: false,
+    selfSequenceRating: null, heldBackStepId: null, heldBackTitle: null, side: null, sideRatings: null,
+  } as SequenceData['sequences'][number];
 }

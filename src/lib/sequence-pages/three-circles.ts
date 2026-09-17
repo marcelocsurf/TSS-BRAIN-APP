@@ -60,6 +60,14 @@ export interface Circle {
   lessonLabel: string;
 }
 
+/** Secuencia VIRTUAL de Let's Play: los 6 juegos se entrenan con el flujo
+ *  nuevo (plan → surf → calificar) como si fueran una secuencia, sin tocar
+ *  estrellas de pasos ni de secuencias (Marcelo 2026-09-17). */
+export const THREE_CIRCLES_SEQUENCE_ID = 'THREE-CIRCLES';
+export const THREE_CIRCLES_GAME_IDS = [
+  'GAME-3C-POSTURE', 'GAME-3C-RAIL', 'GAME-3C-COMPACT', 'GAME-3C-HOLD', 'GAME-3C-BUTTON', 'GAME-3C-POCKET-FOAM',
+];
+
 export const CIRCLES_INTRO = {
   title: 'The Three Circles of Power',
   headline: 'Surfing is drawing lines on the face of the wave while keeping your speed. That is the game.',

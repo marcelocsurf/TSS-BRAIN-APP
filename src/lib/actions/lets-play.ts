@@ -26,7 +26,8 @@ import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import { pickWeakestCriterion, type CriterionEvaluationItem, type CriterionResultValue } from '@/lib/utils/criteria';
 import { SEQUENCE_PASS_STARS, sequenceLabel, sequenceSide, SIDE_WORD } from '@/lib/constants/learning-blocks';
-import { getMySequence, type DrillMissionRow, type SequenceData } from './sequence';
+import { getMySequence, threeCirclesSequence, type DrillMissionRow, type SequenceData } from './sequence';
+import { THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
 
 export type TrainingMode = 'sequence_run' | 'step_focus';
 
@@ -108,6 +109,11 @@ async function allowedBeltFor(studentId: string, requested: string): Promise<str
 }
 
 async function loadSequence(portalToken: string, sequenceId: string, belt: string) {
+  // The Three Circles: secuencia virtual de juegos (Marcelo 2026-09-17).
+  if (sequenceId === THREE_CIRCLES_SEQUENCE_ID) {
+    const seq = await threeCirclesSequence(portalToken);
+    return { data: null as any, seq };
+  }
   const data = await getMySequence(portalToken, belt);
   const seq = data.sequences.find((s) => s.id === sequenceId) ?? null;
   return { data, seq };
@@ -466,7 +472,10 @@ export async function saveSequenceSession(
     const runPassed = isRun && (seqRating ?? 0) >= SEQUENCE_PASS_STARS;
     const focusClearsHeld = !isRun && focus && heldBackForRating === null && prev?.held_back_step_id === focus.step_id;
     const keptFocus = heldBackForRating ?? (isRun ? (runPassed ? null : prev?.held_back_step_id ?? null) : (focusClearsHeld ? null : prev?.held_back_step_id ?? null));
-    if (seqRating != null || keptFocus !== (prev?.held_back_step_id ?? null)) {
+    // La secuencia virtual de los Tres Círculos no mueve estrellas de
+    // secuencia ni de paso: el registro del juego vive en la sesión.
+    const isVirtual = seq.id === THREE_CIRCLES_SEQUENCE_ID;
+    if (!isVirtual && (seqRating != null || keptFocus !== (prev?.held_back_step_id ?? null))) {
       const { error: seqErr } = await admin.from('student_sequence_ratings').upsert({
         student_id: studentId,
         sequence_id: seq.id,
@@ -481,8 +490,8 @@ export async function saveSequenceSession(
 
     // ── Las estrellas de paso SOLO se mueven con detalle explícito ──
     const stepUpserts: { step_id: string; rating: number }[] = [];
-    if (isRun) for (const m of stepMarks ?? []) if (isRating(m.rating)) stepUpserts.push({ step_id: m.step_id, rating: m.rating as number });
-    if (!isRun && focus && execution) stepUpserts.push({ step_id: focus.step_id, rating: execution });
+    if (!isVirtual && isRun) for (const m of stepMarks ?? []) if (isRating(m.rating)) stepUpserts.push({ step_id: m.step_id, rating: m.rating as number });
+    if (!isVirtual && !isRun && focus && execution) stepUpserts.push({ step_id: focus.step_id, rating: execution });
     for (const u of stepUpserts) {
       const { error: stepErr } = await admin.from('student_step_ratings').upsert({
         student_id: studentId,

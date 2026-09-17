@@ -9,6 +9,7 @@ import { Dumbbell, Waves, Target } from 'lucide-react';
 import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constants/belt-theme';
 import { sequencePrefix } from '@/lib/constants/learning-blocks';
 import { sequencePageFor } from '@/lib/sequence-pages';
+import { THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
 import { SEQUENCE_ROLE, SIDE_SHORT, SIDE_WORD, type SequenceSide } from '@/lib/constants/learning-blocks';
 import { sideBalance } from '@/lib/sequence-sides';
 import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
@@ -249,8 +250,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                     <p className="text-[14px] font-bold leading-tight truncate" style={{ color: '#10263B' }}>{g.title}</p>
                     <p className="text-[11px]" style={{ color: '#55666E' }}>{g.plays === 0 ? 'Not played yet' : `Last: ${g.lastStars ?? '—'}★ · played ${g.plays}×`}</p>
                   </div>
-                  {onPracticeDrill && (
-                    <button type="button" onClick={() => onPracticeDrill(g.id)} className="shrink-0 h-9 px-3 rounded-[5px] text-[12px] font-black uppercase" style={{ background: CYAN, color: INK, fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
+                  {(onTrainSequence || onPracticeDrill) && (
+                    <button type="button" onClick={() => { if (onTrainSequence) onTrainSequence({ sequenceId: THREE_CIRCLES_SEQUENCE_ID, mode: 'step_focus', focusStepId: g.id }); else onPracticeDrill?.(g.id); }} className="shrink-0 h-9 px-3 rounded-[5px] text-[12px] font-black uppercase" style={{ background: CYAN, color: INK, fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
                       {g.plays === 0 ? 'Play it' : 'Play again'}
                     </button>
                   )}
