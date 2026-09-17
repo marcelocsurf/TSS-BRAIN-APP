@@ -74,6 +74,8 @@ interface CourseData {
   ownedCourses: { key: CourseKey; label: string }[];
   activeCourseKey: CourseKey;
   portalToken: string;
+  /** Candado hasta el día antes del camp: se ve todo, no se entra. */
+  courseLock?: { unlocksOn: string; campName: string | null } | null;
 }
 
 // Pre-Course sub-group icon map. Keys are pc_section_id values.
@@ -478,6 +480,21 @@ export function CourseTab({ data }: { data: CourseData }) {
         </div>
       )}
 
+      {/* CANDADO hasta el día antes del camp (Marcelo 2026-09-17): todo lo
+          que sigue se ve, pero no se abre. El Pre-Course de arriba sí. */}
+      {data.courseLock && (
+        <div className="rounded-lg p-4 flex items-start gap-3" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.35)' }}>
+          <Lock size={22} strokeWidth={1.75} className="shrink-0 mt-0.5" style={{ color: '#00D2FF' }} />
+          <div>
+            <p className="text-[12px] font-mono uppercase tracking-[0.16em]" style={{ color: '#00D2FF' }}>Locked until your camp</p>
+            <p className="text-[15px] font-bold mt-1 leading-snug" style={{ color: '#F7F9FA' }}>
+              Everything below unlocks on {new Date(`${data.courseLock.unlocksOn}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })}, one day before {data.courseLock.campName ? `your ${data.courseLock.campName}` : 'your camp'}.
+            </p>
+            <p className="text-[13px] mt-1 leading-snug" style={{ color: 'rgba(247,249,250,.75)' }}>Until then, the Pre-Course above is your work: it is what your camp builds on.</p>
+          </div>
+        </div>
+      )}
+      <div aria-disabled={!!data.courseLock} style={data.courseLock ? { pointerEvents: 'none', opacity: 0.55, filter: 'grayscale(0.3)' } : undefined}>
       {/* SHARED ONBOARDING (e.g. WB onboarding shown to YB students) */}
       {sharedOnboardingLessons.length > 0 && activeCourse.key !== 'blue_belt' && (
         <div className="space-y-3 pt-2">
@@ -681,6 +698,7 @@ export function CourseTab({ data }: { data: CourseData }) {
           )
         }
       />
+      </div>
 
       {/* Footer */}
       {data.totalCompleted === data.totalLessons && data.totalLessons > 0 && (

@@ -55,7 +55,7 @@ function Piece({ p, canTrack }: { p?: PieceRow; canTrack: boolean }) {
 }
 
 /** Juego (drills_missions type='game'): imagen + regla + medida, para jugarlo en el agua. */
-function Game({ p }: { p?: PieceRow }) {
+function Game({ p, portal }: { p?: PieceRow; portal?: string }) {
   if (!p) return null;
   const md = (p.description_md ?? '').replace(/^## The game\s*/m, '').trim();
   return (
@@ -63,6 +63,12 @@ function Game({ p }: { p?: PieceRow }) {
       <p style={{ ...MONO, color: '#00D2FF' }}>Play it · in the water</p>
       <p className="text-[20px] leading-[1.05] uppercase mt-1" style={{ fontWeight: 900, letterSpacing: '-0.01em', color: '#F7F9FA' }}>{p.title}</p>
       <div className="mt-2 text-[14px] leading-[1.45] tss-game-body" style={{ color: 'rgba(247,249,250,.92)' }}><MarkdownContent markdown={md} /></div>
+      {/* Al flujo de Let's Play (plan → surf → evaluate) con este juego como foco (Marcelo 2026-09-17). */}
+      {portal && (
+        <a href={`${portal}?tab=sequence&seq=THREE-CIRCLES&mode=step_focus&focus=${p.id}`} className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-[5px] text-[13px] font-black uppercase no-underline" style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
+          Play it in Let&apos;s Play
+        </a>
+      )}
     </div>
   );
 }
@@ -171,7 +177,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                 )}
                 <p className="mt-3" style={{ ...MONO, color: MUTED }}>Feel it · on land</p>
                 {m.feel.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
-                {(m.play ?? []).map((id) => <Game key={id} p={pieces[id]} />)}
+                {(m.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={portal} />)}
                 <a href={`${portal}?tab=course&lesson=${m.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {m.lessonLabel}</a>
               </Acc>
             ))}
@@ -209,7 +215,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
             </Card>
             <Card title="Feel it · on land and on the skate" id="feel">
               {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
-              {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} />)}
+              {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={portal} />)}
               <a href={`${portal}?tab=course&lesson=${cur.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
             </Card>
           </>
@@ -258,7 +264,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                 <div className="tss-timing mt-3"><div><h3>The rule</h3><p style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 700, lineHeight: 1.35 }}>{cur.game.rule}</p></div></div>
                 <p className="text-[14px] mt-3 leading-[1.45]" style={{ color: MUTED }}>{cur.game.how}</p>
                 {/* El juego general de los Tres Círculos (Marcelo 2026-09-17): pocket y espuma con todas las herramientas. */}
-                {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} />)}
+                {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={portal} />)}
                 <a href={`${portal}?tab=course&lesson=${cur.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
               </Card>
             )}

@@ -2,6 +2,8 @@
 // Marcelo (2026-09-09): Think + Feel, sin Do; la ola lleva juego; colores del
 // lenguaje desde acá. Lo ve quien tiene Yellow o Blue (la lección YB-FND-01
 // vive en yb_onboarding, compartida con Blue).
+import { getCourseLocks } from '@/lib/portal/course-lock';
+import { CourseLockedScreen } from '@/components/portal/CourseLockedScreen';
 import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -27,6 +29,13 @@ export default async function CirclesPage({ params }: { params: Promise<{ token:
   if (!student) notFound();
   const owns = COURSE_OWNER_IDS.has(student.id) || !!(student as any).course_access_yellow || !!(student as any).course_access_blue;
   if (!owns) notFound();
+  // Candado hasta el día antes del camp: si TODO lo que da acceso (yellow/blue) está trabado.
+  if (!COURSE_OWNER_IDS.has(student.id)) {
+    const locks = await getCourseLocks(student.id);
+    const keys = ['yellow_belt', 'blue_belt'].filter((k) => !!(student as any)[`course_access_${k.split('_')[0]}`]);
+    const open = keys.some((k) => !locks[k]);
+    if (!open && keys.length > 0) { const l = locks[keys[0]]; return <CourseLockedScreen token={token} unlocksOn={l.unlocksOn} campName={l.campName} what="The Three Circles of Power" />; }
+  }
 
   const drillIds = CIRCLES.flatMap((c) => [...(c.feel ?? []), ...(c.play ?? []), ...(c.moves ?? []).flatMap((m) => [...m.feel, ...(m.play ?? [])])]);
   const [{ data: pieceRows }, access, { data: videoRow }] = await Promise.all([

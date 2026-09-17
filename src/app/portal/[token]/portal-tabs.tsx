@@ -182,7 +182,10 @@ interface PortalData {
     activeCourseKey: any;
     portalToken: string;
     activeCourseBelt: string;
+    courseLock?: { unlocksOn: string; campName: string | null } | null;
   };
+  /** El curso activo está con candado hasta el día antes del camp. */
+  courseLocked?: boolean;
   myCoach?: {
     coach: {
       id: string;
@@ -984,6 +987,16 @@ export function PortalTabs({
                 If you are booked on a camp, your course activates when you enrol.
               </p>
             </div>
+          ) : data.courseLocked && data.courseData?.courseLock ? (
+            // Candado hasta el día antes del camp (Marcelo 2026-09-17).
+            <div className="text-center py-16 px-6">
+              <Lock className="mx-auto mb-4 text-[var(--tss-cyan)]" size={56} strokeWidth={1.5} />
+              <h2 className="text-xl font-bold mb-2 text-white">Let&apos;s Play opens with your course</h2>
+              <p className="text-white/70 mb-2">
+                Your course unlocks on <strong className="text-white">{new Date(`${data.courseData.courseLock.unlocksOn}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' })}</strong>, one day before {data.courseData.courseLock.campName ? `your ${data.courseData.courseLock.campName}` : 'your camp'}.
+              </p>
+              <p className="text-sm text-white/40">Until then, work through the Pre-Course in Course.</p>
+            </div>
           ) : data.canTrack === false ? (
             // Curso sí, membresía no (2026-09-08): el curso trae 3 meses de
             // Let's Play; al vencer, acá se renueva. Los drills se siguen
@@ -1322,7 +1335,7 @@ function HomeTab({
           {/* Sin curso ni membresía (solo libro / lead) no hay camino que
               entrenar: "Your next move" apuntaba a Let's Play, que está
               cerrado (Marcelo 2026-09-17, caso Gabriel). */}
-          {data.canTrack !== false && (coachFocus || data.nextMove) && (
+          {data.canTrack !== false && !data.courseLocked && (coachFocus || data.nextMove) && (
             <div>
               <h1 className="text-[36px] mb-3" style={{ ...H_BIG, color: '#F7F9FA' }}>Your next move</h1>
               {/* Una sola cosa en el Home; la lista completa vive en Let's Play.

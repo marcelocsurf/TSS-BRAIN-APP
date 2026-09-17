@@ -2,6 +2,8 @@
 // Piloto (Marcelo 2026-09-09): solo las secuencias registradas en
 // src/lib/sequence-pages. Lee lecciones y piezas de la base; la config trae
 // lo que todavía no existe como dato (resultado, criterios aprobados, tablero).
+import { getCourseLocks } from '@/lib/portal/course-lock';
+import { CourseLockedScreen } from '@/components/portal/CourseLockedScreen';
 import { sequenceSide } from '@/lib/constants/learning-blocks';
 import { isGoofy, boardFlip } from '@/lib/stance';
 import { notFound } from 'next/navigation';
@@ -49,6 +51,11 @@ export default async function SequencePageRoute({ params, searchParams }: { para
   const course = COURSES.find((c) => c.key === cfg.courseKey);
   const owns = COURSE_OWNER_IDS.has((student as any).id) || !!(course && (student as any)[course.accessColumn]);
   if (!owns) notFound();
+  // Candado hasta el día antes del camp (Marcelo 2026-09-17).
+  if (!COURSE_OWNER_IDS.has((student as any).id) && course) {
+    const lock = (await getCourseLocks((student as any).id))[course.key];
+    if (lock) return <CourseLockedScreen token={token} unlocksOn={lock.unlocksOn} campName={lock.campName} what={cfg.title} />;
+  }
 
   const [{ data: lessonRows }, { data: pieceRows }, access, { data: videoRow }, { data: seqRating }, { data: stepRatings }] = await Promise.all([
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),

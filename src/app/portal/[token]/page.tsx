@@ -1,3 +1,4 @@
+import { getCourseLocks } from '@/lib/portal/course-lock';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { type BeltLevel } from '@/lib/constants/belts';
 import { notFound, redirect } from 'next/navigation';
@@ -164,6 +165,12 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   // (auto_on_camp_enrol), así que nadie que esté entrenando pierde nada.
   const hasAnyCourse = ownedCourses.length > 0;
 
+  // Candado hasta el día antes del camp (Marcelo 2026-09-17): el curso que
+  // vino por inscripción se ve completo pero cerrado; el Pre-Course y el
+  // libro quedan abiertos. Ver src/lib/portal/course-lock.ts.
+  const courseLocks = isOwner ? {} : await getCourseLocks(student.id);
+  const activeLock = activeCourse ? courseLocks[activeCourse.key] ?? null : null;
+
   // Build course data
   const courseData = {
     lessons: courseCatalog.lessons,
@@ -179,6 +186,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     activeCourseKey: activeCourse?.key ?? 'white_belt',
     portalToken: token,
     activeCourseBelt: activeCourse?.belt ?? 'white',
+    courseLock: activeLock ? { unlocksOn: activeLock.unlocksOn, campName: activeLock.campName } : null,
   };
 
   // Validate initialTab against allowed tab values
@@ -225,7 +233,8 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           nextMove: await getNextMove(token, activeCourse?.belt ?? 'white'),
           // El curso es aprender, la membresía es entrenar: los links al curso
           // solo salen para quien lo tiene.
-          ownedBelts: ownedCourses.map((c) => c.key),
+          ownedBelts: ownedCourses.filter((c) => !courseLocks[c.key]).map((c) => c.key),
+          courseLocked: !!activeLock,
           // El plan guardado antes del agua, si hay uno abierto (Marcelo 2026-09-10).
           openSession: await getOpenSession(token),
           tasks: await getTasks(token),

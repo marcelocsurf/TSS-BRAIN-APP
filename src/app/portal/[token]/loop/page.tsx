@@ -1,6 +1,8 @@
 // ═══ /portal/[token]/loop — The Infinite Circle, el curso del lenguaje ═══
 // Marcelo (2026-09-09): teórico, en dos lados (frontside / backside), con el
 // código de colores; se estudia antes de las secuencias #8-#13.
+import { getCourseLocks } from '@/lib/portal/course-lock';
+import { CourseLockedScreen } from '@/components/portal/CourseLockedScreen';
 import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -27,6 +29,10 @@ export default async function LoopPage({ params }: { params: Promise<{ token: st
   if (!student) notFound();
   const owns = COURSE_OWNER_IDS.has((student as any).id) || !!(student as any)[blue.accessColumn];
   if (!owns) notFound();
+  if (!COURSE_OWNER_IDS.has((student as any).id)) {
+    const lock = (await getCourseLocks((student as any).id))[blue.key];
+    if (lock) return <CourseLockedScreen token={token} unlocksOn={lock.unlocksOn} campName={lock.campName} what="The Infinite Circle" />;
+  }
 
   const [{ data: videoRow }, { data: loopLesson }] = await Promise.all([
     // Convención: video en Library (kind video) con título que empieza por "BB-LOOP".
