@@ -65,6 +65,7 @@ import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
+import { topicsForBelt } from '@/lib/sequence-pages/topics';
 import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
 import {
   listSpacesByToken, listBookingsForDayByToken, createBookingByToken, cancelBookingByToken,
@@ -1294,6 +1295,31 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     );
                   })}
                 </div>
+                {/* Temas de teoría del día (Marcelo 2026-09-17): Tres Círculos,
+                    Infinite Circle y los temas del curso de Blue. Van en
+                    service_plans.topics y el alumno los ve en "Next class". */}
+                {(() => {
+                  const topics = topicsForBelt(belt);
+                  const chosen = new Set(plan.topics ?? []);
+                  const toggle = (id: string) => { const n = new Set(chosen); if (n.has(id)) n.delete(id); else n.add(id); commitPlanField('topics', n.size ? Array.from(n) : null); };
+                  return (
+                    <div className="mt-3">
+                      <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Theory today · optional</p>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {topics.map((t) => {
+                          const on = chosen.has(t.id);
+                          return (
+                            <button key={t.id} type="button" aria-pressed={on} onClick={() => toggle(t.id)}
+                              className="px-3 py-1.5 rounded-full text-[11px] font-semibold border"
+                              style={on ? { background: '#00A8CC', borderColor: '#00A8CC', color: '#F7F9FA' } : { background: '#fff', borderColor: '#d1d5db', color: '#061C2B' }}>
+                              {t.title}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
                 {groupSeq && (
                   <div className="space-y-2 mt-2">
                     {students.map((st) => {

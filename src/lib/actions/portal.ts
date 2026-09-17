@@ -9,6 +9,7 @@ import { BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
 import { getMaterialsForStudent } from '@/lib/constants/student-materials';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { topicById } from '@/lib/sequence-pages/topics';
 
 // ─── Get comprehensive student data for the portal ───
 
@@ -375,6 +376,15 @@ export async function getStudentPortalData(token: string) {
         (blocksByCamp[session.camp_instance_id] ??= []).push(b);
       }
     }
+    // Temas de teoría del día que eligió el coach (service_plans.topics).
+    const topicsBySession = new Map<string, string[]>();
+    if (nextSessionIds.length > 0) {
+      const { data: planRows } = await admin
+        .from('service_plans')
+        .select('camp_session_id, topics')
+        .in('camp_session_id', nextSessionIds);
+      for (const r of planRows ?? []) if (Array.isArray(r.topics) && r.topics.length) topicsBySession.set(r.camp_session_id, r.topics);
+    }
     for (const [campId, sess] of nextSessionByCamp.entries()) {
       // El plan del coach en el idioma de las secuencias (Marcelo 2026-09-17).
       // Cada bloque del día se resuelve a su secuencia: por step_ids (plan
@@ -395,11 +405,16 @@ export async function getStudentPortalData(token: string) {
         plans.push({ sequenceId: cfg.id, number: cfg.number, title: cfg.title, label: sequenceDisplayName(cfg), kind: cfg.kind ?? 'sequence', focus: txt.startsWith('Focus: ') ? txt.slice(7).split(' · ').map((x) => x.trim()).filter(Boolean) : [], notes: b.notes_pre ?? null });
       }
       const plan = plans[0] ?? null;
+      const topics = (topicsBySession.get(sess.id) ?? [])
+        .map((id: string) => topicById(id))
+        .filter(Boolean)
+        .map((t) => ({ id: t!.id, title: t!.title, href: t!.href }));
       upcomingCampPreview[campId] = {
         next_session: sess,
         blocks: blocksByCamp[campId] ?? [],
         plan,
         plans,
+        topics,
       };
     }
   }

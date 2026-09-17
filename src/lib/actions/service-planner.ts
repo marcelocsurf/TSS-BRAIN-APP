@@ -64,6 +64,8 @@ export interface ServicePlanData {
     warm_up_custom: string | null;
     mental_hack: string | null;
     notes_general: string | null;
+    // Temas de teoría del día (topics.ts): circles, loop, lesson:<id>.
+    topics: string[] | null;
     // Class-day logistics (M133): what time class starts, which beach, and
     // whether the coach needs transport (drives the coordinator's transport
     // board + the team's 7-day agenda).
@@ -778,6 +780,7 @@ export async function getServicePlan(
       warm_up_custom: plan?.warm_up_custom ?? null,
       mental_hack: plan?.mental_hack ?? null,
       notes_general: plan?.notes_general ?? null,
+      topics: plan?.topics ?? null,
       class_start_time: plan?.class_start_time ?? null,
       surf_venue: plan?.surf_venue ?? null,
       transport_needed: plan?.transport_needed ?? null,
@@ -862,6 +865,7 @@ export async function saveServicePlanHeader(
     warm_up_custom: string | null;
     mental_hack: string | null;
     notes_general: string | null;
+    topics: string[] | null;
     class_start_time: string | null;
     surf_venue: string | null;
     transport_needed: boolean | null;

@@ -1976,7 +1976,8 @@ function HomeTab({
             {/* El plan del coach para la próxima sesión, en el idioma del curso
                 (Marcelo 2026-09-17): la secuencia y el foco, con Study it y
                 Rehearse it para llegar preparado. Solo si el coach ya lo armó. */}
-            {Array.isArray(c.plans) && c.plans.length > 0 && (() => {
+            {((Array.isArray(c.plans) && c.plans.length > 0) || (Array.isArray(c.topics) && c.topics.length > 0)) && (() => {
+              const plansArr: any[] = Array.isArray(c.plans) ? c.plans : [];
               const sd = c.next_session?.session_date as string | undefined;
               const when = (() => {
                 if (!sd) return 'Next session';
@@ -1984,12 +1985,12 @@ function HomeTab({
                 const diff = Math.round((d.getTime() - t.getTime()) / 86400000);
                 return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'long' });
               })();
-              const many = c.plans.length > 1;
+              const many = plansArr.length > 1;
               return (
                 <div className="mt-3 rounded-lg p-3.5" style={{ background: T_NAVY, border: '1px solid rgba(0,210,255,.35)' }}>
-                  <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{when}{c.coach?.display_name ? ` with ${c.coach.display_name}` : ''} · you will work on{many ? ` · ${c.plans.length} sequences, one at a time` : ''}</p>
+                  <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{when}{c.coach?.display_name ? ` with ${c.coach.display_name}` : ''}{plansArr.length ? ' · you will work on' : ' · theory'}{many ? ` · ${plansArr.length} sequences, one at a time` : ''}</p>
                   <div className={many ? 'mt-1 space-y-2.5' : 'mt-1'}>
-                    {c.plans.map((pl: any, i: number) => {
+                    {plansArr.map((pl: any, i: number) => {
                       const seqHref = `/portal/${data.token}/seq/${pl.sequenceId}`;
                       return (
                         <div key={pl.sequenceId} className={many ? 'rounded-[5px] px-3 py-2.5' : ''} style={many ? { background: 'rgba(247,249,250,.06)', border: '1px solid rgba(247,249,250,.14)' } : undefined}>
@@ -2006,6 +2007,19 @@ function HomeTab({
                       );
                     })}
                   </div>
+                  {Array.isArray(c.topics) && c.topics.length > 0 && (
+                    <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(247,249,250,.14)' }}>
+                      <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Also today · theory</p>
+                      <div className="mt-1.5 space-y-1.5">
+                        {c.topics.map((t: any) => (
+                          <div key={t.id} className="flex items-center justify-between gap-3">
+                            <p className="text-[14px] font-bold leading-snug" style={{ color: '#F7F9FA' }}>{t.title}</p>
+                            <a href={`/portal/${data.token}${t.href}`} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.45)', fontFamily: ARCHIVO }}>Study it</a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })()}
