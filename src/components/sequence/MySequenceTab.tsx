@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getMySequence, type SequenceData, type SequenceItem } from '@/lib/actions/sequence';
 import { StarRating } from './StarRating';
 import { StepDetailView } from './StepDetailView';
-import { Dumbbell, Waves, Target, Play, Crosshair } from 'lucide-react';
+import { Dumbbell, Waves, Target } from 'lucide-react';
 import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constants/belt-theme';
 import { sequencePrefix } from '@/lib/constants/learning-blocks';
 import { sequencePageFor } from '@/lib/sequence-pages';
@@ -606,18 +606,18 @@ function BlockSection({
             <button
               type="button"
               onClick={() => { setPicking(false); onTrain!({ sequenceId: blockId!, mode: 'sequence_run' }); }}
-              className="h-11 rounded-[5px] text-[12px] font-black uppercase inline-flex items-center justify-center gap-1.5 active:scale-[0.98]"
-              style={{ background: CYAN, color: INK, letterSpacing: '0.03em' }}
+              className="min-h-[44px] px-3 py-2 rounded-[5px] text-[12px] font-black uppercase leading-tight text-center active:scale-[0.98]"
+              style={{ background: CYAN, color: INK, letterSpacing: '0.04em', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}
             >
-              <Play size={13} strokeWidth={2.25} /> Run the whole sequence
+              Run the whole sequence
             </button>
             <button
               type="button"
               onClick={() => setPicking((p) => !p)}
-              className="h-11 rounded-[5px] text-[12px] font-bold inline-flex items-center justify-center gap-1.5 border-[1.5px] active:scale-[0.98]"
-              style={picking ? { background: 'rgba(255,209,102,.28)', borderColor: '#FFD166', color: '#10263B' } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: INK }}
+              className="min-h-[44px] px-3 py-2 rounded-[5px] text-[12px] font-black uppercase leading-tight text-center border-[1.5px] active:scale-[0.98]"
+              style={{ ...(picking ? { background: 'rgba(255,209,102,.28)', borderColor: '#FFD166', color: '#10263B' } : { background: '#F7F9FA', borderColor: INK, color: INK }), letterSpacing: '0.04em', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}
             >
-              <Crosshair size={13} strokeWidth={2.25} /> {picking ? 'Cancel' : 'Work on one step'}
+              {picking ? 'Cancel' : 'Work on one step'}
             </button>
           </div>
           {picking && (
