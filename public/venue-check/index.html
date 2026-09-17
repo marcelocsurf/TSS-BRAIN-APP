@@ -244,8 +244,12 @@ function drawTide(){
   document.getElementById('tideOut').innerHTML=`${t.name}<small>${t.detail}</small>`;
   S.tidePos=pos; S.tide=t.short; save(); checkReady();
 }
-tideRange.value=S.tidePos??25; drawTide();
+tideRange.value=Number.isFinite(+S.tidePos)?S.tidePos:25; drawTide();
 tideRange.addEventListener('input',drawTide);
+// Redraw after load and when the page comes back from the cache (bfcache /
+// iframe re-show): Chrome restores the slider position without our text.
+window.addEventListener('load',drawTide);
+window.addEventListener('pageshow',drawTide);
 const spotInput=document.getElementById('spotName');
 spotInput.value=S.spot||'';
 spotInput.addEventListener('input',()=>{ S.spot=spotInput.value.trim().slice(0,40); save(); });
