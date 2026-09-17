@@ -1319,7 +1319,10 @@ function HomeTab({
         )}
       </div>
 
-          {(coachFocus || data.nextMove) && (
+          {/* Sin curso ni membresía (solo libro / lead) no hay camino que
+              entrenar: "Your next move" apuntaba a Let's Play, que está
+              cerrado (Marcelo 2026-09-17, caso Gabriel). */}
+          {data.canTrack !== false && (coachFocus || data.nextMove) && (
             <div>
               <h1 className="text-[36px] mb-3" style={{ ...H_BIG, color: '#F7F9FA' }}>Your next move</h1>
               {/* Una sola cosa en el Home; la lista completa vive en Let's Play.
