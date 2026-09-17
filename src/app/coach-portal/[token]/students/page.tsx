@@ -73,6 +73,12 @@ export default async function CoachStudentsListPage({ params }: Props) {
                       ? `Last session ${new Date(s.last_session_date).toLocaleDateString()}`
                       : 'No sessions yet'}
                   </p>
+                  {/* Seguimiento de regreso: última vez en el portal y qué vio. */}
+                  <p className="text-[11px]" style={{ color: s.portal_last_seen_at ? '#00A8CC' : '#8A96A0' }}>
+                    {s.portal_last_seen_at
+                      ? `Portal ${daysAgo(s.portal_last_seen_at)} · ${screenLabel(s.portal_last_screen)} · ${s.portal_visit_count} visit${s.portal_visit_count === 1 ? '' : 's'}`
+                      : 'Never opened the portal'}
+                  </p>
                 </div>
                 <div className="text-right shrink-0 flex flex-col items-end gap-1">
                   {s.has_safety_flag && (
@@ -100,4 +106,15 @@ export default async function CoachStudentsListPage({ params }: Props) {
       </div>
     </div>
   );
+}
+
+function daysAgo(iso: string): string {
+  const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  return d <= 0 ? 'today' : d === 1 ? 'yesterday' : `${d}d ago`;
+}
+function screenLabel(s: string | null): string {
+  if (!s) return '—';
+  const map: Record<string, string> = { home: 'Home', course: 'Course', sequence: "Let's Play", lineup: 'The Lineup', sessions: 'Sessions', feedback: 'Feedback', glossary: 'Glossary', 'my-coach': 'My coach' };
+  const [tab, ...rest] = s.split(' · ');
+  return [map[tab] ?? tab, ...rest].join(' · ');
 }

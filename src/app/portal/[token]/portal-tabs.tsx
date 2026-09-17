@@ -68,6 +68,7 @@ import { BELT_MIRROR, cueForSession } from '@/lib/constants/mental-cues';
 import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
+  touchPortalVisit,
 } from '@/lib/actions/portal';
 import { RoleSwitch } from '@/components/shared/RoleSwitch';
 import {
@@ -696,6 +697,8 @@ export function PortalTabs({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => { savePortalState(data.token, { tab: activeTab }); }, [activeTab, data.token]);
+  // Registro de visita: última vez, última pantalla (seguimiento de regreso).
+  useEffect(() => { void touchPortalVisit(data.token, activeTab); }, [activeTab, data.token]);
   // El paso que hay que abrir en Let's Play. Arranca con el del deep-link y
   // también lo setea el Home al tocar "tu próximo movimiento": mandar al
   // alumno por ?tab=sequence&step= no funcionaba con los dos parámetros

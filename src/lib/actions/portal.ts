@@ -849,3 +849,45 @@ export async function getMyCoachData(portalToken: string) {
     },
   };
 }
+
+// ═══ Visitas al portal (Marcelo 2026-09-17: "¿cómo sé si alguien viene de
+// regreso y qué fue lo último que vio?") ═══
+// El portal llama esto al abrir y al cambiar de pestaña o lección. Se guarda
+// en la ficha (última vez, última pantalla, cuántas visitas) y en
+// portal_visits (historial). Una "visita" nueva = más de 30 min desde la
+// anterior; dentro de esos 30 min solo se actualiza la pantalla.
+export async function touchPortalVisit(
+  portalToken: string,
+  screen: string,
+  detail?: string | null,
+): Promise<void> {
+  try {
+    const admin = createAdminClient();
+    const { data: st } = await admin
+      .from('students')
+      .select('id, portal_last_seen_at, portal_visit_count')
+      .eq('portal_token', portalToken)
+      .maybeSingle();
+    if (!st) return;
+    const last = st.portal_last_seen_at ? new Date(st.portal_last_seen_at).getTime() : 0;
+    const fresh = Date.now() - last > 30 * 60_000;
+    const label = detail ? `${screen} · ${detail}` : screen;
+    await admin
+      .from('students')
+      .update({
+        portal_last_seen_at: new Date().toISOString(),
+        portal_last_screen: label.slice(0, 120),
+        ...(fresh ? { portal_visit_count: (st.portal_visit_count ?? 0) + 1 } : {}),
+      })
+      .eq('id', st.id);
+    if (fresh) {
+      await admin.from('portal_visits').insert({ student_id: st.id, screen: screen.slice(0, 40), detail: detail?.slice(0, 120) ?? null });
+    } else {
+      // Misma visita: dejar la pantalla más reciente en el último registro.
+      const { data: lastRow } = await admin.from('portal_visits').select('id').eq('student_id', st.id).order('seen_at', { ascending: false }).limit(1).maybeSingle();
+      if (lastRow) await admin.from('portal_visits').update({ screen: screen.slice(0, 40), detail: detail?.slice(0, 120) ?? null }).eq('id', lastRow.id);
+    }
+  } catch {
+    /* nunca rompe el portal */
+  }
+}

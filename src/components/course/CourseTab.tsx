@@ -5,6 +5,7 @@ import { LessonViewer } from './LessonViewer';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { CourseFinalQuiz } from './CourseFinalQuiz';
 import { getSectionIntros, type SectionIntro } from '@/lib/actions/section-intros';
+import { touchPortalVisit } from '@/lib/actions/portal';
 import { toEmbedUrl } from '@/lib/utils/video-embed';
 import { CourseSwitcher } from './CourseSwitcher';
 import { COURSES, SHARED_PRE_COURSE_SECTIONS, type CourseKey } from '@/lib/constants/courses';
@@ -149,6 +150,7 @@ export function CourseTab({ data }: { data: CourseData }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => { savePortalState(data.portalToken, { lesson: openLessonId }); }, [openLessonId, data.portalToken]);
+  useEffect(() => { if (openLessonId) void touchPortalVisit(data.portalToken, 'course', openLessonId); }, [openLessonId, data.portalToken]);
 
   // Access gate
   if (!data.hasAccess) {

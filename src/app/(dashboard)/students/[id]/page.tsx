@@ -478,12 +478,14 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         </div>
         {/* ═══ LO QUE SE USA SIEMPRE (auditoría ficha 2026-09-11): cinta · agua ·
             next focus · última sesión, y las tres acciones. El resto, en pestañas. ═══ */}
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-5 gap-2">
           {[
             ['Belt', belt?.en ?? student.belt_level],
             ['In the water', (student as any).ocean_level ? String((student as any).ocean_level).replace(/_/g, ' ') : '—'],
             ['Working on', (student as any).next_recommended_focus || '—'],
             ['Last session', (student as any).last_session_date ? new Date((student as any).last_session_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'],
+            // Seguimiento de regreso (2026-09-17): última vez en el portal y qué vio.
+            ['In the portal', (student as any).portal_last_seen_at ? `${new Date((student as any).portal_last_seen_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${String((student as any).portal_last_screen ?? '')} · ${(student as any).portal_visit_count ?? 0} visits` : 'never'],
           ].map(([k, v]) => (
             <div key={k as string} className="rounded-[5px] bg-[#F7F9FA] px-3 py-2 min-w-0">
               <p className="text-[12px] uppercase tracking-wider text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{k}</p>

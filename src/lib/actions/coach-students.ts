@@ -27,6 +27,9 @@ export type CoachStudentSummary = {
   last_session_mission: string | null;
   last_session_status: string | null;
   has_safety_flag: boolean; // injuries / allergies / medical_notes present
+  portal_last_seen_at: string | null;
+  portal_last_screen: string | null;
+  portal_visit_count: number;
 };
 
 async function resolveCoachByToken(token: string): Promise<{
@@ -96,6 +99,7 @@ export async function listCoachStudents(
       `id, first_name, last_name, photo_url, belt_level, swim_level,
        waiver_signed, intake_completed_at,
        last_session_date, last_session_mission, last_session_status,
+       portal_last_seen_at, portal_last_screen, portal_visit_count,
        allergies, injuries, medical_notes`,
     )
     .in('id', Array.from(accessible))
@@ -114,6 +118,9 @@ export async function listCoachStudents(
     last_session_mission: s.last_session_mission,
     last_session_status: s.last_session_status,
     has_safety_flag: !!(s.allergies || s.injuries || s.medical_notes),
+    portal_last_seen_at: (s as any).portal_last_seen_at ?? null,
+    portal_last_screen: (s as any).portal_last_screen ?? null,
+    portal_visit_count: (s as any).portal_visit_count ?? 0,
   }));
 }
 
