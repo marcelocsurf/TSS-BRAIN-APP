@@ -41,7 +41,7 @@ function daysSince(iso: string | null | undefined): number | null {
   if (!iso) return null;
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86400000));
 }
-export const RETURNING_AFTER_DAYS = 14;
+const RETURNING_AFTER_DAYS = 14;
 
 async function resolveCoachByToken(token: string): Promise<{
   id: string;
