@@ -81,6 +81,8 @@ export function SequencePage({
   const go = (t: Tab) => { setTab(t); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   // Solo la dirección del dibujo cambia con el stance; el nombre de la maniobra no.
   const waveDirection = flip ? 'left' : 'right';
+  // Pasos en orden: si la config agrupa técnicas alternativas (turtle/duck), un grupo = un paso.
+  const stepGroups: { ids: string[]; title: string; note?: string }[] = cfg.stepGroups ?? cfg.stepIds.map((id) => ({ ids: [id], title: shortLesson(lessons[id]?.title ?? id) }));
   const stripStep = (t: string) => t.replace(/^\d+ · /, '').replace(/ · .*$/, '');
   const shortLesson = (t: string) => t.replace(/ Operationalized at Blue Belt/, '');
 
@@ -106,10 +108,13 @@ export function SequencePage({
               {/* Sin tablero (secuencias de entrada): las lecciones, en orden, con su título. */}
               <h2 className="tss-section-title mb-1">The steps, in order</h2>
               <ol className="m-0 p-0 list-none">
-                {cfg.stepIds.map((id, i) => (
-                  <li key={id} className="flex items-center gap-3 py-2.5" style={{ borderTop: `1px solid ${BORDER}` }}>
+                {stepGroups.map((g, i) => (
+                  <li key={g.ids.join('+')} className="flex items-start gap-3 py-2.5" style={{ borderTop: `1px solid ${BORDER}` }}>
                     <Num n={i + 1} />
-                    <span className="text-[15px] font-semibold" style={{ color: INK }}>{shortLesson(lessons[id]?.title ?? id)}</span>
+                    <div className="min-w-0">
+                      <span className="text-[15px] font-semibold block" style={{ color: INK }}>{g.title}</span>
+                      {g.note && <span className="text-[13px] block mt-0.5 leading-snug" style={{ color: '#55666E' }}>{g.note}</span>}
+                    </div>
                   </li>
                 ))}
               </ol>
@@ -165,13 +170,19 @@ export function SequencePage({
             </Card>
             {cfg.kind === 'entry' && (
               <Card title="02 · The steps · what each one is">
-                {cfg.stepIds.map((id, i) => lessons[id] ? (
-                  <div key={id} className="py-2.5" style={{ borderTop: i ? `1px solid ${BORDER}` : undefined }}>
-                    <p className="text-[15px] font-bold m-0" style={{ color: INK }}><span className="mr-2" style={{ ...MONO, fontSize: 13 }}>{String(i + 1).padStart(2, '0')}</span>{lessons[id].title}</p>
-                    {lessons[id].whatIs && <p className="text-[14px] mt-1 mb-0 leading-snug" style={{ color: INK }}>{lessons[id].whatIs.split('\n').find((l) => l.trim() && !l.startsWith('#') && !l.startsWith('|') && !l.startsWith('>'))?.replace(/\*\*/g, '')}</p>}
-                    <Go href={`${portal}?tab=course&lesson=${id}`} small>Read the full lesson in the course</Go>
+                {stepGroups.map((g, i) => (
+                  <div key={g.ids.join('+')} className="py-2.5" style={{ borderTop: i ? `1px solid ${BORDER}` : undefined }}>
+                    <p className="text-[15px] font-bold m-0" style={{ color: INK }}><span className="mr-2" style={{ ...MONO, fontSize: 13 }}>{String(i + 1).padStart(2, '0')}</span>{g.title}</p>
+                    {g.note && <p className="text-[13px] mt-1 mb-0 leading-snug" style={{ color: '#55666E' }}>{g.note}</p>}
+                    {g.ids.map((id) => lessons[id] ? (
+                      <div key={id} className={g.ids.length > 1 ? 'mt-2 pl-3' : ''} style={g.ids.length > 1 ? { borderLeft: `2px solid ${BORDER}` } : undefined}>
+                        {g.ids.length > 1 && <p className="text-[14px] font-bold m-0" style={{ color: INK }}>{lessons[id].title}</p>}
+                        {lessons[id].whatIs && <p className="text-[14px] mt-1 mb-0 leading-snug" style={{ color: INK }}>{lessons[id].whatIs.split('\n').find((l) => l.trim() && !l.startsWith('#') && !l.startsWith('|') && !l.startsWith('>'))?.replace(/\*\*/g, '')}</p>}
+                        <Go href={`${portal}?tab=course&lesson=${id}`} small>Read the full lesson in the course</Go>
+                      </div>
+                    ) : null)}
                   </div>
-                ) : null)}
+                ))}
               </Card>
             )}
             {cfg.think.feet && (

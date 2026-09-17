@@ -61,6 +61,9 @@ export interface SequencePageConfig {
   number: number;
   title: string;
   stepIds: string[];
+  /** Agrupa pasos de stepIds que son UN paso con técnicas alternativas (p. ej.
+   *  turtle roll / duck dive según la tabla). Si falta, cada id es un paso. */
+  stepGroups?: { ids: string[]; title: string; note?: string }[];
   /** Preparación de cada sesión, fuera de la secuencia (p. ej. Venue Analysis y Warm Up en White #1). */
   prep?: { lessonId: string; label: string; note?: string }[];
   think: {

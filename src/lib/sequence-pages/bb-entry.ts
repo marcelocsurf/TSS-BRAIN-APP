@@ -18,6 +18,15 @@ export const BB_NAV: SequencePageConfig = {
   number: 0,
   title: 'Navigate the Ocean',
   stepIds: ['STP-010', 'STP-027', 'STP-024', 'YB-FND-03'],
+  // Marcelo (2026-09-17): turtle roll y duck dive son dos técnicas para el
+  // MISMO paso (pasar la ola sin soltar la tabla); cuál usar depende de la
+  // tabla: turtle en tablas con volumen, difíciles de hundir; duck dive en
+  // tablas chicas. No son dos pasos en orden.
+  stepGroups: [
+    { ids: ['STP-010'], title: 'Get on Your Board / Find Sweet Spot' },
+    { ids: ['STP-027'], title: 'Paddling Speeds 1–2–3–4' },
+    { ids: ['STP-024', 'YB-FND-03'], title: 'Pass the wave · turtle roll or duck dive', note: 'Two techniques, one goal: get through the wave without letting go of the board. Turtle roll on a board with more volume, hard to sink. Duck dive on a smaller board you can push under. Pick the one for the board under you.' },
+  ],
   think: {
     whatIs: {
       headline: 'Getting out the back on your own: the board ready under you, the right paddling speed, and a way through every wave that comes at you.',
@@ -54,7 +63,7 @@ The board never gets between you and the wave; the body is on the ocean side.`,
   details: [
     { key: 'sweet', title: 'Sweet spot', symptom: 'The board fights you: nose diving or tail sinking, paddling that goes nowhere.', indicators: [{ ok: 'The board floats level on each mount; you find the spot without thinking.', no: 'Nose under or tail under; every stroke is a fight.', fix: 'Slide until the nose barely floats.' }], deeper: { label: 'Get on Your Board / Find Sweet Spot', lessonId: 'STP-010', drillId: 'DRL-WB-010-A', missionId: 'MIS-WB-010' } },
     { key: 'speed', title: 'Paddling speed', symptom: 'You sprint everything and arrive empty, or cruise everything and arrive late.', indicators: [{ ok: 'You choose the speed for the moment: V1–V2 to travel, V3–V4 only when a wave asks.', no: 'One speed for everything; no energy left for the take-off.', fix: 'Name the speed before you paddle.' }], deeper: { label: 'Paddling Speeds 1–2–3–4', lessonId: 'STP-027', drillId: 'DRL-YB-027', missionId: 'MIS-YB-027' } },
-    { key: 'foam', title: 'Turtle roll · duck dive', symptom: 'You lose the board, or you are pushed back to where you started.', indicators: [{ ok: 'Five rolls (or three duck dives) in a row without losing the board or your ground; you recover to paddling each time.', no: 'The board goes; the foam takes you back to the beach.', fix: 'Nose against the foam, roll about one metre before it. Shortboard: sink the nose, drive the tail.' }], deeper: { label: 'Turtle Roll · Duck Dive', lessonId: 'STP-024', drillId: 'DRL-WB-024-A', missionId: 'MIS-WB-024' } },
+    { key: 'foam', title: 'Turtle roll or duck dive', symptom: 'You lose the board, or you are pushed back to where you started.', indicators: [{ ok: 'Five rolls (or three duck dives) in a row without losing the board or your ground; you recover to paddling each time.', no: 'The board goes; the foam takes you back to the beach.', fix: 'Nose against the foam, roll about one metre before it. Shortboard: sink the nose, drive the tail.' }], deeper: { label: 'Turtle Roll · Duck Dive', lessonId: 'STP-024', drillId: 'DRL-WB-024-A', missionId: 'MIS-WB-024' } },
   ],
   review: { howItFeels: 'It feels like the ocean stops being an obstacle: you go where you decided, at the speed you decided, and every wave on the way out is something you pass through, not something that happens to you.' },
 };
