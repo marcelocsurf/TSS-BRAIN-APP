@@ -1,3 +1,4 @@
+import { COACH_EVAL_DIMENSIONS, COACH_EVAL_MAX, COACH_EVAL_BELTS } from '@/lib/constants/coach-eval';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentCoach } from '@/lib/actions/sessions';
@@ -664,6 +665,25 @@ export default async function CoachProfilePage({ params }: Props) {
                     </span>
                   )}
                 </div>
+                {ev.instrument === 'v2' ? (
+                  <div className="mb-3">
+                    <div className="grid grid-cols-5 gap-2">
+                      {COACH_EVAL_DIMENSIONS.map((d) => {
+                        const v = (ev as any)[d.key] as number | null;
+                        return (
+                          <div key={d.key} className="text-center">
+                            <p className={`text-base font-bold ${v === 3 ? 'text-green-600' : v === 2 ? 'text-[var(--tss-navy)]' : v === 1 ? 'text-amber-500' : 'text-red-500'}`}>{v ?? '—'}<span className="text-xs text-[#B8B1A0]">/3</span></p>
+                            <p className="text-[10px] text-[#55666E] leading-tight">{d.title}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-[#55666E] mt-2">
+                      Total <span className="font-semibold text-[var(--tss-navy)]">{COACH_EVAL_DIMENSIONS.reduce((a, d) => a + (((ev as any)[d.key] as number | null) ?? 0), 0)} / {COACH_EVAL_MAX}</span>
+                      {ev.recommended_max_belt ? <> · ready to teach up to <span className="font-semibold text-[var(--tss-navy)]">{COACH_EVAL_BELTS.find((b) => b.value === ev.recommended_max_belt)?.label ?? ev.recommended_max_belt}</span></> : null}
+                    </p>
+                  </div>
+                ) : (
                 <div className="grid grid-cols-5 gap-2 mb-3">
                   {[
                     { label: 'Technical', value: ev.technical_score },
@@ -691,6 +711,7 @@ export default async function CoachProfilePage({ params }: Props) {
                     </div>
                   ))}
                 </div>
+                )}
                 {ev.strengths && (
                   <p className="text-xs text-[#55666E] mb-1">
                     <span className="font-medium">Strengths:</span> {ev.strengths}

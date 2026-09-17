@@ -21,7 +21,7 @@ export default async function CoachEvaluatePage({ params }: Props) {
 
   const { data: coach } = await supabase
     .from('coaches')
-    .select('id, display_name, role')
+    .select('id, display_name, role, max_belt_permission')
     .eq('id', id)
     .single();
 
@@ -39,6 +39,7 @@ export default async function CoachEvaluatePage({ params }: Props) {
         coachId={coach.id}
         coachName={coach.display_name}
         evaluatorId={currentCoach.id}
+        currentMaxBelt={(coach as any).max_belt_permission ?? null}
       />
     </div>
   );
