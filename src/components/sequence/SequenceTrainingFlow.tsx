@@ -535,7 +535,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
               <span>Not sure? <b>Read the spot</b> first (optional)</span>
               <ChevronDown size={14} className="text-[#55666E]" />
             </summary>
-            <div className="mt-2"><VenueScoutLauncher variant="light" /></div>
+            <div className="mt-2"><VenueScoutLauncher variant="light" belt={_studentBelt} /></div>
           </details>
         </div>
 

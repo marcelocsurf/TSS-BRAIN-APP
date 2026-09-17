@@ -6,7 +6,8 @@ import { MapPin, X } from 'lucide-react';
 // Opens the standalone Venue Scout tool (public/venue-scout/index.html) in a
 // full-screen in-app overlay. Pure tool — it keeps its own state on the device
 // (localStorage); nothing is saved server-side. Used by coach + athlete.
-export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 'dark' }) {
+export function VenueScoutLauncher({ variant = 'light', belt, ocean }: { variant?: 'light' | 'dark'; /** Cinta del alumno: el Venue Check muestra el consejo de seguridad por nivel (Marcelo 2026-09-17). */ belt?: string | null; ocean?: string | null }) {
+  const lvl = belt ? `&belt=${encodeURIComponent(belt)}${ocean ? `&ocean=${encodeURIComponent(ocean)}` : ''}` : '';
   // null = closed · 'check' = Venue Check sencillo · 'scout' = análisis
   // avanzado (entreno O competencia: el tool pregunta el objetivo ADENTRO —
   // el modo por URL solo distingue 'game', verificado 2026-09-01: tener dos
@@ -80,7 +81,7 @@ export function VenueScoutLauncher({ variant = 'light' }: { variant?: 'light' | 
             <X size={15} /> Close
           </button>
           <iframe
-            src={open === 'check' ? `/venue-check/index.html?src=portal&v=${Date.now()}` : `/venue-scout/index.html?mode=${open === 'game' ? 'game' : 'free'}&src=portal&v=${Date.now()}`}
+            src={open === 'check' ? `/venue-check/index.html?src=portal${lvl}&v=${Date.now()}` : `/venue-scout/index.html?mode=${open === 'game' ? 'game' : 'free'}&src=portal&v=${Date.now()}`}
             title="Venue tool" className="flex-1 w-full h-full border-0" />
         </div>
       )}

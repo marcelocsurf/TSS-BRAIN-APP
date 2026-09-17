@@ -1066,7 +1066,7 @@ export function PortalTabs({
                     title="Analyze your surfing"
                     subtitle="Load your clip, compare it to the Surf Sequence models, and draw lines & angles frame by frame."
                   />
-                  <VenueScoutLauncher variant="light" />
+                  <VenueScoutLauncher variant="light" belt={student.belt_level} ocean={(student as any).ocean_level ?? null} />
                   {/* Breathwork: fuera por ahora (Marcelo 2026-09-16, 'no está bien hecha todavía'). */}
                 </div>
               </div>

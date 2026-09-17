@@ -1,74 +1,118 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Venue Check · The Surf Sequence</title>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#061C2B;--paper:#F7F9FA;--cyan:#00D2FF;--cyantx:#0090B0;--foam:#06D6A0;--coral:#FF6B6B;--gold:#FFD166;--sand:#F2E3C6}
+/* v10.1 · portal mode (Marcelo 2026-09-17): ink + panel + cyan, Archivo 900 titles,
+   Plex Mono labels, 8 px cards / 5 px controls. All copy in English. */
+:root{--ink:#061C2B;--panel:#0A2532;--paper:#F7F9FA;--cyan:#00D2FF;--cyan2:#00A8CC;--tide:#B8C7D1;--foam:#39D98A;--coral:#FF6B6B;--gold:#FFD166;--sand:#E9E2D2;--line:rgba(0,210,255,.25)}
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
 body{background:var(--ink);font-family:'Archivo',sans-serif;color:var(--paper);display:flex;flex-direction:column;touch-action:none}
-.lbl{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.14em;font-weight:500}
-.disp{font-variation-settings:'wdth' 125;font-weight:800;text-transform:uppercase;line-height:1.06}
+.lbl{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.18em;font-weight:500}
+.disp{font-variation-settings:'wdth' 125;font-weight:900;text-transform:uppercase;line-height:1.02}
 .screen{flex:1;display:flex;flex-direction:column;overflow:hidden}
 .scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:18px 16px 30px;touch-action:pan-y}
-.chip{border:1.5px solid rgba(247,249,250,.18);background:rgba(247,249,250,.05);color:var(--paper);border-radius:999px;padding:12px 18px;font-size:14px;font-weight:600;cursor:pointer;user-select:none}
+.wrap{max-width:560px}
+.chip{border:1px solid var(--line);background:var(--panel);color:var(--paper);border-radius:5px;padding:11px 16px;font-size:14px;font-weight:700;cursor:pointer;user-select:none}
 .chip.on{background:var(--cyan);color:var(--ink);border-color:var(--cyan)}
-.chiprow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 20px}
-.btn{display:block;width:100%;border:none;border-radius:999px;padding:16px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:500;cursor:pointer}
+.chiprow{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 18px}
+.field{width:100%;border:1px solid var(--line);background:var(--panel);color:var(--paper);border-radius:5px;padding:12px 14px;font-size:15px;font-family:'Archivo',sans-serif;margin:8px 0 18px;outline:none}
+.field:focus{border-color:var(--cyan)}
+.btn{display:block;width:100%;border:none;border-radius:5px;padding:15px;font-family:'Archivo',sans-serif;font-variation-settings:'wdth' 125;font-weight:900;text-transform:uppercase;letter-spacing:.04em;font-size:14px;cursor:pointer}
 .btn.cyan{background:var(--cyan);color:var(--ink)}
-.btn.ghost{background:transparent;border:1.5px solid rgba(247,249,250,.25);color:var(--paper)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--paper)}
 .btn:disabled{opacity:.35}
+/* tide line */
+.tidebox{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px 8px;margin:8px 0 18px}
+#tideSvg{display:block;width:100%;height:68px}
+#tideRange{-webkit-appearance:none;appearance:none;width:100%;height:24px;background:transparent;margin:-46px 0 0;position:relative;z-index:2;cursor:pointer}
+#tideRange::-webkit-slider-runnable-track{height:2px;background:transparent}
+#tideRange::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--cyan);border:3px solid var(--ink);box-shadow:0 0 0 2px var(--cyan);margin-top:-10px}
+#tideRange::-moz-range-track{height:2px;background:transparent}
+#tideRange::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--cyan);border:3px solid var(--ink);box-shadow:0 0 0 2px var(--cyan)}
+.tidelabels{display:flex;justify-content:space-between;font-size:8px;color:var(--tide);margin-top:14px}
+.tideout{font-size:14px;font-weight:700;color:var(--paper);margin-top:8px;line-height:1.35}
+.tideout small{display:block;font-weight:400;color:var(--tide);font-size:12px}
+/* level advice */
+.advice{background:rgba(255,209,102,.12);border:1px solid var(--gold);border-radius:8px;padding:12px 14px;margin:0 0 18px;font-size:13px;line-height:1.45;color:var(--paper)}
+.advice b{color:var(--gold);display:block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
+.advice.ok{background:rgba(57,217,138,.1);border-color:var(--foam)} .advice.ok b{color:var(--foam)}
 /* map */
 #mapWrap{flex:1;position:relative;overflow:hidden;background:#0B2233}
 #map{width:100%;height:100%;display:block;touch-action:none}
+/* guided steps */
+#stepbar{background:var(--panel);border-top:1px solid var(--line);padding:8px 10px 6px}
+#steps{display:flex;gap:4px}
+.st{flex:1;border-radius:5px;padding:6px 4px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--tide);border:1px solid transparent;cursor:pointer}
+.st b{display:block;font-size:12px;color:var(--paper);font-family:'Archivo',sans-serif;font-weight:900;letter-spacing:0;text-transform:none;margin-bottom:1px}
+.st.on{background:rgba(0,210,255,.14);border-color:var(--cyan);color:var(--cyan)}
+.st.on b{color:var(--cyan)}
+.st.done b::after{content:' ✓';color:var(--foam)}
+#stepnav{display:flex;gap:8px;align-items:center;margin-top:8px}
+#stepnav .lead{flex:1;font-size:12px;color:var(--paper);line-height:1.35}
+#stepnav .lead b{color:var(--cyan)}
 /* toolbar */
-#tools{display:flex;gap:6px;overflow-x:auto;padding:10px 10px calc(10px + env(safe-area-inset-bottom));background:#04141F;border-top:1px solid rgba(247,249,250,.08);-webkit-overflow-scrolling:touch;touch-action:pan-x}
-.tool{flex:0 0 auto;min-width:64px;border:1.5px solid rgba(247,249,250,.12);background:rgba(247,249,250,.04);color:var(--paper);border-radius:14px;padding:8px 6px;text-align:center;cursor:pointer;user-select:none}
+#tools{display:flex;gap:6px;overflow-x:auto;padding:8px 10px calc(10px + env(safe-area-inset-bottom));background:#04141F;border-top:1px solid rgba(247,249,250,.08);-webkit-overflow-scrolling:touch;touch-action:pan-x}
+.tool{flex:0 0 auto;min-width:66px;border:1px solid rgba(247,249,250,.12);background:var(--panel);color:var(--paper);border-radius:5px;padding:8px 6px;text-align:center;cursor:pointer;user-select:none}
 .tool .ico{font-size:20px;line-height:1;display:block}
-.tool .t{font-size:9px;margin-top:4px;display:block;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:rgba(247,249,250,.7)}
+.tool .t{font-size:9px;margin-top:4px;display:block;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--tide)}
 .tool.on{background:rgba(0,210,255,.18);border-color:var(--cyan)}
 .tool.on .t{color:var(--cyan)}
 .tool.danger.on{background:rgba(255,107,107,.18);border-color:var(--coral)}
 .tool.danger.on .t{color:var(--coral)}
-#hint{position:absolute;left:50%;transform:translateX(-50%);top:10px;background:rgba(4,20,31,.85);backdrop-filter:blur(4px);border:1px solid rgba(0,210,255,.3);color:var(--paper);border-radius:999px;padding:7px 16px;font-size:12px;max-width:92%;text-align:center;pointer-events:none;transition:opacity .3s}
-#topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;background:#04141F}
-#topbar .mini{font-size:10px;color:rgba(247,249,250,.55)}
-.tb{border:1.5px solid rgba(247,249,250,.2);background:transparent;color:var(--paper);border-radius:10px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer}
+#hint{position:absolute;left:50%;transform:translateX(-50%);top:10px;background:rgba(6,28,43,.9);backdrop-filter:blur(4px);border:1px solid var(--line);color:var(--paper);border-radius:5px;padding:7px 14px;font-size:12px;max-width:92%;text-align:center;pointer-events:none;transition:opacity .3s}
+#topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;background:#04141F;border-bottom:1px solid rgba(247,249,250,.08)}
+#topbar .mini{font-size:10px;color:var(--tide);letter-spacing:.14em}
+.tb{border:1px solid var(--line);background:transparent;color:var(--paper);border-radius:5px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Archivo',sans-serif}
 .tb.cyan{background:var(--cyan);color:var(--ink);border-color:var(--cyan)}
 /* hazard menu */
-#hazMenu{position:absolute;z-index:40;background:#0F2A3D;border:1px solid rgba(0,210,255,.3);border-radius:16px;padding:8px;display:none;flex-direction:column;gap:4px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
-#hazMenu button{display:flex;align-items:center;gap:8px;background:transparent;border:none;color:var(--paper);font-size:14px;padding:9px 14px;border-radius:10px;cursor:pointer;font-family:'Archivo'}
+#hazMenu{position:absolute;z-index:40;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px;display:none;flex-direction:column;gap:2px;box-shadow:0 8px 30px rgba(0,0,0,.5)}
+#hazMenu button{display:flex;align-items:center;gap:8px;background:transparent;border:none;color:var(--paper);font-size:14px;padding:9px 14px;border-radius:5px;cursor:pointer;font-family:'Archivo',sans-serif;font-weight:700}
 #hazMenu button:active{background:rgba(0,210,255,.15)}
 /* summary */
-.sumcard{background:rgba(247,249,250,.05);border:1px solid rgba(247,249,250,.1);border-radius:18px;padding:14px;margin-bottom:12px}
+.sumcard{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px}
 .sumcard h4{font-size:10px;margin-bottom:8px}
 .sumcard li{font-size:13px;line-height:1.5;color:rgba(247,249,250,.88);margin-left:16px;margin-bottom:5px}
-.gono{flex:1;border-radius:16px;padding:14px;text-align:center;font-weight:800;font-size:15px;border:2px solid transparent;cursor:pointer;background:rgba(247,249,250,.06);color:rgba(247,249,250,.6)}
-.gono.go.on{background:rgba(6,214,160,.2);border-color:var(--foam);color:var(--foam)}
+.gono{flex:1;border-radius:5px;padding:14px;text-align:center;font-weight:900;font-size:14px;border:1px solid rgba(247,249,250,.15);cursor:pointer;background:transparent;color:var(--tide);font-variation-settings:'wdth' 125;text-transform:uppercase}
+.gono.go.on{background:rgba(57,217,138,.2);border-color:var(--foam);color:var(--foam)}
 .gono.mod.on{background:rgba(255,209,102,.18);border-color:var(--gold);color:var(--gold)}
 .gono.no.on{background:rgba(255,107,107,.2);border-color:var(--coral);color:var(--coral)}
 </style>
 </head>
 <body>
 
-<!-- ═══ PASO 1 · CONDICIONES ═══ -->
+<!-- ═══ STEP 1 · CONDITIONS ═══ -->
 <div class="screen" id="s1">
-  <div class="scroll">
-    <img src="/venue-scout/tss-wave.png?v=1" alt="The Surf Sequence" style="height:56px;width:auto;margin-bottom:6px;display:block;filter:drop-shadow(0 0 18px rgba(0,210,255,.3))"><p class="disp" style="font-size:15px;color:var(--paper);margin-bottom:10px">The Surf Sequence</p>
-    <p class="lbl" style="font-size:10px;color:var(--cyan)">Venue Check</p>
-    <h1 class="disp" style="font-size:30px;margin-top:8px">Check the<br>venue</h1>
-    <p style="font-size:13px;color:rgba(247,249,250,.55);margin-top:8px">3 taps y al mapa. Todo lo demás se dibuja ahí.</p>
+  <div class="scroll"><div class="wrap">
+    <img src="/venue-scout/tss-wave.png?v=1" alt="The Surf Sequence" style="height:52px;width:auto;margin-bottom:6px;display:block">
+    <p class="lbl" style="font-size:10px;color:var(--cyan);margin-top:10px">Venue Check · Step 1 of 3</p>
+    <h1 class="disp" style="font-size:32px;margin-top:6px">Where and<br>what size</h1>
+    <p style="font-size:14px;color:var(--tide);margin-top:8px;line-height:1.45">Name the spot and read the conditions. Then the map guides you: land references, hazards, your zone.</p>
 
-    <p class="lbl" style="font-size:10px;color:var(--cyantx);margin-top:24px">¿Para quién?</p>
+    <p class="lbl" style="font-size:10px;color:var(--cyan);margin-top:24px">Who is this for?</p>
     <div class="chiprow" id="modeRow">
-      <div class="chip on" data-v="personal">🏄 Personal · training</div>
-      <div class="chip" data-v="group">👥 Grupo · coach dirige</div>
+      <div class="chip on" data-v="personal">🏄 Me · training</div>
+      <div class="chip" data-v="group">👥 Group · coach leads</div>
     </div>
 
-    <p class="lbl" style="font-size:10px;color:var(--cyantx)">Tamaño de olas</p>
+    <div id="lvlBlock">
+      <p class="lbl" style="font-size:10px;color:var(--cyan)">Your level</p>
+      <div class="chiprow" id="lvlRow">
+        <div class="chip" data-v="white">White · first waves</div>
+        <div class="chip" data-v="novice">Novice · not yet self-sufficient</div>
+        <div class="chip" data-v="self">Self-sufficient</div>
+      </div>
+    </div>
+    <div id="advice" class="advice" style="display:none"></div>
+
+    <p class="lbl" style="font-size:10px;color:var(--cyan)">Where</p>
+    <input class="field" id="spotName" placeholder="Spot name (El Zonte, La Bocana…)" maxlength="40" autocomplete="off">
+
+    <p class="lbl" style="font-size:10px;color:var(--cyan)">Wave size</p>
     <div class="chiprow" id="waveRow">
       <div class="chip" data-v="1-2 ft">1–2 ft</div>
       <div class="chip" data-v="2-4 ft">2–4 ft</div>
@@ -76,132 +120,226 @@ body{background:var(--ink);font-family:'Archivo',sans-serif;color:var(--paper);d
       <div class="chip" data-v="6+ ft">6+ ft</div>
     </div>
 
-    <p class="lbl" style="font-size:10px;color:var(--cyantx)">Marea</p>
-    <div class="chiprow" id="tideRow">
-      <div class="chip" data-v="subiendo">⬆ Subiendo</div>
-      <div class="chip" data-v="bajando">⬇ Bajando</div>
-      <div class="chip" data-v="llena">Llena</div>
-      <div class="chip" data-v="seca">Seca</div>
+    <p class="lbl" style="font-size:10px;color:var(--cyan)">Tide · drag the dot to where the tide is now</p>
+    <div class="tidebox">
+      <svg id="tideSvg" viewBox="0 0 100 34" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <input type="range" id="tideRange" min="0" max="100" value="25" step="1" aria-label="Tide stage">
+      <div class="tidelabels lbl"><span>Low</span><span>Rising</span><span>High</span><span>Dropping</span><span>Low</span></div>
+      <p id="tideOut" class="tideout"></p>
     </div>
 
-    <p class="lbl" style="font-size:10px;color:var(--cyantx)">Viento</p>
+    <p class="lbl" style="font-size:10px;color:var(--cyan)">Wind</p>
     <div class="chiprow" id="windRow">
-      <div class="chip" data-v="sin viento">Sin viento</div>
+      <div class="chip" data-v="no wind">No wind</div>
       <div class="chip" data-v="offshore">Offshore</div>
       <div class="chip" data-v="onshore">Onshore</div>
     </div>
 
-    <button class="btn cyan" id="toMap" disabled>Ir al mapa →</button>
-  </div>
+    <button class="btn cyan" id="toMap" disabled>Go to the map →</button>
+  </div></div>
 </div>
 
-<!-- ═══ PASO 2 · MAPA ═══ -->
+<!-- ═══ STEP 2 · MAP (guided) ═══ -->
 <div class="screen" id="s2" style="display:none">
   <div id="topbar">
     <button class="tb" id="backTo1">←</button>
     <span class="mini lbl" id="condMini"></span>
     <button class="tb" id="timerBtn">⏱ Timer</button>
-    <button class="tb cyan" id="toSummary">Listo ✓</button>
+    <button class="tb cyan" id="toSummary">Done ✓</button>
   </div>
   <div id="mapWrap">
     <svg id="map" preserveAspectRatio="none"></svg>
-    <div id="hint">Elegí una herramienta abajo y tocá el mapa</div>
+    <div id="hint">Pick a tool below and tap the map</div>
     <div id="hazMenu"></div>
+  </div>
+  <div id="stepbar">
+    <div id="steps"></div>
+    <div id="stepnav">
+      <p class="lead" id="stepLead"></p>
+      <button class="tb cyan" id="stepNext">Next →</button>
+    </div>
   </div>
   <div id="tools"></div>
 </div>
 
-<!-- ═══ PASO 3 · RESUMEN ═══ -->
+<!-- ═══ STEP 3 · SUMMARY ═══ -->
 <div class="screen" id="s3" style="display:none">
   <div id="topbar">
-    <button class="tb" id="backTo2">← Mapa</button>
+    <button class="tb" id="backTo2">← Map</button>
     <span class="mini lbl" id="sumTitle"></span>
-    <button class="tb" id="restart">Nuevo</button>
+    <button class="tb" id="restart">New</button>
   </div>
   <div class="scroll" id="sumBody"></div>
 </div>
 
 <script>
 'use strict';
-// ─── estado ───
-const LS='tss-venue-check-v1';
-let S={mode:'personal',wave:null,tide:null,wind:null,outY:null,inY:null,photo:null,timerEnd:null,els:[],go:null};
-try{const p=JSON.parse(localStorage.getItem(LS)||'null'); if(p&&p.els){ if(p.insideY!=null&&p.inY==null) p.inY=p.insideY; S={...S,...p}; }}catch(e){}
+// ─── state ───
+const LS='tss-venue-check-v2';
+const EMPTY={mode:'personal',spot:'',wave:null,tide:null,tidePos:25,level:null,wind:null,outY:null,inY:null,photo:null,timerEnd:null,els:[],go:null,stage:0};
+let S={...EMPTY};
+try{const p=JSON.parse(localStorage.getItem(LS)||'null'); if(p&&p.els){ S={...S,...p}; }}catch(e){}
 const save=()=>localStorage.setItem(LS,JSON.stringify(S));
 const uid=()=>Math.random().toString(36).slice(2,9);
 
-// ─── paso 1 ───
-function bindRow(id,key,multi){
+// ─── step 1 ───
+function bindRow(id,key){
   const row=document.getElementById(id);
   row.addEventListener('click',e=>{
     const c=e.target.closest('.chip'); if(!c) return;
     row.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
     c.classList.add('on'); S[key]=c.dataset.v; save(); checkReady();
   });
-  // restore
   if(S[key]) row.querySelectorAll('.chip').forEach(x=>x.classList.toggle('on',x.dataset.v===S[key]));
 }
-bindRow('modeRow','mode'); bindRow('waveRow','wave'); bindRow('tideRow','tide'); bindRow('windRow','wind');
+bindRow('modeRow','mode'); bindRow('waveRow','wave'); bindRow('windRow','wind');
+
+// ── level → safety advice (Marcelo 2026-09-17). From the portal the belt
+//    comes in the URL (?belt=white_belt&ocean=…); standalone, the chips ask.
+const Q=new URLSearchParams(location.search);
+(function(){
+  const b=(Q.get('belt')||'').toLowerCase(), o=(Q.get('ocean')||'').toLowerCase();
+  if(b){
+    S.level = b.startsWith('white') ? 'white' : (o==='semi_autonomous'||o==='autonomous'||o==='advanced') ? 'self' : b.startsWith('yellow') ? 'novice' : 'self';
+    document.getElementById('lvlBlock').style.display='none';
+  }
+})();
+const ADVICE={
+  white:['White Belt · go with a coach','At White you always go in with a coach or someone who can guide you, watch you and assist you. Never alone — not even in small waves.'],
+  novice:['Novice · not alone yet','Until you are self-sufficient in the water (L3), you do not go in without a partner or a coach. The check is yours; the decision is shared.'],
+  self:['Self-sufficient · your call','You can read the spot and decide on your own. Still: land reference, exit, and a limit line before every session.'],
+};
+function paintAdvice(){
+  const a=document.getElementById('advice'); const l=S.level;
+  if(!l){ a.style.display='none'; return; }
+  a.className='advice'+(l==='self'?' ok':''); a.style.display='block';
+  a.innerHTML=`<b>${ADVICE[l][0]}</b>${ADVICE[l][1]}`;
+}
+bindRow('lvlRow','level'); paintAdvice();
+document.getElementById('lvlRow').addEventListener('click',paintAdvice);
+
+// ── tide line: the dot's position on the cycle = the exact stage ──
+// One full cycle low → high → low ≈ 12 h 25 min. Position 0 = low, 50 = high.
+const CYCLE_H=12.42;
+function tideInfo(pos){
+  const p=pos/100, h=p*CYCLE_H;
+  const hoursSince=(p<.5?h:h-CYCLE_H/2), toNext=(CYCLE_H/2)-hoursSince;
+  const fmt=x=>{ const m=Math.round(x*60); return Math.floor(m/60)+'h'+String(m%60).padStart(2,'0'); };
+  let name, third;
+  if(pos<=4||pos>=96) name='Low tide';
+  else if(pos>=46&&pos<=54) name='High tide';
+  else name = p<.5 ? 'Rising' : 'Dropping';
+  const frac=hoursSince/(CYCLE_H/2);
+  third = frac<.33?'first third · slow water':frac<.67?'middle third · fastest water, most push':'last third · slowing down';
+  const detail = name==='Low tide'?'turning — the slowest water of the cycle': name==='High tide'?'turning — deepest water, then it drops':`${fmt(hoursSince)} after ${p<.5?'low':'high'} · ${fmt(toNext)} to ${p<.5?'high':'low'} · ${third}`;
+  return {name,detail,short:name+(name==='Rising'||name==='Dropping'?' · '+fmt(hoursSince)+' after '+(p<.5?'low':'high'):'')};
+}
+const tideRange=document.getElementById('tideRange');
+function drawTide(){
+  const pos=+tideRange.value; const svgT=document.getElementById('tideSvg');
+  let d='M0 30'; for(let x=0;x<=100;x+=2){ const y=30-24*(0.5-0.5*Math.cos(x/100*2*Math.PI)); d+=` L${x} ${y.toFixed(2)}`; }
+  const y=30-24*(0.5-0.5*Math.cos(pos/100*2*Math.PI));
+  svgT.innerHTML=`<path d="${d} L100 34 L0 34 Z" fill="rgba(0,210,255,.10)"/><path d="${d}" fill="none" stroke="#00D2FF" stroke-width="1.2" vector-effect="non-scaling-stroke"/><line x1="${pos}" y1="${y.toFixed(2)}" x2="${pos}" y2="34" stroke="#7DE3FF" stroke-width="1" stroke-dasharray="2 2" vector-effect="non-scaling-stroke"/>`;
+  const t=tideInfo(pos);
+  document.getElementById('tideOut').innerHTML=`${t.name}<small>${t.detail}</small>`;
+  S.tidePos=pos; S.tide=t.short; save(); checkReady();
+}
+tideRange.value=S.tidePos??25; drawTide();
+tideRange.addEventListener('input',drawTide);
+const spotInput=document.getElementById('spotName');
+spotInput.value=S.spot||'';
+spotInput.addEventListener('input',()=>{ S.spot=spotInput.value.trim().slice(0,40); save(); });
 function checkReady(){ document.getElementById('toMap').disabled=!(S.wave&&S.tide&&S.wind); }
 checkReady();
 
-const show=id=>{['s1','s2','s3'].forEach(x=>document.getElementById(x).style.display=x===id?'flex':'none'); if(id==='s2'){resize();render();} if(id==='s3') renderSummary();};
+const show=id=>{['s1','s2','s3'].forEach(x=>document.getElementById(x).style.display=x===id?'flex':'none'); if(id==='s2'){resize();render();setStage(S.stage||0);} if(id==='s3') renderSummary();};
 document.getElementById('toMap').onclick=()=>show('s2');
 document.getElementById('backTo1').onclick=()=>show('s1');
 document.getElementById('toSummary').onclick=()=>show('s3');
 document.getElementById('backTo2').onclick=()=>show('s2');
-document.getElementById('restart').onclick=()=>{ if(confirm('¿Empezar un análisis nuevo? Se borra el actual.')){S={mode:'personal',wave:null,tide:null,wind:null,outY:null,inY:null,photo:null,timerEnd:null,els:[],go:null};save();location.reload();} };
+document.getElementById('restart').onclick=()=>{ if(confirm('Start a new check? The current one will be erased.')){S={...EMPTY};save();location.reload();} };
 
-// ─── herramientas ───
+// ─── tools ───
 const TOOLS=[
-  {id:'entry',ico:'🟢',t:'Entrada',hint:'Tocá DONDE ENTRÁS al agua'},
-  {id:'exit',ico:'🔴',t:'Salida',hint:'Tocá DONDE SALÍS del agua'},
-  {id:'peak',ico:'⭐',t:'Pico',hint:'Tocá donde revientan las olas (podés poner varios)'},
-  {id:'whitewater',ico:'🫧',t:'Espuma',hint:'Tocá donde está la zona de white water (espuma)'},
-  {id:'current',ico:'➡️',t:'Corriente',hint:'DIBUJÁ con el dedo la corriente — la flecha sigue tu trazo'},
-  {id:'out',ico:'🌊',t:'Outside',hint:'Tocá la altura donde empieza el OUTSIDE (línea de afuera)'},
-  {id:'in',ico:'〰️',t:'Inside',hint:'Tocá la altura donde empieza el INSIDE (línea de adentro)'},
-  {id:'photo',ico:'📷',t:'Foto',hint:'Subí una foto real del spot como fondo (opcional)'},
-  {id:'zone',ico:'🎯',t:'Zona',hint:S.mode==='group'?'Tocá donde se ubica EL GRUPO':'Tocá donde te vas a ubicar'},
-  {id:'hazard',ico:'⚠️',t:'Peligro',hint:'Tocá donde está el peligro y elegí cuál'},
-  {id:'ref',ico:'🏠',t:'Ref. tierra',hint:'Tocá tu punto de referencia EN LA PLAYA'},
-  {id:'pen',ico:'✏️',t:'Lápiz',hint:'Dibujá libre lo que quieras señalar'},
-  {id:'erase',ico:'🧽',t:'Borrar',hint:'Tocá cualquier elemento para borrarlo',danger:true},
+  {id:'ref',ico:'📍',t:'Land ref',hint:'Tap your reference point ON THE BEACH (palm tree, tower, red house…)'},
+  {id:'hazard',ico:'⚠️',t:'Hazard',hint:'Tap where the hazard is and pick which one'},
+  {id:'zone',ico:'🎯',t:'Zone',hint:S.mode==='group'?'Tap where THE GROUP will sit':'Tap where you will sit to surf'},
+  {id:'in',ico:'〰️',t:'How far out',hint:'Tap the line you will NOT paddle past — how far out you go today'},
+  {id:'entry',ico:'🟢',t:'Entry',hint:'Tap WHERE YOU GET IN the water'},
+  {id:'exit',ico:'🔴',t:'Exit',hint:'Tap WHERE YOU GET OUT of the water'},
+  {id:'peak',ico:'⭐',t:'Peak',hint:'Tap where the waves break (you can mark several)'},
+  {id:'whitewater',ico:'🫧',t:'Foam',hint:'Tap where the whitewater zone is'},
+  {id:'current',ico:'➡️',t:'Current',hint:'DRAW the current with your finger — the arrow follows your stroke'},
+  {id:'out',ico:'🌊',t:'Outside',hint:'Tap the height where the OUTSIDE starts (the outer line)'},
+  {id:'photo',ico:'📷',t:'Photo',hint:'Upload a real photo of the spot as the background (optional)'},
+  {id:'pen',ico:'✏️',t:'Pen',hint:'Free draw anything you want to point out'},
+  {id:'erase',ico:'🧽',t:'Erase',hint:'Tap any element to erase it',danger:true},
+];
+// Guided order (Marcelo 2026-09-17): the map takes you in order — land references
+// first, then hazards, then your zone (where, by the references, and how far out
+// you go). Everything else is extras.
+const STAGES=[
+  {key:'refs',n:'1',name:'Land refs',tools:['ref','photo'],lead:'Mark <b>at least one reference on land</b> you can see from the water. That is how you know if the current moves you.',done:()=>S.els.some(e=>e.type==='ref')},
+  {key:'haz',n:'2',name:'Hazards',tools:['hazard','current'],lead:'Mark <b>hazards</b>: rocks, crowd, hard bottom, rip. Draw the <b>current</b> if there is one. None? Tap Next.',done:()=>true},
+  {key:'zone',n:'3',name:'Your zone',tools:['zone','in','peak','whitewater'],lead:'Place <b>your zone</b> using the land references, and set <b>how far out</b> you will go today. Peaks and foam help you place it.',done:()=>S.els.some(e=>e.type==='zone')&&S.inY!=null},
+  {key:'extra',n:'4',name:'Extras',tools:['entry','exit','out','pen','erase'],lead:'<b>Entry</b> and <b>exit</b> points, the outside line, free drawing. Then tap <b>Done</b> for your plan.',done:()=>S.els.some(e=>e.type==='entry')&&S.els.some(e=>e.type==='exit')},
 ];
 let tool=null;
 const toolsBar=document.getElementById('tools');
-toolsBar.innerHTML = TOOLS.map(t=>`<div class="tool ${t.danger?'danger':''}" data-id="${t.id}"><span class="ico">${t.ico}</span><span class="t">${t.t}</span></div>`).join('')
- + `<div class="tool" data-id="undo"><span class="ico">↩️</span><span class="t">Deshacer</span></div>`;
+const stepsEl=document.getElementById('steps');
+function setStage(i){
+  S.stage=Math.max(0,Math.min(STAGES.length-1,i)); save();
+  const st=STAGES[S.stage];
+  stepsEl.innerHTML=STAGES.map((s,k)=>`<div class="st ${k===S.stage?'on':''} ${s.done()&&k!==S.stage?'done':''}" data-i="${k}"><b>${s.n}</b>${s.name}</div>`).join('');
+  document.getElementById('stepLead').innerHTML=st.lead;
+  document.getElementById('stepNext').textContent=S.stage===STAGES.length-1?'Done ✓':'Next →';
+  const ids=[...st.tools,'undo'];
+  toolsBar.innerHTML = ids.map(id=>{ if(id==='undo') return `<div class="tool" data-id="undo"><span class="ico">↩️</span><span class="t">Undo</span></div>`; const t=TOOLS.find(x=>x.id===id); return `<div class="tool ${t.danger?'danger':''}" data-id="${t.id}"><span class="ico">${t.ico}</span><span class="t">${t.t}</span></div>`; }).join('');
+  // the first tool of the stage is pre-selected: one tap less
+  tool=st.tools[0];
+  toolsBar.querySelectorAll('.tool').forEach(x=>x.classList.toggle('on',x.dataset.id===tool));
+  hint(TOOLS.find(t=>t.id===tool).hint,true);
+}
+stepsEl.addEventListener('click',e=>{ const el=e.target.closest('.st'); if(el) setStage(+el.dataset.i); });
+document.getElementById('stepNext').addEventListener('click',()=>{
+  const st=STAGES[S.stage];
+  if(!st.done()){
+    const msg=st.key==='refs'?'Mark at least one land reference first':'Place your zone and set how far out you go first';
+    if(st.key==='refs'||st.key==='zone'){ hint(msg+' 👇'); return; }
+    if(st.key==='extra' && !confirm('Entry or exit is missing. Finish anyway?')) return;
+  }
+  if(S.stage===STAGES.length-1) show('s3'); else setStage(S.stage+1);
+});
 toolsBar.addEventListener('click',e=>{
   const el=e.target.closest('.tool'); if(!el) return;
   if(el.dataset.id==='undo'){ undo(); return; }
   tool = tool===el.dataset.id ? null : el.dataset.id;
   toolsBar.querySelectorAll('.tool').forEach(x=>x.classList.toggle('on',x.dataset.id===tool));
   const def=TOOLS.find(t=>t.id===tool);
-  hint(def?def.hint:'Elegí una herramienta abajo y tocá el mapa');
+  hint(def?def.hint:'Pick a tool below and tap the map');
 });
 let hintTimer=null;
 function hint(msg,sticky){ const h=document.getElementById('hint'); h.textContent=msg; h.style.opacity=1; clearTimeout(hintTimer); if(!sticky) hintTimer=setTimeout(()=>h.style.opacity=0,3500); }
+function refreshSteps(){ stepsEl.querySelectorAll('.st').forEach((el,k)=>el.classList.toggle('done',STAGES[k].done()&&k!==S.stage)); }
 
 function undo(){
   if(S.els.length){ S.els.pop(); }
   else if(S.inY!=null){ S.inY=null; }
   else if(S.outY!=null){ S.outY=null; }
-  save(); render(); hint('Deshecho ↩');
+  save(); render(); refreshSteps(); hint('Undone ↩');
 }
 
-// ─── mapa (SVG coordenadas 0-100 x 0-100, y=100 abajo=arena) ───
+// ─── map (SVG coordinates 0-100 x 0-100, y=100 bottom = sand) ───
 const svg=document.getElementById('map');
 let W=0,H=0;
 function resize(){ const r=svg.parentElement.getBoundingClientRect(); W=r.width; H=r.height; svg.setAttribute('viewBox','0 0 100 100'); }
 window.addEventListener('resize',resize);
-const SAND_Y=82; // debajo = playa
+const SAND_Y=82; // below = beach
 
 function esc(x){return String(x).replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
 
 function render(){
   let out='';
-  // agua + arena
   out+=`<defs>
     <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#07354F"/><stop offset="1" stop-color="#0E5A7A"/>
@@ -216,26 +354,24 @@ function render(){
   } else {
     out+=`<rect x="0" y="0" width="100" height="${SAND_Y}" fill="url(#sea)"/>`;
   }
-  // olitas decorativas
   if(!S.photo) for(let i=1;i<4;i++) out+=`<path d="M0 ${SAND_Y-8*i} q 5 -1.4 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0 t 10 0" stroke="rgba(247,249,250,.07)" stroke-width=".5" fill="none"/>`;
   if(!S.photo){
-    out+=`<rect x="0" y="${SAND_Y}" width="100" height="${100-SAND_Y}" fill="#C9A96A"/>`;
-    out+=`<text x="50" y="${SAND_Y+6}" text-anchor="middle" font-size="3.2" fill="rgba(6,28,43,.55)" font-family="IBM Plex Mono" letter-spacing="1">P L A Y A</text>`;
+    out+=`<rect x="0" y="${SAND_Y}" width="100" height="${100-SAND_Y}" fill="#E9E2D2"/>`;
+    out+=`<text x="50" y="${SAND_Y+6}" text-anchor="middle" font-size="3.2" fill="rgba(6,28,43,.55)" font-family="IBM Plex Mono" letter-spacing="1">B E A C H</text>`;
   } else {
-    out+=`<line x1="0" y1="${SAND_Y}" x2="100" y2="${SAND_Y}" stroke="rgba(201,169,106,.9)" stroke-width=".7" stroke-dasharray="3 1.5"/>`;
-    out+=`<text x="50" y="${SAND_Y+5}" text-anchor="middle" font-size="3" fill="#F2E3C6" font-family="IBM Plex Mono" letter-spacing="1">P L A Y A</text>`;
+    out+=`<line x1="0" y1="${SAND_Y}" x2="100" y2="${SAND_Y}" stroke="rgba(233,226,210,.9)" stroke-width=".7" stroke-dasharray="3 1.5"/>`;
+    out+=`<text x="50" y="${SAND_Y+5}" text-anchor="middle" font-size="3" fill="#E9E2D2" font-family="IBM Plex Mono" letter-spacing="1">B E A C H</text>`;
   }
 
-  // líneas outside / inside (independientes)
+  // outside / how-far-out lines (independent)
   if(S.outY!=null){
     out+=`<line x1="0" y1="${S.outY}" x2="100" y2="${S.outY}" stroke="#00D2FF" stroke-width=".6" stroke-dasharray="2.5 1.6"/>`;
     out+=`<text x="2.5" y="${S.outY-1.8}" font-size="3" fill="#00D2FF" font-family="IBM Plex Mono" letter-spacing="1">OUTSIDE</text>`;
   }
   if(S.inY!=null){
-    out+=`<line x1="0" y1="${S.inY}" x2="100" y2="${S.inY}" stroke="#7FE3FF" stroke-width=".6" stroke-dasharray="1.6 1.6"/>`;
-    out+=`<text x="2.5" y="${S.inY+4.3}" font-size="3" fill="#7FE3FF" font-family="IBM Plex Mono" letter-spacing="1">INSIDE</text>`;
+    out+=`<line x1="0" y1="${S.inY}" x2="100" y2="${S.inY}" stroke="#7DE3FF" stroke-width=".6" stroke-dasharray="1.6 1.6"/>`;
+    out+=`<text x="2.5" y="${S.inY+4.3}" font-size="3" fill="#7DE3FF" font-family="IBM Plex Mono" letter-spacing="1">MY LIMIT · NOT PAST HERE</text>`;
   }
-  // elementos
   for(const e of S.els){
     if(e.type==='draw'){
       const d='M'+e.pts.map(p=>p[0]+' '+p[1]).join(' L ');
@@ -245,22 +381,22 @@ function render(){
       const d='M'+e.pts.map(p=>p[0]+' '+p[1]).join(' L ');
       out+=`<path d="${d}" fill="none" stroke="#FFD166" stroke-width="1" stroke-linecap="round" marker-end="url(#arr)" opacity=".92"/>`;
     }
-    if(e.type==='entry') out+=pin(e,'#06D6A0','ENTRADA','▲');
-    if(e.type==='exit') out+=pin(e,'#FF6B6B','SALIDA','▼');
+    if(e.type==='entry') out+=pin(e,'#39D98A','ENTRY','▲');
+    if(e.type==='exit') out+=pin(e,'#FF6B6B','EXIT','▼');
     if(e.type==='peak'){
       const n=S.els.filter(x=>x.type==='peak').indexOf(e)+1;
-      out+=`<g><text x="${e.x}" y="${e.y+1.8}" text-anchor="middle" font-size="6">⭐</text><text x="${e.x}" y="${e.y+6.5}" text-anchor="middle" font-size="2.7" fill="#FFD166" font-family="IBM Plex Mono" font-weight="700">PICO ${n}</text></g>`;
+      out+=`<g><text x="${e.x}" y="${e.y+1.8}" text-anchor="middle" font-size="6">⭐</text><text x="${e.x}" y="${e.y+6.5}" text-anchor="middle" font-size="2.7" fill="#FFD166" font-family="IBM Plex Mono" font-weight="700">PEAK ${n}</text></g>`;
     }
     if(e.type==='whitewater'){
       out+=`<ellipse cx="${e.x}" cy="${e.y}" rx="9" ry="4.5" fill="rgba(247,249,250,.22)" stroke="rgba(247,249,250,.65)" stroke-width=".4" stroke-dasharray="1.2 .9"/>`;
-      out+=`<text x="${e.x}" y="${e.y+.9}" text-anchor="middle" font-size="2.6" fill="#F7F9FA" font-family="IBM Plex Mono" letter-spacing="1">WHITE WATER</text>`;
+      out+=`<text x="${e.x}" y="${e.y+.9}" text-anchor="middle" font-size="2.6" fill="#F7F9FA" font-family="IBM Plex Mono" letter-spacing="1">WHITEWATER</text>`;
     }
     if(e.type==='zone'){
       out+=`<circle cx="${e.x}" cy="${e.y}" r="8" fill="rgba(0,210,255,.14)" stroke="#00D2FF" stroke-width=".5" stroke-dasharray="1.5 1"/>`;
-      out+=`<text x="${e.x}" y="${e.y+1}" text-anchor="middle" font-size="2.8" fill="#00D2FF" font-family="IBM Plex Mono" letter-spacing="1">${S.mode==='group'?'GRUPO':'MI ZONA'}</text>`;
+      out+=`<text x="${e.x}" y="${e.y+1}" text-anchor="middle" font-size="2.8" fill="#00D2FF" font-family="IBM Plex Mono" letter-spacing="1">${S.mode==='group'?'GROUP':'MY ZONE'}</text>`;
     }
     if(e.type==='hazard') out+=`<g><text x="${e.x}" y="${e.y+2}" text-anchor="middle" font-size="5.5">${e.ico}</text><text x="${e.x}" y="${e.y+6.5}" text-anchor="middle" font-size="2.5" fill="#FF9B9B" font-family="IBM Plex Mono">${esc(e.label.toUpperCase())}</text></g>`;
-    if(e.type==='ref') out+=`<g><text x="${e.x}" y="${e.y+2}" text-anchor="middle" font-size="5.5">📍</text><text x="${e.x}" y="${e.y+6.8}" text-anchor="middle" font-size="2.6" fill="#061C2B" font-weight="700">${esc(e.label.toUpperCase())}</text></g>`;
+    if(e.type==='ref') out+=`<g><text x="${e.x}" y="${e.y+2}" text-anchor="middle" font-size="5.5">📍</text><text x="${e.x}" y="${e.y+6.8}" text-anchor="middle" font-size="2.6" fill="#061C2B" font-weight="800">${esc(e.label.toUpperCase())}</text></g>`;
   }
   svg.innerHTML=out;
 }
@@ -268,12 +404,12 @@ function pin(e,color,label,glyph){
   return `<g><circle cx="${e.x}" cy="${e.y}" r="3.4" fill="${color}"/><text x="${e.x}" y="${e.y+1.3}" text-anchor="middle" font-size="3.4" fill="#061C2B" font-weight="800">${glyph}</text><text x="${e.x}" y="${e.y+7}" text-anchor="middle" font-size="2.6" fill="${color}" font-family="IBM Plex Mono" letter-spacing="1">${label}</text></g>`;
 }
 
-// ─── interacción con el mapa ───
+// ─── map interaction ───
 function pt(ev){ const r=svg.getBoundingClientRect(); const t=(ev.touches&&ev.touches[0])||ev; return [ +( (t.clientX-r.left)/r.width*100 ).toFixed(1), +( (t.clientY-r.top)/r.height*100 ).toFixed(1) ]; }
 let drawing=null;
 
 svg.addEventListener('pointerdown',ev=>{
-  if(!tool) { hint('Primero elegí una herramienta abajo 👇'); return; }
+  if(!tool) { hint('Pick a tool below first 👇'); return; }
   ev.preventDefault();
   const [x,y]=pt(ev);
   if(tool==='current'||tool==='pen'){ drawing={tool,pts:[[x,y]]}; svg.setPointerCapture(ev.pointerId); return; }
@@ -288,40 +424,39 @@ svg.addEventListener('pointerup',ev=>{
   const [x,y]=pt(ev);
   if(drawing){
     if(drawing.pts.length>=3){
-      if(drawing.tool==='pen'){ S.els.push({id:uid(),type:'draw',pts:drawing.pts}); hint('Trazo dibujado ✓'); }
-      else { S.els.push({id:uid(),type:'current',pts:drawing.pts}); hint('Corriente marcada ✓ — la flecha apunta hacia donde va'); }
+      if(drawing.tool==='pen'){ S.els.push({id:uid(),type:'draw',pts:drawing.pts}); hint('Stroke drawn ✓'); }
+      else { S.els.push({id:uid(),type:'current',pts:drawing.pts}); hint('Current marked ✓ — the arrow points where it goes'); }
     }
-    else hint('Dibujá un trazo más largo');
-    drawing=null; save(); render(); return;
+    else hint('Draw a longer stroke');
+    drawing=null; save(); render(); refreshSteps(); return;
   }
   if(!tool) return;
   handleTap(x,y);
 });
 function renderTemp(){ render(); if(drawing&&drawing.pts.length>1){ const d='M'+drawing.pts.map(p=>p[0]+' '+p[1]).join(' L '); svg.innerHTML+=`<path d="${d}" fill="none" stroke="${drawing.tool==='pen'?'#F7F9FA':'#FFD166'}" stroke-width="1" stroke-dasharray="2 1.2" opacity=".7"/>`; } }
 
-const HAZ=[['🪨','Piedras'],['👥','Crowd'],['🦶','Fondo duro'],['🌀','Remolino'],['❗','Otro']];
+const HAZ=[['🪨','Rocks'],['👥','Crowd'],['🦶','Hard bottom'],['🌀','Rip'],['❗','Other']];
 function handleTap(x,y){
   if(tool==='erase'){ eraseAt(x,y); return; }
-  if(tool==='out'){ S.outY=Math.min(y,SAND_Y-6); save(); render(); hint('Línea OUTSIDE puesta — tocá de nuevo para moverla'); return; }
-  if(tool==='in'){ S.inY=Math.min(y,SAND_Y-4); save(); render(); hint('Línea INSIDE puesta — tocá de nuevo para moverla'); return; }
+  if(tool==='out'){ S.outY=Math.min(y,SAND_Y-6); save(); render(); hint('OUTSIDE line set — tap again to move it'); return; }
+  if(tool==='in'){ S.inY=Math.min(y,SAND_Y-4); save(); render(); refreshSteps(); hint('Your limit is set — you do not paddle past this line today. Tap again to move it'); return; }
   if(tool==='photo'){ document.getElementById('photoInput').click(); return; }
   if(tool==='hazard'){ showHazMenu(x,y); return; }
   if(tool==='ref'){
-    if(y<SAND_Y-2){ hint('La referencia va EN LA PLAYA (parte de abajo) 🏖'); return; }
-    const label=prompt('¿Qué es tu referencia? (palmera, torre, casa roja…)','palmera');
-    if(label) { S.els.push({id:uid(),type:'ref',x,y,label:label.slice(0,14)}); save(); render(); }
+    if(y<SAND_Y-2){ hint('The reference goes ON THE BEACH (bottom part) 🏖'); return; }
+    const label=prompt('What is your reference? (palm tree, tower, red house…)','palm tree');
+    if(label) { S.els.push({id:uid(),type:'ref',x,y,label:label.slice(0,14)}); save(); render(); refreshSteps(); hint('Reference marked ✓ — add another or tap Next'); }
     return;
   }
   if(tool==='entry'||tool==='exit'){
-    // solo uno de cada uno — el nuevo reemplaza
     S.els=S.els.filter(e=>e.type!==tool);
-    S.els.push({id:uid(),type:tool,x,y}); save(); render();
-    hint(tool==='entry'?'Entrada marcada ✓':'Salida marcada ✓'); return;
+    S.els.push({id:uid(),type:tool,x,y}); save(); render(); refreshSteps();
+    hint(tool==='entry'?'Entry marked ✓':'Exit marked ✓'); return;
   }
   if(tool==='zone'){
     S.els=S.els.filter(e=>e.type!=='zone');
-    S.els.push({id:uid(),type:'zone',x,y}); save(); render();
-    hint(S.mode==='group'?'Zona del grupo marcada ✓':'Tu zona marcada ✓'); return;
+    S.els.push({id:uid(),type:'zone',x,y}); save(); render(); refreshSteps();
+    hint(S.mode==='group'?'Group zone marked ✓ — now set how far out':'Your zone marked ✓ — now set how far out you go'); return;
   }
   if(tool==='peak'){ S.els.push({id:uid(),type:'peak',x,y}); save(); render(); return; }
   if(tool==='whitewater'){ S.els.push({id:uid(),type:'whitewater',x,y}); save(); render(); return; }
@@ -341,7 +476,6 @@ function showHazMenu(x,y){
   setTimeout(()=>{ document.addEventListener('pointerdown',function h2(e){ if(!m.contains(e.target)){m.style.display='none';document.removeEventListener('pointerdown',h2);} },{once:false}); },50);
 }
 function eraseAt(x,y){
-  // primero elementos puntuales por cercanía
   let best=null,bd=8;
   for(const e of S.els){
     let d=1e9;
@@ -349,77 +483,81 @@ function eraseAt(x,y){
     else d=Math.hypot(x-e.x,y-e.y);
     if(d<bd){bd=d;best=e;}
   }
-  if(best){ S.els=S.els.filter(e=>e.id!==best.id); save(); render(); hint('Borrado ✓'); return; }
-  if(S.inY!=null && Math.abs(y-S.inY)<4){ S.inY=null; save(); render(); hint('Línea INSIDE borrada ✓'); return; }
-  if(S.outY!=null && Math.abs(y-S.outY)<4){ S.outY=null; save(); render(); hint('Línea OUTSIDE borrada ✓'); return; }
-  if(S.photo && confirm('¿Quitar la foto de fondo?')){ S.photo=null; save(); render(); return; }
-  hint('Tocá más cerca del elemento que querés borrar');
+  if(best){ S.els=S.els.filter(e=>e.id!==best.id); save(); render(); refreshSteps(); hint('Erased ✓'); return; }
+  if(S.inY!=null && Math.abs(y-S.inY)<4){ S.inY=null; save(); render(); refreshSteps(); hint('Limit line erased ✓'); return; }
+  if(S.outY!=null && Math.abs(y-S.outY)<4){ S.outY=null; save(); render(); hint('OUTSIDE line erased ✓'); return; }
+  if(S.photo && confirm('Remove the background photo?')){ S.photo=null; save(); render(); return; }
+  hint('Tap closer to the element you want to erase');
 }
 
-// ─── resumen ───
+// ─── summary ───
 function currentDir(){
   const cs=S.els.filter(e=>e.type==='current'); if(!cs.length) return null;
   let dx=0,dy=0;
   for(const c of cs){ const a=c.pts[0],b=c.pts[c.pts.length-1]; dx+=b[0]-a[0]; dy+=b[1]-a[1]; }
   const horiz=Math.abs(dx)>=Math.abs(dy);
-  if(horiz) return dx>0?'hacia la DERECHA':'hacia la IZQUIERDA';
-  return dy>0?'hacia la ORILLA':'hacia AFUERA (mar adentro)';
+  if(horiz) return dx>0?'to the RIGHT':'to the LEFT';
+  return dy>0?'toward the SHORE':'OUT to sea';
 }
 function renderSummary(){
   const g=S.mode==='group';
-  document.getElementById('sumTitle').textContent=g?'BRIEFING DE GRUPO':'MI PLAN';
+  document.getElementById('sumTitle').textContent=g?'GROUP BRIEFING':'MY PLAN';
   const has=t=>S.els.some(e=>e.type===t);
   const refs=S.els.filter(e=>e.type==='ref');
   const hz=S.els.filter(e=>e.type==='hazard');
   const dir=currentDir();
   let out='';
 
-  out+=`<div class="sumcard"><h4 class="lbl" style="color:var(--cyan)">Condiciones</h4>
+  out+=`<div class="sumcard"><h4 class="lbl" style="color:var(--cyan)">Conditions${S.spot?' · '+esc(S.spot):''}</h4>
     <div style="display:flex;flex-wrap:wrap;gap:6px">
-      ${[S.wave,'Marea '+S.tide,S.wind].map(v=>`<span class="chip" style="padding:7px 14px;font-size:12px;pointer-events:none">${esc(v)}</span>`).join('')}
+      ${[S.wave,S.tide,S.wind].map(v=>`<span class="chip" style="padding:7px 14px;font-size:12px;pointer-events:none">${esc(v)}</span>`).join('')}
     </div></div>`;
 
+  if(S.level && ADVICE[S.level]) out+=`<div class="advice${S.level==='self'?' ok':''}" style="margin-bottom:12px"><b>${ADVICE[S.level][0]}</b>${ADVICE[S.level][1]}</div>`;
+
   if(g){
-    out+=`<div class="sumcard"><h4 class="lbl" style="color:var(--gold)">Decisión del coach</h4>
+    out+=`<div class="sumcard"><h4 class="lbl" style="color:var(--gold)">Coach decision</h4>
       <div style="display:flex;gap:8px">
         <div class="gono go ${S.go==='go'?'on':''}" data-v="go">GO ✓</div>
-        <div class="gono mod ${S.go==='mod'?'on':''}" data-v="mod">MODIFICADO</div>
+        <div class="gono mod ${S.go==='mod'?'on':''}" data-v="mod">Modified</div>
         <div class="gono no ${S.go==='no'?'on':''}" data-v="no">NO-GO ✕</div>
       </div></div>`;
   }
 
   const items=[];
-  items.push(has('entry')?'🟢 Entrada definida — entrar SIEMPRE por ahí':'⚠️ Falta marcar la ENTRADA — volvé al mapa');
-  items.push(has('exit')?'🔴 Salida definida — si algo pasa, salir por ahí caminando':'⚠️ Falta marcar la SALIDA — volvé al mapa');
-  if(S.outY!=null||S.inY!=null) items.push('〰️ Zonas definidas — los novatos se quedan del lado INSIDE'+(S.outY!=null&&S.inY!=null?' (entre la línea inside y la playa)':''));
-  if(has('peak')) items.push(`⭐ ${S.els.filter(e=>e.type==='peak').length} pico(s) identificado(s)`);
-  if(has('whitewater')) items.push(`🫧 Zona de white water marcada — ${S.mode==='group'?'ideal para el trabajo de los novatos':'zona de práctica en espuma'}`);
-  if(dir) items.push(`➡️ Corriente ${dir} — ${dir.includes('AFUERA')?'NO pelear contra ella: nadar en diagonal y pedir ayuda si cansa':'usarla para posicionarse, no para pelearla; si te arrastra, salí caminando y volvé por la playa'}`);
-  if(has('zone')) items.push(g?'🎯 Zona del grupo definida — nadie se aleja de la zona sin avisar':'🎯 Tu zona definida — chequeá que sigas ahí cada pocas olas');
-  for(const r of refs) items.push(`📍 Referencia en tierra: ${r.label.toUpperCase()} — mirala seguido para no derivar`);
-  for(const h of hz) items.push(`${h.ico} ${h.label} marcado — mantené distancia`);
-  if(!refs.length) items.push('💡 Tip: marcá una referencia en tierra (palmera, torre) para saber si la corriente te mueve');
+  for(const r of refs) items.push(`📍 Land reference: ${esc(r.label.toUpperCase())} — look at it often so you do not drift`);
+  if(!refs.length) items.push('⚠️ No land reference marked — go back to the map, it is step 1');
+  for(const h of hz) items.push(`${h.ico} ${h.label} marked — keep your distance`);
+  if(dir) items.push(`➡️ Current ${dir} — ${dir.includes('OUT')?'do NOT fight it: swim diagonally and signal for help if you tire':'use it to position yourself, not to fight it; if it drags you, walk out and come back along the beach'}`);
+  items.push(has('zone')?(g?'🎯 Group zone set — nobody leaves the zone without saying so':'🎯 Your zone is set — check you are still there every few waves'):'⚠️ Your zone is not marked — go back to the map');
+  items.push(S.inY!=null?'〰️ Your limit is set — you do not paddle past that line today':'⚠️ How far out is not set — go back to the map');
+  if(S.outY!=null) items.push('🌊 Outside line marked — beginners stay on the inside');
+  if(has('peak')) items.push(`⭐ ${S.els.filter(e=>e.type==='peak').length} peak(s) identified`);
+  if(has('whitewater')) items.push(`🫧 Whitewater zone marked — ${g?'ideal for the beginners\' work':'your practice zone in the foam'}`);
+  items.push(has('entry')?'🟢 Entry set — ALWAYS get in there':'⚠️ ENTRY not marked — go back to the map');
+  items.push(has('exit')?'🔴 Exit set — if anything happens, walk out there':'⚠️ EXIT not marked — go back to the map');
 
-  out+=`<div class="sumcard"><h4 class="lbl" style="color:var(--foam)">${g?'Briefing para el grupo':'Mi checklist'}</h4><ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`;
+  out+=`<div class="sumcard"><h4 class="lbl" style="color:var(--foam)">${g?'Briefing for the group':'My checklist'}</h4><ul>${items.map(i=>`<li>${i}</li>`).join('')}</ul></div>`;
 
-  if(g) out+=`<div class="sumcard"><h4 class="lbl" style="color:var(--cyan)">En la arena, decile al grupo</h4><ul>
-    <li>1 · Entrada y salida (señalarlas físicamente)</li>
-    <li>2 · Dónde se ubica el grupo y hasta dónde se puede ir</li>
-    <li>3 · La referencia en tierra que todos memorizan</li>
-    <li>4 · Señal de emergencia: brazo en alto = ayuda</li>
+  if(g) out+=`<div class="sumcard"><h4 class="lbl" style="color:var(--cyan)">On the sand, tell the group</h4><ul>
+    <li>1 · The land reference everyone memorises</li>
+    <li>2 · Hazards and where the current goes</li>
+    <li>3 · Where the group sits and how far out they may go</li>
+    <li>4 · Entry and exit (point at them physically)</li>
+    <li>5 · Emergency signal: arm up = help</li>
   </ul></div>`;
 
-  out+=`<p style="font-size:11px;color:rgba(247,249,250,.4);text-align:center;margin-top:10px">Sacale screenshot al mapa y a este plan 📸 · Tu análisis queda guardado en este dispositivo</p>`;
+  out+=`<p style="font-size:11px;color:var(--tide);text-align:center;margin-top:10px">Screenshot the map and this plan 📸 · Your check is saved on this device</p>`;
   document.getElementById('sumBody').innerHTML=out;
   document.querySelectorAll('.gono').forEach(el=>el.onclick=()=>{ S.go=el.dataset.v; save(); renderSummary(); });
 }
 
-// mini condiciones en topbar del mapa
-function updMini(){ document.getElementById('condMini').textContent=[S.wave,S.tide,S.wind].filter(Boolean).join(' · '); }
+// mini conditions in the map topbar
+function updMini(){ document.getElementById('condMini').textContent=[S.spot,S.wave,S.tide,S.wind].filter(Boolean).join(' · '); }
 document.getElementById('toMap').addEventListener('click',updMini);
 updMini();
 
-// ── foto custom de fondo ──
+// ── custom background photo ──
 const photoInput=document.createElement('input');
 photoInput.type='file'; photoInput.accept='image/*'; photoInput.id='photoInput'; photoInput.style.display='none';
 document.body.appendChild(photoInput);
@@ -430,15 +568,15 @@ photoInput.addEventListener('change',()=>{
     const MAX=1280; const sc=Math.min(1,MAX/Math.max(img.width,img.height));
     const cv=document.createElement('canvas'); cv.width=img.width*sc; cv.height=img.height*sc;
     cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-    try{ S.photo=cv.toDataURL('image/jpeg',.6); save(); render(); hint('Foto puesta ✓ — dibujá encima. (Goma sobre el fondo la quita)'); }
-    catch(e){ hint('No se pudo usar esa foto'); }
+    try{ S.photo=cv.toDataURL('image/jpeg',.6); save(); render(); hint('Photo set ✓ — draw on top. (Eraser on the background removes it)'); }
+    catch(e){ hint('Could not use that photo'); }
     URL.revokeObjectURL(img.src);
   };
   img.src=URL.createObjectURL(f);
   photoInput.value='';
 });
 
-// ── timer de análisis ──
+// ── check timer ──
 let timerInt=null;
 function fmtT(ms){ const s2=Math.max(0,Math.round(ms/1000)); return Math.floor(s2/60)+':'+String(s2%60).padStart(2,'0'); }
 function tickTimer(){
@@ -447,7 +585,7 @@ function tickTimer(){
   const left=S.timerEnd-Date.now();
   if(left<=0){
     b.textContent='⏱ 0:00'; b.style.color='#FF6B6B'; b.style.borderColor='#FF6B6B';
-    hint('⏱ ¡Tiempo de análisis terminado! Cerrá tu plan.',true);
+    hint('⏱ Check time is over. Close your plan.',true);
     if(navigator.vibrate) navigator.vibrate([200,100,200]);
     S.timerEnd=null; save(); clearInterval(timerInt); timerInt=null; return;
   }
@@ -455,23 +593,23 @@ function tickTimer(){
   b.style.color=left<60000?'#FF6B6B':'#00D2FF'; b.style.borderColor=left<60000?'#FF6B6B':'#00D2FF';
 }
 document.getElementById('timerBtn').addEventListener('click',()=>{
-  if(S.timerEnd){ if(confirm('¿Cancelar el timer?')){ S.timerEnd=null; save(); tickTimer(); } return; }
-  const m=prompt('¿Cuántos minutos de análisis? (ej. 5, 10, 15)','10');
+  if(S.timerEnd){ if(confirm('Cancel the timer?')){ S.timerEnd=null; save(); tickTimer(); } return; }
+  const m=prompt('How many minutes for the check? (e.g. 5, 10, 15)','10');
   const min=parseFloat(m);
   if(!min||min<=0) return;
   S.timerEnd=Date.now()+min*60000; save();
   tickTimer(); if(!timerInt) timerInt=setInterval(tickTimer,1000);
-  hint('⏱ Timer de '+min+' min corriendo — analizá el spot');
+  hint('⏱ '+min+' min timer running — read the spot');
 });
 if(S.timerEnd){ tickTimer(); timerInt=setInterval(tickTimer,1000); }
 
-// arranque: si ya había condiciones, seguir donde estaba
+// start: if conditions were already set, continue where you were
 if(S.wave&&S.tide&&S.wind&&(S.els.length||S.inY!=null||S.outY!=null)) show('s2');
 </script>
 
 <script>
-/* ── LEAD GATE (M151) · pide nombre+email UNA vez por dispositivo.
-   Se salta cuando la herramienta se abre desde el portal (?src=portal). ── */
+/* ── LEAD GATE (M151) · asks name + email ONCE per device.
+   Skipped when the tool opens from the portal (?src=portal). ── */
 (function(){
   var KEY='tss-tool-lead', TOOL='venue-check';
   var API='https://app.thesurfsequence.com/api/tool-lead';
@@ -484,22 +622,22 @@ if(S.wave&&S.tide&&S.wind&&(S.els.length||S.inY!=null||S.outY!=null)) show('s2')
   }
   var g=document.createElement('div');
   g.id='leadGate';
-  g.style.cssText='position:fixed;inset:0;z-index:99999;background:radial-gradient(ellipse at 50% 32%, #0a3a5c 0%, #061C2B 62%, #02101d 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;font-family:Archivo,sans-serif;';
-  g.innerHTML='<img src="/venue-scout/tss-wave.png?v=1" alt="" style="width:130px;height:auto;filter:drop-shadow(0 0 26px rgba(0,210,255,.4));">'
-   +'<div style="font-stretch:125%;font-weight:800;text-transform:uppercase;letter-spacing:-0.02em;font-size:26px;line-height:1.05;color:#F7F9FA;text-align:center;margin-top:20px;">The Surf<br>Sequence</div>'
+  g.style.cssText='position:fixed;inset:0;z-index:99999;background:#061C2B;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;font-family:Archivo,sans-serif;';
+  g.innerHTML='<img src="/venue-scout/tss-wave.png?v=1" alt="" style="width:120px;height:auto;">'
+   +'<div style="font-stretch:125%;font-weight:900;text-transform:uppercase;font-size:26px;line-height:1.05;color:#F7F9FA;text-align:center;margin-top:20px;">The Surf<br>Sequence</div>'
    +'<div style="font-family:\'IBM Plex Mono\',monospace;text-transform:uppercase;letter-spacing:.2em;font-size:10px;color:#00D2FF;margin-top:10px;">Venue Check</div>'
-   +'<div style="font-size:13px;color:rgba(247,249,250,.6);text-align:center;max-width:300px;margin-top:18px;line-height:1.5;">Dejanos tu nombre y correo para usar la herramienta gratis — solo esta vez.</div>'
-   +'<input id="lgName" placeholder="Tu nombre" style="margin-top:18px;width:100%;max-width:320px;padding:14px;border-radius:14px;border:1.5px solid rgba(247,249,250,.2);background:rgba(247,249,250,.05);color:#F7F9FA;font-size:15px;font-family:Archivo;">'
-   +'<input id="lgEmail" type="email" placeholder="tu@email.com" style="margin-top:10px;width:100%;max-width:320px;padding:14px;border-radius:14px;border:1.5px solid rgba(247,249,250,.2);background:rgba(247,249,250,.05);color:#F7F9FA;font-size:15px;font-family:Archivo;">'
-   +'<button id="lgGo" style="margin-top:16px;width:100%;max-width:320px;padding:15px;border:none;border-radius:999px;background:#00D2FF;color:#061C2B;font-family:\'IBM Plex Mono\',monospace;text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:600;cursor:pointer;">Empezar &rarr;</button>'
+   +'<div style="font-size:13px;color:#B8C7D1;text-align:center;max-width:300px;margin-top:18px;line-height:1.5;">Leave your name and email to use the tool for free — just this once.</div>'
+   +'<input id="lgName" placeholder="Your name" style="margin-top:18px;width:100%;max-width:320px;padding:14px;border-radius:5px;border:1px solid rgba(0,210,255,.25);background:#0A2532;color:#F7F9FA;font-size:15px;font-family:Archivo;">'
+   +'<input id="lgEmail" type="email" placeholder="you@email.com" style="margin-top:10px;width:100%;max-width:320px;padding:14px;border-radius:5px;border:1px solid rgba(0,210,255,.25);background:#0A2532;color:#F7F9FA;font-size:15px;font-family:Archivo;">'
+   +'<button id="lgGo" style="margin-top:16px;width:100%;max-width:320px;padding:15px;border:none;border-radius:5px;background:#00D2FF;color:#061C2B;font-family:Archivo,sans-serif;font-stretch:125%;text-transform:uppercase;letter-spacing:.04em;font-size:14px;font-weight:900;cursor:pointer;">Start &rarr;</button>'
    +'<div id="lgErr" style="font-size:12px;color:#FF6B6B;margin-top:10px;min-height:16px;"></div>'
    +'<div style="font-family:Lora,serif;font-style:italic;font-size:13px;color:rgba(0,210,255,.6);margin-top:8px;">Evolve through play</div>';
   document.body.appendChild(g);
   document.getElementById('lgGo').onclick=function(){
     var n=document.getElementById('lgName').value.trim();
     var e=document.getElementById('lgEmail').value.trim().toLowerCase();
-    if(!n){document.getElementById('lgErr').textContent='Poné tu nombre';return;}
-    if(!e||e.indexOf('@')<1||e.indexOf('.')<0){document.getElementById('lgErr').textContent='Poné un correo válido';return;}
+    if(!n){document.getElementById('lgErr').textContent='Enter your name';return;}
+    if(!e||e.indexOf('@')<1||e.indexOf('.')<0){document.getElementById('lgErr').textContent='Enter a valid email';return;}
     try{fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:n,email:e,tool:TOOL,newDevice:true})}).catch(function(){});}catch(err){}
     try{localStorage.setItem(KEY,e);}catch(err){}
     g.remove();
