@@ -26,12 +26,49 @@ const CALLOUTS: Record<
 
 interface MarkdownContentProps {
   markdown: string;
+  /** Pliega cada '## tema' cuando hay 3 o más (lecciones largas). */
+  collapsible?: boolean;
 }
 
-export function MarkdownContent({ markdown }: MarkdownContentProps) {
+export function MarkdownContent({ markdown, collapsible = false }: MarkdownContentProps) {
   if (!markdown) return null;
 
   const blocks = parseMarkdown(markdown);
+
+  // Temas plegables (Marcelo 2026-09-17): en lecciones largas y de corrido
+  // (3 Circles, One Wave…) cada "## Tema" se muestra como título y se abre
+  // al tocarlo. El primero viene abierto; lo de antes del primer tema queda
+  // siempre visible. Con menos de 3 temas no vale la pena plegar.
+  if (collapsible) {
+    const groups: { heading: Block | null; blocks: Block[] }[] = [{ heading: null, blocks: [] }];
+    for (const b of blocks) {
+      if (b.type === 'h2') groups.push({ heading: b, blocks: [] });
+      else groups[groups.length - 1].blocks.push(b);
+    }
+    const topics = groups.filter((g) => g.heading);
+    if (topics.length >= 3) {
+      let n = 0;
+      return (
+        <div className="markdown-content text-[15px] leading-[1.8] text-[#10263B] max-w-[68ch]">
+          {groups[0].blocks.map((block, idx) => renderBlock(block, idx))}
+          {topics.map((g, gi) => (
+            <details key={gi} open={gi === 0} className="group mt-3 rounded-lg border border-[#DCD7C6] bg-[#F7F9FA]">
+              <summary
+                className="list-none cursor-pointer flex items-center justify-between gap-3 px-4 py-3 text-[15px] font-black uppercase text-[var(--tss-navy)] leading-snug [&::-webkit-details-marker]:hidden"
+                style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%' }}
+              >
+                <span>{renderInline((g.heading as { content: string }).content)}</span>
+                <span aria-hidden className="shrink-0 text-[#55666E] transition-transform group-open:rotate-180">⌄</span>
+              </summary>
+              <div className="px-4 pb-4 -mt-1">
+                {g.blocks.map((block) => renderBlock(block, n++))}
+              </div>
+            </details>
+          ))}
+        </div>
+      );
+    }
+  }
 
   return (
     <div className="markdown-content text-[15px] leading-[1.8] text-[#10263B] max-w-[68ch]">

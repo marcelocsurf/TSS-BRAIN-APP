@@ -260,43 +260,53 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
           )}
         </>
       ) : (
-        /* Reading lesson — everything in one scroll: video, theory, drill,
-           mission, errors, then a single "Mark as done". */
+        /* Reading lesson — mismo molde que la página de secuencia (Marcelo
+           2026-09-17): WATCH (video) · THINK (teoría, temas plegables si es
+           larga) · DO (Let's Play o el drill, solo si la lección lo tiene) ·
+           REVIEW (errores comunes, plegado) · "Mark as done". Las lecciones
+           puramente informativas del Pre-Course no muestran DO. */
         <>
           {lessonVideos.length > 0 && (
             <div className={cardCls}>
+              <SectionLabel icon={PlayCircle} text="Watch" />
               <DrillMissionVideos videos={lessonVideos} title={lesson.title} />
             </div>
           )}
           {lesson.description_md && (
             <div className={cardCls}>
-              <SectionLabel icon={BookOpen} text="Theory" />
+              <SectionLabel icon={BookOpen} text="Think" />
               {/* Lámina dibujada en código para esta lección (Paddling angle, wave stages). */}
               <LessonFigure lessonId={lesson.id} />
-              <div className="prose prose-sm max-w-none"><MarkdownContent markdown={lesson.description_md} /></div>
+              <div className="prose prose-sm max-w-none"><MarkdownContent markdown={lesson.description_md} collapsible /></div>
             </div>
           )}
           {(canonicalDrill || canonicalMission) ? (
             /* Don't load the full drill/mission here — send them to Let's Play
                to actually practice it and follow the flow. */
-            <a
-              href={`?tab=sequence&step=${(canonicalDrill || canonicalMission).step_id || lesson.id}`}
-              className="flex items-center justify-center gap-2 w-full rounded-[5px] bg-[var(--tss-navy)] text-white py-4 text-sm font-bold hover:opacity-90"
-            >
-              <PlayCircle size={18} strokeWidth={1.75} className="text-[var(--tss-cyan,#00D2FF)]" />
-              Let&apos;s practice drills &amp; missions in Let&apos;s Play →
-            </a>
+            <div className={cardCls}>
+              <SectionLabel icon={Dumbbell} text="Do" />
+              <a
+                href={`?tab=sequence&step=${(canonicalDrill || canonicalMission).step_id || lesson.id}`}
+                className="flex items-center justify-center gap-2 w-full rounded-[5px] bg-[var(--tss-navy)] text-white py-4 text-sm font-bold hover:opacity-90"
+              >
+                <PlayCircle size={18} strokeWidth={1.75} className="text-[#00D2FF]" />
+                Let&apos;s practice drills &amp; missions in Let&apos;s Play →
+              </a>
+            </div>
           ) : lesson.drill_md ? (
             <div className={cardCls}>
-              <SectionLabel icon={Dumbbell} text="Drill" />
+              <SectionLabel icon={Dumbbell} text="Do" />
               <div className="prose prose-sm max-w-none"><MarkdownContent markdown={lesson.drill_md} /></div>
             </div>
           ) : null}
           {lesson.errors_md && (
-            <div className={cardCls}>
-              <SectionLabel icon={AlertTriangle} text="Common errors" />
-              <div className="prose prose-sm max-w-none"><MarkdownContent markdown={lesson.errors_md} /></div>
-            </div>
+            <details className={`group ${cardCls}`}>
+              <summary className="list-none cursor-pointer flex items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+                <span className="flex items-center gap-1.5 text-[11px] uppercase tracking-[0.18em] text-[#55666E] font-mono"><AlertTriangle size={13} strokeWidth={1.75} className="text-[#00D2FF]" />Review · common errors</span>
+                <span aria-hidden className="text-[#55666E] transition-transform group-open:rotate-180">⌄</span>
+              </summary>
+              <div className="prose prose-sm max-w-none mt-3"><MarkdownContent markdown={lesson.errors_md} /></div>
+            </details>
           )}
           <MarkDoneButton portalToken={portalToken} lessonId={lesson.id} completed={!!progress?.completed} onDone={refreshProgress} />
         </>
