@@ -81,10 +81,10 @@ export function SequencePage({
   const go = (t: Tab) => { setTab(t); window.scrollTo({ top: 0, behavior: 'smooth' }); };
   // Solo la dirección del dibujo cambia con el stance; el nombre de la maniobra no.
   const waveDirection = flip ? 'left' : 'right';
-  // Pasos en orden: si la config agrupa técnicas alternativas (turtle/duck), un grupo = un paso.
-  const stepGroups: { ids: string[]; title: string; note?: string }[] = cfg.stepGroups ?? cfg.stepIds.map((id) => ({ ids: [id], title: shortLesson(lessons[id]?.title ?? id) }));
   const stripStep = (t: string) => t.replace(/^\d+ · /, '').replace(/ · .*$/, '');
   const shortLesson = (t: string) => t.replace(/ Operationalized at Blue Belt/, '');
+  // Pasos en orden: si la config agrupa técnicas alternativas (turtle/duck), un grupo = un paso.
+  const stepGroups: { ids: string[]; title: string; note?: string }[] = cfg.stepGroups ?? cfg.stepIds.map((id) => ({ ids: [id], title: shortLesson(lessons[id]?.title ?? id) }));
 
   return (
     <section className="tss" data-screen="sequence">
