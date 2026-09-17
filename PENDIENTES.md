@@ -1,6 +1,6 @@
 # PENDIENTES — TSS BRAIN / The Surf Sequence
 **Lista general del app y del proyecto.** Una sola lista, por bloques, para ir tachando.
-Actualizada: 2026-09-05. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico en `INFO_DECRETO722.md`; restauración en `RECUPERACION.md`.
+Actualizada: 2026-09-17. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico en `INFO_DECRETO722.md`; restauración en `RECUPERACION.md`.
 
 ---
 
@@ -24,7 +24,7 @@ Actualizada: 2026-09-05. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico
 - [ ] Revisar `INFO_DECRETO722.md` (sección 6, autoría) y enviarlo.
 
 **Producto (decisiones)**
-- [ ] Revisar paso a paso los 49 criterios White→Blue (artefacto `belts-criterios`) y dar el "dale" para aplicarlos a la base.
+- [ ] Revisar paso a paso los 49 criterios White→Blue (artefacto `belts-criterios`): 41/49 marcados al 2026-09-17 (32 dale · 9 cambiar); faltan STP-026 y 043–049. Después "revisá" y Claude aplica.
 - [ ] Decidir qué hacer con las 1,610 fichas con datos de salud sin consentimiento expreso (pedirlo por email o esperar a su próxima firma).
 
 ---
@@ -114,7 +114,7 @@ Queda pendiente y necesita a Marcelo o a un abogado:
 - [x] Limpieza de prueba en prod (2026-09-05): Host Prueba borrado; columna `students.is_test` (migración 00185) marcada en los 5 alumnos de prueba (no se pueden borrar: tienen camps y sesiones colgando).
 - [ ] **Excluir `is_test` de reportes, embudo y correos** (hoy la marca existe pero nadie la filtra). (Claude, 1 sesión)
 - [ ] **Coaches de prueba que quedan** — decidir Marcelo: "Coach prueba oso perezoso" (marcelo@purosurf.com, ¿es tu cuenta real?), "Gerente Prueba", "Seller Prueba" (academia Sandbox), "Psicóloga de Prueba" (¿la usa el portal de especialistas?).
-- [ ] **Duplicados de alumnos — DECISIÓN DE MARCELO**: 480 grupos con mismo nombre + apellido + fecha de nacimiento (1,049 fichas) y 551 emails repetidos (1,240 fichas). Parte es por diseño (familias comparten email en el QR) y parte son fichas dobles reales (importación HP + QR + intake). Hace falta una pantalla de "unir fichas" que conserve historial; no se hace automático.
+- [x] **Duplicados de alumnos** — HECHO 2026-09-16: 182 fichas vacías borradas + 490 fusionadas por email + mismo nombre (familias intactas, cinta más alta, referencias movidas). Respaldo 673 filas en `ops_dup_students_backup_2026_09_16`. Quedan 2,193 activos.
 - [ ] **Unificar numeraciones** de bloques (3 numeraciones), pares viejo/nuevo de drills, STP-039B: junto con la revisión de los 49 criterios. (después del "dale" de Marcelo)
 - [x] Borrados `.bak` y la ruta `/sessions/old` (sin enlaces desde el 2026-06). (2026-09-05)
 - [ ] **Limpieza que queda**: quitar `as any` declarando tipos (`students/[id]/page.tsx` sobre todo), decidir qué scripts de `scripts/` se archivan, y unificar las 288 acciones viejas que lanzan error hacia `{ok,error}` (esto SÍ cambia comportamiento: hacerlo módulo por módulo con pruebas). (Claude, 2-3 sesiones)
