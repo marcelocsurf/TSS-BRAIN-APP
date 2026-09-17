@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { anyMedicalNote } from '@/lib/constants/medical';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { campEnrollmentClosed } from '@/lib/utils/camp-window';
 import { listCoachStps, type StpSummary } from '@/lib/actions/coach-tools';
@@ -289,7 +290,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
           belt_level: stu.belt_level ?? null,
           belt_provisional: !!stu.belt_provisional,
           waiver_signed: !!stu.waiver_signed,
-          safety_flag: !!(stu.allergies || stu.injuries || stu.medical_notes),
+          safety_flag: anyMedicalNote(stu.allergies, stu.injuries, stu.medical_notes),
         });
       }
     }

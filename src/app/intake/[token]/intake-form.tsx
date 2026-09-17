@@ -223,7 +223,7 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
       return;
     }
     if (!(basicForm.allergies || '').trim()) {
-      setError("Allergies are required — write 'none' if you have none.");
+      setError('Allergies are required — tap "No allergies" if you have none.');
       return;
     }
     if (!basicForm.swim_level) {
@@ -589,20 +589,24 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
               onChange={(v) => setBasic('swim_level', v)}
               options={['None', 'Basic', 'Intermediate', 'Strong']}
             />
+            {/* "None" con un toque (Marcelo 2026-09-17): así queda registrado que
+                no hay nada y no salta la alerta de seguridad por un texto. */}
             <Field
               label="Allergies (food, medication, other)"
               value={basicForm.allergies || ''}
               onChange={(v) => setBasic('allergies', v)}
-              placeholder="e.g. shellfish, peanuts, penicillin — or write 'none'"
+              placeholder="e.g. shellfish, peanuts, penicillin"
               required
-              hint="We cook and plan around this. If you have none, write 'none'."
+              hint="We cook and plan around this."
             />
+            <NoneToggle value={basicForm.allergies || ''} onChange={(v) => setBasic('allergies', v)} label="No allergies" />
             <Field
               label="Injuries / chronic conditions"
               value={basicForm.injuries || ''}
               onChange={(v) => setBasic('injuries', v)}
-              placeholder="e.g. Shoulder, knee, back — or none"
+              placeholder="e.g. Shoulder, knee, back"
             />
+            <NoneToggle value={basicForm.injuries || ''} onChange={(v) => setBasic('injuries', v)} label="No injuries" />
             <TextArea
               label="Additional Medical Notes"
               value={basicForm.medical_notes || ''}
@@ -1227,5 +1231,20 @@ function WelcomeBack({ token, student, extendedRequired, onDone }: { token: stri
         </button>
       </div>
     </div>
+  );
+}
+
+/** Un toque = "None": queda escrito y no cuenta como nota médica. */
+function NoneToggle({ value, onChange, label }: { value: string; onChange: (v: string) => void; label: string }) {
+  const on = value.trim().toLowerCase() === 'none';
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(on ? '' : 'None')}
+      className="-mt-2 mb-2 inline-flex items-center gap-2 rounded-[5px] border px-3 py-1.5 text-[12px] font-semibold"
+      style={on ? { background: '#061C2B', borderColor: '#061C2B', color: '#F7F9FA' } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#10263B' }}
+    >
+      <span aria-hidden>{on ? '✓' : '○'}</span> {label}
+    </button>
   );
 }

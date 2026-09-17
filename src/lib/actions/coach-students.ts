@@ -13,6 +13,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { waterRuleBlocker } from '@/lib/constants/graduation';
+import { anyMedicalNote } from '@/lib/constants/medical';
 
 export type CoachStudentSummary = {
   id: string;
@@ -117,7 +118,7 @@ export async function listCoachStudents(
     last_session_date: s.last_session_date,
     last_session_mission: s.last_session_mission,
     last_session_status: s.last_session_status,
-    has_safety_flag: !!(s.allergies || s.injuries || s.medical_notes),
+    has_safety_flag: anyMedicalNote(s.allergies, s.injuries, s.medical_notes),
     portal_last_seen_at: (s as any).portal_last_seen_at ?? null,
     portal_last_screen: (s as any).portal_last_screen ?? null,
     portal_visit_count: (s as any).portal_visit_count ?? 0,
@@ -198,6 +199,12 @@ export type CoachStudentDetail = {
   self_assessed: { step_id: string; title: string; rating: number; at: string | null }[];
   own_tasks: { step_title: string; detail: string | null; sequence_id: string }[];
   open_session: { name: string; planned_at: string | null } | null;
+  /** Última sesión CALCULADA desde las estrellas del coach (Marcelo 2026-09-17):
+   *  qué secuencias se vieron, si completas o un detalle, y el foco siguiente
+   *  con nombre. No depende del texto libre de last_session_mission. */
+  last_session_work: { sequence_id: string; sequence_name: string; rated: number; total: number; complete: boolean; weakest: { step_id: string; title: string; rating: number } | null }[];
+  last_session_by: string | null;
+  next_focus_label: string | null;
 };
 
 export async function getCoachStudentDetail(
@@ -223,7 +230,9 @@ export async function getCoachStudentDetail(
        primary_goal, goal_short_term, goal_mid_term, goal_long_term, biggest_barrier, fears_phobias,
        last_session_date, last_session_mission, last_session_pilar, last_session_drill,
        last_session_status, last_homework, next_recommended_focus,
-       self_sufficiency, fitness_level, wave_preference, board_length_feet, board_length_inches, board_volume_liters, comfort_wave_size, water_comfort, surf_injuries, returning_student, personal_goal`,
+       self_sufficiency, fitness_level, wave_preference, board_length_feet, board_length_inches, board_volume_liters, comfort_wave_size, water_comfort, surf_injuries, returning_student, personal_goal,
+       next_focus_sequence_id, next_focus_step_id, intake_tier, intake_completed_at, level_quiz_completed_at, shirt_size,
+       portal_last_seen_at, portal_last_screen, portal_visit_count`,
     )
     .eq('id', studentId)
     .single();
@@ -237,14 +246,51 @@ export async function getCoachStudentDetail(
     admin.from('student_tasks').select('step_id, detail, sequence_id').eq('student_id', studentId).eq('status', 'open').order('created_at'),
     admin.from('self_training_sessions').select('drill_name, planned_at').eq('student_id', studentId).eq('status', 'planned').order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
-  const stepIds = Array.from(new Set([...(assessed ?? []).map((r: any) => r.step_id), ...(tasks ?? []).map((t: any) => t.step_id)]));
-  const { data: lessons } = stepIds.length ? await admin.from('lessons').select('id, title').in('id', stepIds) : { data: [] as any[] };
+  // Última sesión calculada: las estrellas que el coach puso en la última
+  // fecha en que calificó (misma tanda = mismo día), agrupadas por secuencia.
+  const { data: lastRated } = await admin
+    .from('student_step_ratings')
+    .select('step_id, coach_rating, coach_rated_at, coach_rated_by')
+    .eq('student_id', studentId)
+    .not('coach_rated_at', 'is', null)
+    .order('coach_rated_at', { ascending: false })
+    .limit(80);
+  const lastAt = lastRated?.[0]?.coach_rated_at ? new Date(lastRated[0].coach_rated_at) : null;
+  const sameDay = (iso: string) => lastAt != null && Math.abs(new Date(iso).getTime() - lastAt.getTime()) < 36 * 3600_000;
+  const batch = (lastRated ?? []).filter((r: any) => r.coach_rated_at && sameDay(r.coach_rated_at));
+  const focusIds = [(data as any).next_focus_step_id].filter(Boolean) as string[];
+  const stepIds = Array.from(new Set([...(assessed ?? []).map((r: any) => r.step_id), ...(tasks ?? []).map((t: any) => t.step_id), ...batch.map((r: any) => r.step_id), ...focusIds]));
+  const { data: lessons } = stepIds.length ? await admin.from('lessons').select('id, title, wb_sequence_id, wb_sequence_name').in('id', stepIds) : { data: [] as any[] };
   const title = new Map((lessons ?? []).map((l: any) => [l.id, l.title as string]));
+  const seqOf = new Map((lessons ?? []).map((l: any) => [l.id, { id: l.wb_sequence_id as string | null, name: l.wb_sequence_name as string | null }]));
+  const seqIds = Array.from(new Set([...(lessons ?? []).map((l: any) => l.wb_sequence_id).filter(Boolean), (data as any).next_focus_sequence_id].filter(Boolean))) as string[];
+  const { data: seqLessons } = seqIds.length ? await admin.from('lessons').select('id, wb_sequence_id, wb_sequence_name').in('wb_sequence_id', seqIds).eq('active', true) : { data: [] as any[] };
+  const seqTotal = new Map<string, number>(); const seqName = new Map<string, string>();
+  for (const l of seqLessons ?? []) { seqTotal.set(l.wb_sequence_id, (seqTotal.get(l.wb_sequence_id) ?? 0) + 1); if (l.wb_sequence_name) seqName.set(l.wb_sequence_id, l.wb_sequence_name); }
+  const work = new Map<string, { sequence_id: string; sequence_name: string; rated: number; total: number; complete: boolean; weakest: { step_id: string; title: string; rating: number } | null }>();
+  for (const r of batch) {
+    const sq = seqOf.get(r.step_id); if (!sq?.id) continue;
+    const w = work.get(sq.id) ?? { sequence_id: sq.id, sequence_name: seqName.get(sq.id) ?? sq.name ?? sq.id, rated: 0, total: seqTotal.get(sq.id) ?? 0, complete: false, weakest: null };
+    w.rated += 1;
+    if (!w.weakest || r.coach_rating < w.weakest.rating) w.weakest = { step_id: r.step_id, title: title.get(r.step_id) ?? r.step_id, rating: r.coach_rating };
+    work.set(sq.id, w);
+  }
+  for (const w of work.values()) w.complete = w.total > 0 && w.rated >= w.total;
+  let lastBy: string | null = null;
+  if (batch[0]?.coach_rated_by) {
+    const { data: c } = await admin.from('coaches').select('display_name').eq('id', batch[0].coach_rated_by).maybeSingle();
+    lastBy = c?.display_name ?? null;
+  }
+  const nfSeq = (data as any).next_focus_sequence_id as string | null; const nfStep = (data as any).next_focus_step_id as string | null;
+  const nextFocusLabel = nfSeq || nfStep ? [nfSeq ? (seqName.get(nfSeq) ?? nfSeq) : null, nfStep ? (title.get(nfStep) ?? nfStep) : null].filter(Boolean).join(' · ') : null;
   return {
     ...(data as unknown as CoachStudentDetail),
     self_assessed: (assessed ?? []).map((r: any) => ({ step_id: r.step_id, title: title.get(r.step_id) ?? r.step_id, rating: r.current_rating, at: r.assessed_at ?? null })),
     own_tasks: (tasks ?? []).map((t: any) => ({ step_title: title.get(t.step_id) ?? t.step_id, detail: t.detail ?? null, sequence_id: t.sequence_id })),
     open_session: open ? { name: open.drill_name ?? 'Session', planned_at: open.planned_at ?? null } : null,
+    last_session_work: Array.from(work.values()).sort((a, b) => a.sequence_id.localeCompare(b.sequence_id)),
+    last_session_by: lastBy,
+    next_focus_label: nextFocusLabel,
   };
 }
 

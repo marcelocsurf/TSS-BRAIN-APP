@@ -5,6 +5,7 @@ import {
   Target, Activity, Clock,
   type LucideIcon,
 } from 'lucide-react';
+import { anyMedicalNote } from '@/lib/constants/medical';
 import { getCoachStudentDetail } from '@/lib/actions/coach-students';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { BeltConfirm } from '@/components/coach-portal/BeltConfirm';
@@ -24,7 +25,7 @@ export default async function CoachStudentDetailPage({ params }: Props) {
 
   const belt = BELT_DISPLAY[s.belt_level as BeltLevel];
   const fullName = `${s.first_name} ${s.last_name ?? ''}`.trim();
-  const hasSafetyFlag = !!(s.allergies || s.injuries || s.medical_notes || s.risk_notes);
+  const hasSafetyFlag = anyMedicalNote(s.allergies, s.injuries, s.medical_notes, s.risk_notes);
 
   return (
     <div className="min-h-screen bg-[var(--tss-gray-50)] pb-12">
@@ -167,6 +168,11 @@ export default async function CoachStudentDetailPage({ params }: Props) {
           <KV label="Learning style" value={s.learning_style} />
           <KV label="Surf injuries" value={(s as any).surf_injuries} />
           <KV label="Returning student" value={(s as any).returning_student ? 'Yes' : null} />
+          {/* Registro (2026-09-17): cómo y cuándo entró, qué quiz hizo. */}
+          <KV label="Signed up" value={(s as any).intake_completed_at ? `${new Date((s as any).intake_completed_at).toLocaleDateString()} · ${(s as any).intake_tier === 'extended' ? 'full intake' : 'basic intake'}` : 'intake not done'} />
+          <KV label="Level quiz" value={(s as any).level_quiz_completed_at ? `${new Date((s as any).level_quiz_completed_at).toLocaleDateString()} · ${s.level_quiz_v2 ? 'v2 (session film)' : 'v1 (old quiz)'}` : 'not done'} />
+          <KV label="Ocean level" value={(s as any).ocean_level ? `${String((s as any).ocean_level).replace(/_/g, ' ')}${(s as any).ocean_level_provisional === false ? ' · confirmed' : ' · provisional'}` : null} />
+          <KV label="Shirt size" value={(s as any).shirt_size} />
         </Section>
 
         {/* Level quiz — lo que el alumno declaró, habilidad por habilidad.
@@ -219,14 +225,30 @@ export default async function CoachStudentDetailPage({ params }: Props) {
         <Section title="Last session" Icon={Clock}>
           <KV
             label="Date"
-            value={s.last_session_date ? new Date(s.last_session_date).toLocaleDateString() : null}
+            value={s.last_session_date ? `${new Date(s.last_session_date).toLocaleDateString()}${s.last_session_by ? ` · ${s.last_session_by}` : ''}` : null}
           />
-          <KV label="Mission" value={s.last_session_mission} />
-          <KV label="Pillar" value={s.last_session_pilar} />
-          <KV label="Drill" value={s.last_session_drill} />
+          {/* Calculado desde las estrellas del coach (Marcelo 2026-09-17): qué
+              secuencia se vio, si completa o un detalle, y el paso más flojo. */}
+          {s.last_session_work.length > 0 ? (
+            <div className="flex items-baseline gap-3 text-sm">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] w-32 flex-shrink-0" style={{ fontFamily: 'var(--font-mono)' }}>Worked on</span>
+              <ul className="flex-1 m-0 p-0 list-none space-y-1">
+                {s.last_session_work.map((w) => (
+                  <li key={w.sequence_id} className="text-[var(--tss-navy)] leading-snug">
+                    <span className="font-semibold">{w.sequence_name}</span>
+                    <span className="text-[#55666E]"> · {w.complete ? 'full sequence' : `detail · ${w.rated} of ${w.total} steps`}</span>
+                    {w.weakest && <span className="block text-[12px] text-[#55666E]">Weakest: {w.weakest.title} ★{w.weakest.rating}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <KV label="Worked on" value={s.last_session_mission} />
+          )}
           <KV label="Status" value={s.last_session_status} />
           <KV label="Homework left" value={s.last_homework} />
-          <KV label="Next recommended focus" value={s.next_recommended_focus} />
+          <KV label="Next focus" value={s.next_focus_label ? `${s.next_focus_label}${s.next_recommended_focus ? ` — ${s.next_recommended_focus}` : ''}` : s.next_recommended_focus} />
+          <KV label="In the portal" value={(s as any).portal_last_seen_at ? `${new Date((s as any).portal_last_seen_at).toLocaleDateString()} · ${(s as any).portal_last_screen ?? ''} · ${(s as any).portal_visit_count ?? 0} visits` : 'never opened it'} />
         </Section>
 
         {/* Lo que el alumno dice de sí mismo (2026-09-10): llegás sabiendo
