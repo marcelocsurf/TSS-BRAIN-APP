@@ -1,3 +1,4 @@
+import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentCoach } from '@/lib/actions/sessions';
 import {
@@ -176,7 +177,9 @@ export default async function CoachProfilePage({ params }: Props) {
               </h2>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-sm text-[#55666E]">
-                  Max Belt: {coach.max_belt_permission?.replace('_', ' ')}
+                  Cleared to teach up to: <span className="font-semibold text-[var(--tss-navy)]">{coach.max_belt_permission ? (BELT_DISPLAY[coach.max_belt_permission as BeltLevel]?.levelName ?? coach.max_belt_permission.replace('_', ' ')) : '—'}</span>
+                  {coach.max_belt_permission && BELT_DISPLAY[coach.max_belt_permission as BeltLevel] ? ` (${BELT_DISPLAY[coach.max_belt_permission as BeltLevel].en})` : ''}
+                  {currentUserIsAdmin ? ' · change it in Edit' : ''}
                 </span>
               </div>
               {coach.email && (
@@ -191,7 +194,7 @@ export default async function CoachProfilePage({ params }: Props) {
           </div>
           <div className="flex gap-2 flex-wrap">
             {(currentUserIsAdmin || isPlatformAdmin) && (
-              <EditCoachForm coach={coach} academies={academies || []} />
+              <EditCoachForm coach={coach} academies={academies || []} canSetClearance={currentUserIsAdmin} />
             )}
             <ToggleCoachStatus
               coachId={id}

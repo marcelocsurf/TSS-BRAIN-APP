@@ -7,7 +7,23 @@ import { Pencil, Trash2, X } from 'lucide-react';
 
 const ROLES = ['admin', 'coordinator', 'head_coach', 'coach', 'assistant', 'seller', 'host'];
 
-export function EditCoachForm({ coach, academies = [] }: { coach: any; academies?: { id: string; name: string }[] }) {
+const BELT_CLEARANCE = [
+  { value: 'white_belt', label: 'White Belt · Beginner' },
+  { value: 'yellow_belt', label: 'Yellow Belt · Novice' },
+  { value: 'blue_belt', label: 'Blue Belt · Foundation' },
+  { value: 'purple_belt', label: 'Purple Belt · Emerging' },
+  { value: 'brown_belt', label: 'Brown Belt · Pre-Elite' },
+  { value: 'black_belt', label: 'Black Belt · Elite' },
+];
+const CERT_LEVELS = [
+  { value: 'L1', label: 'L1 — Assistant' },
+  { value: 'L2', label: 'L2 — Instructor' },
+  { value: 'L3', label: 'L3 — Coach' },
+  { value: 'L4', label: 'L4 — Senior Coach' },
+  { value: 'L5', label: 'L5 — Master / Director' },
+];
+
+export function EditCoachForm({ coach, academies = [], canSetClearance = false }: { coach: any; academies?: { id: string; name: string }[]; canSetClearance?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [firstName, setFirstName] = useState(coach.first_name || '');
@@ -19,6 +35,8 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
   const [canBoards, setCanBoards] = useState(coach.portal_can_manage_boards === true);
   const [opsCoordination, setOpsCoordination] = useState(coach.ops_coordination === true);
   const [specialistRole, setSpecialistRole] = useState<string>(coach.specialist_role || '');
+  const [maxBelt, setMaxBelt] = useState<string>(coach.max_belt_permission || 'yellow_belt');
+  const [certLevel, setCertLevel] = useState<string>(coach.certification_level || 'L1');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,6 +54,7 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
       portal_can_manage_boards: canBoards,
       ops_coordination: opsCoordination,
       specialist_role: specialistRole || null,
+      ...(canSetClearance ? { max_belt_permission: maxBelt, certification_level: certLevel } : {}),
     });
     setSaving(false);
     if (!res.ok) {
@@ -111,6 +130,22 @@ export function EditCoachForm({ coach, academies = [] }: { coach: any; academies
               Opens the coordinator&apos;s planning tools in the dashboard: services, camps, schedules, coaches and staff assignment, students, spaces. No costs, reports, payroll, sales or course codes.
             </span>
           </label>
+        )}
+        {canSetClearance && (
+          <div className="rounded-lg p-3 space-y-2" style={{ background: '#FFF8E7', border: '1px solid #F1E3B8' }}>
+            <p className="text-xs font-semibold text-[var(--tss-navy)]">Level clearance · what this coach may teach</p>
+            <p className="text-[11px] text-[#55666E]">The coordinator gets a warning when assigning this coach to a service above this belt. Only admin can change it.</p>
+            <label className="text-xs text-[#55666E] block">Cleared up to
+              <select value={maxBelt} onChange={(e) => setMaxBelt(e.target.value)} className="mt-1 w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm text-[#10263B] bg-[#F7F9FA]">
+                {BELT_CLEARANCE.map((b) => <option key={b.value} value={b.value}>{b.label}</option>)}
+              </select>
+            </label>
+            <label className="text-xs text-[#55666E] block">Certification level
+              <select value={certLevel} onChange={(e) => setCertLevel(e.target.value)} className="mt-1 w-full px-3 py-2 border border-[#DCD7C6] rounded-lg text-sm text-[#10263B] bg-[#F7F9FA]">
+                {CERT_LEVELS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </label>
+          </div>
         )}
         <label className="text-xs text-[#55666E] block">HP specialist role (team portal /equipo)
           <select value={specialistRole} onChange={(e) => setSpecialistRole(e.target.value)}

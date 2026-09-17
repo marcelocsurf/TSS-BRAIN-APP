@@ -35,7 +35,7 @@ async function assertCanManageCoach(coachId: string) {
 // so it bypasses RLS, and keeps the auth account email in sync when one exists.
 export async function updateCoachIdentity(
   coachId: string,
-  input: { first_name: string; last_name: string; email: string; role?: string; academy_id?: string; portal_can_coordinate?: boolean; portal_can_manage_boards?: boolean; ops_coordination?: boolean; specialist_role?: string | null },
+  input: { first_name: string; last_name: string; email: string; role?: string; academy_id?: string; portal_can_coordinate?: boolean; portal_can_manage_boards?: boolean; ops_coordination?: boolean; specialist_role?: string | null; max_belt_permission?: string | null; certification_level?: string | null },
 ): Promise<{ ok: boolean; error?: string }> {
   await assertCanManageCoach(coachId);
   const admin = createAdminClient();
@@ -62,6 +62,15 @@ export async function updateCoachIdentity(
   if (typeof input.portal_can_manage_boards === 'boolean') patch.portal_can_manage_boards = input.portal_can_manage_boards;
   // Cobertura de coordinación (migración 00199): dashboard de planeación para un host.
   if (typeof input.ops_coordination === 'boolean') patch.ops_coordination = input.ops_coordination;
+  // Habilitación por nivel (Marcelo 2026-09-17): qué cinta puede enseñar y
+  // su nivel de certificación. Solo admin; alimenta la regla de asignación.
+  if (input.max_belt_permission !== undefined || input.certification_level !== undefined) {
+    const me = await getCurrentCoach();
+    if (me?.role !== 'admin') return { ok: false, error: 'Only admin can change level clearance.' };
+    const belts = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt', 'brown_belt', 'black_belt'];
+    if (input.max_belt_permission !== undefined && input.max_belt_permission && belts.includes(input.max_belt_permission)) patch.max_belt_permission = input.max_belt_permission;
+    if (input.certification_level !== undefined && input.certification_level && /^L[1-5]$/.test(input.certification_level)) patch.certification_level = input.certification_level;
+  }
   if (input.specialist_role !== undefined) {
     const valid = input.specialist_role && ['psicologo', 'fisico', 'nutricionista'].includes(input.specialist_role)
       ? input.specialist_role : null;
