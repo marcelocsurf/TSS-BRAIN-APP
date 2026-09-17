@@ -30,6 +30,8 @@ const H1: React.CSSProperties = { fontFamily: 'var(--tss-font), var(--font-archi
 
 export interface PieceRow { id: string; type: 'drill' | 'mission'; title: string; description_md: string | null; key_words: string[] | null; time_estimate: string | null; reps_recommended: string | null }
 export interface LessonBits { id: string; title: string; whatIs: string; body: string; rules: string; mistakes: string; cue: string }
+/** Capa del coach por paso (lessons COACH-STP-xxx): enseñar · corregir · validar. */
+export interface CoachStepLayer { stepId: string; title: string; what: string; deliver: string; errors: string; validate: string }
 
 type Tab = 'think' | 'feel' | 'do' | 'review';
 const TABS: { key: Tab; label: string; sub: string }[] = [
@@ -55,7 +57,7 @@ export interface SequenceProgress {
 }
 
 export function SequencePage({
-  video, cfg, lessons, pieces, token, canTrack, progress, initialTab = null, flip = false }: {
+  video, cfg, lessons, pieces, token, canTrack, progress, initialTab = null, flip = false, coach = null }: {
   cfg: SequencePageConfig;
   lessons: Record<string, LessonBits>;
   pieces: Record<string, PieceRow>;
@@ -69,12 +71,20 @@ export function SequencePage({
   initialTab?: Tab | null;
   /** Espejar el tablero según el stance del alumno (goofy frontside / regular backside). */
   flip?: boolean;
+  /** Modo coach (Marcelo 2026-09-17): la MISMA página que ve el alumno, más
+   *  una capa plegada por paso con cómo lo enseño / corrijo / valido, y un
+   *  interruptor "View as student" que la apaga. */
+  coach?: { layers: CoachStepLayer[]; backHref: string } | null;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? 'think');
+  const [coachOn, setCoachOn] = useState(true);
+  const coachLayers = coach && coachOn ? coach.layers : [];
   // Foco opcional dentro de la misión (Marcelo 2026-09-09): la misión es
   // siempre la línea completa; el detalle se elige, o no.
   const [focus, setFocus] = useState<string | null>(null);
-  const portal = `/portal/${token}`;
+  // En modo coach los links salen al portal del coach (el token es suyo).
+  const portal = coach ? `/coach-portal/${token}` : `/portal/${token}`;
+  const courseTab = coach ? 'courses' : 'course';
   const body = lessons[cfg.think.bodyFromLesson];
   const order: Tab[] = ['think', 'feel', 'do', 'review'];
   const next = order[order.indexOf(tab) + 1];
@@ -93,7 +103,15 @@ export function SequencePage({
           <div className="tss-brand-row">
             <svg className="tss-logo" viewBox="180 183 960 269" role="img" aria-label="The Surf Sequence — Evolve through play"><image href="/tss/assets/tss-logo-original-white.png" width="1312" height="654" /></svg>
           </div>
-          <a className="tss-back" href={`${portal}?tab=course`}><Icon name="back" />Course</a>
+          <a className="tss-back" href={coach ? coach.backHref : `${portal}?tab=course`}><Icon name="back" />{coach ? 'Courses' : 'Course'}</a>
+          {coach && (
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-[5px] px-3 py-2" style={{ background: 'rgba(0,210,255,.12)', border: '1px solid rgba(0,210,255,.45)' }}>
+              <span style={{ ...MONO, color: CYAN }}>{coachOn ? 'Coach view · your layer is on' : 'Student view · exactly what they see'}</span>
+              <button type="button" onClick={() => setCoachOn((v) => !v)} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-bold" style={{ background: coachOn ? '#F7F9FA' : CYAN, color: NAVY }}>
+                {coachOn ? 'View as student' : 'Show coach layer'}
+              </button>
+            </div>
+          )}
           <p className="mt-2" style={{ ...MONO, color: CYAN }}>{cfg.eyebrow ?? `Sequence #${cfg.number}`} · {cfg.belt.replace('_belt', ' belt')}</p>
           <h1 style={H1}>{cfg.title}</h1>
           <p className="tss-subtitle">{cfg.think.whatIs.headline}</p>
@@ -147,7 +165,7 @@ export function SequencePage({
               <Card title="Before you start · every session" color={GOLD_BRIGHT}>
                 {cfg.prep.map((p, i) => (
                   <div key={p.lessonId} className="py-2" style={{ borderTop: i ? `1px solid ${BORDER}` : undefined }}>
-                    <Go href={`${portal}?tab=course&lesson=${p.lessonId}`}>{p.label}</Go>
+                    <Go href={`${portal}?tab=${courseTab}&lesson=${p.lessonId}`}>{p.label}</Go>
                     {p.note && <p className="text-[14px] leading-snug mt-0.5 m-0" style={{ color: INK }}>{p.note}</p>}
                   </div>
                 ))}
@@ -170,7 +188,7 @@ export function SequencePage({
                       <div key={id} className={g.ids.length > 1 ? 'mt-2 pl-3' : ''} style={g.ids.length > 1 ? { borderLeft: `2px solid ${BORDER}` } : undefined}>
                         {g.ids.length > 1 && <p className="text-[14px] font-bold m-0" style={{ color: INK }}>{lessons[id].title}</p>}
                         {lessons[id].whatIs && <p className="text-[14px] mt-1 mb-0 leading-snug" style={{ color: INK }}>{lessons[id].whatIs.split('\n').find((l) => l.trim() && !l.startsWith('#') && !l.startsWith('|') && !l.startsWith('>'))?.replace(/\*\*/g, '')}</p>}
-                        <Go href={`${portal}?tab=course&lesson=${id}`} small>Read the full lesson in the course</Go>
+                        <Go href={`${portal}?tab=${courseTab}&lesson=${id}`} small>Read the full lesson in the course</Go>
                       </div>
                     ) : null)}
                   </div>
@@ -225,7 +243,7 @@ export function SequencePage({
                 <summary>Go deeper: each step as its own page<Chevron /></summary>
                 <div className="px-3 pb-3 flex flex-wrap gap-2">
                   {cfg.stepIds.map((id) => (
-                    <a key={id} href={`${portal}?tab=course&lesson=${id}`} className="text-[13px] font-semibold px-3 py-1.5 rounded-full no-underline" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: INK }}>{shortLesson(lessons[id]?.title ?? id)} →</a>
+                    <a key={id} href={`${portal}?tab=${courseTab}&lesson=${id}`} className="text-[13px] font-semibold px-3 py-1.5 rounded-full no-underline" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: INK }}>{shortLesson(lessons[id]?.title ?? id)} →</a>
                   ))}
                 </div>
               </details>
@@ -234,6 +252,15 @@ export function SequencePage({
         )}
 
         {/* ── FEEL ── */}
+        {tab === 'think' && coachLayers.length > 0 && (
+          <CoachCard title="Coach · how you teach it" layers={coachLayers} field="deliver" intro="What each step is, and how you deliver it — explain, demonstrate, participate, feedback." />
+        )}
+        {tab === 'do' && coachLayers.length > 0 && (
+          <CoachCard title="Coach · how you validate it" layers={coachLayers} field="validate" intro="The criteria of the mission, as you see them in the water." />
+        )}
+        {tab === 'review' && coachLayers.length > 0 && (
+          <CoachCard title="Coach · how you correct it" layers={coachLayers} field="errors" intro="Error → what you see → what you say → what you do." />
+        )}
         {tab === 'feel' && (
           <div className="mt-3">
             <Card title="Feel it · out of the water" color={VIOLET_BRIGHT}>
@@ -306,7 +333,7 @@ export function SequencePage({
                   {d.indicators.map((ind, i) => <Indicator key={i} ok={ind.ok} no={ind.no} fix={ind.fix} first={i === 0} />)}
                   {d.deeper && (
                     <div className="mt-2 flex flex-wrap gap-2 text-[13px]">
-                      <a href={`${portal}?tab=course&lesson=${d.deeper.lessonId}`} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: INK }}>Go deeper → {d.deeper.label}</a>
+                      <a href={`${portal}?tab=${courseTab}&lesson=${d.deeper.lessonId}`} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: INK }}>Go deeper → {d.deeper.label}</a>
                       {d.deeper.drillId && pieces[d.deeper.drillId] && <button type="button" onClick={() => go('feel')} className="px-3 py-1.5 rounded-full font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: VIOLET }}>Drill: {pieces[d.deeper.drillId].title} · Feel it</button>}
                       {canTrack && d.deeper.missionId && pieces[d.deeper.missionId] && <a href={`${portal}?tab=sequence&drill=${d.deeper.missionId}`} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: GREEN }}>Mission: {pieces[d.deeper.missionId].title}</a>}
                     </div>
@@ -337,7 +364,7 @@ export function SequencePage({
                   </summary>
                   <div className="px-3 pb-3">
                     {d.indicators.map((ind, i) => <Indicator key={i} ok={ind.ok} no={ind.no} fix={ind.fix} first={i === 0} />)}
-                    {d.deeper && <Go href={`${portal}?tab=course&lesson=${d.deeper.lessonId}`} small>Go deeper → {d.deeper.label}</Go>}
+                    {d.deeper && <Go href={`${portal}?tab=${courseTab}&lesson=${d.deeper.lessonId}`} small>Go deeper → {d.deeper.label}</Go>}
                   </div>
                 </details>
               ))}
@@ -377,11 +404,11 @@ export function SequencePage({
       </div>
 
       {/* Nav inferior blanca: los mismos destinos del portal. */}
-      <nav className="tss-bottom-nav" aria-label="Main navigation"><div className="tss-bottom-nav-inner">
+      {!coach && <nav className="tss-bottom-nav" aria-label="Main navigation"><div className="tss-bottom-nav-inner">
         <a href={`${portal}?tab=home`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="home" />Home</a>
         <a href={`${portal}?tab=course`} aria-current="page" className="relative flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><span style={{ color: CYAN }}><Icon name="course" /></span>Course<span className="absolute bottom-[5px] w-[72%] h-1 rounded-full" style={{ background: CYAN }} /></a>
         <a href={`${portal}?tab=sequence`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="play" />Let&apos;s Play</a>
-      </div></nav>
+      </div></nav>}
     </section>
   );
 }
@@ -519,4 +546,24 @@ function Icon({ name }: { name: 'home' | 'course' | 'play' | 'back' | 'arrow' })
     arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
   };
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{p[name]}</svg>;
+}
+
+/** Capa del coach: una tarjeta ink con un acordeón por paso. */
+function CoachCard({ title, layers, field, intro }: { title: string; layers: CoachStepLayer[]; field: 'deliver' | 'validate' | 'errors'; intro: string }) {
+  return (
+    <section className="tss-card mt-3" style={{ background: NAVY, border: '1px solid rgba(0,210,255,.45)', borderTop: `4px solid ${CYAN}` }}>
+      <h2 className="tss-section-title" style={{ color: PAPER, borderColor: 'rgba(255,255,255,.12)' }}>{title}</h2>
+      <p className="text-[13px] mt-0 mb-2" style={{ color: ON_DARK }}>{intro}</p>
+      {layers.map((l) => {
+        const md = field === 'deliver' ? [l.what, l.deliver].filter(Boolean).join('\n\n') : l[field];
+        if (!md) return null;
+        return (
+          <details key={l.stepId} className="tss-accordion" style={{ background: 'rgba(247,249,250,.06)', borderColor: 'rgba(255,255,255,.14)' }}>
+            <summary style={{ color: PAPER }}><span className="flex-1">{l.title}</span><Chevron /></summary>
+            <div className="px-3 pb-3 seq-dark"><MarkdownContent markdown={md} /></div>
+          </details>
+        );
+      })}
+    </section>
+  );
 }
