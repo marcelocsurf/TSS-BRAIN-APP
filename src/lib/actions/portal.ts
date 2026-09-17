@@ -8,6 +8,7 @@ import { elSalvadorToday } from '@/lib/utils/tz';
 import { BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
 import { getMaterialsForStudent } from '@/lib/constants/student-materials';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
+import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 
 // ─── Get comprehensive student data for the portal ───
 
@@ -363,7 +364,7 @@ export async function getStudentPortalData(token: string) {
     if (nextSessionIds.length > 0) {
       const { data: previewBlocks } = await admin
         .from('service_plan_blocks')
-        .select('camp_session_id, step_id, step_ids, land_drill_id, water_drill_id, objective_text, notes_pre, order_index')
+        .select('camp_session_id, step_id, step_ids, sequence_id, focus_step_id, focus_moments, land_drill_id, water_drill_id, objective_text, notes_pre, order_index')
         .in('camp_session_id', nextSessionIds)
         .eq('student_id', student.id)
         .order('order_index');
@@ -385,7 +386,9 @@ export async function getStudentPortalData(token: string) {
       const seen = new Set<string>();
       const myBeltLevel = String((student as any).belt_level ?? 'white_belt');
       for (const b of dayBlocks) {
-        const cfg = resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, myBeltLevel);
+        // Estructurado primero (sequence_id guardado por el plan simple);
+        // si no, se resuelve por los pasos.
+        const cfg = (b.sequence_id && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, myBeltLevel);
         if (!cfg || seen.has(cfg.id)) continue;
         seen.add(cfg.id);
         const txt = String(b.objective_text ?? '');

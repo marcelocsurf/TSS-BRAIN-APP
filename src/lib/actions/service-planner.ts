@@ -267,6 +267,11 @@ export interface ServicePlanBlock {
   step_id: string | null;
   // Multi-step blocks (M78 activity taxonomy) — all STPs this block trains.
   step_ids?: string[] | null;
+  // Foco estructurado (2026-09-17): la secuencia del curso y los momentos
+  // elegidos, al lado del objective_text (que sigue siendo el texto).
+  sequence_id?: string | null;
+  focus_step_id?: string | null;
+  focus_moments?: string[] | null;
   land_drill_id: string | null;
   land_drill_custom: string | null;
   water_drill_id: string | null;
@@ -597,6 +602,9 @@ export async function getServicePlan(
         order_index: b.order_index ?? 0,
         step_id: b.step_id ?? null,
         step_ids: b.step_ids ?? null,
+        sequence_id: b.sequence_id ?? null,
+        focus_step_id: b.focus_step_id ?? null,
+        focus_moments: b.focus_moments ?? null,
         land_drill_id: b.land_drill_id ?? null,
         land_drill_custom: b.land_drill_custom ?? null,
         water_drill_id: b.water_drill_id ?? null,
@@ -1176,6 +1184,9 @@ export async function saveServicePlanBlock(
   const ALLOWED = [
     'step_id',
     'step_ids',
+    'sequence_id',
+    'focus_step_id',
+    'focus_moments',
     'land_drill_id',
     'land_drill_custom',
     'water_drill_id',

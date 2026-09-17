@@ -1277,7 +1277,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               return ids.length === c.stepIds.length && c.stepIds.every((id) => ids.includes(id));
             })) ?? null;
             const pickSeq = (c: SequencePageConfig) => {
-              for (const st of students) commitStudentBlock(st.student_id, 0, { step_id: c.stepIds[0], step_ids: c.stepIds, objective_text: `Whole line · ${sequenceTag(c)}` } as any);
+              for (const st of students) commitStudentBlock(st.student_id, 0, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${sequenceTag(c)}` } as any);
             };
             const sequenceTag = (c: SequencePageConfig) => `#${c.number} ${c.title}`;
             return (
@@ -1302,7 +1302,16 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                       const ms = momentsByStep(groupSeq.id, groupSeq.stepIds.map((id) => ({ id, title: stpLabel(id) ?? id })));
                       const chosen = new Set(cur.startsWith('Focus: ') ? cur.slice(7).split(' · ') : []);
                       const yesterday = st.profile?.next_recommended_focus ?? null;
-                      const setFocus = (next: Set<string>) => commitStudentBlock(st.student_id, 0, { objective_text: next.size ? `Focus: ${Array.from(next).join(' · ')}` : `Whole line · ${sequenceTag(groupSeq)}` } as any);
+                      const setFocus = (next: Set<string>) => {
+                        // Estructurado: "STP-016:clave" por momento + paso del primero; el texto sigue igual.
+                        const picked = groupSeq.stepIds.flatMap((id) => (ms[id] ?? []).filter((m) => next.has(m.short)).map((m) => ({ stepId: id, key: `${id}:${m.key}` })));
+                        commitStudentBlock(st.student_id, 0, {
+                          sequence_id: groupSeq.id,
+                          focus_step_id: picked[0]?.stepId ?? null,
+                          focus_moments: picked.length ? picked.map((x) => x.key) : null,
+                          objective_text: next.size ? `Focus: ${Array.from(next).join(' · ')}` : `Whole line · ${sequenceTag(groupSeq)}`,
+                        } as any);
+                      };
                       return (
                         <div key={st.student_id} className="rounded-[5px] border border-[#DCD7C6] p-2.5">
                           <p className="text-[12.5px] font-semibold" style={{ color: '#061C2B' }}>{st.display_name} <span className="text-[10px] font-normal text-[#55666E]">· {chosen.size ? `focus: ${Array.from(chosen).join(' · ')}` : 'whole line'}</span></p>
