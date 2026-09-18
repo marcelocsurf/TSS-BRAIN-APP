@@ -11,11 +11,15 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { createCampInstance } from '@/lib/actions/camps';
 
-const SCENARIOS = [
-  { key: 'camp', template_id: 'SVC-CAMP-WB-V2', label: 'Surf Camp · 6 días', days: 6, time: '08:00', modality: 'group' as const },
-  { key: 'lesson', template_id: 'SVC-SL2', label: 'Clase de surf', days: 1, time: '14:00 - 15:30', modality: 'group' as const },
-  { key: 'skate', template_id: 'SVC-SKATE-1', label: 'Clase de skate', days: 1, time: '16:00 - 17:00', modality: 'group' as const },
-];
+export type ScenarioKey = 'camp_wb' | 'camp_yb' | 'camp_bb' | 'lesson' | 'skate';
+
+const SCENARIOS: Record<ScenarioKey, { template_id: string; label: string; days: number; time: string; modality: 'group' }> = {
+  camp_wb: { template_id: 'SVC-CAMP-WB-V2', label: 'Surf Camp Beginner · 6 días', days: 6, time: '08:00', modality: 'group' },
+  camp_yb: { template_id: 'SVC-CAMP-YB-V2', label: 'Surf Camp Novice · 6 días', days: 6, time: '08:00', modality: 'group' },
+  camp_bb: { template_id: 'SVC-CAMP-BB-V2', label: 'Surf Camp Foundation · 6 días', days: 6, time: '08:00', modality: 'group' },
+  lesson: { template_id: 'SVC-SL2', label: 'Clase de surf', days: 1, time: '14:00 - 15:30', modality: 'group' },
+  skate: { template_id: 'SVC-SKATE-1', label: 'Clase de skate', days: 1, time: '16:00 - 17:00', modality: 'group' },
+};
 
 const STUDENTS_PER_COACH = 3;
 
@@ -72,18 +76,20 @@ export async function listTrainingScenarios(): Promise<Array<{ id: string; camp_
   });
 }
 
-export async function createTrainingScenarios(input: { coachIds: string[]; startDate: string }): Promise<{ ok: boolean; error?: string; created?: number }> {
+export async function createTrainingScenarios(input: { items: { coachId: string; scenarios: ScenarioKey[] }[]; startDate: string }): Promise<{ ok: boolean; error?: string; created?: number }> {
   const me = await gate();
   if (!me) return { ok: false, error: 'Solo coordinador o admin.' };
-  if (!input.coachIds.length) return { ok: false, error: 'Elegí al menos un coach.' };
+  const items = (input.items ?? []).filter((i) => i.scenarios?.length);
+  if (!items.length) return { ok: false, error: 'Elegí al menos un coach con un escenario.' };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.startDate)) return { ok: false, error: 'Fecha inválida.' };
   const admin = createAdminClient();
 
-  const { data: coaches } = await admin.from('coaches').select('id, display_name').in('id', input.coachIds).eq('academy_id', me.academy_id);
+  const { data: coaches } = await admin.from('coaches').select('id, display_name').in('id', items.map((i) => i.coachId)).eq('academy_id', me.academy_id);
   if (!coaches?.length) return { ok: false, error: 'Coaches no encontrados en tu academia.' };
 
   let created = 0;
   for (const coach of coaches as any[]) {
+    const wanted = items.find((i) => i.coachId === coach.id)?.scenarios ?? [];
     const first = String(coach.display_name ?? 'Coach').trim().split(/\s+/)[0];
     const tag = slug(first) || 'coach';
 
@@ -111,7 +117,9 @@ export async function createTrainingScenarios(input: { coachIds: string[]; start
       studentIds.push(st.id);
     }
 
-    for (const sc of SCENARIOS) {
+    for (const key of wanted) {
+      const sc = SCENARIOS[key];
+      if (!sc) continue;
       const start = input.startDate;
       const end = addDays(start, sc.days - 1);
       const name = `PRUEBA · ${sc.label} · ${first}`;
