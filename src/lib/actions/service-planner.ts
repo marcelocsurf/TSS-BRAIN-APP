@@ -237,6 +237,8 @@ export interface StudentProfileSnapshot {
   last_homework: string | null;
   current_focus_area: string | null;
   next_recommended_focus: string | null;
+  next_focus_sequence_id?: string | null;
+  next_focus_step_id?: string | null;
   coach_notes_general: string | null;
   learning_profile_primary: string | null;
   ocean_quiz_score: number | null;
@@ -434,7 +436,7 @@ export async function getServicePlan(
         'primary_goal, personal_goal, goal_short_term, goal_mid_term, goal_long_term, ' +
         'fears_phobias, biggest_barrier, injuries, allergies, medical_notes, risk_notes, media_release_consent, ' +
         'last_session_date, last_session_mission, last_session_status, last_homework, ' +
-        'current_focus_area, next_recommended_focus, coach_notes_general, learning_profile_primary, intake_completed_at, portal_token' +
+        'current_focus_area, next_recommended_focus, next_focus_sequence_id, next_focus_step_id, coach_notes_general, learning_profile_primary, intake_completed_at, portal_token' +
       ')'
     )
     .eq('camp_instance_id', campInstanceId)
@@ -605,6 +607,8 @@ export async function getServicePlan(
         last_homework: s?.last_homework ?? null,
         current_focus_area: s?.current_focus_area ?? null,
         next_recommended_focus: s?.next_recommended_focus ?? null,
+        next_focus_sequence_id: s?.next_focus_sequence_id ?? null,
+        next_focus_step_id: s?.next_focus_step_id ?? null,
         coach_notes_general: s?.coach_notes_general ?? null,
         learning_profile_primary: s?.learning_profile_primary ?? null,
         ocean_quiz_score: s?.ocean_quiz_score ?? null,
@@ -2374,6 +2378,18 @@ export async function closeServicePlan(
       .upsert(usageRows, { onConflict: 'board_id,camp_session_id', ignoreDuplicates: true });
   }
 
+  // Día de examen (2026-09-18): un día de plantilla con bloque de evaluación
+  // y sin secuencias de agua se llama "Exit test", no por el texto del
+  // primer bloque ("Read Today's Spot").
+  let exitTestDay = false;
+  try {
+    const { data: sd } = await admin.from('camp_sessions').select('template_day_id').eq('id', campSessionId).maybeSingle();
+    if ((sd as any)?.template_day_id) {
+      const { count } = await admin.from('camp_template_blocks').select('id', { count: 'exact', head: true }).eq('template_day_id', (sd as any).template_day_id).eq('block_type', 'evaluation');
+      exitTestDay = (count ?? 0) > 0;
+    }
+  } catch { /* best-effort */ }
+
   // 2. Idempotency — clear prior results for this camp_session.
   // OJO: NO borrar las SSR de alumnos ya Finished (short camp) — el re-cierre
   // no las reinserta (departed filtra sus blocks) y el link de su encuesta
@@ -2438,6 +2454,17 @@ export async function closeServicePlan(
     );
     const firstBlock = studentBlocks[0];
     const stud = studById[studentId];
+    // Red de seguridad (2026-09-18): el próximo foco vive en el bloque 0 o en
+    // el primero, pero si por una carrera de guardados quedó en otro bloque
+    // del mismo alumno, se toma igual — el alumno nunca se queda sin foco.
+    if (!(firstBlock.whats_next ?? '').trim()) {
+      const other = studentBlocks.find((x: any) => (x.whats_next ?? '').trim());
+      if (other) {
+        firstBlock.whats_next = other.whats_next;
+        firstBlock.next_focus_sequence_id = firstBlock.next_focus_sequence_id ?? other.next_focus_sequence_id ?? null;
+        firstBlock.next_focus_step_id = firstBlock.next_focus_step_id ?? other.next_focus_step_id ?? null;
+      }
+    }
 
     // Session status: prefer the coach's session-level "did they meet the
     // objective?" (block 0, the new light daily eval); fall back to the old
@@ -2486,7 +2513,7 @@ export async function closeServicePlan(
       const label = cfg ? (cfg.eyebrow ? `${cfg.eyebrow.split(' · ')[0]} · ${cfg.title}` : `Sequence ${sequenceDisplayName(cfg)}`) : (blk.sequence_id === 'THREE-CIRCLES' ? 'The Three Circles' : null);
       if (label && !seqTitles.includes(label)) seqTitles.push(label);
     }
-    const missionTitle = seqTitles.length ? seqTitles.join(' · ') : (labelOf(mainBlock) || labelOf(firstBlock) || 'Service session');
+    const missionTitle = seqTitles.length ? seqTitles.join(' · ') : (exitTestDay ? 'Exit test' : (labelOf(mainBlock) || labelOf(firstBlock) || 'Service session'));
     const b = firstBlock; // alias for the legacy code below
 
     const { data: result, error: resErr } = await admin
@@ -3368,7 +3395,7 @@ export async function getCampWeekMissionsByToken(
 
     const { data: blocks } = await admin
       .from('service_plan_blocks')
-      .select('camp_session_id, student_id, order_index, step_id, step_ids, water_drill_id, land_drill_id, water_drill_custom, land_drill_custom, objective_text')
+      .select('camp_session_id, student_id, order_index, step_id, step_ids, sequence_id, focus_step_id, water_drill_id, land_drill_id, water_drill_custom, land_drill_custom, objective_text')
       .in('camp_session_id', sessIds)
       .order('order_index');
 
@@ -3391,14 +3418,29 @@ export async function getCampWeekMissionsByToken(
     for (const b of blocks ?? []) {
       const day = dayByS.get(b.camp_session_id);
       if (day == null) continue;
+      // Idioma del método (2026-09-18): el recorrido se cuenta en SECUENCIAS
+      // de agua, no en el volcado de notas de cada bloque. Los bloques de
+      // tierra sin agua (prep, refresh) no cuentan como trabajado.
+      const landOnly = !!(b.land_drill_id || b.land_drill_custom) && !b.water_drill_id && !b.water_drill_custom && (b.order_index ?? 0) !== 0;
+      if (landOnly) continue;
+      const cfg = (b.sequence_id && b.sequence_id !== 'THREE-CIRCLES' && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, null);
+      if (cfg || b.sequence_id === 'THREE-CIRCLES') {
+        const focus = b.focus_step_id ? stepTitle.get(b.focus_step_id) : null;
+        const label = cfg ? `${cfg.eyebrow ? cfg.title : `#${cfg.number} ${cfg.title}`}${focus ? ` · ${focus}` : ''}` : 'The Three Circles';
+        if (!byStudent[b.student_id]) byStudent[b.student_id] = [];
+        let entry = byStudent[b.student_id].find((e) => e.day === day);
+        if (!entry) { entry = { day, items: [] }; byStudent[b.student_id].push(entry); }
+        if (!entry.items.includes(label)) entry.items.push(label);
+        continue;
+      }
+      if (!b.step_id && !(b.step_ids ?? []).length && !b.water_drill_id && !b.water_drill_custom) continue;
       const stps = [b.step_id, ...(b.step_ids ?? [])]
         .filter(Boolean)
         .map((id: string) => stepTitle.get(id))
         .filter(Boolean);
       const drill = drillTitle.get(b.water_drill_id) ?? b.water_drill_custom ?? drillTitle.get(b.land_drill_id) ?? b.land_drill_custom ?? null;
       const label = [Array.from(new Set(stps)).join(' + ') || null, drill]
-        .filter(Boolean).join(' · ')
-        || (b.objective_text ? String(b.objective_text).slice(0, 80) : null);
+        .filter(Boolean).join(' · ');
       if (!label) continue;
       if (!byStudent[b.student_id]) byStudent[b.student_id] = [];
       let entry = byStudent[b.student_id].find((e) => e.day === day);

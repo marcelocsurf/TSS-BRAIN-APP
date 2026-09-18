@@ -40,7 +40,9 @@ export async function getStudentPortalData(token: string) {
     academyRes,
   ] = await Promise.all([
     admin.from('student_session_results')
-      .select('*, standalone_sessions(*), coaches:coach_id(display_name)')
+      // camp_sessions.session_date = el día real de la clase (la fecha del
+      // cierre no es la fecha de la sesión — prueba E2E 2026-09-18).
+      .select('*, standalone_sessions(*), coaches:coach_id(display_name), camp_sessions:camp_session_id(session_date, day_number)')
       .eq('student_id', student.id)
       .order('created_at', { ascending: false }),
     admin.from('cascade_sessions')
@@ -315,17 +317,29 @@ export async function getStudentPortalData(token: string) {
     // nunca. La nota interna del coach NO se selecciona a propósito.
     const { data: finalNotes } = await admin
       .from('camp_final_evaluations')
-      .select('camp_instance_id, student_visible_note, areas_to_improve, created_at')
+      .select('camp_instance_id, student_visible_note, areas_to_improve, homework_for_after_camp, approved, readiness_summary, finalized_at, created_at')
       .eq('student_id', student.id)
       .order('created_at', { ascending: false });
     const noteByCamp = new Map<string, string>();
+    const finalByCamp = new Map<string, any>();
     for (const n of finalNotes ?? []) {
       if (n.camp_instance_id && n.student_visible_note) {
         noteByCamp.set(n.camp_instance_id, n.student_visible_note);
       }
+      if (n.camp_instance_id && !finalByCamp.has(n.camp_instance_id)) finalByCamp.set(n.camp_instance_id, n);
     }
     for (const c of pastCamps) {
       c.coach_final_note = noteByCamp.get(c.id) ?? null;
+      // Resultado del camp (2026-09-18): el alumno lo ve en su Home la noche
+      // del cierre — listo / en progreso, resumen, próximo foco y nota.
+      const f = finalByCamp.get(c.id);
+      c.final = f ? {
+        approved: !!f.approved,
+        summary: f.readiness_summary ?? null,
+        focus: f.homework_for_after_camp ?? f.areas_to_improve ?? null,
+        note: f.student_visible_note ?? null,
+        at: f.finalized_at ?? f.created_at ?? null,
+      } : null;
     }
     // La última evaluación fuera de un camp — la que el alumno no veía.
     const loose = (finalNotes ?? []).find((n: any) => !n.camp_instance_id);

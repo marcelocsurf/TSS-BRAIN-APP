@@ -822,7 +822,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           students={students.filter((st) => st.student_id === earlyStudentId)}
           stpCatalog={data.graduationCatalog}
           preCourse={data.preCourseByStudent}
-          initialRatings={data.coachRatingByStudentStep}
+          initialRatings={coachRatings}
           targetBelt={data.camp.target_belt}
           canAccreditTarget={
             !data.camp.coach_max_belt ||
@@ -854,7 +854,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           students={students}
           stpCatalog={data.graduationCatalog}
           preCourse={data.preCourseByStudent}
-          initialRatings={data.coachRatingByStudentStep}
+          initialRatings={coachRatings}
           targetBelt={data.camp.target_belt}
           canAccreditTarget={
             // Policy 2026-07-11: everyone (head coach included) is capped by

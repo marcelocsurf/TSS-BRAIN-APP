@@ -1272,6 +1272,11 @@ function HomeTab({
   const upcomingCamps = (data as any).upcomingCamps ?? [];
   // Most recent past camp where the coach left a final-evaluation note.
   const campWithNote = ((data as any).pastCamps ?? []).find((c: any) => c.coach_final_note);
+  // Resultado del camp recién cerrado (2026-09-18): 21 días visible en el Home.
+  const recentCampResult = ((data as any).pastCamps ?? []).find((c: any) => {
+    if (!c.final?.at) return false;
+    return Date.now() - new Date(c.final.at).getTime() < 21 * 86400000;
+  }) ?? null;
   const surf = data.surfHours ?? { trainingMinutes: 0, freeSurfMinutes: 0, totalMinutes: 0 };
   const fmtHm = (mins: number) => {
     const h = Math.floor(mins / 60);
@@ -1926,6 +1931,38 @@ function HomeTab({
       )}
 
 
+      {/* Your camp · result (2026-09-18): lo que decidió el coach al cerrar el
+          camp — antes el alumno solo veía "Latest session" y la encuesta. */}
+      {recentCampResult && (() => {
+        const c: any = recentCampResult;
+        const f = c.final;
+        const m = String(f.summary ?? '').match(/(\d+)\/(\d+) secuencias/);
+        const seqLine = m ? `${m[1]} of ${m[2]} sequences are yours` : null;
+        const targetBelt = c.template_name ? String(c.template_name).match(/(white|yellow|blue|purple)/i)?.[1] : null;
+        const beltLabel = targetBelt ? `${targetBelt.charAt(0).toUpperCase()}${targetBelt.slice(1).toLowerCase()} Belt` : 'the next level';
+        return (
+          <div className="rounded-lg overflow-hidden" style={{ background: '#0A1628', border: `1px solid ${f.approved ? 'rgba(0,210,255,.45)' : 'rgba(255,209,102,.4)'}` }}>
+            <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.08)' }}>
+              <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Your camp · result</p>
+              <h3 className="text-base font-bold mt-0.5" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#F7F9FA' }}>{c.camp_name}</h3>
+            </div>
+            <div className="px-4 py-3 space-y-2.5">
+              <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-full" style={f.approved ? { background: '#00D2FF', color: '#061C2B' } : { background: '#FFD166', color: '#061C2B' }}>
+                {f.approved ? `Ready for ${beltLabel} · recommended by your coach` : 'In progress · keep going'}
+              </span>
+              {seqLine && <p className="text-[13px]" style={{ color: 'rgba(247,249,250,.85)' }}>{seqLine}. {f.approved ? 'Your coach confirms the belt with the academy.' : 'What you did not show yet is still yours to earn — it lives in your course.'}</p>}
+              {f.focus && (
+                <div className="rounded-lg px-3 py-2" style={{ background: '#122236', borderLeft: '3px solid #00D2FF' }}>
+                  <p className="text-[11px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Your next focus</p>
+                  <p className="text-[13px] mt-0.5" style={{ color: '#F7F9FA' }}>{f.focus}</p>
+                </div>
+              )}
+              {f.note && <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: 'rgba(247,249,250,.85)' }}>{f.note}</p>}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Latest Session — dark, matches the hero. OJO: fondo oscuro → textos
           CLAROS (antes quedaron en tinta #061C2B y la tarjeta era ilegible). */}
       {latestResult && (
@@ -1940,7 +1977,7 @@ function HomeTab({
             <div className="flex justify-between items-center">
               <span className="text-xs" style={{ color: 'rgba(247,249,250,.78)' }}>Date</span>
               <span className="text-sm" style={{ color: '#F7F9FA' }}>
-                {new Date(latestResult.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {(latestResult.camp_sessions?.session_date ? new Date(latestResult.camp_sessions.session_date + 'T12:00:00') : new Date(latestResult.created_at)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </div>
             {latestResult.coaches?.display_name && (

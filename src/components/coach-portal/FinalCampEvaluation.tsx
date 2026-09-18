@@ -238,11 +238,23 @@ export function FinalCampEvaluation({
   // La app sugiere los STPs que quedaron débiles (<4★) como punto de partida.
   // Foco ELEGIBLE (Marcelo 2026-09-16): secuencia + paso opcional + nota
   // opcional. El texto que ven las fichas viejas se arma solo (focusLabel).
-  const [focusSel, setFocusSel] = useState<Record<string, NextFocusValue>>({});
   const focusGroups: NextFocusGroup[] = seqGroups.map((g) => ({
     id: g.id, name: g.name, order: g.order,
     steps: g.rows.map((r) => ({ id: r.step_id, title: r.step_title ?? r.step_id })),
   }));
+  // Arranca con el foco que el coach dejó en el ÚLTIMO cierre del día
+  // (prueba E2E 2026-09-18: la semana ya lo dijo, no hay que volver a buscar).
+  const [focusSel, setFocusSel] = useState<Record<string, NextFocusValue>>(() => {
+    const seed: Record<string, NextFocusValue> = {};
+    for (const s of students) {
+      const p: any = s.profile ?? {};
+      const seqId = p.next_focus_sequence_id ?? '';
+      if (!seqId || !focusGroups.some((g) => g.id === seqId)) continue;
+      const stepId = p.next_focus_step_id && focusGroups.find((g) => g.id === seqId)!.steps.some((x) => x.id === p.next_focus_step_id) ? p.next_focus_step_id : '';
+      seed[s.student_id] = { sequenceId: seqId, stepId, note: '' };
+    }
+    return seed;
+  });
   const nextFocus: Record<string, string> = Object.fromEntries(
     Object.entries(focusSel).map(([sid, v]) => [sid, focusLabel(focusGroups, v)]),
   );
@@ -689,6 +701,7 @@ export function FinalCampEvaluation({
                       <div id={`next-focus-${s.student_id}`}>
                         <NextFocusPicker
                           groups={focusGroups}
+                          hint={(s.profile as any)?.next_focus_sequence_id && focusSel[s.student_id]?.sequenceId === (s.profile as any).next_focus_sequence_id ? 'Pre-filled from the last day you closed. Change it if the week said otherwise.' : undefined}
                           value={focusSel[s.student_id] ?? EMPTY_FOCUS}
                           onChange={(v) => setFocusSel((prev) => ({ ...prev, [s.student_id]: v }))}
                           label=""
