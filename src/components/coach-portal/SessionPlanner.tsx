@@ -2807,8 +2807,10 @@ function StudentPlanCard({
       {(() => {
         const isWater = (b: ServicePlanBlock) => {
           const tb = templateBlocks.find((t) => t.block_order === b.order_index);
-          const label = `${tb?.block_type ?? ''} ${tb?.pilar ?? ''}`.toLowerCase();
-          if (label.includes('water') || label.includes('agua')) return true;
+          // Con plantilla: manda el tipo del bloque (un 'custom' con texto de
+          // misión no es agua). Sin plantilla: la secuencia o la misión de agua.
+          if (tb?.block_type) return /water|mission|get_in_stp/i.test(String(tb.block_type));
+          if (b.sequence_id) return true;
           return !!(b.water_drill_id || b.water_drill_custom);
         };
         const waterBlocks = blocks.filter(isWater);
