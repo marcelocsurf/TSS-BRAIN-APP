@@ -133,7 +133,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
   const stpLabel = (id: string | null) => {
     if (!id) return null;
     const stp = data.stpCatalog.find((s) => s.id === id);
-    return stp ? `${stp.id} — ${stp.title}` : id;
+    // Sin código (2026-09-18): el coach lee el nombre del paso, no STP-010.
+    return stp ? stp.title : id;
   };
   const warmUpLabel = plan.warm_up_drill_id
     ? drillTitle(plan.warm_up_drill_id)
@@ -427,10 +428,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 
   // M45 — a student counts as "evaluated" once every GRADABLE block (sequence
   // step) has a status set. Non-gradable blocks don't require a status.
-  const evaluatedCount = students.filter((s) => {
-    const gradable = s.blocks.filter((b) => b.step_id);
-    return gradable.length > 0 && gradable.every((b) => b.status);
-  }).length;
+  // Evaluado = el objetivo del día marcado (lo que pide el cierre). Antes
+  // contaba estrellas por paso que ya no se piden acá: siempre decía 0/N.
+  const evaluatedCount = students.filter((s) => !!s.blocks[0]?.day_objective_status).length;
 
   // When the plan is in_progress the coach can re-open the editable plan
   // view (the plan stays modifiable until finalize).
@@ -3486,14 +3486,16 @@ function StudentEvalCard({
                 Tocar una opción escribe el foco; abajo se puede reforzar. */}
             {(() => {
               const stepIds = student.blocks.flatMap((b) => [b.step_id, ...(b.step_ids ?? [])]).filter((x): x is string => !!x);
+              const workedSeqIds = Array.from(new Set(student.blocks.map((b) => b.sequence_id).filter((x): x is string => !!x && x !== 'THREE-CIRCLES' && !!SEQUENCE_PAGES[x])));
               const titles: Record<string, string> = {};
               const addTitles = (ids: string[]) => { for (const id of ids) { const t = stpLabel(id); if (t) titles[id] = t; } };
               addTitles(stepIds);
+              for (const sid of workedSeqIds) addTitles(SEQUENCE_PAGES[sid].stepIds);
               // Otra secuencia (Marcelo 2026-09-18): el coach puede mandar al
               // alumno a una secuencia distinta de la que entrenó hoy.
               const extraCfg = extraSeqId ? SEQUENCE_PAGES[extraSeqId] ?? null : null;
               if (extraCfg) addTitles(extraCfg.stepIds);
-              const groups = coachFocusOptions(stepIds, titles);
+              const groups = coachFocusOptions(stepIds, titles, workedSeqIds);
               if (extraCfg && !groups.some((g) => g.title === (extraCfg.eyebrow ? extraCfg.title : `#${extraCfg.number} ${extraCfg.title}`))) groups.push(focusOptionsForSequence(extraCfg, titles));
               const focusOpen = !isClosed || (gen?.whats_next ?? '').trim().length < 5;
               if (!focusOpen) return null;

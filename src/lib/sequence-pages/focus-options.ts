@@ -34,9 +34,13 @@ export function focusOptionsForSequence(c: SequencePageConfig, stepTitles: Recor
 /** Las opciones de lo que se entrenó hoy: las secuencias que contienen esos
  *  pasos (máximo dos), con TODOS sus momentos (los entrenados primero).
  *  Incluye las secuencias numeradas de White (kind 'entry' con número). */
-export function coachFocusOptions(stepIds: string[], stepTitles: Record<string, string> = {}): FocusGroup[] {
-  const all = Object.values(SEQUENCE_PAGES).filter((c) => !c.eyebrow);
+export function coachFocusOptions(stepIds: string[], stepTitles: Record<string, string> = {}, workedSequenceIds: string[] = []): FocusGroup[] {
   const ids = new Set(stepIds.filter(Boolean));
+  // Primero las secuencias que el alumno trabajó de verdad (sequence_id del
+  // bloque, plantilla o plan simple), incluidas las entradas Blue con eyebrow.
+  const worked = workedSequenceIds.map((id) => SEQUENCE_PAGES[id]).filter(Boolean);
+  if (worked.length) return worked.slice(0, 3).map((c) => focusOptionsForSequence(c, stepTitles, ids));
+  const all = Object.values(SEQUENCE_PAGES).filter((c) => !c.eyebrow);
   const hit = all.filter((c) => c.stepIds.some((id) => ids.has(id))).sort((a, b) => a.number - b.number).slice(0, 2);
   return hit.map((c) => focusOptionsForSequence(c, stepTitles, ids));
 }
