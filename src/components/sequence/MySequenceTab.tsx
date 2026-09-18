@@ -80,9 +80,11 @@ interface Props {
   /** Cintas cuyo curso tiene el alumno: los links a la página de la secuencia
    *  solo salen para quien lo tiene (el curso es aprender, la membresía es entrenar). */
   ownedBelts?: string[];
+  /** Lección "Venue Analysis" (ONB-06) leída; null = no se sabe. */
+  venueDone?: boolean | null;
 }
 
-export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, onTrainSequence, initialStepId, ownedBelts = [] }: Props) {
+export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, onTrainSequence, initialStepId, ownedBelts = [], venueDone = null }: Props) {
   const router = useRouter();
   const [data, setData] = useState<SequenceData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -230,6 +232,45 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         </ol>
         <p className="text-[13px] mt-2.5 leading-snug" style={{ color: '#10263B' }}>A sequence is yours when every step is at 4★. Drills are rehearsal: do them in the course, no need to log them. Your coach confirms in the water.</p>
       </div>
+
+      {/* YOUR PATH (Marcelo 2026-09-17): el orden de Yellow y Blue en la ola.
+          1 Venue analysis (teoría) → 2 llegar a la ola (entradas) → 3 Tres
+          Círculos (juegos) → 4 las secuencias. Marca dónde estás; no bloquea. */}
+      {(beltKey === 'yellow' || beltKey === 'blue') && (() => {
+        const entries = beltKey === 'blue'
+          ? data.sequences.filter((sq) => SEQUENCE_ROLE[sq.id] === 'entry')
+          : data.sequences.filter((sq) => sq.belt === 'white' && sq.order <= 3);
+        const entriesOwned = entries.filter((sq) => sq.state === 'owned').length;
+        const circlesDone = circles.filter((g) => (g.lastStars ?? 0) >= 4).length;
+        const stages: { n: number; title: string; status: string; done: boolean; href?: string | null; hint: string }[] = [
+          { n: 1, title: 'Venue analysis', status: venueDone == null ? 'theory' : venueDone ? 'read' : 'not read yet', done: venueDone === true, href: `/portal/${portalToken}?tab=course`, hint: 'Read the spot before you paddle out. It is in your Pre-Course.' },
+          { n: 2, title: 'Getting to the wave', status: entries.length ? `${entriesOwned} of ${entries.length} yours` : '—', done: entries.length > 0 && entriesOwned === entries.length, href: null, hint: 'Paddle out, catch, angle. The sequences below the games.' },
+          { n: 3, title: 'The Three Circles', status: circles.length ? `${circlesDone} of ${circles.length} games at 4★` : '—', done: circles.length > 0 && circlesDone === circles.length, href: null, hint: 'Board · Body · Wave. The six games, in the water.' },
+          { n: 4, title: `${beltWord} sequences`, status: levelSeqs.length ? `${owned} of ${levelSeqs.length} yours` : '—', done: levelSeqs.length > 0 && owned === levelSeqs.length, href: null, hint: 'One sequence at a time, both sides.' },
+        ];
+        const here = stages.find((st) => !st.done) ?? null;
+        return (
+          <div className="rounded-lg p-4" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.35)' }}>
+            <p className="text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: '#00D2FF' }}>Your path · {beltWord} Belt</p>
+            <p className="text-[23px] mt-1" style={{ ...F_D, fontWeight: 900, color: '#F7F9FA' }}>{here ? `You are here: ${here.title}` : 'The whole path is yours'}</p>
+            <div className="mt-3 space-y-1.5">
+              {stages.map((st) => {
+                const isHere = here?.n === st.n;
+                const inner = (
+                  <div className="flex items-center gap-3 rounded-[5px] px-3 py-2" style={{ background: isHere ? '#F7F9FA' : 'rgba(247,249,250,.06)', border: `1px solid ${isHere ? '#F7F9FA' : 'rgba(247,249,250,.14)'}` }}>
+                    <span className="shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center text-[13px] font-black" style={{ background: st.done ? '#0A7C5D' : isHere ? '#00D2FF' : 'rgba(247,249,250,.12)', color: st.done || isHere ? '#061C2B' : '#F7F9FA' }}>{st.done ? '✓' : st.n}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[14px] font-bold leading-tight" style={{ color: isHere ? '#10263B' : '#F7F9FA' }}>{st.title}{isHere ? <span className="ml-2 text-[10px] font-mono uppercase tracking-wider" style={{ color: '#00A8CC' }}>you are here</span> : null}</p>
+                      <p className="text-[11px]" style={{ color: isHere ? '#55666E' : 'rgba(247,249,250,.7)' }}>{st.status}{isHere ? ` · ${st.hint}` : ''}</p>
+                    </div>
+                  </div>
+                );
+                return st.href ? <a key={st.n} href={st.href} className="block no-underline">{inner}</a> : <div key={st.n}>{inner}</div>;
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* THE THREE CIRCLES · primer requisito en la ola (Yellow y Blue). Los
           juegos se juegan en el agua y se registran como una misión; no mueven

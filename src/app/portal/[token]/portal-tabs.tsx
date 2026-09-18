@@ -1,5 +1,6 @@
 'use client';
 
+import { THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
 import { ExperienceSurveyForm } from '@/components/survey/ExperienceSurveyForm';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -186,6 +187,8 @@ interface PortalData {
   };
   /** El curso activo está con candado hasta el día antes del camp. */
   courseLocked?: boolean;
+  /** Tres Círculos pendientes (Yellow/Blue): el Home los recomienda primero. */
+  circlesNext?: { gameId: string; title: string; done: number; total: number } | null;
   myCoach?: {
     coach: {
       id: string;
@@ -441,6 +444,18 @@ function nextMoveRows(
       reason: (data as any).standaloneEvaluation?.note || 'Stays here until you take it to 4★ on your own.',
       action: coachStep ? 'Train it →' : null,
       onClick: coachStep ? () => onOpenStep?.(coachStep) : undefined,
+    });
+  }
+  // LOS TRES CÍRCULOS (Marcelo 2026-09-17): primer requisito en la ola para
+  // Yellow y Blue. Compuerta suave: va antes del camino, no lo bloquea.
+  const circlesNext = (data as any).circlesNext as PortalData['circlesNext'];
+  if (circlesNext) {
+    rows.push({
+      key: 'circles', label: 'The path', title: 'The Three Circles', accent: BRAND.colors.cyan,
+      reason: `Your first requirement on the wave · ${circlesNext.done} of ${circlesNext.total} games at 4★ · next: ${circlesNext.title}`,
+      action: 'Play it →',
+      onClick: () => { if (onTrainSequence) onTrainSequence({ sequenceId: THREE_CIRCLES_SEQUENCE_ID, mode: 'step_focus', focusStepId: circlesNext.gameId }); },
+      pageHref: `/portal/${data.token}/circles`,
     });
   }
   // TU LISTA (doctrina 2026-09-10): lo que vos te dejaste, antes del camino
@@ -1050,6 +1065,7 @@ export function PortalTabs({
                 onTrainSequence={(args) => { setDeepStepId(null); setPendingSequence(args); }}
                 initialStepId={deepStepId}
                 ownedBelts={data.ownedBelts ?? []}
+                venueDone={(() => { const l = (data.courseData?.lessons ?? []).find((x: any) => x.id === 'ONB-06'); return l ? !!l.completed : null; })()}
               />
               <button
                 type="button"

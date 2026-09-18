@@ -17,7 +17,7 @@ import { getActiveStudentOrCoachImpersonation } from '@/lib/actions/impersonate'
 import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 import { PortalTabs } from './portal-tabs';
 import { getCoachSideForStudent } from '@/lib/actions/dual-profile';
-import { getNextMove } from '@/lib/actions/sequence';
+import { getNextMove, getThreeCirclesProgress } from '@/lib/actions/sequence';
 import { getOpenSession, getTasks } from '@/lib/actions/lets-play';
 import { RenewalGate } from './RenewalGate';
 import { TermsGate } from './TermsGate';
@@ -231,6 +231,18 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           // El próximo movimiento: la primera secuencia sin lograr y el paso
           // que la frena. Sale de las notas que el coach ya puso.
           nextMove: await getNextMove(token, activeCourse?.belt ?? 'white'),
+          // Compuerta SUAVE (Marcelo 2026-09-17): para Yellow y Blue, los Tres
+          // Círculos son el primer requisito en la ola. Si no están a 4★, el
+          // Home los recomienda primero; nada se bloquea.
+          circlesNext: await (async () => {
+            const b = activeCourse?.belt ?? 'white';
+            if (b !== 'yellow' && b !== 'blue') return null;
+            const prog = await getThreeCirclesProgress(token);
+            if (prog.length === 0) return null;
+            const done = prog.filter((g) => (g.lastStars ?? 0) >= 4).length;
+            const nextGame = prog.find((g) => (g.lastStars ?? 0) < 4) ?? null;
+            return nextGame ? { gameId: nextGame.id, title: nextGame.title, done, total: prog.length } : null;
+          })(),
           // El curso es aprender, la membresía es entrenar: los links al curso
           // solo salen para quien lo tiene.
           ownedBelts: ownedCourses.filter((c) => !courseLocks[c.key]).map((c) => c.key),
