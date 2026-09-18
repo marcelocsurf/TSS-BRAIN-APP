@@ -1281,11 +1281,19 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             // puso el coach. La del grupo es la mayoría; un alumno puede quedarse
             // en otra (Marcelo 2026-09-18: niveles distintos, sin complicar).
             const seqOfStudent = (st: ServicePlanStudent): SequencePageConfig | null => {
+              // Bloque 0 = lo que el coach decidió en el plan simple. Si no hay,
+              // la primera secuencia de la plantilla del día (los bloques sembrados).
+              const cfgOf = (b: ServicePlanBlock | undefined): SequencePageConfig | null => {
+                if (!b) return null;
+                if (b.sequence_id && b.sequence_id !== 'THREE-CIRCLES' && SEQUENCE_PAGES[b.sequence_id]) return SEQUENCE_PAGES[b.sequence_id];
+                const ids = b.step_ids ?? (b.step_id ? [b.step_id] : []);
+                return Object.values(SEQUENCE_PAGES).find((c) => ids.length === c.stepIds.length && c.stepIds.every((id) => ids.includes(id))) ?? null;
+              };
               const b0 = st.blocks.find((x) => x.order_index === 0);
-              if (!b0) return null;
-              if (b0.sequence_id && SEQUENCE_PAGES[b0.sequence_id]) return SEQUENCE_PAGES[b0.sequence_id];
-              const ids = b0.step_ids ?? (b0.step_id ? [b0.step_id] : []);
-              return Object.values(SEQUENCE_PAGES).find((c) => ids.length === c.stepIds.length && c.stepIds.every((id) => ids.includes(id))) ?? null;
+              if (b0) return cfgOf(b0);
+              const sorted = st.blocks.slice().sort((a, b) => a.order_index - b.order_index);
+              for (const b of sorted) { const c = cfgOf(b); if (c) return c; }
+              return null;
             };
             const tally = new Map<string, number>();
             for (const st of students) { const c = seqOfStudent(st); if (c) tally.set(c.id, (tally.get(c.id) ?? 0) + 1); }
@@ -2916,7 +2924,7 @@ function workLabelOf(
   stpLabel: (id: string | null) => string | null,
 ): string | null {
   // Título de plantilla ya en el idioma del método: se respeta tal cual.
-  if (tb?.pilar_part && /^(Sequence #|Getting to the wave|The Three Circles|Your sequence)/.test(tb.pilar_part)) return tb.pilar_part;
+  if (tb?.pilar_part && /^(Sequence #|Getting to the wave|The Three Circles|Your sequence|Prep for tomorrow|Refresh)/.test(tb.pilar_part)) return tb.pilar_part;
   if ((b.sequence_id ?? tb?.sequence_id) === 'THREE-CIRCLES') {
     const gid = (b as any).water_drill_id as string | null | undefined;
     const g = gid ? gameContext(gid) : null;

@@ -58,7 +58,7 @@ type Mode = 'summary' | 'detail';
 const MOMENTS = ['Tierra', 'Calentamiento', 'Agua', 'Cierre'] as const;
 /** Idioma del método (2026-09-18): un bloque se nombra por su secuencia y su
  *  foco; los códigos de plantilla (CMS-…, STP-…) no se muestran. */
-const TEMPLATE_TITLE = /^(Sequence #|Getting to the wave|The Three Circles|Your sequence)/;
+const TEMPLATE_TITLE = /^(Sequence #|Getting to the wave|The Three Circles|Your sequence|Prep for tomorrow|Refresh)/;
 function sequenceLabelOf(b: Block): string | null {
   // Un título escrito en el idioma del método se respeta tal cual (distingue
   // "rehearsal on land" de "whole sequence" y de "focus: …").

@@ -1287,12 +1287,15 @@ export async function carryStudentPlanToNextDay(
     .limit(1)
     .maybeSingle();
   if (!next) return { ok: false, error: 'This is the last day of the service.' };
-  const { data: today } = await admin
+  // Bloque 0 (plan simple) o, si no hay, el primer bloque con secuencia (plantilla).
+  const { data: todays } = await admin
     .from('service_plan_blocks')
-    .select('step_id, step_ids, sequence_id, focus_step_id, focus_moments, objective_text, water_drill_id, water_drill_custom, land_drill_id, land_drill_custom')
-    .eq('camp_session_id', campSessionId).eq('student_id', studentId).eq('order_index', 0)
-    .maybeSingle();
-  if (!today || (!today.sequence_id && !today.step_id && !(today.step_ids ?? []).length)) return { ok: false, error: 'Nothing planned for this student today.' };
+    .select('order_index, step_id, step_ids, sequence_id, focus_step_id, focus_moments, objective_text, water_drill_id, water_drill_custom, land_drill_id, land_drill_custom')
+    .eq('camp_session_id', campSessionId).eq('student_id', studentId)
+    .order('order_index');
+  const today = (todays ?? []).find((b: any) => b.order_index === 0 && (b.sequence_id || b.step_id || (b.step_ids ?? []).length))
+    ?? (todays ?? []).find((b: any) => b.sequence_id && b.sequence_id !== 'THREE-CIRCLES');
+  if (!today) return { ok: false, error: 'Nothing planned for this student today.' };
   const patch = {
     step_id: today.step_id, step_ids: today.step_ids, sequence_id: today.sequence_id, focus_step_id: today.focus_step_id, focus_moments: today.focus_moments,
     objective_text: today.objective_text, water_drill_id: today.water_drill_id, water_drill_custom: today.water_drill_custom, land_drill_id: today.land_drill_id, land_drill_custom: today.land_drill_custom,
