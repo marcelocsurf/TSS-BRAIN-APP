@@ -967,16 +967,26 @@ export async function createCampInstance(input: {
     const { data: tplBlocks } = await supabase
       .from('camp_template_blocks')
       .select(
-        'id, template_day_id, block_order, step_id, step_ids, drill_id, drill_custom, mission_id, mission_custom, evaluation_focus, mission_time'
+        'id, template_day_id, block_order, step_id, step_ids, drill_id, drill_custom, mission_id, mission_custom, evaluation_focus, mission_time, sequence_id, focus_step_id, focus_moments'
       )
       .in('template_day_id', dayIds)
       .order('block_order');
+    // Temas de teoría del día (idioma del método, 2026-09-18) → service_plans.topics.
+    const topicsByDayId = new Map<string, string[]>();
+    {
+      const { data: dayTopics } = await supabase
+        .from('camp_template_days')
+        .select('id, topic_ids')
+        .in('id', dayIds);
+      for (const d of dayTopics ?? []) if (Array.isArray((d as any).topic_ids) && (d as any).topic_ids.length) topicsByDayId.set((d as any).id, (d as any).topic_ids);
+    }
 
     // One service_plans row per camp_session (the coach's plan for that day).
     const planRows = createdSessions.map((cs) => ({
       camp_instance_id: instance.id,
       camp_session_id: cs.id,
       completion_state: 'planned' as const,
+      topics: topicsByDayId.get((cs as any).template_day_id) ?? null,
     }));
     const { error: planErr } = await supabase.from('service_plans').insert(planRows);
     if (planErr) throw new Error(`Failed to seed service_plans: ${planErr.message}`);
@@ -1009,6 +1019,10 @@ export async function createCampInstance(input: {
               water_drill_id: tb.mission_id ?? null,
               water_drill_custom: tb.mission_custom ?? null,
               objective_text: tb.evaluation_focus ?? null,
+              // Idioma del método (2026-09-18): secuencia + foco de la plantilla.
+              sequence_id: (tb as any).sequence_id ?? null,
+              focus_step_id: (tb as any).focus_step_id ?? null,
+              focus_moments: (tb as any).focus_moments ?? null,
             });
           });
         }
@@ -1868,6 +1882,11 @@ export interface TemplateBlockInput {
   equipment?: string | null;
   activity_subtype?: string | null;
   step_ids?: string[] | null;
+  // Idioma del método (2026-09-18).
+  sequence_id?: string | null;
+  focus_step_id?: string | null;
+  focus_moments?: string[] | null;
+  topic_ids?: string[] | null;
 }
 
 export interface TemplateDayInput {
@@ -1882,6 +1901,9 @@ export interface TemplateDayInput {
   has_evaluation: boolean;
   evaluation_type: string | null;
   blocks: TemplateBlockInput[];
+  // Idioma del método (2026-09-18).
+  sequence_id?: string | null;
+  topic_ids?: string[] | null;
 }
 
 export interface CreateTemplateInput {
@@ -1957,6 +1979,8 @@ export async function createCampTemplate(input: CreateTemplateInput) {
         evaluation_focus: day.evaluation_focus,
         has_evaluation: day.has_evaluation,
         evaluation_type: day.evaluation_type,
+        sequence_id: day.sequence_id ?? null,
+        topic_ids: day.topic_ids ?? null,
       })
       .select()
       .single();
@@ -1993,6 +2017,10 @@ export async function createCampTemplate(input: CreateTemplateInput) {
         equipment: b.equipment ?? null,
         activity_subtype: b.activity_subtype ?? null,
         step_ids: b.step_ids ?? null,
+        sequence_id: b.sequence_id ?? null,
+        focus_step_id: b.focus_step_id ?? null,
+        focus_moments: b.focus_moments ?? null,
+        topic_ids: b.topic_ids ?? null,
       }));
 
       const { error: blkErr } = await supabase
@@ -2091,6 +2119,8 @@ export async function updateCampTemplate(templateId: string, input: CreateTempla
         evaluation_focus: day.evaluation_focus,
         has_evaluation: day.has_evaluation,
         evaluation_type: day.evaluation_type,
+        sequence_id: day.sequence_id ?? null,
+        topic_ids: day.topic_ids ?? null,
       })
       .select()
       .single();
@@ -2127,6 +2157,10 @@ export async function updateCampTemplate(templateId: string, input: CreateTempla
         equipment: b.equipment ?? null,
         activity_subtype: b.activity_subtype ?? null,
         step_ids: b.step_ids ?? null,
+        sequence_id: b.sequence_id ?? null,
+        focus_step_id: b.focus_step_id ?? null,
+        focus_moments: b.focus_moments ?? null,
+        topic_ids: b.topic_ids ?? null,
       }));
 
       const { error: blkErr } = await supabase
@@ -2214,7 +2248,27 @@ export async function duplicateCampTemplate(templateId: string) {
           mental_hack: b.mental_hack,
           evaluation_focus: b.evaluation_focus,
           block_type: b.block_type || 'mission',
+          // Antes se perdían al duplicar (2026-09-18): links al catálogo,
+          // EDPF y el idioma del método.
+          step_id: b.step_id ?? null,
+          drill_id: b.drill_id ?? null,
+          drill_custom: b.drill_custom ?? null,
+          mission_id: b.mission_id ?? null,
+          mission_custom: b.mission_custom ?? null,
+          explain_md: b.explain_md ?? null,
+          demonstrate_md: b.demonstrate_md ?? null,
+          simulate_md: b.simulate_md ?? null,
+          feedback_md: b.feedback_md ?? null,
+          equipment: b.equipment ?? null,
+          activity_subtype: b.activity_subtype ?? null,
+          step_ids: b.step_ids ?? null,
+          sequence_id: b.sequence_id ?? null,
+          focus_step_id: b.focus_step_id ?? null,
+          focus_moments: b.focus_moments ?? null,
+          topic_ids: b.topic_ids ?? null,
         })),
+        sequence_id: day.sequence_id ?? null,
+        topic_ids: day.topic_ids ?? null,
       };
     }),
   };

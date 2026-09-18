@@ -130,6 +130,9 @@ export interface ServicePlanData {
     ocean_condition_target: string | null;
     evaluation_focus: string | null;
     day_notes: string | null;
+    // Idioma del método (2026-09-18): secuencia principal y temas del día.
+    sequence_id?: string | null;
+    topic_ids?: string[] | null;
     // M77 — per-day support material (PPT / video / image / diagram).
     media: Array<{
       id: string;
@@ -180,6 +183,11 @@ export interface ServicePlanData {
       equipment: string | null;
       activity_subtype: string | null;
       step_ids: string[] | null;
+      // Idioma del método (2026-09-18).
+      sequence_id?: string | null;
+      focus_step_id?: string | null;
+      focus_moments?: string[] | null;
+      topic_ids?: string[] | null;
     }>;
   }>;
   templateMeta: {
@@ -1307,6 +1315,9 @@ export async function applyTemplateDayToStudents(
     mission_id: string | null;
     mission_custom: string | null;
     objective_text?: string | null;
+    sequence_id?: string | null;
+    focus_step_id?: string | null;
+    focus_moments?: string[] | null;
   }>,
 ): Promise<void> {
   const admin = createAdminClient();
@@ -1378,6 +1389,10 @@ export async function applyTemplateDayToStudents(
         water_drill_id: tb.mission_id ?? null,
         water_drill_custom: tb.mission_id ? null : tb.mission_custom ?? null,
         objective_text: tb.objective_text ?? null,
+        // Idioma del método (2026-09-18): la secuencia y el foco viajan de la plantilla al plan.
+        sequence_id: tb.sequence_id ?? null,
+        focus_step_id: tb.focus_step_id ?? null,
+        focus_moments: tb.focus_moments ?? null,
       });
     }
   }
@@ -2712,7 +2727,7 @@ async function hydrateTemplatePlan(
 ): Promise<ServicePlanData['templatePlan']> {
   const { data: tplDays } = await admin
     .from('camp_template_days')
-    .select('id, day_number, day_goal, venue_default, ocean_condition_target, evaluation_focus, day_notes')
+    .select('id, day_number, day_goal, venue_default, ocean_condition_target, evaluation_focus, day_notes, sequence_id, topic_ids')
     .eq('template_id', templateId)
     .order('day_number');
   if (!tplDays || tplDays.length === 0) return [];
@@ -2721,7 +2736,7 @@ async function hydrateTemplatePlan(
   const { data: tplBlocks } = await admin
     .from('camp_template_blocks')
     .select(
-      'template_day_id, block_order, pilar, pilar_part, block_type, mission_time, repetitions_default, warm_up, simulation, mental_hack, evaluation_focus, step_id, drill_id, drill_custom, mission_id, mission_custom, explain_md, demonstrate_md, simulate_md, feedback_md, equipment, activity_subtype, step_ids'
+      'template_day_id, block_order, pilar, pilar_part, block_type, mission_time, repetitions_default, warm_up, simulation, mental_hack, evaluation_focus, step_id, drill_id, drill_custom, mission_id, mission_custom, explain_md, demonstrate_md, simulate_md, feedback_md, equipment, activity_subtype, step_ids, sequence_id, focus_step_id, focus_moments, topic_ids'
     )
     .in('template_day_id', dayIds)
     .order('block_order');
@@ -2774,6 +2789,8 @@ async function hydrateTemplatePlan(
     ocean_condition_target: d.ocean_condition_target ?? null,
     evaluation_focus: d.evaluation_focus ?? null,
     day_notes: d.day_notes ?? null,
+    sequence_id: d.sequence_id ?? null,
+    topic_ids: d.topic_ids ?? null,
     media: mediaByDay.get(d.id) ?? [],
     blocks: (tplBlocks ?? [])
       .filter((b: any) => b.template_day_id === d.id)
@@ -2824,6 +2841,10 @@ async function hydrateTemplatePlan(
           equipment: b.equipment ?? null,
           activity_subtype: b.activity_subtype ?? null,
           step_ids: b.step_ids ?? null,
+          sequence_id: b.sequence_id ?? null,
+          focus_step_id: b.focus_step_id ?? null,
+          focus_moments: b.focus_moments ?? null,
+          topic_ids: b.topic_ids ?? null,
         };
       }),
   }));

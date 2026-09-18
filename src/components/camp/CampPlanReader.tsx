@@ -31,6 +31,10 @@ import {
   MENTAL_SUBTYPES,
 } from '@/lib/constants/brand';
 import type { ServicePlanData } from '@/lib/actions/service-planner';
+import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
+import { topicById } from '@/lib/sequence-pages/topics';
+import { gameContext } from '@/lib/sequence-pages/three-circles';
 
 type Block = ServicePlanData['templatePlan'][number]['blocks'][number];
 type Day = ServicePlanData['templatePlan'][number];
@@ -52,8 +56,28 @@ type Mode = 'summary' | 'detail';
 
 // Vista light: los bloques del día agrupados en los 4 momentos de una clase.
 const MOMENTS = ['Tierra', 'Calentamiento', 'Agua', 'Cierre'] as const;
+/** Idioma del método (2026-09-18): un bloque se nombra por su secuencia y su
+ *  foco; los códigos de plantilla (CMS-…, STP-…) no se muestran. */
+function sequenceLabelOf(b: Block): string | null {
+  const sid = (b as any).sequence_id as string | null | undefined;
+  if (sid === 'THREE-CIRCLES') {
+    const g = b.mission_id ? gameContext(b.mission_id) : null;
+    return g ? `The Three Circles · ${g.label}${b.mission?.title ? ` — ${b.mission.title}` : ''}` : 'The Three Circles';
+  }
+  const cfg = (sid && SEQUENCE_PAGES[sid]) || resolveSequenceForSteps({ stepIds: b.step_ids ?? null, stepId: b.step_id ?? null }, null);
+  if (!cfg) return null;
+  const focus = (b as any).focus_step_id as string | null | undefined;
+  const focusTitle = focus && focus === b.step_id ? b.step_title : null;
+  const single = !focus && b.step_id && (!b.step_ids || b.step_ids.length <= 1) && b.step_title;
+  return `Sequence ${sequenceDisplayName(cfg)}${focusTitle ? ` · focus: ${focusTitle}` : single ? ` · ${b.step_title}` : ''}`;
+}
+function topicsLabelOf(ids: string[] | null | undefined): string | null {
+  if (!Array.isArray(ids) || !ids.length) return null;
+  return ids.map((id) => topicById(id)?.title ?? id).join(' · ');
+}
 function blockTitle(b: Block): string {
   return (
+    sequenceLabelOf(b) || topicsLabelOf((b as any).topic_ids) ||
     b.pilar_part || b.mission_custom || b.mission?.title || b.drill_custom || b.drill?.title ||
     (b.block_type ? String(b.block_type).replace(/_/g, ' ') : 'Activity')
   );
@@ -182,6 +206,14 @@ export function CampPlanReader({
                         <Compass size={10} strokeWidth={1.75} />
                         {d.venue_default}
                       </span>
+                    )}
+                    {(d as any).sequence_id && SEQUENCE_PAGES[(d as any).sequence_id] && (
+                      <span className="uppercase tracking-wider text-[var(--tss-cyan)]">
+                        · Sequence {sequenceDisplayName(SEQUENCE_PAGES[(d as any).sequence_id])}
+                      </span>
+                    )}
+                    {topicsLabelOf((d as any).topic_ids) && (
+                      <span className="uppercase tracking-wider">· Theory: {topicsLabelOf((d as any).topic_ids)}</span>
                     )}
                     <span className="uppercase tracking-wider">
                       {d.blocks.length} block{d.blocks.length === 1 ? '' : 's'}
@@ -334,6 +366,12 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
       className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-4 space-y-3 border-l-4"
       style={{ borderLeftColor: activityType.color }}
     >
+      {/* Idioma del método: qué secuencia / tema trabaja este bloque */}
+      {(sequenceLabelOf(block) || topicsLabelOf((block as any).topic_ids)) && (
+        <p className="text-[13px] font-bold leading-snug" style={{ color: '#10263B' }}>
+          {sequenceLabelOf(block) ?? `Theory · ${topicsLabelOf((block as any).topic_ids)}`}
+        </p>
+      )}
       {/* Header — order + activity type label + sub-type chip */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
@@ -414,7 +452,7 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
       )}
 
       {/* Get-in-STP sequence chain */}
-      {block.step_ids && block.step_ids.length > 0 && (
+      {block.step_ids && block.step_ids.length > 0 && !sequenceLabelOf(block) && (
         <div className="bg-cyan-50 rounded-lg px-3 py-2">
           <p
             className="text-[9px] uppercase tracking-wider text-cyan-700 font-bold"

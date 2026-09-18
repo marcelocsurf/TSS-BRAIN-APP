@@ -1044,6 +1044,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                                 mission_id: b.mission_id,
                                 mission_custom: b.mission_custom,
                                 objective_text: objective,
+                                sequence_id: (b as any).sequence_id ?? null,
+                                focus_step_id: (b as any).focus_step_id ?? null,
+                                focus_moments: (b as any).focus_moments ?? null,
                               };
                             })
                           );
@@ -2869,16 +2872,16 @@ function stripCode(t: string | null | undefined): string { return String(t ?? ''
 const GENERIC_DRILL = /^EDPF coach loop$/i;
 function workLabelOf(
   b: { step_id?: string | null; step_ids?: string[] | null; sequence_id?: string | null; focus_step_id?: string | null; objective_text?: string | null },
-  tb: { step_id?: string | null; step_ids?: string[] | null; mission_custom?: string | null; mission?: { title: string } | null } | null | undefined,
+  tb: { step_id?: string | null; step_ids?: string[] | null; sequence_id?: string | null; focus_step_id?: string | null; mission_custom?: string | null; mission?: { title: string } | null } | null | undefined,
   belt: string | null | undefined,
   stpLabel: (id: string | null) => string | null,
 ): string | null {
-  const cfg = (b.sequence_id && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps(
+  const cfg = ((b.sequence_id ?? tb?.sequence_id) && SEQUENCE_PAGES[(b.sequence_id ?? tb?.sequence_id) as string]) || resolveSequenceForSteps(
     { stepIds: b.step_ids ?? tb?.step_ids ?? null, stepId: b.step_id ?? tb?.step_id ?? null }, belt,
   );
   const txt = String(b.objective_text ?? '');
   const focusTxt = txt.startsWith('Focus: ') ? txt.slice(7) : null;
-  const stepId = b.focus_step_id ?? (Array.isArray(b.step_ids) && b.step_ids.length > 1 ? null : (b.step_id ?? tb?.step_id ?? null));
+  const stepId = b.focus_step_id ?? tb?.focus_step_id ?? (Array.isArray(b.step_ids) && b.step_ids.length > 1 ? null : (b.step_id ?? tb?.step_id ?? null));
   const stepTitle = stepId ? stpLabel(stepId) : null;
   if (cfg) {
     const seq = `Sequence ${sequenceDisplayName(cfg)}`;
@@ -2939,7 +2942,7 @@ function BlockEditor({
     : null;
   // La secuencia del curso a la que apunta este bloque (plan simple o
   // plantilla). Es lo que el alumno ve en su portal.
-  const seqCfg = resolveSequenceForSteps(
+  const seqCfg = ((block.sequence_id ?? templateBlock?.sequence_id) && SEQUENCE_PAGES[(block.sequence_id ?? templateBlock?.sequence_id) as string]) || resolveSequenceForSteps(
     { stepIds: block.step_ids ?? templateBlock?.step_ids ?? null, stepId: block.step_id ?? templateBlock?.step_id ?? null },
     belt,
   );
