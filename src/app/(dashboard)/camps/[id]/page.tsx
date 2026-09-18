@@ -107,6 +107,9 @@ export default async function CampDetailPage({ params }: Props) {
             </p>
           </div>
           <div className="flex items-start gap-2 shrink-0">
+            {(instance as any).is_test && (
+              <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-1 rounded-[4px]" style={{ background: '#FFD166', color: '#061C2B' }} title="Sesión de prueba: sin correos, encuestas, cintas ni nómina">Prueba</span>
+            )}
             <CampStatusBadge status={instance.status} />
             <CancelCampButton
               campInstanceId={instance.id}

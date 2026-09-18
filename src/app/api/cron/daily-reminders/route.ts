@@ -63,6 +63,7 @@ async function handle(req: NextRequest) {
     .from('camp_instances')
     .select('id, camp_name, start_date, scheduled_time, head_coach_id, head_coach_status, coach_id, status')
     .eq('start_date', tomorrow)
+    .eq('is_test', false)
     .is('reminder_emailed_at', null);
   const liveServices = (services ?? []).filter(
     (s: any) => !['cancelled', 'completed'].includes(s.status ?? 'planned'),
@@ -215,7 +216,8 @@ async function handle(req: NextRequest) {
       .select('id, session_date, session_status, camp_instances:camp_instance_id!inner(camp_name, status, academy_id, coach_id, head_coach_id, head_coach_status, coaches:coach_id(id, display_name, email, portal_token), hc:head_coach_id(id, display_name, email, portal_token))')
       .gte('session_date', twoDaysAgo)
       .lte('session_date', svToday)
-      .eq('session_status', 'completed');
+      .eq('session_status', 'completed')
+      .eq('camp_instances.is_test', false);
     const sesIds = ((closedSes as any[]) ?? []).map((s) => s.id);
     const missing = new Map<string, number>();
     if (sesIds.length) {
@@ -260,7 +262,8 @@ async function handle(req: NextRequest) {
       .select('id, session_date, session_status, closure_reminded_on, camp_instances:camp_instance_id!inner(camp_name, status, academy_id, coach_id, head_coach_id, head_coach_status, coaches:coach_id(id, display_name, email, portal_token), hc:head_coach_id(id, display_name, email, portal_token))')
       .gte('session_date', weekAgo)
       .lte('session_date', svToday)
-      .neq('session_status', 'completed');
+      .neq('session_status', 'completed')
+      .eq('camp_instances.is_test', false);
     const byCoach = new Map<string, { name: string; email: string; token: string; academyId: string | null; pending: { service: string; date: string }[]; sessionIds: string[] }>();
     for (const ses of (openSes as any[]) ?? []) {
       // Idempotencia: si ya se recordó HOY esta sesión, no reenviar en esta

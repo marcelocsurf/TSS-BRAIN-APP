@@ -649,6 +649,7 @@ function HomeTab({
             Today{todayLogistics.day_number ? ` · Day ${todayLogistics.day_number}${todayLogistics.total_days ? ` of ${todayLogistics.total_days}` : ''}` : ''}
           </p>
           <h2 className="mt-1.5 text-xl" style={{ ...F_DISPLAY, color: '#061C2B' }}>{todayLogistics.camp_name || 'Your class'}</h2>
+          {todayLogistics.is_test && <p className="mt-1 inline-block text-[10px] px-2 py-0.5 rounded-[4px]" style={{ ...F_LABEL, background: '#FFD166', color: '#061C2B' }}>Prueba · nada de esto cuenta</p>}
 
           <div className="mt-4 space-y-2.5">
             {t12(todayLogistics.class_start_time) && (
@@ -2067,6 +2068,7 @@ function PlanTab({
                                 </span>
                                 <span className="min-w-0 flex-1">
                                   <span className="block text-[14px] truncate" style={{ ...F_DISP, color: '#10263B' }}>
+                                    {s.is_test && <span className="mr-1.5 align-middle text-[9px] px-1.5 py-0.5 rounded-[3px]" style={{ ...F_MONO, background: '#FFD166', color: '#061C2B' }}>Prueba</span>}
                                     {(s.camp_name ?? '').split(' · ')[0]}
                                   </span>
                                   <span className="block text-[11px] mt-[3px] text-[#55666E]" style={F_MONO}>

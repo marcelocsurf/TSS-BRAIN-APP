@@ -165,7 +165,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   ] = await Promise.all([
     admin
       .from('camp_instances')
-      .select('id, camp_name, start_date, end_date, status, scheduled_time, head_coach_id, head_coach_status, camp_templates:template_id(service_kind, template_name, capacity_max, needs_venue)')
+      .select('id, camp_name, start_date, end_date, status, scheduled_time, head_coach_id, head_coach_status, is_test, camp_templates:template_id(service_kind, template_name, capacity_max, needs_venue)')
       .or(svcOr)
       .in('status', ['planned', 'active'])
       .gte('end_date', today)
@@ -603,6 +603,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       }
       todayLogistics = {
         camp_id: running.id,
+        is_test: !!running.is_test,
         camp_name: running.camp_name ?? null,
         day_number: sess?.day_number ?? null,
         total_days: totalDays ?? null,

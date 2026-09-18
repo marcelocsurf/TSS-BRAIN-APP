@@ -900,6 +900,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           {data.daySummaries.length > 1 && (
             <span style={{ color: '#5AC3E7' }}>
               {' '}· Day {data.selectedDay.day_number} of {data.daySummaries.length}
+              {data.camp.is_test && <span className="ml-2 px-1.5 py-0.5 rounded-[3px] text-[9px]" style={{ background: '#FFD166', color: '#061C2B' }}>PRUEBA · nada de esto cuenta</span>}
             </span>
           )}
         </p>

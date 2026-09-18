@@ -70,7 +70,8 @@ export async function getOccupancyReport(opts: {
     .select('id, camp_name, start_date, status, capacity_override, template_id, camp_templates:template_id(template_name, service_kind, capacity_max), camp_participants(enrollment_status, payment_status)')
     .gte('start_date', from)
     .lte('start_date', to)
-    .neq('status', 'cancelled');
+    .neq('status', 'cancelled')
+    .eq('is_test', false);
   if (scope.scopeAcademyId) q = q.eq('academy_id', scope.scopeAcademyId);
   const { data, error } = await q;
   if (error) return { ...base, error: error.message };

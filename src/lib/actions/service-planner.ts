@@ -40,6 +40,8 @@ export interface ServicePlanData {
     service_kind: string | null;
     needs_venue: boolean;
     target_belt: string | null;
+    /** Sesión de prueba (capacitación): mismo flujo, sin efectos reales. */
+    is_test?: boolean;
     // Accreditation context for the final evaluation UI.
     coach_max_belt: string | null;
     viewer_is_head_coach: boolean;
@@ -343,7 +345,7 @@ export async function getServicePlan(
   const { data: camp } = await admin
     .from('camp_instances')
     .select(
-      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, template_id, academy_id, camp_templates:template_id(template_name, service_kind, duration_days, includes_course_key, needs_venue)'
+      'id, camp_name, start_date, end_date, status, scheduled_time, coach_id, head_coach_id, template_id, academy_id, is_test, camp_templates:template_id(template_name, service_kind, duration_days, includes_course_key, needs_venue)'
     )
     .eq('id', campInstanceId)
     .single();
@@ -785,6 +787,7 @@ export async function getServicePlan(
       // false = se da en la academia: el planner no pide playa ni transporte.
       needs_venue: tpl?.needs_venue !== false,
       target_belt: tpl?.includes_course_key ?? null,
+      is_test: !!(camp as any).is_test,
       coach_max_belt: coach.max_belt_permission ?? null,
       viewer_is_head_coach: camp.head_coach_id === coach.id,
     },
@@ -1559,10 +1562,13 @@ export async function closeCampFinal(
 
   const { data: camp } = await admin
     .from('camp_instances')
-    .select('id, coach_id, head_coach_id, academy_id, start_date')
+    .select('id, coach_id, head_coach_id, academy_id, start_date, is_test')
     .eq('id', campInstanceId)
     .maybeSingle();
   if (!camp) return { ok: false, error: 'Service not found.' };
+  // Sesión de prueba (capacitación 2026-09-18): se cierra igual, pero sin
+  // encuestas, correos ni cintas. Nada sale hacia afuera.
+  const isTestCamp = !!(camp as any).is_test;
   if (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id) {
     return { ok: false, error: 'You are not assigned to this service.' };
   }
@@ -1601,7 +1607,7 @@ export async function closeCampFinal(
   // M150 — the final evaluation (normal OR forced-early) is the moment the
   // coach-rating survey unlocks for every student: take each student's most
   // recent session result of this camp and unlock it.
-  if (finalizeNow) try {
+  if (finalizeNow && !isTestCamp) try {
     const { data: campSess } = await admin.from('camp_sessions').select('id').eq('camp_instance_id', campInstanceId);
     const sessIds = (campSess ?? []).map((x: any) => x.id);
     if (sessIds.length) {
@@ -1623,7 +1629,7 @@ export async function closeCampFinal(
   // como paso 2 del survey de entreno y el host puede perseguirla por
   // WhatsApp. Idempotente (UNIQUE camp+alumno). Best-effort: nunca traba
   // el cierre del camp.
-  if (finalizeNow) try {
+  if (finalizeNow && !isTestCamp) try {
     const { data: expParts } = await admin
       .from('camp_participants')
       .select('student_id, enrollment_status')
@@ -1779,7 +1785,7 @@ export async function closeCampFinal(
   // the new belt when its rank is higher than the student's current belt.
   // If the coach isn't authorized to accredit the target belt, the promotion
   // is saved as a PENDING recommendation instead (a head coach/admin confirms).
-  if (promotions && promotions.length > 0) {
+  if (promotions && promotions.length > 0 && !isTestCamp) {
     for (const p of promotions) {
       const newBelt = p.belt_level as BeltLevel;
       if (!(newBelt in BELT_RANK)) continue;
@@ -1879,7 +1885,7 @@ export async function closeCampFinal(
   // M135 — the single coach-survey email per student, sent once here at the
   // official close of the camp (daily closes send nothing for camps). Uses
   // each student's most recent session result to deep-link the survey.
-  try {
+  if (!isTestCamp) try {
     const { data: campRow } = await admin
       .from('camp_instances')
       .select('camp_name')
@@ -2228,7 +2234,7 @@ export async function closeServicePlan(
     .select(
       'id, day_number, session_date, camp_instance_id, ' +
         'camp_instances:camp_instance_id(' +
-          'id, camp_name, start_date, coach_id, head_coach_id, scheduled_time, ' +
+          'id, camp_name, start_date, coach_id, head_coach_id, scheduled_time, is_test, ' +
           'camp_templates:template_id(service_kind)' +
         ')'
     )
@@ -2352,7 +2358,9 @@ export async function closeServicePlan(
     .eq('camp_instance_id', sessionAny.camp_instance_id);
   const dayNo = (sessMeta as any)?.day_number ?? 1;
   const totalDays = totalDaysCount ?? 1;
-  const unlockSurveyToday = totalDays <= 1 || dayNo === 3 || dayNo === totalDays;
+  // Sesión de prueba (capacitación 2026-09-18): nunca encuesta ni correo.
+  const isTestService = !!(camp as any).is_test;
+  const unlockSurveyToday = !isTestService && (totalDays <= 1 || dayNo === 3 || dayNo === totalDays);
 
   // Board inventory: boards used today return to 'available' on close, unless
   // they were flagged 'in_repair' (e.g. by a damage incident). Phase 3.
@@ -2575,7 +2583,7 @@ export async function closeServicePlan(
 
     // FEEDBACK DEL DÍA (Marcelo 2026-09-10): al cerrar, el alumno recibe qué
     // hizo hoy y qué trabaja la próxima. Nace APAGADO (email_settings.day_feedback).
-    if (stud?.email && result && stud.portal_token && (await emailEnabled('day_feedback'))) {
+    if (!isTestService && stud?.email && result && stud.portal_token && (await emailEnabled('day_feedback'))) {
       try {
         const { sendSessionEmail } = await import('@/lib/actions/email');
         await sendSessionEmail({
@@ -2615,7 +2623,7 @@ export async function closeServicePlan(
       await admin.from('camp_instances').update({ status: 'completed' }).eq('id', sessionAny.camp_instance_id);
     }
     const isOneDayLesson = kindForClose === 'surf_lesson' || (totalDays <= 1 && (kindForClose === 'class' || kindForClose === 'trip'));
-    if (isOneDayLesson && !alreadyClosed && stud?.email && result) {
+    if (isOneDayLesson && !alreadyClosed && stud?.email && result && !isTestService) {
       try {
         const { sendCoachSurveyEmail } = await import('@/lib/actions/email');
         // M86 — Leads (no course access) land on the standalone

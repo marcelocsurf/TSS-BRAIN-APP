@@ -170,7 +170,12 @@ export function ServiceCard({ camp, compact = false }: ServiceCardProps) {
               ) : null;
             })()}
           </div>
-          <CampStatusBadge status={camp.status} />
+          <span className="flex items-center gap-1.5 shrink-0">
+            {(camp as any).is_test && (
+              <span className="text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-[4px]" style={{ background: '#FFD166', color: '#061C2B' }}>Prueba</span>
+            )}
+            <CampStatusBadge status={camp.status} />
+          </span>
         </div>
 
         {/* Capacity bar — 🟢 paid · 🟡 reserved (unpaid) · ⚪ open.

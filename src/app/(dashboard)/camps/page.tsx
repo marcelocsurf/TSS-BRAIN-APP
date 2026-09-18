@@ -149,6 +149,12 @@ export default async function CampsPage({
           >
             Templates
           </Link>
+          <Link
+            href="/camps/training"
+            className="px-3 py-2.5 border border-[#DCD7C6] text-sm rounded-[5px] hover:bg-[#F7F9FA] text-[#10263B] transition-all"
+          >
+            Capacitación
+          </Link>
           <DownloadPlanButton />
           {/* "+ New Camp" intentionally removed — creation now happens
               in-context from the calendar's "+ Add service" affordance,
