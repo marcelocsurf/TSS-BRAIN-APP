@@ -1259,6 +1259,58 @@ export async function saveServicePlanBlock(
   }
 }
 
+// ═══ "Pasa a mañana" (Marcelo 2026-09-18) ═══
+// El coach decide por alumno: la secuencia de hoy (con su foco) queda como
+// bloque 0 de mañana. No toca a los demás alumnos ni al resto de mañana.
+export async function carryStudentPlanToNextDay(
+  token: string,
+  campSessionId: string,
+  studentId: string,
+): Promise<{ ok: boolean; error?: string; nextDay?: number }> {
+  const admin = createAdminClient();
+  const { data: coach } = await admin.from('coaches').select('id').eq('portal_token', token).single();
+  if (!coach) return { ok: false, error: 'Coach not found.' };
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select('id, camp_instance_id, day_number, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .eq('id', campSessionId)
+    .single();
+  if (!session) return { ok: false, error: 'Session not found.' };
+  const camp: any = Array.isArray(session.camp_instances) ? session.camp_instances[0] : session.camp_instances;
+  if (!camp || (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id)) return { ok: false, error: 'You are not assigned to this service.' };
+  const { data: next } = await admin
+    .from('camp_sessions')
+    .select('id, day_number')
+    .eq('camp_instance_id', session.camp_instance_id)
+    .gt('day_number', session.day_number)
+    .order('day_number')
+    .limit(1)
+    .maybeSingle();
+  if (!next) return { ok: false, error: 'This is the last day of the service.' };
+  const { data: today } = await admin
+    .from('service_plan_blocks')
+    .select('step_id, step_ids, sequence_id, focus_step_id, focus_moments, objective_text, water_drill_id, water_drill_custom, land_drill_id, land_drill_custom')
+    .eq('camp_session_id', campSessionId).eq('student_id', studentId).eq('order_index', 0)
+    .maybeSingle();
+  if (!today || (!today.sequence_id && !today.step_id && !(today.step_ids ?? []).length)) return { ok: false, error: 'Nothing planned for this student today.' };
+  const patch = {
+    step_id: today.step_id, step_ids: today.step_ids, sequence_id: today.sequence_id, focus_step_id: today.focus_step_id, focus_moments: today.focus_moments,
+    objective_text: today.objective_text, water_drill_id: today.water_drill_id, water_drill_custom: today.water_drill_custom, land_drill_id: today.land_drill_id, land_drill_custom: today.land_drill_custom,
+    notes_pre: 'Carried over from day ' + session.day_number + '.',
+  };
+  const { data: existing } = await admin
+    .from('service_plan_blocks').select('id')
+    .eq('camp_session_id', next.id).eq('student_id', studentId).eq('order_index', 0).maybeSingle();
+  if (existing) {
+    const { error } = await admin.from('service_plan_blocks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', existing.id);
+    if (error) return { ok: false, error: error.message };
+  } else {
+    const { error } = await admin.from('service_plan_blocks').insert({ camp_instance_id: session.camp_instance_id, camp_session_id: next.id, student_id: studentId, order_index: 0, ...patch });
+    if (error) return { ok: false, error: error.message };
+  }
+  return { ok: true, nextDay: next.day_number };
+}
+
 // M45 — Delete one block of a student's day. Used by the multi-block UI
 // when the coach removes an extra block. The day always keeps at least
 // one block; UI enforces that.
