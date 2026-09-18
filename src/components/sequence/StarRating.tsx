@@ -45,7 +45,8 @@ export function StarRating({
   // Color tokens by variant. M45 — official = TSS cyan (brand color);
   // self-rating stays amber so the two are visually distinct.
   const filledColor = variant === 'official' ? 'text-[var(--tss-cyan,#00D2FF)]' : 'text-[#FFD166]';
-  const emptyColor = variant === 'official' ? 'text-[var(--tss-cyan,#00D2FF)]/25' : 'text-[#DCD7C6]';
+  // Vacías más visibles (Marcelo 2026-09-18: 'casi no se ven'): tide, no arena.
+  const emptyColor = variant === 'official' ? 'text-[var(--tss-cyan,#00D2FF)]/45' : 'text-[#8A9AA3]';
 
   return (
     <div className="inline-flex flex-col items-start">

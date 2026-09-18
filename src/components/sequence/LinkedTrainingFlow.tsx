@@ -600,7 +600,7 @@ export function LinkedTrainingFlow({
         <button onClick={handleSave} disabled={!canSave}
           className="w-full py-3.5 rounded-full text-[11px] transition-all active:scale-[0.98] inline-flex items-center justify-center gap-2 disabled:opacity-40"
           style={{ ...F_M, background: canSave ? CYAN : '#DCD7C6', color: INK, fontWeight: 700 }}>
-          {saving ? 'Saving…' : <><Save size={14} strokeWidth={2} /> {isMission ? 'Save & update Let&apos;s Play' : 'Save practice'}</>}
+          {saving ? 'Saving…' : <><Save size={14} strokeWidth={2} /> {isMission ? 'Save & update Let\u2019s Play' : 'Save practice'}</>}
         </button>
         {!canSave && !saving && (
           <p className="text-[11px] text-[#55666E] text-center">
