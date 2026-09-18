@@ -92,7 +92,7 @@ function momentOf(b: Block): (typeof MOMENTS)[number] {
   const title = blockTitle(b).toLowerCase();
   if (t.includes('warm') || title.includes('warm-up') || title.includes('warm up')) return 'Calentamiento';
   if (t.includes('mission') || t.includes('water') || title.includes('agua') || title.includes('water')) return 'Agua';
-  if (title.includes('cierre') || t.includes('clos') || t.includes('wrap') || t.includes('debrief')) return 'Cierre';
+  if (title.includes('cierre') || title.startsWith('close the day') || title.startsWith('video analysis') || title.startsWith('prep for tomorrow') || t.includes('clos') || t.includes('wrap') || t.includes('debrief') || t === 'evaluation') return 'Cierre';
   return 'Tierra';
 }
 
@@ -288,38 +288,36 @@ export function CampPlanReader({
                   {d.blocks.length === 0 ? (
                     <p className="text-xs text-[#55666E] italic">No blocks defined for this day yet.</p>
                   ) : (
-                    MOMENTS.map((m) => {
-                      const list = d.blocks.filter((b) => momentOf(b) === m);
-                      if (!list.length) return null;
-                      return (
-                        <div key={m}>
-                          <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-[var(--tss-cyan)] mb-1.5" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{m}</p>
-                          <div className="space-y-1.5 mb-3">
-                            {list.map((b) => {
-                              const k = d.day_number + ':' + b.block_order;
-                              const open = openBlocks.has(k);
-                              return (
-                                <div key={b.block_order} className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg overflow-hidden">
-                                  <button type="button" onClick={() => toggleBlock(k)}
-                                    className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left">
-                                    <span className="text-[13px] font-semibold text-[var(--tss-navy)] truncate">{blockTitle(b)}</span>
-                                    <span className="flex items-center gap-2 shrink-0">
-                                      {b.mission_time && <span className="text-[10px] text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{b.mission_time}m</span>}
-                                      <ChevronRight size={14} className={`text-[#55666E] transition-transform ${open ? 'rotate-90' : ''}`} />
-                                    </span>
-                                  </button>
-                                  {open && (
-                                    <div className="border-t border-[#DCD7C6] p-2">
-                                      <BlockCard block={b} coachToken={coachToken} />
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
+                    /* Orden del día tal cual se da (Marcelo 2026-09-18): arena →
+                       agua → arena → agua → cierre → video análisis → prep de
+                       mañana. Cada fila lleva su momento como rótulo. */
+                    <div className="space-y-1.5 mb-3">
+                      {d.blocks.slice().sort((a, b) => a.block_order - b.block_order).map((b) => {
+                        const k = d.day_number + ':' + b.block_order;
+                        const open = openBlocks.has(k);
+                        const m = momentOf(b);
+                        return (
+                          <div key={b.block_order} className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg overflow-hidden" style={m === 'Agua' ? { borderLeft: '3px solid #00A8CC' } : undefined}>
+                            <button type="button" onClick={() => toggleBlock(k)}
+                              className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left">
+                              <span className="min-w-0">
+                                <span className="block text-[9px] uppercase tracking-[0.14em]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: m === 'Agua' ? '#00A8CC' : '#55666E' }}>{m}</span>
+                                <span className="block text-[13px] font-semibold text-[var(--tss-navy)] truncate">{blockTitle(b)}</span>
+                              </span>
+                              <span className="flex items-center gap-2 shrink-0">
+                                {b.mission_time && <span className="text-[10px] text-[#55666E]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace' }}>{b.mission_time}m</span>}
+                                <ChevronRight size={14} className={`text-[#55666E] transition-transform ${open ? 'rotate-90' : ''}`} />
+                              </span>
+                            </button>
+                            {open && (
+                              <div className="border-t border-[#DCD7C6] p-2">
+                                <BlockCard block={b} coachToken={coachToken} />
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      );
-                    })
+                        );
+                      })}
+                    </div>
                   )}
 
                   {d.day_notes && (
