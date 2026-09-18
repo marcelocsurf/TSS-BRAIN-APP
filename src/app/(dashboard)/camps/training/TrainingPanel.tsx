@@ -38,6 +38,8 @@ export function TrainingPanel({ coaches, scenarios, defaultDate }: { coaches: Co
   });
   const [date, setDate] = useState(defaultDate);
   const [msg, setMsg] = useState<string | null>(null);
+  // Confirmación en la página (un diálogo nativo traba al navegador automatizado).
+  const [armed, setArmed] = useState<'create' | 'wipe' | null>(null);
 
   const toggle = (id: string, key: ScenarioKey) => setPick((p) => { const n = { ...p }; const s = new Set(n[id] ?? []); if (s.has(key)) s.delete(key); else s.add(key); n[id] = s; return n; });
   const items = coaches.map((c) => ({ coachId: c.id, scenarios: Array.from(pick[c.id] ?? []) })).filter((i) => i.scenarios.length);
@@ -45,7 +47,8 @@ export function TrainingPanel({ coaches, scenarios, defaultDate }: { coaches: Co
 
   const create = () => {
     if (!total) { setMsg('Marcá al menos un escenario.'); return; }
-    if (!confirm(`Crear ${total} servicio${total === 1 ? '' : 's'} de prueba para ${items.length} coach${items.length === 1 ? '' : 'es'} a partir del ${date}?`)) return;
+    if (armed !== 'create') { setArmed('create'); setMsg(`Se van a crear ${total} servicio${total === 1 ? '' : 's'} de prueba para ${items.length} coach${items.length === 1 ? '' : 'es'} a partir del ${date}. Tocá de nuevo para confirmar.`); return; }
+    setArmed(null);
     start(async () => {
       const r = await createTrainingScenarios({ items, startDate: date });
       setMsg(r.ok ? `✓ ${r.created} servicios de prueba creados.` : `Error: ${r.error}`);
@@ -54,7 +57,8 @@ export function TrainingPanel({ coaches, scenarios, defaultDate }: { coaches: Co
   };
   const wipe = () => {
     if (!scenarios.length) return;
-    if (!confirm(`Borrar los ${scenarios.length} servicios de prueba con todo lo que generaron (planes, cierres, evaluaciones, alumnos de prueba)? No se puede deshacer.`)) return;
+    if (armed !== 'wipe') { setArmed('wipe'); setMsg(`Se van a borrar los ${scenarios.length} servicios de prueba con todo lo que generaron (planes, cierres, evaluaciones, alumnos de prueba). No se puede deshacer. Tocá de nuevo para confirmar.`); return; }
+    setArmed(null);
     start(async () => {
       const r = await deleteTrainingScenarios();
       setMsg(r.ok ? `✓ ${r.deleted} servicios de prueba borrados.` : `Error: ${r.error}`);
@@ -92,7 +96,7 @@ export function TrainingPanel({ coaches, scenarios, defaultDate }: { coaches: Co
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm bg-[#F7F9FA]" />
         <p className="text-[12px] text-[#55666E]">Los camps van 6 días desde esa fecha (08:00). La clase de surf (14:00) y la de skate (16:00) caen ese mismo día. Cada coach recibe 3 alumnos de prueba.</p>
         <button type="button" disabled={pending} onClick={create} className="w-full sm:w-auto px-5 py-2.5 rounded-[5px] text-sm font-bold text-[#061C2B] disabled:opacity-50" style={{ background: '#00D2FF' }}>
-          {pending ? 'Creando…' : `Crear escenarios de prueba · ${total}`}
+          {pending ? 'Creando…' : armed === 'create' ? `Confirmar · crear ${total}` : `Crear escenarios de prueba · ${total}`}
         </button>
         {msg && <p className="text-[12px] text-[#10263B]">{msg}</p>}
       </div>
@@ -102,7 +106,7 @@ export function TrainingPanel({ coaches, scenarios, defaultDate }: { coaches: Co
           <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Servicios de prueba activos · {scenarios.length}</p>
           {scenarios.length > 0 && (
             <button type="button" disabled={pending} onClick={wipe} className="text-[12px] font-semibold px-3 py-1.5 rounded-[5px] border border-red-300 text-red-700 bg-white disabled:opacity-50">
-              Borrar pruebas
+              {armed === 'wipe' ? 'Confirmar · borrar todo' : 'Borrar pruebas'}
             </button>
           )}
         </div>
