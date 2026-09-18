@@ -60,7 +60,7 @@ import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluati
 import { WeekPlanBoard } from '@/components/coach-portal/WeekPlanBoard';
 import { useRouter } from 'next/navigation';
 import { TidePlannerHint } from '@/components/camp/TidePlannerHint';
-import { coachFocusOptions } from '@/lib/sequence-pages/focus-options';
+import { coachFocusOptions, focusOptionsForSequence } from '@/lib/sequence-pages/focus-options';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
@@ -1503,18 +1503,18 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               // objective_text is stored as "<block type> · <title>". The
               // water missions are the blocks whose type is "Water Mission";
               // strip the type prefix to get the mission title.
-              const strip = (t: string) => t.replace(/^[^·]+·\s*/, '').trim();
-              const isWater = (b: ServicePlanBlock) => /water mission|misi[oó]n de agua/i.test(b.objective_text || '');
-              let missions = s.blocks
-                .filter(isWater)
-                .map((b) => strip(b.objective_text || '') || b.water_drill_custom || '')
-                .filter(Boolean);
-              // Fallback: no labeled water block → show whatever objectives exist.
-              if (missions.length === 0) {
-                missions = s.blocks
-                  .map((b) => (b.objective_text ? strip(b.objective_text) : (b.water_drill_custom || '')))
-                  .filter(Boolean)
-                  .slice(0, 2);
+              // Idioma del método (2026-09-18): la secuencia y el foco de cada
+              // bloque, sin códigos de plantilla. Un bloque sin secuencia ni
+              // paso (warm-up, venue) no cuenta como misión.
+              const dayTpl = data.templatePlan.find((d) => d.day_number === data.selectedDay?.day_number);
+              const seen = new Set<string>();
+              const missions: string[] = [];
+              for (const b of s.blocks) {
+                const tb = dayTpl?.blocks.find((t) => t.block_order === b.order_index) ?? null;
+                const hasWork = !!(b.sequence_id || b.step_id || (b.step_ids && b.step_ids.length) || tb?.step_id || (tb?.step_ids && tb.step_ids.length));
+                if (!hasWork) continue;
+                const l = workLabelOf(b, tb, s.belt_level, stpLabel);
+                if (l && !seen.has(l)) { seen.add(l); missions.push(l); }
               }
               return { name: s.display_name, missions };
             })}
@@ -2860,6 +2860,39 @@ function StudentPlanCard({
   );
 }
 
+// ═══ Idioma del método en el planner (Marcelo 2026-09-17/18) ═══
+// Un bloque se nombra por su SECUENCIA y su foco ("Sequence #3 · Pop-Up ·
+// Feet Position Center"), nunca por códigos viejos de la plantilla
+// (CMS-WB-04, STP-017, "EDPF coach loop").
+const CODE_PREFIX = /^(?:[A-Z]{2,4}-[A-Z]{2}-\d+[A-Z]?|STP-\d+[A-Z]?)\s*[·—-]\s*/;
+function stripCode(t: string | null | undefined): string { return String(t ?? '').replace(CODE_PREFIX, '').trim(); }
+const GENERIC_DRILL = /^EDPF coach loop$/i;
+function workLabelOf(
+  b: { step_id?: string | null; step_ids?: string[] | null; sequence_id?: string | null; focus_step_id?: string | null; objective_text?: string | null },
+  tb: { step_id?: string | null; step_ids?: string[] | null; mission_custom?: string | null; mission?: { title: string } | null } | null | undefined,
+  belt: string | null | undefined,
+  stpLabel: (id: string | null) => string | null,
+): string | null {
+  const cfg = (b.sequence_id && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps(
+    { stepIds: b.step_ids ?? tb?.step_ids ?? null, stepId: b.step_id ?? tb?.step_id ?? null }, belt,
+  );
+  const txt = String(b.objective_text ?? '');
+  const focusTxt = txt.startsWith('Focus: ') ? txt.slice(7) : null;
+  const stepId = b.focus_step_id ?? (Array.isArray(b.step_ids) && b.step_ids.length > 1 ? null : (b.step_id ?? tb?.step_id ?? null));
+  const stepTitle = stepId ? stpLabel(stepId) : null;
+  if (cfg) {
+    const seq = `Sequence ${sequenceDisplayName(cfg)}`;
+    if (focusTxt) return `${seq} · focus: ${focusTxt}`;
+    if (stepTitle && !txt.startsWith('Whole line')) return `${seq} · ${stepTitle}`;
+    return `${seq} · whole sequence`;
+  }
+  const legacy = stripCode(tb?.mission?.title ?? tb?.mission_custom ?? null);
+  if (stepTitle) return legacy ? `${stepTitle} · ${legacy}` : stepTitle;
+  if (legacy) return legacy;
+  const plain = stripCode(txt.replace(/^[^·]+·\s*/, ''));
+  return plain || null;
+}
+
 // M45 — One block's planning editor (Sequence focus + drill + mission +
 // objective + board + pre-note). Used inside StudentPlanCard, one per
 // block, so a single student can have multiple blocks per day.
@@ -2910,6 +2943,7 @@ function BlockEditor({
     { stepIds: block.step_ids ?? templateBlock?.step_ids ?? null, stepId: block.step_id ?? templateBlock?.step_id ?? null },
     belt,
   );
+  const stpLabel = (id: string | null) => (id ? stpCatalog.find((x) => x.id === id)?.title ?? null : null);
   const legacyMd = templateBlock
     ? ([
         ['Explain', templateBlock.explain_md],
@@ -2964,13 +2998,13 @@ function BlockEditor({
             </div>
           )}
           {(templateBlock.step_title || templateBlock.step_id) && (
-            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Step · </span>{templateBlock.step_id}{templateBlock.step_title ? ` — ${templateBlock.step_title}` : ''}</p>
+            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Step · </span>{templateBlock.step_title ?? stpLabel(templateBlock.step_id ?? null) ?? templateBlock.step_id}</p>
           )}
-          {(templateBlock.mission?.title || templateBlock.mission_custom) && (
-            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Mission · </span>{templateBlock.mission?.title ?? templateBlock.mission_custom}</p>
+          {stripCode(templateBlock.mission?.title ?? templateBlock.mission_custom) && (
+            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Mission · </span>{stripCode(templateBlock.mission?.title ?? templateBlock.mission_custom)}</p>
           )}
-          {(templateBlock.drill?.title || templateBlock.drill_custom) && (
-            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Drill · </span>{templateBlock.drill?.title ?? templateBlock.drill_custom}</p>
+          {(templateBlock.drill?.title || (templateBlock.drill_custom && !GENERIC_DRILL.test(templateBlock.drill_custom))) && (
+            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Drill · </span>{stripCode(templateBlock.drill?.title ?? templateBlock.drill_custom)}</p>
           )}
           {legacyMd.length > 0 && (
             <details className="text-[11px] text-[#55666E]">
@@ -3031,7 +3065,7 @@ function BlockEditor({
             <optgroup key={g.key} label={g.label}>
               {g.items.map((stp) => (
                 <option key={stp.id} value={stp.id}>
-                  {stp.id} · {stp.title}
+                  {stp.title}
                 </option>
               ))}
             </optgroup>
@@ -3169,13 +3203,14 @@ function BlockEditor({
         )}
       </div>
 
-      {/* Objective */}
-      <SmallField
-        label="Objective"
-        value={block.objective_text}
-        onBlur={(v) => onCommit({ objective_text: v })}
-        placeholder="e.g. 3 clean pop-ups landing in FP2"
-      />
+      {/* Objective — en el idioma del método, sin códigos (2026-09-18). El
+          texto guardado (objective_text) no se toca; se muestra traducido. */}
+      <div>
+        <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">Today&apos;s work</label>
+        <p className="text-[12px] font-semibold text-[#10263B] rounded-lg px-2 py-1.5" style={{ background: 'rgba(6,28,43,.04)', border: '1px solid #DCD7C6' }}>
+          {workLabelOf(block, templateBlock, belt, stpLabel) ?? 'Pick a step above'}
+        </p>
+      </div>
 
       {/* M49 — Board assignment moved to the student-level card (one
           board per student per day) so the coach picks it once, not
@@ -3224,6 +3259,7 @@ function StudentEvalCard({
   // to order 0 — commitStudentBlock creates it on first save.
   const gen = (blocks[0] ?? null) as any;
   const genOrder = blocks[0]?.order_index ?? 0;
+  const [extraSeqId, setExtraSeqId] = useState<string | null>(null);
 
   return (
     <div className="bg-[#F7F9FA]/60 rounded-[5px] border border-[#DCD7C6] p-3 space-y-2.5">
@@ -3244,6 +3280,25 @@ function StudentEvalCard({
 
       {/* Profile / bitácora — context while evaluating */}
       <StudentProfilePanel student={student} onSaveNote={onSaveNote} />
+
+      {/* QUÉ ESTAMOS EVALUANDO (Marcelo 2026-09-18): la secuencia y el foco
+          que se planearon para este alumno, en el idioma del método. */}
+      {(() => {
+        const labels: string[] = [];
+        for (const b of blocks) {
+          const hasWork = !!(b.sequence_id || b.step_id || (b.step_ids && b.step_ids.length));
+          if (!hasWork) continue;
+          const l = workLabelOf(b, null, student.belt_level, stpLabel);
+          if (l && !labels.includes(l)) labels.push(l);
+        }
+        if (!labels.length) return null;
+        return (
+          <div className="rounded-lg px-3 py-2" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.35)' }}>
+            <p className="text-[10px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Evaluating today</p>
+            {labels.map((l) => <p key={l} className="text-[13px] font-bold leading-snug" style={{ color: '#F7F9FA' }}>{l}</p>)}
+          </div>
+        );
+      })()}
 
       {/* M49 — Session-level Focus + Flow (one per student per day, not
           per block). Saved on block 0 just like the board fields. */}
@@ -3375,27 +3430,45 @@ function StudentEvalCard({
             {(() => {
               const stepIds = student.blocks.flatMap((b) => [b.step_id, ...(b.step_ids ?? [])]).filter((x): x is string => !!x);
               const titles: Record<string, string> = {};
-              for (const id of stepIds) { const t = stpLabel(id); if (t) titles[id] = t; }
+              const addTitles = (ids: string[]) => { for (const id of ids) { const t = stpLabel(id); if (t) titles[id] = t; } };
+              addTitles(stepIds);
+              // Otra secuencia (Marcelo 2026-09-18): el coach puede mandar al
+              // alumno a una secuencia distinta de la que entrenó hoy.
+              const extraCfg = extraSeqId ? SEQUENCE_PAGES[extraSeqId] ?? null : null;
+              if (extraCfg) addTitles(extraCfg.stepIds);
               const groups = coachFocusOptions(stepIds, titles);
+              if (extraCfg && !groups.some((g) => g.title === (extraCfg.eyebrow ? extraCfg.title : `#${extraCfg.number} ${extraCfg.title}`))) groups.push(focusOptionsForSequence(extraCfg, titles));
               const focusOpen = !isClosed || (gen?.whats_next ?? '').trim().length < 5;
-              if (!groups.length || !focusOpen) return null;
+              if (!focusOpen) return null;
               const cur = gen?.whats_next ?? '';
+              // Varias opciones a la vez: se unen con " + "; la frase de
+              // refuerzo va al final después de " — ".
+              const [mainRaw, ...noteParts] = cur.split(' — ');
+              const picks: string[] = String(mainRaw ?? '').split(' + ').map((x: string) => x.trim()).filter(Boolean);
+              const note = noteParts.join(' — ').trim();
+              const isChipText = (t: string) => groups.some((g) => g.options.some((o) => o.text === t));
+              const toggle = (text: string) => {
+                const has = picks.includes(text);
+                const kept = picks.filter((x) => isChipText(x));
+                const next = has ? kept.filter((x) => x !== text) : [...kept, text];
+                const free = picks.filter((x) => !isChipText(x)).join(' + ');
+                const main = next.join(' + ');
+                const noteAll = [free, note].filter(Boolean).join(' — ');
+                onCommit(genOrder, { whats_next: noteAll ? `${main} — ${noteAll}` : main } as any);
+              };
+              const beltOrder = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'];
+              const myBelt = beltOrder.indexOf(String(student.belt_level ?? 'white_belt'));
+              const pickable = Object.values(SEQUENCE_PAGES).filter((c) => beltOrder.indexOf(c.belt) <= Math.max(myBelt, 0) + 1).sort((a, b) => beltOrder.indexOf(a.belt) - beltOrder.indexOf(b.belt) || (a.kind === 'entry' ? -1 : 0) - (b.kind === 'entry' ? -1 : 0) || a.number - b.number);
               return (
                 <div className="space-y-1.5">
                   {groups.map((g) => (
                     <div key={g.title}>
-                      <p className="text-[10px] text-cyan-800/70 mb-1">{g.title}</p>
+                      <p className="text-[10px] text-cyan-800/70 mb-1">{g.title} · tap one or more</p>
                       <div className="flex flex-wrap gap-1.5">
                         {g.options.map((o) => {
-                          const sel = cur.startsWith(o.text);
+                          const sel = picks.includes(o.text);
                           return (
-                            <button key={o.text} type="button" aria-pressed={sel}
-                              onClick={() => {
-                                // Conserva la frase de refuerzo que ya escribió (después de " — ").
-                                const fromChip = cur.startsWith('#') || cur.startsWith('Start #');
-                                const note = (fromChip ? cur.split(' — ').slice(1).join(' — ') : cur).trim();
-                                onCommit(genOrder, { whats_next: note ? `${o.text} — ${note}` : o.text } as any);
-                              }}
+                            <button key={o.text} type="button" aria-pressed={sel} onClick={() => toggle(o.text)}
                               className="px-2.5 py-1.5 rounded-full text-[11px] font-semibold border"
                               style={sel ? { background: '#0E7490', borderColor: '#0E7490', color: '#fff' } : { background: '#fff', borderColor: '#A5F3FC', color: '#155E75' }}>
                               {o.label}
@@ -3405,6 +3478,13 @@ function StudentEvalCard({
                       </div>
                     </div>
                   ))}
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px] text-cyan-800/70 shrink-0">Other sequence</label>
+                    <select value={extraSeqId ?? ''} onChange={(e) => setExtraSeqId(e.target.value || null)} className="flex-1 px-2 py-1.5 border border-cyan-200 rounded-lg text-[11px] bg-white">
+                      <option value="">— pick to see its options —</option>
+                      {pickable.map((c) => <option key={c.id} value={c.id}>{c.eyebrow ? c.title : `#${c.number} ${c.title}`} · {c.belt.replace('_belt', '')}</option>)}
+                    </select>
+                  </div>
                 </div>
               );
             })()}
@@ -3412,7 +3492,7 @@ function StudentEvalCard({
               label="What to work on next *"
               value={gen?.whats_next ?? ''}
               onBlur={(v) => onCommit(genOrder, { whats_next: v } as any)}
-              placeholder="Tap an option above, or write it — add a phrase to reinforce after ' — '"
+              placeholder="Tap one or more options above, or write it — add a phrase to reinforce after ' — '"
               rows={2}
               disabled={isClosed && (gen?.whats_next ?? '').trim().length >= 5}
             />

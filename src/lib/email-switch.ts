@@ -15,6 +15,8 @@ const NEW_KINDS: EmailKind[] = ['welcome_enrolled', 'day_feedback', 'student_day
 let cache: { at: number; map: Map<string, boolean> } | null = null;
 
 export async function emailEnabled(kind: EmailKind): Promise<boolean> {
+  // Solo para pruebas locales (muestras de correo): EMAIL_FORCE_KINDS=day_feedback,coach_survey
+  if (process.env.EMAIL_FORCE_KINDS && process.env.EMAIL_FORCE_KINDS.split(',').includes(kind)) return true;
   try {
     if (!cache || Date.now() - cache.at > 30_000) {
       const admin = createAdminClient();
