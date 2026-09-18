@@ -1012,7 +1012,7 @@ export async function createCampInstance(input: {
               camp_session_id: cs.id,
               student_id: studentId,
               order_index: tb.block_order ?? idx,
-              step_id: tb.step_id ?? ((tb as any).step_ids?.[0] ?? null),
+              step_id: tb.step_id ?? (((tb as any).sequence_id && !(tb as any).focus_step_id) ? null : ((tb as any).step_ids?.[0] ?? null)),
               step_ids: (tb as any).step_ids ?? null,
               land_drill_id: tb.drill_id ?? null,
               land_drill_custom: tb.drill_custom ?? null,

@@ -58,7 +58,11 @@ type Mode = 'summary' | 'detail';
 const MOMENTS = ['Tierra', 'Calentamiento', 'Agua', 'Cierre'] as const;
 /** Idioma del método (2026-09-18): un bloque se nombra por su secuencia y su
  *  foco; los códigos de plantilla (CMS-…, STP-…) no se muestran. */
+const TEMPLATE_TITLE = /^(Sequence #|Getting to the wave|The Three Circles|Your sequence)/;
 function sequenceLabelOf(b: Block): string | null {
+  // Un título escrito en el idioma del método se respeta tal cual (distingue
+  // "rehearsal on land" de "whole sequence" y de "focus: …").
+  if (b.pilar_part && TEMPLATE_TITLE.test(b.pilar_part)) return b.pilar_part;
   const sid = (b as any).sequence_id as string | null | undefined;
   if (sid === 'THREE-CIRCLES') {
     const g = b.mission_id ? gameContext(b.mission_id) : null;
@@ -69,7 +73,8 @@ function sequenceLabelOf(b: Block): string | null {
   const focus = (b as any).focus_step_id as string | null | undefined;
   const focusTitle = focus && focus === b.step_id ? b.step_title : null;
   const single = !focus && b.step_id && (!b.step_ids || b.step_ids.length <= 1) && b.step_title;
-  return `Sequence ${sequenceDisplayName(cfg)}${focusTitle ? ` · focus: ${focusTitle}` : single ? ` · ${b.step_title}` : ''}`;
+  const base = cfg.eyebrow ? `${cfg.eyebrow.split(' · ')[0]} · ${cfg.title}` : `Sequence ${sequenceDisplayName(cfg)}`;
+  return `${base}${focusTitle ? ` · focus: ${focusTitle}` : single ? ` · ${b.step_title}` : ''}`;
 }
 function topicsLabelOf(ids: string[] | null | undefined): string | null {
   if (!Array.isArray(ids) || !ids.length) return null;

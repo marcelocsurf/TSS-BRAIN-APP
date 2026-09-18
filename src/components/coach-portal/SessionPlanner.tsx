@@ -66,6 +66,7 @@ import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { topicsForBelt } from '@/lib/sequence-pages/topics';
+import { gameContext } from '@/lib/sequence-pages/three-circles';
 import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
 import {
   listSpacesByToken, listBookingsForDayByToken, createBookingByToken, cancelBookingByToken,
@@ -992,7 +993,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                         {b.pilar_part && b.pilar_part !== heading && (
                           <p className="text-[#10263B]">{b.pilar_part}</p>
                         )}
-                        {stepTitle && (<p><span className="text-[#55666E]">Step · </span>{b.step_id} — {stepTitle}</p>)}
+                        {stepTitle && (<p><span className="text-[#55666E]">Step · </span>{stepTitle}</p>)}
                         {missionTitle && (<p><span className="text-[#55666E]">Mission · </span>{missionTitle}</p>)}
                         {drillTitle && (<p><span className="text-[#55666E]">Drill · </span>{drillTitle}</p>)}
                         {!stepTitle && !missionTitle && !drillTitle && edpf && (
@@ -2872,10 +2873,17 @@ function stripCode(t: string | null | undefined): string { return String(t ?? ''
 const GENERIC_DRILL = /^EDPF coach loop$/i;
 function workLabelOf(
   b: { step_id?: string | null; step_ids?: string[] | null; sequence_id?: string | null; focus_step_id?: string | null; objective_text?: string | null },
-  tb: { step_id?: string | null; step_ids?: string[] | null; sequence_id?: string | null; focus_step_id?: string | null; mission_custom?: string | null; mission?: { title: string } | null } | null | undefined,
+  tb: { step_id?: string | null; step_ids?: string[] | null; sequence_id?: string | null; focus_step_id?: string | null; pilar_part?: string | null; mission_custom?: string | null; mission?: { title: string } | null } | null | undefined,
   belt: string | null | undefined,
   stpLabel: (id: string | null) => string | null,
 ): string | null {
+  // Título de plantilla ya en el idioma del método: se respeta tal cual.
+  if (tb?.pilar_part && /^(Sequence #|Getting to the wave|The Three Circles|Your sequence)/.test(tb.pilar_part)) return tb.pilar_part;
+  if ((b.sequence_id ?? tb?.sequence_id) === 'THREE-CIRCLES') {
+    const gid = (b as any).water_drill_id as string | null | undefined;
+    const g = gid ? gameContext(gid) : null;
+    return g ? `The Three Circles · ${g.label}` : 'The Three Circles';
+  }
   const cfg = ((b.sequence_id ?? tb?.sequence_id) && SEQUENCE_PAGES[(b.sequence_id ?? tb?.sequence_id) as string]) || resolveSequenceForSteps(
     { stepIds: b.step_ids ?? tb?.step_ids ?? null, stepId: b.step_id ?? tb?.step_id ?? null }, belt,
   );
@@ -2884,7 +2892,7 @@ function workLabelOf(
   const stepId = b.focus_step_id ?? tb?.focus_step_id ?? (Array.isArray(b.step_ids) && b.step_ids.length > 1 ? null : (b.step_id ?? tb?.step_id ?? null));
   const stepTitle = stepId ? stpLabel(stepId) : null;
   if (cfg) {
-    const seq = `Sequence ${sequenceDisplayName(cfg)}`;
+    const seq = cfg.eyebrow ? `${cfg.eyebrow.split(' · ')[0]} · ${cfg.title}` : `Sequence ${sequenceDisplayName(cfg)}`;
     if (focusTxt) return `${seq} · focus: ${focusTxt}`;
     if (stepTitle && !txt.startsWith('Whole line')) return `${seq} · ${stepTitle}`;
     return `${seq} · whole sequence`;

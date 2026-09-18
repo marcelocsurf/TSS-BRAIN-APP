@@ -10,6 +10,7 @@ import { getMaterialsForStudent } from '@/lib/constants/student-materials';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 import { topicById } from '@/lib/sequence-pages/topics';
+import { THREE_CIRCLES_SEQUENCE_ID, gameContext } from '@/lib/sequence-pages/three-circles';
 
 // ─── Get comprehensive student data for the portal ───
 
@@ -392,17 +393,47 @@ export async function getStudentPortalData(token: string) {
       // Water Mission → el paso pertenece a una secuencia). Varias secuencias
       // en un día (camp beginner: 1 · 2 · 3) salen en orden, una por una.
       const dayBlocks = (blocksByCamp[campId] ?? []).slice().sort((a: any, b: any) => (a.order_index ?? 0) - (b.order_index ?? 0));
-      const plans: { sequenceId: string; number: number; title: string; label: string; kind: string; focus: string[]; notes: string | null }[] = [];
+      const plans: { sequenceId: string; number: number; title: string; label: string; kind: string; focus: string[]; notes: string | null; gameId?: string | null }[] = [];
       const seen = new Set<string>();
+      // Títulos de paso para el foco estructurado (focus_step_id) de la plantilla.
+      const focusStepIds = Array.from(new Set(dayBlocks.map((b: any) => b.focus_step_id).filter(Boolean))) as string[];
+      const stepTitle = new Map<string, string>();
+      if (focusStepIds.length) {
+        const { data: ls } = await admin.from('lessons').select('id, title').in('id', focusStepIds);
+        for (const l of ls ?? []) stepTitle.set(l.id, l.title);
+      }
+      const gameIds = Array.from(new Set(dayBlocks.filter((b: any) => b.sequence_id === THREE_CIRCLES_SEQUENCE_ID && b.water_drill_id).map((b: any) => b.water_drill_id))) as string[];
+      const gameTitle = new Map<string, string>();
+      if (gameIds.length) {
+        const { data: gs } = await admin.from('drills_missions').select('id, title').in('id', gameIds);
+        for (const g of gs ?? []) gameTitle.set(g.id, g.title);
+      }
       const myBeltLevel = String((student as any).belt_level ?? 'white_belt');
       for (const b of dayBlocks) {
-        // Estructurado primero (sequence_id guardado por el plan simple);
-        // si no, se resuelve por los pasos.
+        // Los juegos de los Tres Círculos (secuencia virtual): uno por juego.
+        if (b.sequence_id === THREE_CIRCLES_SEQUENCE_ID) {
+          const gid = b.water_drill_id as string | null;
+          if (!gid || seen.has(`game:${gid}`)) continue;
+          seen.add(`game:${gid}`);
+          const ctx = gameContext(gid);
+          plans.push({ sequenceId: THREE_CIRCLES_SEQUENCE_ID, number: 0, title: 'The Three Circles', label: `The Three Circles · ${ctx?.label ?? ''}${gameTitle.get(gid) ? ` — ${gameTitle.get(gid)}` : ''}`.replace(' ·  —', ' —'), kind: 'game', focus: [], notes: b.notes_pre ?? null, gameId: gid });
+          continue;
+        }
+        // Estructurado primero (sequence_id guardado por el plan simple o la
+        // plantilla); si no, se resuelve por los pasos.
         const cfg = (b.sequence_id && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, myBeltLevel);
-        if (!cfg || seen.has(cfg.id)) continue;
-        seen.add(cfg.id);
+        if (!cfg) continue;
         const txt = String(b.objective_text ?? '');
-        plans.push({ sequenceId: cfg.id, number: cfg.number, title: cfg.title, label: sequenceDisplayName(cfg), kind: cfg.kind ?? 'sequence', focus: txt.startsWith('Focus: ') ? txt.slice(7).split(' · ').map((x) => x.trim()).filter(Boolean) : [], notes: b.notes_pre ?? null });
+        const textFocus = txt.startsWith('Focus: ') ? txt.slice(7).split(' · ').map((x) => x.trim()).filter(Boolean) : [];
+        const structFocus = b.focus_step_id ? [stepTitle.get(b.focus_step_id) ?? b.focus_step_id] : [];
+        const existing = plans.find((p) => p.sequenceId === cfg.id);
+        if (existing) {
+          // Varios bloques de la misma secuencia en el día: los focos se suman.
+          for (const f of [...textFocus, ...structFocus]) if (!existing.focus.includes(f)) existing.focus.push(f);
+          continue;
+        }
+        seen.add(cfg.id);
+        plans.push({ sequenceId: cfg.id, number: cfg.number, title: cfg.title, label: sequenceDisplayName(cfg), kind: cfg.kind ?? 'sequence', focus: [...textFocus, ...structFocus], notes: b.notes_pre ?? null });
       }
       const plan = plans[0] ?? null;
       const topics = (topicsBySession.get(sess.id) ?? [])

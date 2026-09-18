@@ -1382,7 +1382,9 @@ export async function applyTemplateDayToStudents(
         camp_session_id: campSessionId,
         student_id: studentId,
         order_index: tb.order_index,
-        step_id: tb.step_id ?? (tb.step_ids?.[0] ?? null),
+        // Bloque de secuencia completa (sequence_id sin foco): step_id queda
+        // vacío para no sugerir drills del primer paso (2026-09-18).
+        step_id: tb.step_id ?? (tb.sequence_id && !tb.focus_step_id ? null : (tb.step_ids?.[0] ?? null)),
         step_ids: tb.step_ids ?? null,
         land_drill_id: tb.drill_id ?? null,
         land_drill_custom: tb.drill_id ? null : tb.drill_custom ?? null,
@@ -2756,7 +2758,7 @@ async function hydrateTemplatePlan(
       .in('id', [...drillIds, ...missionIds]);
     for (const d of dms ?? []) {
       if (d.type === 'drill') drillMap.set(d.id, d);
-      else if (d.type === 'mission') missionMap.set(d.id, d);
+      else if (d.type === 'mission' || d.type === 'game') missionMap.set(d.id, d); // juegos de los Tres Círculos también
     }
   }
   if (stepIds.length > 0) {
