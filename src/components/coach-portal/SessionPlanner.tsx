@@ -24,6 +24,7 @@ import {
   startServicePlan,
   closeServicePlan,
   saveOfficialStepRatingFromPortal,
+  rateSequenceFromPortal,
   saveStudentInternalNote,
   applyPlanHeaderToWeek,
   applyStudentBoardToWeek,
@@ -32,6 +33,7 @@ import {
   type ServicePlanStudent,
   type ServicePlanBlock, finalizeStudentEarlyByToken } from '@/lib/actions/service-planner';
 import { StarRating } from '@/components/sequence/StarRating';
+import { DayCloseCard } from '@/components/coach-portal/DayCloseCard';
 import {
   Waves,
   ChevronRight,
@@ -167,6 +169,24 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
       } catch (e: any) {
         alert(e.message || 'Save failed');
       }
+    });
+  };
+
+  // Cierre con video análisis (2026-09-18): una estrella para la secuencia
+  // del día = esa nota en cada paso (una sola llamada).
+  const rateSequenceInline = (studentId: string, sequenceId: string, rating: number) => {
+    const cfg = SEQUENCE_PAGES[sequenceId];
+    if (!cfg) return;
+    setCoachRatings((prev) => {
+      const next = { ...prev };
+      const stepMap = { ...(next[studentId] ?? {}) };
+      for (const id of cfg.stepIds) stepMap[id] = rating;
+      next[studentId] = stepMap;
+      return next;
+    });
+    startTransition(async () => {
+      const r = await rateSequenceFromPortal(token, data.selectedDay.camp_session_id, studentId, sequenceId, rating);
+      if (!r.ok) alert(r.error || 'Could not save the star.');
     });
   };
 
@@ -1582,17 +1602,21 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 vistazo. Teléfono: columna única, idéntico a siempre. */}
             <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
               {students.map((s) => (
-                <StudentEvalCard
+                <DayCloseCard
                   key={s.student_id}
                   student={s}
                   isClosed={isClosed}
+                  isLastDay={isLastDay}
                   stpLabel={stpLabel}
-                  drillTitle={drillTitle}
-                  coachRatings={coachRatings[s.student_id] ?? {}}
+                  avatar={<StudentAvatar url={s.photo_url} name={s.display_name} />}
+                  profile={<StudentProfilePanel student={s} onSaveNote={(note) => saveInternalNote(s.student_id, note)} />}
                   onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
-                  onSaveNote={(note) => saveInternalNote(s.student_id, note)}
-                  onRateStep={(stepId, rating) => rateStepInline(s.student_id, stepId, rating)}
-                  onShowDrill={(id) => setDrillDetailId(id)}
+                  onRateSequence={(seqId, rating) => rateSequenceInline(s.student_id, seqId, rating)}
+                  onCarry={async (seqId) => {
+                    const r = await carryStudentPlanToNextDay(token, data.selectedDay.camp_session_id, s.student_id, { sequenceId: seqId });
+                    if (!r.ok) { alert(r.error || 'Could not set tomorrow.'); return null; }
+                    return `set for day ${r.nextDay}`;
+                  }}
                 />
               ))}
             </div>

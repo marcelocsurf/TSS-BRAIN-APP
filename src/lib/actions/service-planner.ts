@@ -301,6 +301,11 @@ export interface ServicePlanBlock {
   flow_channel: number | null;  // 1=bored, 3=optimal, 5=frustrated
   day_objective_status?: string | null; // session-level: achieved | partial | not_yet (block 0)
   whats_next?: string | null; // session-level: qué trabajar próximo (block 0) — REQUERIDO al cierre de surf
+  // Cierre con video análisis (2026-09-18): estrella del coach para la
+  // secuencia de este bloque + próximo foco estructurado (bloque 0).
+  coach_sequence_rating?: number | null;
+  next_focus_sequence_id?: string | null;
+  next_focus_step_id?: string | null;
 }
 
 export interface ServicePlanStudent {
@@ -633,6 +638,9 @@ export async function getServicePlan(
         focus_level: b.focus_level ?? null,
         flow_channel: b.flow_channel ?? null,
         day_objective_status: b.day_objective_status ?? null,
+        coach_sequence_rating: b.coach_sequence_rating ?? null,
+        next_focus_sequence_id: b.next_focus_sequence_id ?? null,
+        next_focus_step_id: b.next_focus_step_id ?? null,
       })),
     };
   });
@@ -1137,6 +1145,9 @@ export async function saveServicePlanBlock(
     flow_channel: number | null;
     whats_next: string | null;
     day_objective_status: string | null;
+    coach_sequence_rating: number | null;
+    next_focus_sequence_id: string | null;
+    next_focus_step_id: string | null;
   }>
 ): Promise<void> {
   const admin = createAdminClient();
@@ -1217,6 +1228,9 @@ export async function saveServicePlanBlock(
     'flow_channel',
     'whats_next',
     'day_objective_status',
+    'coach_sequence_rating',
+    'next_focus_sequence_id',
+    'next_focus_step_id',
   ] as const;
   const cleanPatch: Record<string, any> = {};
   for (const k of ALLOWED) {
@@ -1268,6 +1282,8 @@ export async function carryStudentPlanToNextDay(
   token: string,
   campSessionId: string,
   studentId: string,
+  /** "Move on": mañana arranca ESTA secuencia (línea completa) en vez de repetir la de hoy. */
+  opts?: { sequenceId?: string | null },
 ): Promise<{ ok: boolean; error?: string; nextDay?: number }> {
   const admin = createAdminClient();
   const { data: coach } = await admin.from('coaches').select('id').eq('portal_token', token).single();
@@ -1297,12 +1313,19 @@ export async function carryStudentPlanToNextDay(
     .order('order_index');
   const today = (todays ?? []).find((b: any) => b.order_index === 0 && (b.sequence_id || b.step_id || (b.step_ids ?? []).length))
     ?? (todays ?? []).find((b: any) => b.sequence_id && b.sequence_id !== 'THREE-CIRCLES');
-  if (!today) return { ok: false, error: 'Nothing planned for this student today.' };
-  const patch = {
+  const moveTo = opts?.sequenceId ? SEQUENCE_PAGES[opts.sequenceId] ?? null : null;
+  if (!today && !moveTo) return { ok: false, error: 'Nothing planned for this student today.' };
+  const patch = moveTo ? {
+    step_id: moveTo.stepIds[0] ?? null, step_ids: moveTo.stepIds, sequence_id: moveTo.id, focus_step_id: null, focus_moments: null,
+    objective_text: `Whole line · ${moveTo.eyebrow ? moveTo.title : `#${moveTo.number} ${moveTo.title}`}`,
+    water_drill_id: null, water_drill_custom: null, land_drill_id: null, land_drill_custom: null,
+    notes_pre: 'Moved on at the close of day ' + session.day_number + '.',
+  } : today ? {
     step_id: today.step_id, step_ids: today.step_ids, sequence_id: today.sequence_id, focus_step_id: today.focus_step_id, focus_moments: today.focus_moments,
     objective_text: today.objective_text, water_drill_id: today.water_drill_id, water_drill_custom: today.water_drill_custom, land_drill_id: today.land_drill_id, land_drill_custom: today.land_drill_custom,
     notes_pre: 'Carried over from day ' + session.day_number + '.',
-  };
+  } : null;
+  if (!patch) return { ok: false, error: 'Nothing planned for this student today.' };
   const { data: existing } = await admin
     .from('service_plan_blocks').select('id')
     .eq('camp_session_id', next.id).eq('student_id', studentId).eq('order_index', 0).maybeSingle();
@@ -2076,6 +2099,39 @@ export async function saveOfficialStepRatingFromPortal(
     );
 }
 
+// Cierre con video análisis (2026-09-18): UNA estrella para la secuencia del
+// día = la misma nota en cada paso de esa secuencia (misma regla que
+// "La tiene" en la evaluación por secuencia). Una sola llamada por toque.
+export async function rateSequenceFromPortal(
+  token: string,
+  campSessionId: string,
+  studentId: string,
+  sequenceId: string,
+  rating: number,
+): Promise<{ ok: boolean; error?: string }> {
+  if (rating < 1 || rating > 5) return { ok: false, error: 'Rating must be 1-5.' };
+  const cfg = SEQUENCE_PAGES[sequenceId];
+  if (!cfg) return { ok: false, error: 'Unknown sequence.' };
+  const admin = createAdminClient();
+  const { data: coach } = await admin.from('coaches').select('id').eq('portal_token', token).single();
+  if (!coach) return { ok: false, error: 'Coach not found.' };
+  const { data: session } = await admin
+    .from('camp_sessions')
+    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .eq('id', campSessionId)
+    .single();
+  if (!session) return { ok: false, error: 'Session not found.' };
+  const camp: any = Array.isArray(session.camp_instances) ? session.camp_instances[0] : session.camp_instances;
+  if (!camp || (camp.coach_id !== coach.id && camp.head_coach_id !== coach.id)) return { ok: false, error: 'You are not assigned to this service.' };
+  const { data: participant } = await admin.from('camp_participants').select('id').eq('camp_instance_id', session.camp_instance_id).eq('student_id', studentId).maybeSingle();
+  if (!participant) return { ok: false, error: 'Student not enrolled in this service.' };
+  const now = new Date().toISOString();
+  const rows = cfg.stepIds.map((stepId) => ({ student_id: studentId, step_id: stepId, coach_rating: rating, coach_rated_at: now, coach_rated_by: coach.id, last_updated: now }));
+  const { error } = await admin.from('student_step_ratings').upsert(rows, { onConflict: 'student_id,step_id' });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 // ─── Lifecycle: start + close ──────────────────────────────────────
 
 export async function startServicePlan(token: string, campSessionId: string): Promise<void> {
@@ -2454,6 +2510,19 @@ export async function closeServicePlan(
       .select('id, feedback_token')
       .single();
     if (resErr) throw new Error(resErr.message);
+
+    // Próximo foco estructurado (cierre con video análisis, 2026-09-18): la
+    // secuencia y el paso viajan a la ficha para que Let's Play y el Home
+    // los abran directo. El texto sigue en whats_next / next_recommended_focus.
+    if (firstBlock.next_focus_sequence_id || (firstBlock.whats_next ?? '').trim()) {
+      try {
+        await admin.from('students').update({
+          next_recommended_focus: firstBlock.whats_next ?? null,
+          next_focus_sequence_id: firstBlock.next_focus_sequence_id ?? null,
+          next_focus_step_id: firstBlock.next_focus_step_id ?? null,
+        }).eq('id', studentId);
+      } catch { /* best-effort */ }
+    }
 
     // Sync the student's profile snapshot (last_session_*)
     if (result) {
