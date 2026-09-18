@@ -749,7 +749,13 @@ export function PortalTabs({
   );
   // Deep-link a una pestaña que no existe (?tab=lineup con el canal vacío,
   // o el canal falló en cargar): caer al Home, no a un panel en blanco.
+  // OJO: Feedback, Sessions y Glossary viven DENTRO del Home (no son
+  // pestañas de la barra) pero sí son pantallas válidas: el link del correo
+  // (?tab=feedback&survey=) y el botón "Rate your coach" llegan por acá.
+  // Sin esta excepción rebotaban al Home (prueba E2E 2026-09-18).
   useEffect(() => {
+    const SUB_SCREENS: Tab[] = ['feedback', 'sessions', 'glossary'];
+    if (SUB_SCREENS.includes(activeTab)) return;
     if (!TABS.some((t) => t.key === activeTab)) setActiveTab('home');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [TABS, activeTab]);
