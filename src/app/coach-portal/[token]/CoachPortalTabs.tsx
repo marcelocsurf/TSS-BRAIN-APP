@@ -116,6 +116,8 @@ export function CoachPortalTabs({
   studentSide?: { href: string; name: string } | null;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
+  // "Run today" desde el Home: el Plan abre ese camp/día directo.
+  const [planAutoOpen, setPlanAutoOpen] = useState<{ campId: string; day?: number; view: 'read' | 'run' } | null>(null);
   // When a class is open in the planner we switch to a focused, light-themed
   // full-screen mode: light background (not the dark portal shell) + the global
   // tab-nav hidden, so the planner isn't a light screen floating on black with
@@ -194,7 +196,7 @@ export function CoachPortalTabs({
             {isSupport ? (
               <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} spaceBookings={(data as any).academySpaceBookings ?? []} emergencyPlan={data.emergencyPlan} onGoTo={(t) => setActiveTab(t as Tab)} />
             ) : (
-              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} todayLogistics={(data as any).todayLogistics ?? null} studentSide={studentSide} />
+              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} todayLogistics={(data as any).todayLogistics ?? null} studentSide={studentSide} onRunToday={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run' }); setActiveTab('plan'); }} />
             )}
           </div>
         )}
@@ -221,6 +223,8 @@ export function CoachPortalTabs({
             unclosed={(data as any).unclosedPast ?? []}
             token={coach.portal_token}
             onOpenChange={setPlannerOpen}
+            autoOpen={planAutoOpen}
+            onAutoOpened={() => setPlanAutoOpen(null)}
           />
         )}
         {activeTab === 'rating' && (
@@ -533,6 +537,7 @@ function HomeTab({
   courseProgress = {},
   todayLogistics = null,
   studentSide = null,
+  onRunToday,
 }: {
   coach: any;
   stats: any;
@@ -543,6 +548,8 @@ function HomeTab({
   coachCourses?: any[];
   courseProgress?: Record<string, { completed: boolean }>;
   todayLogistics?: any;
+  /** Abre directo el planner de HOY en modo "Dar la clase" (prueba E2E 2026-09-18). */
+  onRunToday?: (campId: string, dayNumber?: number) => void;
   /** Si este coach además entrena como alumno, el link a su portal. */
   studentSide?: { href: string; name: string } | null;
   emergencyPlan?: {
@@ -666,11 +673,11 @@ function HomeTab({
 
           <button
             type="button"
-            onClick={() => onGoTo?.('plan')}
+            onClick={() => (todayLogistics.camp_id && onRunToday ? onRunToday(todayLogistics.camp_id, todayLogistics.day_number ?? undefined) : onGoTo?.('plan'))}
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-full px-4 py-3.5 text-xs transition-opacity hover:opacity-90"
             style={{ ...F_LABEL, background: '#00D2FF', color: '#061C2B' }}
           >
-            <ClipboardList size={16} /> Plan the session
+            <ClipboardList size={16} /> {todayLogistics.day_number ? `Run today · Day ${todayLogistics.day_number}` : 'Run today'}
           </button>
         </div>
       )}
@@ -1766,12 +1773,16 @@ function PlanTab({
   unclosed = [],
   token,
   onOpenChange,
+  autoOpen = null,
+  onAutoOpened,
 }: {
   upcoming: any[];
   past: any[];
   unclosed?: { camp_id: string; camp_name: string; day_number: number; date: string }[];
   token: string;
   onOpenChange?: (open: boolean) => void;
+  autoOpen?: { campId: string; day?: number; view: 'read' | 'run' } | null;
+  onAutoOpened?: () => void;
 }) {
   const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
   // 🚐 Transporte en dos toques (sin abrir el planner): panel por servicio.
@@ -1853,6 +1864,12 @@ function PlanTab({
     setPlanData(null);
     setPlanView('read');
   };
+  useEffect(() => {
+    if (!autoOpen) return;
+    void openPlanner(autoOpen.campId, autoOpen.day, autoOpen.view);
+    onAutoOpened?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpen]);
 
   // M45 — reload the planner for a different day without leaving the screen.
   const switchDay = async (dayNumber: number) => {
@@ -1957,11 +1974,11 @@ function PlanTab({
       {/* Días pasados SIN CIERRE — un toque abre el planner en ese día.
           El cierre es requisito para liberar el pago (candado de nómina). */}
       {unclosed.length > 0 && (
-        <div>
-          <div className="flex items-end justify-between pb-[5px] mb-[8px]" style={{ borderBottom: `1px solid ${HAIR}` }}>
-            <p className="text-[11px]" style={{ ...F_MONO, color: '#10263B' }}>Needs closing</p>
+        <details open={unclosed.length <= 2}>
+          <summary className="list-none cursor-pointer flex items-end justify-between pb-[5px] mb-[8px]" style={{ borderBottom: `1px solid ${HAIR}` }}>
+            <p className="text-[11px]" style={{ ...F_MONO, color: '#10263B' }}>Needs closing{unclosed.length > 2 ? ' · tap to see' : ''}</p>
             <p className="text-[11px]" style={{ ...F_MONO, color: '#10263B' }}>{unclosed.length} · pay on hold</p>
-          </div>
+          </summary>
           <div style={{ ...CARD, borderLeft: '3px solid #FFD166' }}>
             {unclosed.map((u, i) => (
               <button
@@ -1986,7 +2003,7 @@ function PlanTab({
               </button>
             ))}
           </div>
-        </div>
+        </details>
       )}
 
       {upcoming.length > 0 && (

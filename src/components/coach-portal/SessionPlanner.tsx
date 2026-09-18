@@ -963,6 +963,49 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
       {/* ════════════ PLANNING MODE ════════════ */}
       {showPlanForm && (
         <>
+          {/* ═══ HOY · CHECKLIST (prueba E2E 2026-09-18): lo que el coach
+              necesita saber antes de salir, en una línea por cosa. Lo que
+              falta se pone en "Adjust" o en el plan simple, no acá. ═══ */}
+          {(() => {
+            const pl: any = plan;
+            const boards = students.filter((s) => s.blocks.some((b) => b.board_id || b.board_type)).length;
+            const planned = students.filter((s) => s.blocks.some((b) => b.sequence_id || b.step_id || (b.step_ids ?? []).length)).length;
+            const n = students.length;
+            const items: { ok: boolean; label: string }[] = [
+              { ok: !!pl.surf_venue, label: pl.surf_venue ? `Spot · ${pl.surf_venue}` : 'Spot · not set' },
+              { ok: !!pl.class_start_time, label: pl.class_start_time ? `Start · ${String(pl.class_start_time).slice(0, 5)}` : 'Start · not set' },
+              { ok: pl.transport_needed === false || (!!pl.transport_needed && !!pl.transport_depart), label: pl.transport_needed ? `Van · ${String(pl.transport_depart ?? '?').slice(0, 5)}` : pl.transport_needed === false ? 'No transport' : 'Transport · not decided' },
+              { ok: n > 0 && boards === n, label: `Boards · ${boards}/${n}` },
+              { ok: n > 0 && planned === n, label: `Sequence · ${planned}/${n} planned` },
+              { ok: pl.venue_go_no_go === 'go' || pl.venue_go_no_go === 'modified', label: pl.venue_go_no_go ? `Safety · ${String(pl.venue_go_no_go).replace('_', '-')}` : 'Safety · Go or No-Go' },
+            ];
+            const ready = items.filter((i) => i.ok).length;
+            return (
+              <div className="rounded-lg px-3 py-2.5" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.35)' }}>
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00D2FF' }}>Today · ready {ready}/{items.length}</p>
+                  <p className="text-[10px]" style={{ color: 'rgba(247,249,250,.6)' }}>{n} student{n === 1 ? '' : 's'}</p>
+                </div>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {items.map((i) => (
+                    <span key={i.label} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-semibold" style={i.ok ? { background: 'rgba(47,163,107,.18)', color: '#9FE3BF' } : { background: 'rgba(255,209,102,.16)', color: '#FFD166' }}>
+                      <i className="inline-block w-[7px] h-[7px] rounded-full" style={{ background: i.ok ? '#2FA36B' : '#FFD166' }} />{i.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ═══ AJUSTAR (plegado): plantilla, día de clase, seguridad y
+              espacios. La clase se da con el plan simple de abajo; esto se
+              abre solo cuando algo del checklist está en ámbar. ═══ */}
+          <details className="group rounded-lg border border-dashed border-[#DCD7C6] bg-[#F7F9FA]/60">
+            <summary className="cursor-pointer list-none px-4 py-3 text-[12px] font-semibold text-[#10263B] flex items-center justify-between">
+              <span>Adjust · class day, safety, spaces, template</span>
+              <ChevronDown size={16} className="text-[#55666E] transition group-open:rotate-180" />
+            </summary>
+            <div className="px-2 pb-2 space-y-3">
           {/* M45 — Template reference panel for the current day. Shows
               the canonical recipe + lets the coach apply ALL blocks at
               once to every student (replaces existing blocks). Useful
@@ -1282,6 +1325,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             defaultStart={(plan.class_start_time ?? data.camp.scheduled_time ?? '09:00').slice(0, 5)}
             title={(data.camp.camp_name ?? '').split(' · ')[0]}
           />
+            </div>
+          </details>
 
           {/* ═══ PLAN SIMPLE (Marcelo 2026-09-10) ═══
               El camp define las secuencias del nivel; el coach reparte:
@@ -1435,7 +1480,14 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             );
           })()}
 
-          {/* 4. PER-STUDENT PLANNING */}
+          {/* 4. PER-STUDENT PLANNING — plegado (2026-09-18): el plan simple
+              ya reparte la secuencia; acá van tablas, focos y bloques extra. */}
+          <details className="group rounded-lg border border-dashed border-[#DCD7C6] bg-[#F7F9FA]/60">
+            <summary className="cursor-pointer list-none px-4 py-3 text-[12px] font-semibold text-[#10263B] flex items-center justify-between">
+              <span>Per student · boards, focus, extra blocks · {students.length}</span>
+              <ChevronDown size={16} className="text-[#55666E] transition group-open:rotate-180" />
+            </summary>
+            <div className="px-2 pb-2">
           <Section
             icon={Users}
             title="Today's students"
@@ -1471,6 +1523,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               })()}
             </div>
           </Section>
+
+            </div>
+          </details>
 
           {/* ═══ SI QUERÉS PLANEAR MÁS (auditoría coach 2026-09-10): lo mínimo
               para hoy va arriba; calentamiento, mental hack y notas quedan
