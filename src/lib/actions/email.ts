@@ -24,7 +24,20 @@ async function sendEmail(payload: Parameters<typeof resend.emails.send>[0]) {
 // Pie legal de todo correo (auditoría 2026-09-05): quién lo manda y dónde
 // están la privacidad y los términos. Transaccional: no hay "unsubscribe".
 const LEGAL_FOOTER_HTML = `<p style="text-align:center;font-size:10px;color:#9CA3AF;margin:8px 0 0;line-height:1.6;">Sent by Enkrateia, S.A. de C.V. · The Surf Sequence® · <a href="https://app.thesurfsequence.com/legal/privacy" style="color:#9CA3AF;">Privacy</a> · <a href="https://app.thesurfsequence.com/legal/terms" style="color:#9CA3AF;">Terms</a> · info@thesurfsequence.com</p>`;
-const EMAIL_LOGO = `<img src="https://app.thesurfsequence.com/tss-logo-white-h.png" alt="${BRAND.name}" width="210" style="display:block;margin:0 auto;max-width:72%;height:auto;" />`;
+// v10.1 (2026-09-18): logo horizontal oficial en blanco sobre transparente
+// (public/brand/tss-logo-full-white.png). El -h viejo traía un gris horneado.
+const EMAIL_LOGO = `<img src="https://app.thesurfsequence.com/brand/tss-logo-full-white.png" alt="${BRAND.name}" width="220" style="display:block;margin:0 auto;max-width:70%;height:auto;" />`;
+// Tokens v10.1 para correo (inline: los clientes de correo no cargan CSS).
+const EM = {
+  paper: '#F7F9FA', ink: '#061C2B', inkText: '#10263B', tide: '#55666E', sand: '#E9E2D2', border: '#DCD7C6', cyan: '#00D2FF', cyanText: '#00A8CC',
+  display: "'Archivo','Arial Black','Helvetica Neue',Helvetica,Arial,sans-serif",
+  body: "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif",
+  mono: "'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,'Courier New',monospace",
+} as const;
+/** Etiqueta mono en cyan sobre claro (rótulos de sección). */
+const emLabel = (t: string) => `<p style="margin:0 0 6px;font-family:${EM.mono};font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${EM.cyanText};">${t}</p>`;
+/** Tarjeta sand v10.1. */
+const emCard = (inner: string, extra = '') => `<div style="background:${EM.sand};border:1px solid ${EM.border};border-radius:8px;padding:14px 16px;margin:0 0 14px;${extra}">${inner}</div>`;
 
 interface SessionEmailData {
   studentName: string;
@@ -158,20 +171,24 @@ function escapeHtmlBasic(s: string): string {
 // Brand Manual v10: header ink con el logo, etiqueta mono espaciada en cyan,
 // CTA como píldora cyan con texto ink. Una sola shell viste TODOS los correos.
 function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: string; label: string }, academy?: { name: string; logoUrl: string }): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F7F9FA;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
-    <div style="background:${BRAND.colors.navy};border-radius:16px 16px 0 0;padding:28px 24px 22px;text-align:center;border-bottom:3px solid ${BRAND.colors.cyan};">
+  // v10.1 (2026-09-18): papel #F7F9FA, cabecera ink con el logo y el tagline en
+  // mono cyan, cuerpo blanco con título display en mayúsculas, tarjetas sand,
+  // CTA cyan con texto ink, esquinas 8px. Todo inline por los clientes de correo.
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><meta name="supported-color-schemes" content="light"></head>
+<body style="margin:0;padding:0;background:${EM.paper};font-family:${EM.body};">
+  <div style="max-width:560px;margin:0 auto;padding:24px 16px;">
+    <div style="background:${EM.ink};border-radius:8px 8px 0 0;padding:30px 24px 24px;text-align:center;">
       ${EMAIL_LOGO}
-      <p style="margin:10px 0 0;color:${BRAND.colors.cyan};font-size:10px;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:3px;">${BRAND.tagline}</p>
+      <p style="margin:12px 0 0;color:${EM.cyan};font-size:10px;font-family:${EM.mono};text-transform:uppercase;letter-spacing:3px;">${BRAND.tagline}</p>
     </div>
-    ${academy ? `<div style="background:white;padding:10px 24px;border:1px solid #E5E9EC;border-top:none;text-align:center;"><img src="${academy.logoUrl}" alt="${escapeHtmlBasic(academy.name)}" style="height:34px;max-width:60%;object-fit:contain;" /></div>` : ''}
-    <div style="background:white;padding:26px 24px;border-radius:0 0 16px 16px;border:1px solid #E5E9EC;border-top:none;">
-      <h2 style="margin:0 0 14px;font-size:17px;font-weight:800;color:${BRAND.colors.navy};text-transform:uppercase;letter-spacing:-0.2px;line-height:1.15;">${title}</h2>
+    <div style="height:3px;background:${EM.cyan};"></div>
+    ${academy ? `<div style="background:#FFFFFF;padding:12px 24px;border:1px solid ${EM.border};border-top:none;border-bottom:none;text-align:center;"><img src="${academy.logoUrl}" alt="${escapeHtmlBasic(academy.name)}" style="height:34px;max-width:60%;object-fit:contain;" /></div>` : ''}
+    <div style="background:#FFFFFF;padding:26px 24px 24px;border-radius:0 0 8px 8px;border:1px solid ${EM.border};border-top:none;">
+      <h1 style="margin:0 0 16px;font-family:${EM.display};font-size:24px;line-height:1.05;font-weight:900;color:${EM.inkText};text-transform:uppercase;letter-spacing:-0.02em;">${title}</h1>
       ${bodyHtml}
-      ${cta ? `<a href="${cta.url}" style="display:block;background:${BRAND.colors.cyan};color:${BRAND.colors.navy};text-align:center;padding:14px;border-radius:999px;text-decoration:none;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;margin-top:20px;">${cta.label}</a>` : ''}
+      ${cta ? `<a href="${cta.url}" style="display:block;background:${EM.cyan};color:${EM.ink};text-align:center;padding:16px 14px;border-radius:5px;text-decoration:none;font-family:${EM.display};font-size:14px;font-weight:900;text-transform:uppercase;letter-spacing:0.04em;margin-top:22px;">${cta.label}</a>` : ''}
     </div>
-    <p style="text-align:center;font-size:9px;color:#9CA3AF;margin:16px 0 0;font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:2px;">${BRAND.name}® · ${BRAND.tagline}</p>
+    <p style="text-align:center;font-size:9px;color:${EM.tide};margin:16px 0 0;font-family:${EM.mono};text-transform:uppercase;letter-spacing:2px;">${BRAND.name}® · ${BRAND.tagline}</p>
     ${LEGAL_FOOTER_HTML}
   </div>
 </body></html>`;
@@ -180,11 +197,11 @@ function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: stri
 // "Install the app" instructions — appended to student-facing emails so the
 // portal lives one tap away on their phone. English, brand name in full.
 const INSTALL_APP_HTML = `
-<div style="margin-top:20px;padding:14px 16px;background:#E5FAFF;border:1px solid #99E9FF;border-radius:12px;">
-  <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#0d2240;">📲 Add The Surf Sequence to your phone</p>
-  <p style="margin:0 0 6px;font-size:12px;color:#374151;line-height:1.6;"><strong>iPhone:</strong> open your portal link in Safari → tap the Share button → <strong>"Add to Home Screen"</strong>.</p>
-  <p style="margin:0 0 6px;font-size:12px;color:#374151;line-height:1.6;"><strong>Android:</strong> open it in Chrome → tap the ⋮ menu → <strong>"Add to Home screen"</strong>.</p>
-  <p style="margin:0;font-size:12px;color:#6B7280;line-height:1.6;">You'll get The Surf Sequence icon on your home screen — your portal, one tap away.</p>
+<div style="margin-top:20px;padding:14px 16px;background:#E9E2D2;border:1px solid #DCD7C6;border-radius:8px;">
+  <p style="margin:0 0 8px;font-family:'IBM Plex Mono','SFMono-Regular',Menlo,Consolas,'Courier New',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#00A8CC;">Add The Surf Sequence to your phone</p>
+  <p style="margin:0 0 6px;font-size:13px;color:#10263B;line-height:1.6;"><strong>iPhone:</strong> open your portal link in Safari → Share → <strong>Add to Home Screen</strong>.</p>
+  <p style="margin:0 0 6px;font-size:13px;color:#10263B;line-height:1.6;"><strong>Android:</strong> open it in Chrome → ⋮ menu → <strong>Add to Home screen</strong>.</p>
+  <p style="margin:0;font-size:12px;color:#55666E;line-height:1.6;">Your portal, one tap away.</p>
 </div>`;
 
 // Send the intake link to a newly created student so they can complete their
@@ -583,85 +600,21 @@ function buildPasswordResetHtml(data: PasswordResetEmailData): string {
 }
 
 function buildEmailHtml(data: SessionEmailData & { portalUrl: string; feedbackUrl: string; beltColor: string }): string {
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <div style="max-width:520px;margin:0 auto;padding:24px 16px;">
-    <!-- Header -->
-    <div style="background:${BRAND.colors.navy};border-radius:12px 12px 0 0;padding:24px;text-align:center;">
-      ${EMAIL_LOGO}
-      <p style="margin:4px 0 0;color:${BRAND.colors.gold};font-size:12px;">${BRAND.tagline}</p>
-    </div>
-
-    <!-- Body -->
-    <div style="background:white;padding:24px;border-radius:0 0 12px 12px;border:1px solid #E5E7EB;border-top:none;">
-      <p style="margin:0 0 16px;font-size:15px;color:#111827;">
-        Hi <strong>${data.studentName}</strong>,
-      </p>
-      <p style="margin:0 0 20px;font-size:14px;color:#374151;line-height:1.5;">
-        Here is your session report from <strong>${data.coachName}</strong>.
-      </p>
-
-      <!-- Session card -->
-      <div style="background:#F9FAFB;border-radius:8px;padding:16px;margin-bottom:20px;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:12px;color:#6B7280;">Date</span>
-          <span style="font-size:13px;color:#111827;font-weight:500;">${new Date(/^\d{4}-\d{2}-\d{2}$/.test(data.sessionDate) ? data.sessionDate + 'T00:00:00' : data.sessionDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
-        </div>
-        <div style="margin-bottom:8px;">
-          <span style="font-size:12px;color:#6B7280;">Mission</span>
-          <p style="margin:4px 0 0;font-size:14px;color:#111827;font-weight:600;">${data.mission}</p>
-        </div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-size:12px;color:#6B7280;">Status</span>
-          <span style="font-size:13px;color:#111827;font-weight:500;text-transform:capitalize;">${data.status.replace('_', ' ')}</span>
-        </div>
-      </div>
-
-      <!-- Feedback -->
-      <div style="margin-bottom:16px;">
-        <p style="font-size:12px;color:#6B7280;margin:0 0 4px;">Coach Feedback</p>
-        <p style="font-size:14px;color:#374151;line-height:1.5;margin:0;">${data.coachFeedback}</p>
-      </div>
-
-      <!-- Homework — only shown when the coach actually left something -->
-      ${data.homework && data.homework.trim() ? `
-      <div style="background:#FFF7ED;border-left:3px solid ${BRAND.colors.gold};padding:12px;border-radius:0 8px 8px 0;margin-bottom:16px;">
-        <p style="font-size:11px;color:#92400E;margin:0 0 4px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Homework</p>
-        <p style="font-size:14px;color:#78350F;margin:0;font-weight:500;">${data.homework}</p>
-      </div>` : ''}
-
-      <!-- What's Next — only shown when set -->
-      ${data.whatsNext && data.whatsNext.trim() ? `
-      <div style="margin-bottom:24px;">
-        <p style="font-size:12px;color:#6B7280;margin:0 0 4px;">Next Recommended Focus</p>
-        <p style="font-size:14px;color:#111827;font-weight:500;margin:0;">${data.whatsNext}</p>
-      </div>` : ''}
-
-      <!-- CTA: Rate Session -->
-      <a href="${data.feedbackUrl}" style="display:block;background:${BRAND.colors.navy};color:white;text-align:center;padding:14px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:600;">
-        Rate Your Session &amp; Coach &#9733;
-      </a>
-
-      <p style="margin:16px 0 0;font-size:12px;color:#9CA3AF;text-align:center;">
-        Your feedback helps us improve. Takes 30 seconds.
-      </p>
-
-      <!-- Secondary CTA: Dashboard -->
-      <a href="${data.portalUrl}" style="display:block;text-align:center;padding:10px;font-size:13px;color:${BRAND.colors.navy};text-decoration:none;font-weight:500;margin-top:8px;">
-        View your full training dashboard &rarr;
-      </a>
-    </div>
-
-    <!-- Footer -->
-    <p style="text-align:center;font-size:11px;color:#9CA3AF;margin:16px 0 0;">
-      The Surf Sequence® · Evolve through play
-    </p>
-    ${LEGAL_FOOTER_HTML}
-  </div>
-</body>
-</html>`;
+  const dateLabel = new Date(/^\d{4}-\d{2}-\d{2}$/.test(data.sessionDate) ? data.sessionDate + 'T00:00:00' : data.sessionDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const statusLabel = data.status === 'achieved' ? 'Achieved' : data.status === 'not_yet' ? 'Not yet' : 'Partial';
+  const body = `
+    <p style="margin:0 0 16px;font-size:15px;color:${EM.inkText};line-height:1.6;">Hi <strong>${escapeHtmlBasic(data.studentName)}</strong>, here is what <strong>${escapeHtmlBasic(data.coachName)}</strong> left you from today.</p>
+    ${emCard(`
+      ${emLabel('Today · ' + escapeHtmlBasic(dateLabel))}
+      <p style="margin:0 0 4px;font-family:${EM.display};font-size:18px;line-height:1.1;font-weight:900;text-transform:uppercase;color:${EM.inkText};">${escapeHtmlBasic(data.mission)}</p>
+      <p style="margin:0;font-size:13px;color:${EM.tide};">Objective: <strong style="color:${EM.inkText};">${statusLabel}</strong></p>
+    `)}
+    ${data.coachFeedback && data.coachFeedback.trim() ? emCard(`${emLabel('From your coach')}<p style="margin:0;font-size:14px;color:${EM.inkText};line-height:1.6;">${escapeHtmlBasic(data.coachFeedback)}</p>`) : ''}
+    ${data.whatsNext && data.whatsNext.trim() ? `<div style="background:${EM.ink};border:1px solid rgba(0,210,255,.35);border-radius:8px;padding:14px 16px;margin:0 0 6px;"><p style="margin:0 0 6px;font-family:${EM.mono};font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${EM.cyan};">Your next focus</p><p style="margin:0;font-size:15px;font-weight:700;color:${EM.paper};line-height:1.4;">${escapeHtmlBasic(data.whatsNext)}</p><p style="margin:6px 0 0;font-size:12px;color:rgba(247,249,250,.7);">It is waiting for you in Let's Play.</p></div>` : ''}
+    ${data.homework && data.homework.trim() ? emCard(`${emLabel('Homework')}<p style="margin:0;font-size:14px;color:${EM.inkText};line-height:1.6;">${escapeHtmlBasic(data.homework)}</p>`) : ''}
+    <p style="margin:18px 0 0;font-size:12px;color:${EM.tide};text-align:center;">Rate the session: 30 seconds, and your coach reads it.</p>
+    <p style="margin:12px 0 0;text-align:center;"><a href="${data.portalUrl}" style="font-size:13px;color:${EM.cyanText};text-decoration:underline;font-weight:600;">Open your portal →</a></p>${INSTALL_APP_HTML}`;
+  return assignmentEmailShell('Your session report', body, { url: data.feedbackUrl, label: 'Rate your session ★' });
 }
 
 // ─── New quiz lead notification — sent to TSS + the academy ───────────────
