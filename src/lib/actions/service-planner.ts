@@ -1,4 +1,6 @@
 'use server';
+import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { emailEnabled } from '@/lib/email-switch';
 
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -2419,7 +2421,16 @@ export async function closeServicePlan(
         return label && !isOpening(label);
       }) ??
       firstBlock;
-    const missionTitle = labelOf(mainBlock) || labelOf(firstBlock) || 'Service session';
+    // Idioma del método (2026-09-18): la sesión se nombra por las secuencias
+    // trabajadas ("Getting to the wave · Navigate the Ocean · Catch Waves"),
+    // no por el texto del primer bloque de la plantilla (salía el Kit).
+    const seqTitles: string[] = [];
+    for (const blk of studentBlocks as any[]) {
+      const cfg = (blk.sequence_id && blk.sequence_id !== 'THREE-CIRCLES' && SEQUENCE_PAGES[blk.sequence_id]) || resolveSequenceForSteps({ stepIds: blk.step_ids, stepId: blk.step_id }, stud?.belt_level ?? null);
+      const label = cfg ? (cfg.eyebrow ? `${cfg.eyebrow.split(' · ')[0]} · ${cfg.title}` : `Sequence ${sequenceDisplayName(cfg)}`) : (blk.sequence_id === 'THREE-CIRCLES' ? 'The Three Circles' : null);
+      if (label && !seqTitles.includes(label)) seqTitles.push(label);
+    }
+    const missionTitle = seqTitles.length ? seqTitles.join(' · ') : (labelOf(mainBlock) || labelOf(firstBlock) || 'Service session');
     const b = firstBlock; // alias for the legacy code below
 
     const { data: result, error: resErr } = await admin

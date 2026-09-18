@@ -346,13 +346,14 @@ export async function getStudentPortalData(token: string) {
   if (upcomingCampIds.length > 0) {
     const { data: sessionsForCamps } = await admin
       .from('camp_sessions')
-      .select('id, camp_instance_id, day_number, session_date')
+      .select('id, camp_instance_id, day_number, session_date, session_status')
       .in('camp_instance_id', upcomingCampIds)
       .order('day_number');
     const nextSessionByCamp = new Map<string, any>();
     for (const s of sessionsForCamps ?? []) {
       const cur = nextSessionByCamp.get(s.camp_instance_id);
-      const isFuture = !s.session_date || s.session_date >= today;
+      // Un día ya DADO (cerrado por el coach) no es "próxima clase" aunque sea hoy.
+      const isFuture = (!s.session_date || s.session_date >= today) && s.session_status !== 'completed';
       if (!cur && isFuture) nextSessionByCamp.set(s.camp_instance_id, s);
     }
     // Fallback to day 1 for camps without any future session date.
@@ -366,7 +367,7 @@ export async function getStudentPortalData(token: string) {
     if (nextSessionIds.length > 0) {
       const { data: previewBlocks } = await admin
         .from('service_plan_blocks')
-        .select('camp_session_id, step_id, step_ids, sequence_id, focus_step_id, focus_moments, land_drill_id, water_drill_id, objective_text, notes_pre, order_index')
+        .select('camp_session_id, step_id, step_ids, sequence_id, focus_step_id, focus_moments, land_drill_id, land_drill_custom, water_drill_id, water_drill_custom, objective_text, notes_pre, order_index')
         .in('camp_session_id', nextSessionIds)
         .eq('student_id', student.id)
         .order('order_index');
@@ -410,6 +411,10 @@ export async function getStudentPortalData(token: string) {
       }
       const myBeltLevel = String((student as any).belt_level ?? 'white_belt');
       for (const b of dayBlocks) {
+        // Un bloque de tierra (repaso, prep de mañana) no es "hoy trabajás en":
+        // solo cuentan los de agua y el bloque 0 del plan simple (2026-09-18).
+        const isLandOnly = !!(b.land_drill_id || (b as any).land_drill_custom) && !b.water_drill_id && !(b as any).water_drill_custom && (b.order_index ?? 0) !== 0;
+        if (isLandOnly) continue;
         // Los juegos de los Tres Círculos (secuencia virtual): uno por juego.
         if (b.sequence_id === THREE_CIRCLES_SEQUENCE_ID) {
           const gid = b.water_drill_id as string | null;

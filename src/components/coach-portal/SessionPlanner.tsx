@@ -1561,6 +1561,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 const tb = dayTpl?.blocks.find((t) => t.block_order === b.order_index) ?? null;
                 const hasWork = !!(b.sequence_id || b.step_id || (b.step_ids && b.step_ids.length) || tb?.step_id || (tb?.step_ids && tb.step_ids.length));
                 if (!hasWork) continue;
+                if (b.order_index !== 0 && tb && !/water|mission|get_in_stp/i.test(String(tb.block_type ?? ''))) continue;
                 const l = workLabelOf(b, tb, s.belt_level, stpLabel);
                 if (l && !seen.has(l)) { seen.add(l); missions.push(l); }
               }
@@ -2684,6 +2685,9 @@ function StudentPlanCard({
         const seqs: string[] = [];
         for (const b of blocks) {
           const tb = templateBlocks.find((t) => t.block_order === b.order_index);
+          // Solo agua (o el bloque 0 del plan simple): el repaso y la prep de mañana no son "hoy".
+          if (b.order_index !== 0 && tb && !/water|mission|get_in_stp/i.test(String(tb.block_type ?? ''))) continue;
+          if (b.order_index !== 0 && !tb && (b.land_drill_id || b.land_drill_custom) && !b.water_drill_id && !b.water_drill_custom) continue;
           const cfg = resolveSequenceForSteps(
             { stepIds: b.step_ids ?? tb?.step_ids ?? null, stepId: b.step_id ?? tb?.step_id ?? null },
             student.belt_level,
@@ -3345,6 +3349,7 @@ function StudentEvalCard({
         for (const b of blocks) {
           const hasWork = !!(b.sequence_id || b.step_id || (b.step_ids && b.step_ids.length));
           if (!hasWork) continue;
+          if (b.order_index !== 0 && (b.land_drill_id || b.land_drill_custom) && !b.water_drill_id && !b.water_drill_custom) continue;
           const l = workLabelOf(b, null, student.belt_level, stpLabel);
           if (l && !labels.includes(l)) labels.push(l);
         }
