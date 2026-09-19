@@ -2069,7 +2069,7 @@ function PlanTab({
                                 <span className="min-w-0 flex-1">
                                   <span className="block text-[14px] truncate" style={{ ...F_DISP, color: '#10263B' }}>
                                     {s.is_test && <span className="mr-1.5 align-middle text-[9px] px-1.5 py-0.5 rounded-[3px]" style={{ ...F_MONO, background: '#FFD166', color: '#061C2B' }}>Prueba</span>}
-                                    {(s.camp_name ?? '').split(' · ')[0]}
+                                    {String(s.camp_name ?? '').replace(/^PRUEBA · /, '').split(' · ')[0]}
                                   </span>
                                   <span className="block text-[11px] mt-[3px] text-[#55666E]" style={F_MONO}>
                                     {(tpl?.service_kind ?? s.status ?? '').replace(/_/g, ' ')}
