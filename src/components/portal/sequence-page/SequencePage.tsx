@@ -267,7 +267,10 @@ export function SequencePage({
               <p className="tss-intro">Connect the mechanics to your body before the wave asks for them.</p>
               <p className="text-[14px] m-0" style={{ color: INK }}>Three kinds of rehearsal, from stillness to movement. None of them is a test.</p>
             </Card>
-            <Card title="Visualize" color={VIOLET_BRIGHT}>
+            {/* La visualización de la LÍNEA COMPLETA; cada drill de abajo trae la
+                suya propia (Understand · Visualize · Simulate · The cue). El
+                rótulo lo dice para que no parezca repetido (Marcelo 2026-09-19). */}
+            <Card title="Visualize · the whole line" color={VIOLET_BRIGHT}>
               <p className="text-[15px] m-0 leading-snug" style={{ color: INK }}>{cfg.feel.visualize}</p>
             </Card>
             <Card title="Simulate · land, sand, pool or calm water" color={VIOLET_BRIGHT}>
