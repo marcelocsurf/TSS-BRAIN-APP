@@ -13,6 +13,7 @@
 import type { TemplateBlockInput } from '@/lib/actions/camps';
 import type { TemplateCatalog } from '@/lib/actions/template-catalog';
 import { StepDrillPicker } from '@/components/shared/StepDrillPicker';
+import { SequenceFields, TopicChips } from '@/components/camp/SequenceFields';
 import {
   ACTIVITY_TYPES,
   WARMUP_SUBTYPES,
@@ -40,13 +41,19 @@ function normalizeType(block_type: string | null | undefined): ActivityType {
   return 'custom';
 }
 
-export function ActivityForm({ block, catalog, onChange }: Props) {
+export function ActivityForm({ block, catalog, onChange, belt = null }: Props & { belt?: string | null }) {
   const type = normalizeType(block.block_type);
+  // Bloques que entrenan algo: llevan la secuencia del método (2026-09-19).
+  const trains = type === 'water_mission' || type === 'mission' || type === 'land_drill' || type === 'get_in_stp' || type === 'evaluation' || type === 'free_practice';
 
   return (
     <div className="space-y-3">
       {/* ── Type selector + color stripe ── */}
       <TypeSelector type={type} onChange={(t) => onChange({ block_type: t })} />
+
+      {/* ── Secuencia + foco (el idioma que ven coach y alumno) ── */}
+      {trains && <SequenceFields block={block} catalog={catalog} belt={belt} onChange={onChange} />}
+      {type === 'theory' && <TopicChips value={block.topic_ids ?? null} belt={belt} onChange={(next) => onChange({ topic_ids: next })} label="Topic of the method · optional" />}
 
       {/* ── Type-specific body ── */}
       {type === 'water_mission' || type === 'mission' ? (

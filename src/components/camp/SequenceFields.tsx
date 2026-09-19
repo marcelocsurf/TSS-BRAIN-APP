@@ -1,0 +1,158 @@
+'use client';
+
+// ═══ Idioma del método en el editor de plantillas (Marcelo 2026-09-19) ═══
+// Cada bloque puede decir QUÉ SECUENCIA se trabaja y si es la línea completa
+// o un paso (foco), con los momentos de ese paso como detalle opcional. Y
+// cada día (o bloque de teoría) puede llevar temas: Tres Círculos, Infinite
+// Circle, lecciones del Pre-Course, temas de Blue. Es lo que después lee el
+// plan del coach y el "Next class" del alumno: la base ya lo guardaba
+// (00209), solo faltaba poder elegirlo acá.
+
+import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import type { SequencePageConfig } from '@/lib/sequence-pages/types';
+import { momentsByStep } from '@/lib/sequence-pages/moments';
+import { PLAN_TOPICS, topicsForBelt } from '@/lib/sequence-pages/topics';
+import { THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
+import type { TemplateBlockInput } from '@/lib/actions/camps';
+import type { TemplateCatalog } from '@/lib/actions/template-catalog';
+
+const BELT_ORDER = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt', 'brown_belt', 'black_belt'];
+const LEVEL_TO_BELT: Record<string, string> = {
+  Beginner: 'white_belt', Novice: 'yellow_belt', Foundation: 'blue_belt', Emerging: 'purple_belt', 'Pre-Elite': 'brown_belt', Elite: 'black_belt',
+};
+
+/** Cinta de la plantilla: el curso que incluye, o la que sale del nivel. */
+export function templateBelt(includesCourseKey: string | null | undefined, levelName: string | null | undefined): string | null {
+  if (includesCourseKey) return includesCourseKey;
+  if (levelName && LEVEL_TO_BELT[levelName]) return LEVEL_TO_BELT[levelName];
+  return null;
+}
+
+const seqTag = (c: SequencePageConfig) => (c.eyebrow ? `${c.eyebrow.split(' · ')[0]} · ${c.title}` : `#${c.number} · ${c.title}`);
+const beltWord = (b: string) => b.replace('_belt', '');
+
+/** Secuencias de la cinta de la plantilla y de las de abajo (como el catálogo de pasos). */
+function sequencesFor(belt: string | null): SequencePageConfig[] {
+  const max = belt ? BELT_ORDER.indexOf(belt) : BELT_ORDER.length - 1;
+  return Object.values(SEQUENCE_PAGES)
+    .filter((c) => BELT_ORDER.indexOf(c.belt) <= Math.max(max, 0))
+    .sort((a, b) => BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) || (a.kind === 'entry' ? -1 : 0) - (b.kind === 'entry' ? -1 : 0) || a.number - b.number);
+}
+
+const SEL = 'w-full px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--tss-gold)]';
+const LBL = 'block text-[10px] uppercase tracking-wider text-[#55666E] mb-1';
+const LBL_STYLE = { fontFamily: 'var(--font-mono)' } as const;
+
+export function SequenceFields({
+  block,
+  catalog,
+  belt,
+  onChange,
+}: {
+  block: TemplateBlockInput;
+  catalog: TemplateCatalog | null;
+  belt: string | null;
+  onChange: (patch: Partial<TemplateBlockInput>) => void;
+}) {
+  const seqs = sequencesFor(belt);
+  const seqId = block.sequence_id ?? '';
+  const cfg = seqId && seqId !== THREE_CIRCLES_SEQUENCE_ID ? SEQUENCE_PAGES[seqId] ?? null : null;
+  const titleOf = (id: string) => catalog?.stps.find((s) => s.id === id)?.title ?? id;
+  const steps = cfg ? cfg.stepIds.map((id) => ({ id, title: titleOf(id) })) : [];
+  const focus = block.focus_step_id ?? '';
+  const moments = cfg && focus ? (momentsByStep(cfg.id, steps)[focus] ?? []) : [];
+  const chosenMoments = block.focus_moments ?? [];
+
+  const pickSequence = (id: string) => {
+    if (!id) { onChange({ sequence_id: null, focus_step_id: null, focus_moments: null }); return; }
+    if (id === THREE_CIRCLES_SEQUENCE_ID) { onChange({ sequence_id: id, focus_step_id: null, focus_moments: null, step_id: null, step_ids: null }); return; }
+    const c = SEQUENCE_PAGES[id];
+    // Línea completa por defecto: todos los pasos de la secuencia, sin paso único.
+    onChange({ sequence_id: id, focus_step_id: null, focus_moments: null, step_ids: c ? c.stepIds : null, step_id: null });
+  };
+  const pickFocus = (id: string) => {
+    if (!id) { onChange({ focus_step_id: null, focus_moments: null, step_id: null, step_ids: cfg ? cfg.stepIds : block.step_ids ?? null }); return; }
+    onChange({ focus_step_id: id, focus_moments: null, step_id: id, step_ids: cfg ? cfg.stepIds : block.step_ids ?? null });
+  };
+  const toggleMoment = (key: string) => {
+    const next = chosenMoments.includes(key) ? chosenMoments.filter((k) => k !== key) : [...chosenMoments, key];
+    onChange({ focus_moments: next.length ? next : null });
+  };
+
+  return (
+    <div className="space-y-2 border-l-2 pl-3" style={{ borderColor: '#00D2FF' }}>
+      <p className="text-[10px] uppercase tracking-wider font-bold" style={{ ...LBL_STYLE, color: '#00A8CC' }}>Sequence of the method</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <div>
+          <label className={LBL} style={LBL_STYLE}>Sequence</label>
+          <select value={seqId} onChange={(e) => pickSequence(e.target.value)} className={SEL}>
+            <option value="">— none · this block is not a sequence —</option>
+            {seqs.map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {beltWord(c.belt)}</option>)}
+            <option value={THREE_CIRCLES_SEQUENCE_ID}>The Three Circles · games</option>
+          </select>
+        </div>
+        {cfg && (
+          <div>
+            <label className={LBL} style={LBL_STYLE}>Focus</label>
+            <select value={focus} onChange={(e) => pickFocus(e.target.value)} className={SEL}>
+              <option value="">Whole sequence · start to finish</option>
+              {steps.map((s, i) => <option key={s.id} value={s.id}>{i + 1} · {s.title}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+      {cfg && !focus && (
+        <p className="text-[11px] text-[#55666E]">The student and the coach see “{seqTag(cfg)} · the whole line”. Pick a focus only when the day works one step of it.</p>
+      )}
+      {moments.length > 0 && (
+        <div>
+          <label className={LBL} style={LBL_STYLE}>Moments of that step · optional</label>
+          <div className="flex flex-wrap gap-1.5">
+            {moments.map((m) => {
+              const on = chosenMoments.includes(m.key);
+              return (
+                <button key={m.key} type="button" aria-pressed={on} onClick={() => toggleMoment(m.key)}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+                  style={on ? { background: '#061C2B', borderColor: '#061C2B', color: '#F7F9FA' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
+                  {m.short}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Temas de teoría (Tres Círculos, Infinite Circle, Pre-Course, Blue…) para un día o un bloque de teoría. */
+export function TopicChips({ value, belt, onChange, label = 'Theory topics · what the student studies that day' }: {
+  value: string[] | null | undefined;
+  belt: string | null;
+  onChange: (next: string[] | null) => void;
+  label?: string;
+}) {
+  const chosen = value ?? [];
+  const pool = belt ? topicsForBelt(belt) : PLAN_TOPICS;
+  const toggle = (id: string) => {
+    const next = chosen.includes(id) ? chosen.filter((x) => x !== id) : [...chosen, id];
+    onChange(next.length ? next : null);
+  };
+  return (
+    <div>
+      <label className={LBL} style={LBL_STYLE}>{label}</label>
+      <div className="flex flex-wrap gap-1.5">
+        {pool.map((t) => {
+          const on = chosen.includes(t.id);
+          return (
+            <button key={t.id} type="button" aria-pressed={on} onClick={() => toggle(t.id)}
+              className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+              style={on ? { background: '#00D2FF', borderColor: '#00D2FF', color: '#061C2B' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
+              {t.title}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

@@ -75,6 +75,8 @@ export default async function EditCampTemplatePage({ params }: Props) {
         evaluation_focus: day.evaluation_focus,
         has_evaluation: day.has_evaluation || false,
         evaluation_type: day.evaluation_type || null,
+        sequence_id: day.sequence_id ?? null,
+        topic_ids: day.topic_ids ?? null,
         blocks: dayBlocks.length > 0
           ? dayBlocks.map((b: any) => ({
               block_order: b.block_order,
@@ -102,6 +104,10 @@ export default async function EditCampTemplatePage({ params }: Props) {
               equipment: b.equipment ?? null,
               activity_subtype: b.activity_subtype ?? null,
               step_ids: b.step_ids ?? null,
+              sequence_id: b.sequence_id ?? null,
+              focus_step_id: b.focus_step_id ?? null,
+              focus_moments: b.focus_moments ?? null,
+              topic_ids: b.topic_ids ?? null,
             }))
           : [
               {

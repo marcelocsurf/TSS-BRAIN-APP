@@ -21,6 +21,7 @@ import { StepDrillPicker } from '@/components/shared/StepDrillPicker';
 import { ContentVideoManager } from '@/components/content/ContentVideoManager';
 import type { ContentVideo } from '@/lib/actions/content';
 import { ActivityForm } from '@/components/camp/ActivityForm';
+import { TopicChips, templateBelt } from '@/components/camp/SequenceFields';
 import { ACTIVITY_TYPES } from '@/lib/constants/brand';
 
 import { LEVEL_NAMES, LEVEL_BELT_COLOR, LEVEL_BELT_LABEL } from '@/lib/constants/belts';
@@ -67,6 +68,10 @@ function emptyBlock(order: number): TemplateBlockInput {
     equipment: null,
     activity_subtype: null,
     step_ids: null,
+    sequence_id: null,
+    focus_step_id: null,
+    focus_moments: null,
+    topic_ids: null,
   };
 }
 
@@ -81,6 +86,8 @@ function emptyDay(dayNumber: number): TemplateDayInput {
     has_evaluation: false,
     evaluation_type: null,
     blocks: [emptyBlock(1)],
+    sequence_id: null,
+    topic_ids: null,
   };
 }
 
@@ -643,6 +650,12 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                     lives only inside each Mission block, where it auto-
                     populates from the linked step's success criteria. */}
 
+                {/* Temas de teoría del día (2026-09-19): lo que el alumno ve
+                    como "Also today · theory" y el coach como chips del día. */}
+                <div className="col-span-2">
+                  <TopicChips value={day.topic_ids ?? null} belt={templateBelt(includesCourse || null, levelName)} onChange={(next) => updateDay(dayIdx, { topic_ids: next })} />
+                </div>
+
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-[#55666E] mb-1" style={{ fontFamily: 'var(--font-mono)' }}>
                     Day Notes
@@ -787,6 +800,7 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
                         <ActivityForm
                           block={block}
                           catalog={catalog}
+                          belt={templateBelt(includesCourse || null, levelName)}
                           onChange={(patch) => updateBlock(dayIdx, blockIdx, patch)}
                         />
                       </div>

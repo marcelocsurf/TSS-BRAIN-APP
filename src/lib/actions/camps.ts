@@ -2084,48 +2084,61 @@ export async function updateCampTemplate(templateId: string, input: CreateTempla
 
   if (tplErr) throw new Error(tplErr.message);
 
-  // Delete existing days (cascade deletes blocks via DB)
+  // Los días se conservan por número (2026-09-19): camp_sessions apunta a
+  // template_day_id, así que borrar los días de una plantilla EN USO fallaba
+  // en silencio y dejaba días duplicados sin bloques. Ahora: mismo día →
+  // se actualiza en su lugar; día nuevo → se inserta; día sobrante → se
+  // borra solo si nada lo referencia. Los bloques sí se reescriben enteros.
   const { data: existingDays } = await supabase
     .from('camp_template_days')
-    .select('id')
+    .select('id, day_number')
     .eq('template_id', templateId);
+  const existingByNumber = new Map<number, string>();
+  for (const d of existingDays ?? []) if (!existingByNumber.has(d.day_number)) existingByNumber.set(d.day_number, d.id);
 
   if (existingDays && existingDays.length > 0) {
     const dayIds = existingDays.map((d) => d.id);
-    // Delete blocks first
-    await supabase
+    const { error: delBlkErr } = await supabase
       .from('camp_template_blocks')
       .delete()
       .in('template_day_id', dayIds);
-    // Then days
-    await supabase
-      .from('camp_template_days')
-      .delete()
-      .eq('template_id', templateId);
+    if (delBlkErr) throw new Error(delBlkErr.message);
+    const wanted = new Set(input.days.map((d) => d.day_number));
+    const extra = (existingDays ?? []).filter((d) => !wanted.has(d.day_number) || existingByNumber.get(d.day_number) !== d.id).map((d) => d.id);
+    if (extra.length) {
+      // Best-effort: si un camp ya lo usa, el día queda (sin bloques) y no rompe el guardado.
+      await supabase.from('camp_template_days').delete().in('id', extra);
+    }
   }
 
   // Re-create days + blocks
   for (const day of input.days) {
-    const { data: dayRow, error: dayErr } = await supabase
-      .from('camp_template_days')
-      .insert({
-        id: crypto.randomUUID(),
-        template_id: templateId,
-        day_number: day.day_number,
-        venue_default: day.venue_default,
-        ocean_condition_target: day.ocean_condition_target,
-        day_goal: day.day_goal,
-        day_notes: day.day_notes,
-        evaluation_focus: day.evaluation_focus,
-        has_evaluation: day.has_evaluation,
-        evaluation_type: day.evaluation_type,
-        sequence_id: day.sequence_id ?? null,
-        topic_ids: day.topic_ids ?? null,
-      })
-      .select()
-      .single();
-
-    if (dayErr) throw new Error(dayErr.message);
+    const dayFields = {
+      venue_default: day.venue_default,
+      ocean_condition_target: day.ocean_condition_target,
+      day_goal: day.day_goal,
+      day_notes: day.day_notes,
+      evaluation_focus: day.evaluation_focus,
+      has_evaluation: day.has_evaluation,
+      evaluation_type: day.evaluation_type,
+      sequence_id: day.sequence_id ?? null,
+      topic_ids: day.topic_ids ?? null,
+    };
+    const keepId = existingByNumber.get(day.day_number) ?? null;
+    let dayRow: { id: string };
+    if (keepId) {
+      const { error: updErr } = await supabase.from('camp_template_days').update(dayFields).eq('id', keepId);
+      if (updErr) throw new Error(updErr.message);
+      dayRow = { id: keepId };
+    } else {
+      const { data: inserted, error: dayErr } = await supabase
+        .from('camp_template_days')
+        .insert({ id: crypto.randomUUID(), template_id: templateId, day_number: day.day_number, ...dayFields })
+        .select('id')
+        .single();
+      if (dayErr || !inserted) throw new Error(dayErr?.message ?? 'Could not create the day');
+      dayRow = inserted;
+    }
 
     if (day.blocks.length > 0) {
       const blockRows = day.blocks.map((b) => ({
