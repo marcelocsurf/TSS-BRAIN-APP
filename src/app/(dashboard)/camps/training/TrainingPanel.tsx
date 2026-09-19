@@ -25,12 +25,18 @@ const DEFAULTS: Array<[RegExp, ScenarioKey]> = [
   [/stanley/i, 'lesson'],
 ];
 
-export function TrainingPanel({ coaches, scenarios, defaultDate }: { coaches: Coach[]; scenarios: Scenario[]; defaultDate: string }) {
+export function TrainingPanel({ coaches, scenarios, defaultDate, preset = null }: { coaches: Coach[]; scenarios: Scenario[]; defaultDate: string; preset?: { coach: string | null; scenarios: string[]; start: string | null } | null }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [pick, setPick] = useState<Record<string, Set<ScenarioKey>>>(() => {
     const m: Record<string, Set<ScenarioKey>> = {};
+    const valid = new Set(OPTIONS.map((o) => o.key as string));
     for (const c of coaches) {
+      if (preset) {
+        const isCoach = preset.coach ? c.display_name.toLowerCase().includes(preset.coach.toLowerCase()) || c.id === preset.coach : false;
+        m[c.id] = new Set(isCoach ? (preset.scenarios.filter((k) => valid.has(k)) as ScenarioKey[]) : []);
+        continue;
+      }
       const hit = DEFAULTS.find(([re]) => re.test(c.display_name));
       m[c.id] = new Set(hit ? [hit[1]] : []);
     }

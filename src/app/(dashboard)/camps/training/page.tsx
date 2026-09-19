@@ -6,7 +6,11 @@ import { TrainingPanel } from './TrainingPanel';
 
 export const dynamic = 'force-dynamic';
 
-export default async function TrainingPage() {
+export default async function TrainingPage({ searchParams }: { searchParams: Promise<{ coach?: string; scenario?: string; start?: string }> }) {
+  // Preselección por URL (?coach=oso&scenario=camp_yb,camp_bb&start=2026-09-25):
+  // para armar un escenario puntual sin tocar veinte chips.
+  const sp = await searchParams;
+  const preset = sp.coach || sp.scenario || sp.start ? { coach: sp.coach ?? null, scenarios: (sp.scenario ?? '').split(',').filter(Boolean), start: sp.start ?? null } : null;
   const me = await getCurrentCoach();
   if (!me || !['admin', 'coordinator'].includes(me.role)) redirect('/camps');
   const [coaches, scenarios] = await Promise.all([listTrainingCoaches(), listTrainingScenarios()]);
@@ -27,7 +31,7 @@ export default async function TrainingPage() {
           Sos admin sin academia activa. Entrá a <Link href="/academies" className="underline font-semibold">Academias</Link> y tocá “Actuar como” en Puro Surf; después volvé acá.
         </div>
       ) : (
-        <TrainingPanel coaches={coaches} scenarios={scenarios} defaultDate={today} />
+        <TrainingPanel coaches={coaches} scenarios={scenarios} defaultDate={preset?.start && /^\d{4}-\d{2}-\d{2}$/.test(preset.start) ? preset.start : today} preset={preset} />
       )}
     </div>
   );
