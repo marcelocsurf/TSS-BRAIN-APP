@@ -72,6 +72,17 @@ const BELT_ORDER = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'];
 
 type Verdict = 'held' | 'broke' | null;
 
+// Los momentos de un paso solo se preguntan cuando agregan algo: dos o más
+// distintos, o uno que no sea el mismo nombre del paso ("Cobra Pick Line" →
+// "Cobra, pick the line" no aporta; Marcelo 2026-09-19).
+const normWords = (t: string) => t.toLowerCase().replace(/\b(the|a|an|of|to|your|and)\b/g, '').replace(/[^a-z0-9]/g, '');
+function momentsAddInfo(moments: { short: string }[], stepTitle: string): boolean {
+  const distinct = Array.from(new Set(moments.map((m) => normWords(m.short))));
+  if (distinct.length >= 2) return true;
+  if (distinct.length === 1) return distinct[0] !== normWords(stepTitle);
+  return false;
+}
+
 export function DayCloseCard({
   student,
   isClosed,
@@ -221,9 +232,9 @@ export function DayCloseCard({
               {interactive ? (
                 <button type="button" disabled={isClosed} onClick={() => pickStep(s, st.id, st.title)} className="w-full rounded-[4px] px-1 py-0.5 disabled:opacity-70" style={isBroken ? { background: 'rgba(224,65,59,.10)' } : undefined}>{row}</button>
               ) : row}
-              {interactive && isBroken && mine.length > 0 && (
+              {interactive && isBroken && momentsAddInfo(mine, st.title) && (
                 <div className="ml-7 mt-1 mb-1">
-                  <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#55666E]">Which moment? · optional</p>
+                  <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#55666E]">Which moment of that step? · optional · sharpens the focus</p>
                   <div className="flex flex-wrap gap-1.5 mt-1">
                     {mine.map((m) => {
                       const on = main === `${seqTag(s.cfg)} · ${st.title} · ${m.short}`;
@@ -279,19 +290,19 @@ export function DayCloseCard({
               <button type="button" disabled={isClosed} onClick={() => held(s)} aria-pressed={verdict === 'held'}
                 className="flex-1 py-2 rounded-[5px] text-[12px] font-bold border disabled:opacity-70"
                 style={verdict === 'held' ? { background: '#2FA36B', borderColor: '#2FA36B', color: '#fff' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
-                ✓ Yes, it held
+                {s.focusTitle ? '✓ Yes, it held' : '✓ Yes, clean'}
               </button>
               <button type="button" disabled={isClosed} onClick={() => broke(s)} aria-pressed={verdict === 'broke'}
                 className="flex-1 py-2 rounded-[5px] text-[12px] font-bold border disabled:opacity-70"
                 style={verdict === 'broke' ? { background: '#E0413B', borderColor: '#E0413B', color: '#fff' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
-                ✗ It broke
+                {s.focusTitle ? '✗ No, it broke' : '✗ No, it broke somewhere'}
               </button>
             </div>
 
             {/* 4 · Dónde: la lista numerada de la secuencia */}
             {verdict === 'broke' && (
               <div className="mt-2.5">
-                <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#55666E]">Where? · tap the step</p>
+                <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#55666E]">Where did it break? · tap the step · it becomes the next focus</p>
                 <StepList s={s} interactive />
               </div>
             )}
