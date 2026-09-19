@@ -623,6 +623,26 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             {wantsReps && <div><p className="text-[12px]" style={{ ...F_M, color: 'rgba(247,249,250,.78)' }}>{repsWord}</p><p className="text-lg font-bold" style={{ color: PAPER }}>{plannedReps}</p></div>}
           </div>
         </div>
+        {/* TU SESIÓN (Marcelo 2026-09-18): qué vas a hacer, paso por paso,
+            con el objetivo marcado — detalle de la secuencia o la secuencia entera. */}
+        <div className="rounded-lg p-4" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
+          <p className="text-[12px]" style={{ ...F_M, color: '#00A8CC' }}>Your session · {seqLabel}{twoSided && side ? ` · ${SIDE_WORD[side]}` : ''}</p>
+          <p className="text-[15px] font-bold text-[#10263B] mt-1 leading-snug">
+            {isRun ? 'Objective: the whole sequence, start to finish' : `Objective: ${focus?.title ?? ''}`}{focusMoment ? ` · ${focusMoment}` : ''}
+          </p>
+          <ol className="mt-2.5 space-y-1">
+            {steps.map((s, i) => {
+              const isFocus = !isRun && s.step_id === focus?.step_id;
+              return (
+                <li key={s.step_id} className="flex items-start gap-2 text-[13px] leading-snug" style={{ color: isFocus ? '#061C2B' : '#55666E' }}>
+                  <span className="shrink-0 w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center" style={isFocus ? { background: '#FFD166', color: '#061C2B' } : { background: '#E9E2D2', color: '#55666E' }}>{i + 1}</span>
+                  <span className={isFocus ? 'font-bold' : ''}>{s.title}{isFocus ? ' · your focus' : ''}</span>
+                </li>
+              );
+            })}
+          </ol>
+          {measureText && <p className="text-[12px] text-[#55666E] mt-2">{measureText}</p>}
+        </div>
         {/* La ola con la línea y su código de colores (la misma del curso),
             chica: de un vistazo, los pasos y dónde pasan (Marcelo 2026-09-10). */}
         {sequencePageFor(seq.id)?.think.board && (

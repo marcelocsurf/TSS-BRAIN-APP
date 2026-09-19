@@ -269,11 +269,13 @@ function OpenSessionCard({ data, onFinish, onDiscard }: { data: PortalData; onFi
   return (
     <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438', borderLeft: `3px solid ${stale ? '#FFD166' : '#06D6A0'}` }}>
       <div className="px-4 pt-3.5 pb-3">
-        <p className="text-[12px]" style={{ ...F_LABEL, color: stale ? '#FFD166' : '#06D6A0' }}>{stale ? 'Still open' : 'Session in the water'} · planned {when}</p>
-        <p className="text-[15px] font-semibold text-white mt-0.5 leading-snug">{os.sequenceName}</p>
-        <p className="text-[12px] text-white/80 mt-0.5 leading-snug">
-          {os.mode === 'step_focus' && os.focusTitle ? `Focus: ${os.focusTitle}` : 'The whole sequence'}{os.focusMoment ? ` · ${os.focusMoment}` : ''}{measure ? ` · ${measure}` : ''}
+        <p className="text-[12px]" style={{ ...F_LABEL, color: stale ? '#FFD166' : '#06D6A0' }}>{stale ? 'Still open' : 'Your session plan'} · planned {when}</p>
+        <p className="text-[15px] font-semibold text-white mt-0.5 leading-snug">{os.sequenceLabel && os.sequenceLabel !== os.sequenceName ? `${os.sequenceLabel} · ` : ''}{os.sequenceName}{os.side ? ` · ${os.side === 'fs' ? 'Frontside' : 'Backside'}` : ''}</p>
+        <p className="text-[12px] mt-1.5" style={{ ...F_LABEL, color: '#00D2FF' }}>Objective</p>
+        <p className="text-[14px] font-semibold text-white leading-snug">
+          {os.mode === 'step_focus' && os.focusTitle ? `Focus on ${os.focusTitle}` : 'The whole sequence, start to finish'}{os.focusMoment ? ` · ${os.focusMoment}` : ''}
         </p>
+        {measure && <p className="text-[12px] text-white/70 mt-0.5">{measure}</p>}
         {os.intention && <p className="text-[12px] mt-1 leading-snug" style={{ color: '#FFD166' }}>Your word: {os.intention}</p>}
         <div className="flex items-center gap-2 mt-3">
           <button type="button" onClick={onFinish} className="flex-1 h-11 rounded-xl text-[12.5px] font-bold active:scale-[0.98]" style={{ background: '#00D2FF', color: '#061C2B' }}>
@@ -970,6 +972,10 @@ export function PortalTabs({
                   // nuevo. Ahora se navega EXPLÍCITO a la pestaña prometida.
                   setPendingSequence(null);
                   goTab(next ?? 'sequence');
+                  // El plan recién guardado tiene que verse YA en el Home
+                  // (Marcelo 2026-09-18: "cierro el plan y no me sale"). La URL
+                  // ya quedó en ?tab=… así que el refresh no rearranca el flow.
+                  setTimeout(() => portalRouter.refresh(), 80);
                 }}
               />
             </div>
