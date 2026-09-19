@@ -7,6 +7,7 @@ import {
   type WeekOverview, type WeekDayOverview,
 } from '@/lib/actions/service-planner';
 import { createBookingByToken, cancelBookingByToken } from '@/lib/actions/spaces';
+import { VenuePicker } from '@/components/coach-portal/VenuePicker';
 
 // ═══ 📅 VISTA SEMANA — planner tipo Excel (pedido de Marcelo 2026-08-21) ═══
 // Grilla días × (clase, lugar, transporte, espacios, tablas) para PLANEAR el
@@ -211,8 +212,7 @@ function CellEditor({ kind, day, data, token, busy, setBusy, onSaved, onCloseEdi
 
       {kind === 'lugar' && (
         <div className="flex items-center gap-2 flex-wrap">
-          <input value={lugar} onChange={(e) => setLugar(e.target.value)} placeholder="Playa / punto (ej. K61, Río Mar)"
-            className="flex-1 min-w-[160px] text-sm px-3 py-1.5 rounded-lg border border-gray-200" />
+          <div className="flex-1 min-w-[160px]"><VenuePicker value={lugar || null} onChange={(v) => setLugar(v ?? '')} compact /></div>
           <SaveButtons busy={busy} onDay={() => saveLogistics(false)} onWeek={() => saveLogistics(true)} />
         </div>
       )}
