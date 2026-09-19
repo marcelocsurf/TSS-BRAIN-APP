@@ -2088,17 +2088,20 @@ function HomeTab({
                     {plansArr.map((pl: any, i: number) => {
                       const isGame = pl.kind === 'game';
                       const seqHref = isGame ? `/portal/${data.token}/circles` : `/portal/${data.token}/seq/${pl.sequenceId}`;
-                      const rehearseHref = isGame ? `/portal/${data.token}?tab=sequence&seq=THREE-CIRCLES&mode=step_focus&focus=${pl.gameId ?? ''}` : `${seqHref}?tab=feel`;
+                      const rehearseHref = `${seqHref}?tab=feel`;
                       return (
                         <div key={pl.sequenceId} className={many ? 'rounded-[5px] px-3 py-2.5' : ''} style={many ? { background: 'rgba(247,249,250,.06)', border: '1px solid rgba(247,249,250,.14)' } : undefined}>
                           <p className="text-[20px] leading-tight" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{many ? `${i + 1} · ` : ''}{pl.label ?? (pl.kind === 'entry' ? pl.title : `#${pl.number} · ${pl.title}`)}</p>
                           <p className="mt-1.5 text-[13.5px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
-                            {pl.kind === 'game' ? 'One rule, the wave is the referee. Play it and star it.' : pl.focus.length > 0 ? <><span className="font-bold" style={{ color: '#F7F9FA' }}>Your focus:</span> {pl.focus.join(' · ')}</> : 'The whole sequence, start to finish.'}
+                            {pl.kind === 'game' ? 'One rule, the wave is the referee. You play it with your coach; your coach stars it. Tonight, learn the rule.' : pl.focus.length > 0 ? <><span className="font-bold" style={{ color: '#F7F9FA' }}>Your focus:</span> {pl.focus.join(' · ')}</> : 'The whole sequence, start to finish.'}
                           </p>
                           {pl.notes && <p className="mt-1.5 text-[13px] italic" style={{ color: 'rgba(247,249,250,.75)' }}>"{pl.notes}"</p>}
-                          <div className="mt-2.5 grid grid-cols-2 gap-2">
+                          {/* Durante el camp el entreno es CON el coach y lo califica el coach
+                              (Marcelo 2026-09-19): el alumno estudia y ensaya en tierra, no
+                              registra solo. Por eso el juego no tiene "Play it" acá. */}
+                          <div className={`mt-2.5 grid gap-2 ${isGame ? 'grid-cols-1' : 'grid-cols-2'}`}>
                             <a href={seqHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: '#00D2FF', color: T_NAVY, fontFamily: ARCHIVO }}>Study it</a>
-                            <a href={rehearseHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.5)', fontFamily: ARCHIVO }}>Rehearse it</a>
+                            {!isGame && <a href={rehearseHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.5)', fontFamily: ARCHIVO }}>Rehearse it on land</a>}
                           </div>
                         </div>
                       );
