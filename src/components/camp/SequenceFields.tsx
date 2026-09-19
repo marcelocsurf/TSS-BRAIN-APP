@@ -12,7 +12,7 @@ import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { PLAN_TOPICS, topicsForBelt } from '@/lib/sequence-pages/topics';
-import { THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
+import { THREE_CIRCLES_SEQUENCE_ID, THREE_CIRCLES_GAME_IDS, THREE_CIRCLES_GAME_TITLES, gameContext } from '@/lib/sequence-pages/three-circles';
 import type { TemplateBlockInput } from '@/lib/actions/camps';
 import type { TemplateCatalog } from '@/lib/actions/template-catalog';
 
@@ -103,6 +103,22 @@ export function SequenceFields({
       </div>
       {cfg && !focus && (
         <p className="text-[11px] text-[#55666E]">The student and the coach see “{seqTag(cfg)} · the whole line”. Pick a focus only when the day works one step of it.</p>
+      )}
+      {/* Tres Círculos: el bloque ES un juego (Marcelo 2026-09-19). Uno por
+          bloque, en el orden que quiera el día: pies → postura + oblicuos →
+          pocket. El coach ya tiene el Think·Feel·Do·Review en el curso. */}
+      {seqId === THREE_CIRCLES_SEQUENCE_ID && (
+        <div>
+          <label className={LBL} style={LBL_STYLE}>Game · one per block</label>
+          <select value={block.mission_id ?? ''} onChange={(e) => onChange({ mission_id: e.target.value || null, mission_custom: null, step_id: null, step_ids: null })} className={SEL}>
+            <option value="">— pick the game —</option>
+            {THREE_CIRCLES_GAME_IDS.map((gid) => {
+              const ctx = gameContext(gid);
+              return <option key={gid} value={gid}>{ctx ? `${ctx.label} — ` : ''}{THREE_CIRCLES_GAME_TITLES[gid] ?? gid}</option>;
+            })}
+          </select>
+          <p className="text-[11px] text-[#55666E] mt-1">The student sees the game in “Next class” with “Play it” and “Study it”. Add another block for the next game of the day.</p>
+        </div>
       )}
       {moments.length > 0 && (
         <div>

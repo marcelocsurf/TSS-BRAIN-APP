@@ -67,6 +67,15 @@ export const THREE_CIRCLES_SEQUENCE_ID = 'THREE-CIRCLES';
 export const THREE_CIRCLES_GAME_IDS = [
   'GAME-3C-POSTURE', 'GAME-3C-RAIL', 'GAME-3C-COMPACT', 'GAME-3C-HOLD', 'GAME-3C-BUTTON', 'GAME-3C-POCKET-FOAM',
 ];
+/** Títulos de los 6 juegos (espejo de drills_missions, para elegirlos en el editor de plantillas). */
+export const THREE_CIRCLES_GAME_TITLES: Record<string, string> = {
+  'GAME-3C-POSTURE': 'Say It: POSTURE',
+  'GAME-3C-RAIL': 'The Oblique Is the Rudder',
+  'GAME-3C-COMPACT': 'Surf Compact',
+  'GAME-3C-HOLD': 'Hoooold: Long Lines',
+  'GAME-3C-BUTTON': 'Press the Button',
+  'GAME-3C-POCKET-FOAM': 'Pocket and Foam',
+};
 
 export const CIRCLES_INTRO = {
   title: 'The Three Circles of Power',

@@ -57,7 +57,7 @@ export function ActivityForm({ block, catalog, onChange, belt = null }: Props & 
 
       {/* ── Type-specific body ── */}
       {type === 'water_mission' || type === 'mission' ? (
-        <WaterMissionFields block={block} catalog={catalog} onChange={onChange} />
+        block.sequence_id === 'THREE-CIRCLES' ? null : <WaterMissionFields block={block} catalog={catalog} onChange={onChange} />
       ) : type === 'land_drill' ? (
         <LandDrillFields block={block} catalog={catalog} onChange={onChange} />
       ) : type === 'warm_up' ? (
