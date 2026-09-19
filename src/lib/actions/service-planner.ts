@@ -3445,12 +3445,15 @@ export async function getCampWeekMissionsByToken(
         if (!entry.items.includes(label)) entry.items.push(label);
         continue;
       }
-      if (!b.step_id && !(b.step_ids ?? []).length && !b.water_drill_id && !b.water_drill_custom) continue;
+      // Sin secuencia: solo pasos y drills DEL CATÁLOGO. El texto libre del
+      // bloque (bienvenida, kit, cierre, video, prep) no es "lo trabajado":
+      // volcaba las notas internas del coach (captura de Marcelo 2026-09-19).
+      if (!b.step_id && !(b.step_ids ?? []).length && !b.water_drill_id) continue;
       const stps = [b.step_id, ...(b.step_ids ?? [])]
         .filter(Boolean)
         .map((id: string) => stepTitle.get(id))
         .filter(Boolean);
-      const drill = drillTitle.get(b.water_drill_id) ?? b.water_drill_custom ?? drillTitle.get(b.land_drill_id) ?? b.land_drill_custom ?? null;
+      const drill = drillTitle.get(b.water_drill_id) ?? drillTitle.get(b.land_drill_id) ?? null;
       const label = [Array.from(new Set(stps)).join(' + ') || null, drill]
         .filter(Boolean).join(' · ');
       if (!label) continue;

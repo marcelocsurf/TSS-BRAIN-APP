@@ -94,7 +94,7 @@ export function TrainingPanel({ coaches, scenarios, defaultDate }: { coaches: Co
         </div>
         <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] pt-1">2 · Día de inicio</p>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="px-3 py-2 border border-[#DCD7C6] rounded-[5px] text-sm bg-[#F7F9FA]" />
-        <p className="text-[12px] text-[#55666E]">Los camps van 6 días desde esa fecha (08:00). La clase de surf (14:00) y la de skate (16:00) caen ese mismo día. Cada coach recibe 3 alumnos de prueba.</p>
+        <p className="text-[12px] text-[#55666E]">Los camps van 6 días desde esa fecha (08:00). La clase de surf (14:00) y la de skate (16:00) caen ese mismo día. Cada coach recibe 3 alumnos de prueba. El coach recibe el aviso y acepta el servicio desde su portal, como uno real.</p>
         <button type="button" disabled={pending} onClick={create} className="w-full sm:w-auto px-5 py-2.5 rounded-[5px] text-sm font-bold text-[#061C2B] disabled:opacity-50" style={{ background: '#00D2FF' }}>
           {pending ? 'Creando…' : armed === 'create' ? `Confirmar · crear ${total}` : `Crear escenarios de prueba · ${total}`}
         </button>

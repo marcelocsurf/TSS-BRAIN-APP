@@ -128,10 +128,13 @@ export async function createTrainingScenarios(input: { items: { coachId: string;
       if (dup?.length) continue;
       let instance: any;
       try {
+        // Flujo normal de asignación (Marcelo 2026-09-19): el servicio lo crea
+        // el coordinador y el coach lo ACEPTA desde su portal (queda
+        // "pending" y recibe el aviso), igual que un servicio real.
         instance = await createCampInstance({
           template_id: sc.template_id,
           camp_name: name,
-          coach_id: coach.id,
+          coach_id: me.id,
           head_coach_id: coach.id,
           start_date: start,
           end_date: end,
@@ -143,7 +146,7 @@ export async function createTrainingScenarios(input: { items: { coachId: string;
         return { ok: false, error: `${name}: ${e?.message ?? 'no se pudo crear'}`, created };
       }
       if (instance?.id) {
-        await admin.from('camp_instances').update({ is_test: true, head_coach_status: 'accepted' }).eq('id', instance.id);
+        await admin.from('camp_instances').update({ is_test: true }).eq('id', instance.id);
         created++;
       }
     }
