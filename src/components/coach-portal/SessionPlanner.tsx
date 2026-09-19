@@ -1363,11 +1363,12 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             for (const st of students) { const c = seqOfStudent(st); if (c) tally.set(c.id, (tally.get(c.id) ?? 0) + 1); }
             const groupId = Array.from(tally.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
             const groupSeq = groupId ? SEQUENCE_PAGES[groupId] ?? null : null;
-            const assign = (studentId: string, c: SequencePageConfig) =>
-              commitStudentBlock(studentId, 0, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${sequenceTag(c)}` } as any);
-            const pickSeq = (c: SequencePageConfig) => { for (const st of students) assign(st.student_id, c); };
             const sequenceTag = (c: SequencePageConfig) => `#${c.number} ${c.title}`;
-            const seqLabel = (c: SequencePageConfig) => (c.kind === 'entry' ? c.title : sequenceTag(c));
+            // Entradas y círculos ya traen su nombre ("Circle 1 · Body"); las numeradas llevan "#n".
+            const seqLabel = (c: SequencePageConfig) => (c.kind === 'entry' || c.kind === 'circle' ? c.title : sequenceTag(c));
+            const assign = (studentId: string, c: SequencePageConfig) =>
+              commitStudentBlock(studentId, 0, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${seqLabel(c)}` } as any);
+            const pickSeq = (c: SequencePageConfig) => { for (const st of students) assign(st.student_id, c); };
             const carry = (studentId: string, name: string) => {
               startTransition(async () => {
                 const r = await carryStudentPlanToNextDay(token, data.selectedDay.camp_session_id, studentId);
