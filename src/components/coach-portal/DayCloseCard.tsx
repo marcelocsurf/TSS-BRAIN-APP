@@ -102,11 +102,14 @@ export function DayCloseCard({
   const [tomorrow, setTomorrow] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // El próximo foco guardado: texto (con la frase libre después de " — ") + secuencia + paso.
+  // El próximo foco guardado: texto + secuencia + paso. La frase libre del
+  // coach va después de " – " (guion corto): el largo " — " aparece en títulos
+  // de pasos ("Bottom Turn Medium — Frontside") y partía el texto (bug 2026-09-19).
+  const NOTE_SEP = ' – ';
   const cur = gen?.whats_next ?? '';
-  const [mainRaw, ...noteParts] = cur.split(' — ');
-  const main = String(mainRaw ?? '').trim();
-  const note = noteParts.join(' — ').trim();
+  const sepIdx = cur.indexOf(NOTE_SEP);
+  const main = (sepIdx >= 0 ? cur.slice(0, sepIdx) : cur).trim();
+  const note = (sepIdx >= 0 ? cur.slice(sepIdx + NOTE_SEP.length) : '').trim();
   const [noteDraft, setNoteDraft] = useState(note);
   const savedSeqId = (gen as any)?.next_focus_sequence_id ?? null;
   const savedStepId = (gen as any)?.next_focus_step_id ?? null;
@@ -126,7 +129,7 @@ export function DayCloseCard({
   const [openStep, setOpenStep] = useState<string | null>(savedStepId);
 
   const writeFocus = (text: string | null, seqId: string | null, stepId: string | null) => {
-    const full = [text ?? '', noteDraft.trim()].filter(Boolean).join(' — ');
+    const full = [text ?? '', noteDraft.trim()].filter(Boolean).join(NOTE_SEP);
     onCommit(genOrder, { whats_next: full || null, next_focus_sequence_id: text ? seqId : null, next_focus_step_id: text ? stepId : null } as any);
   };
 
@@ -326,7 +329,7 @@ export function DayCloseCard({
           defaultValue={note}
           disabled={isClosed && main.length >= 5}
           onChange={(e) => setNoteDraft(e.target.value)}
-          onBlur={(e) => { const nn = e.target.value; setNoteDraft(nn); const full = [main, nn.trim()].filter(Boolean).join(' — '); onCommit(genOrder, { whats_next: full || null } as any); }}
+          onBlur={(e) => { const nn = e.target.value; setNoteDraft(nn); const full = [main, nn.trim()].filter(Boolean).join(NOTE_SEP); onCommit(genOrder, { whats_next: full || null } as any); }}
           placeholder={main ? 'Add a phrase in your words (optional)' : 'Or write the focus in your words'}
           className="mt-2 w-full px-2.5 py-1.5 rounded-[4px] text-[12px] bg-[#0E2A40] text-[#F7F9FA] placeholder:text-[#7C8C94] border border-[#1E3A52] disabled:opacity-60"
         />
