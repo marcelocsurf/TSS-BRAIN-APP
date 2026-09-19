@@ -1,28 +1,23 @@
 'use client';
 
-// ═══ Cierre del día · video análisis (Marcelo 2026-09-18) ═══
-// La pantalla de cierre por alumno, sin buscar nada: las secuencias del día
-// ya están puestas. Dos toques por secuencia: la estrella y el momento donde
-// se rompió. El próximo foco sale de ese toque (texto + secuencia + paso).
-// El video no es obligatorio; si el coach lo tiene adelante, mejor.
-// Reemplaza la tarjeta anterior (28 chips por alumno, página de 5.300 px —
-// hallazgo de la prueba de punta a punta).
+// ═══ Cierre del día · video análisis (Marcelo 2026-09-18 / 2026-09-19) ═══
+// Una sola lógica por alumno y por secuencia del día:
+//   1. "Vos planeaste": la secuencia y el foco, tal cual el plan.
+//   2. La estrella de la secuencia.
+//   3. ¿Aguantó el foco? (o ¿salió limpia la línea?) Sí / No.
+//   4. Si no: el PASO donde se rompió, en la lista numerada (la misma que ve
+//      el alumno), y opcional el momento de ese paso.
+// Eso es el próximo foco (texto + secuencia + paso). Un solo foco por alumno,
+// siempre con el nombre de la secuencia adelante. Foco 0–3 (misma escala que
+// el alumno), flow y nota quedan plegados. El video no es obligatorio.
 
 import { useState, type ReactNode } from 'react';
 import { StarRating } from '@/components/sequence/StarRating';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
-import type { Command, SequencePageConfig } from '@/lib/sequence-pages/types';
+import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { resolveSequenceForSteps } from '@/lib/sequence-pages/resolve';
 import type { ServicePlanBlock, ServicePlanStudent } from '@/lib/actions/service-planner';
-
-const CMD_COLOR: Record<Command, string> = {
-  posture: '#E0413B',
-  rail: '#F2C230',
-  projection: '#2FA36B',
-  maneuver: '#3B82F6',
-  closure: '#9CA3AF',
-};
 
 const STAR_LABEL: Record<number, string> = {
   1: "Can't do it yet",
@@ -31,10 +26,20 @@ const STAR_LABEL: Record<number, string> = {
   4: 'Consistent · the sequence is theirs',
   5: 'Clean every time',
 };
+// Misma escala y mismas palabras que la autoevaluación del alumno (Let's Play, HP).
+const FOCUS_WORDS = ['Distracted', 'Some', 'Mostly', 'Locked in'];
+const FLOW = [
+  { n: 1, color: '#3B82F6', label: 'Bored' },
+  { n: 2, color: '#06B6D4', label: 'Easy' },
+  { n: 3, color: '#10B981', label: 'Optimal' },
+  { n: 4, color: '#F59E0B', label: 'Hard' },
+  { n: 5, color: '#EF4444', label: 'Frustrated' },
+] as const;
 
 export const seqTag = (c: SequencePageConfig) => (c.eyebrow ? c.title : `#${c.number} ${c.title}`);
+const seqTitle = (c: SequencePageConfig) => (c.eyebrow ? c.title : `Sequence #${c.number} · ${c.title}`);
 
-export type DaySequence = { cfg: SequencePageConfig; order: number; focusTitle: string | null };
+export type DaySequence = { cfg: SequencePageConfig; order: number; focusStepId: string | null; focusTitle: string | null };
 
 /** Las secuencias que ESTE alumno trabajó hoy (bloques de agua), en orden. */
 export function daySequencesOf(
@@ -49,36 +54,11 @@ export function daySequencesOf(
     if (b.sequence_id === 'THREE-CIRCLES') continue;
     const cfg = (b.sequence_id && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, student.belt_level ?? null);
     if (!cfg) continue;
-    if (out.some((x) => x.cfg.id === cfg.id)) continue;
-    out.push({ cfg, order: b.order_index, focusTitle: b.focus_step_id ? stpLabel(b.focus_step_id) : null });
+    const seen = out.find((x) => x.cfg.id === cfg.id);
+    if (seen) { if (!seen.focusStepId && b.focus_step_id) { seen.focusStepId = b.focus_step_id; seen.focusTitle = stpLabel(b.focus_step_id); } continue; }
+    out.push({ cfg, order: b.order_index, focusStepId: b.focus_step_id ?? null, focusTitle: b.focus_step_id ? stpLabel(b.focus_step_id) : null });
   }
   return out;
-}
-
-type Chip = { key: string; label: string; text: string; stepId: string | null; command: Command | null; symptom?: string; fixes?: string[] };
-
-function chipsFor(cfg: SequencePageConfig, stpLabel: (id: string | null) => string | null): Chip[] {
-  const steps = cfg.stepIds.map((id) => ({ id, title: stpLabel(id) ?? id }));
-  const ms = momentsByStep(cfg.id, steps);
-  const tag = seqTag(cfg);
-  const chips: Chip[] = [];
-  for (const st of steps) {
-    const mine = ms[st.id] ?? [];
-    if (!mine.length) { chips.push({ key: st.id, label: st.title, text: `${tag} · ${st.title}`, stepId: st.id, command: null }); continue; }
-    for (const m of mine) {
-      chips.push({
-        key: `${st.id}:${m.key}`,
-        label: m.kind === 'feet' ? m.short : `${st.title} · ${m.short}`,
-        text: `${tag} · ${st.title} · ${m.short}`,
-        stepId: st.id,
-        command: m.command,
-        symptom: m.symptom,
-        fixes: m.indicators.map((i) => i.fix).filter(Boolean),
-      });
-    }
-  }
-  chips.push({ key: `${cfg.id}:whole`, label: 'Whole sequence', text: `${tag} · run the whole sequence`, stepId: null, command: null });
-  return chips;
 }
 
 /** La siguiente secuencia de la misma cinta ("Move on"). */
@@ -89,6 +69,8 @@ export function nextSequenceAfter(cfg: SequencePageConfig): SequencePageConfig |
 }
 
 const BELT_ORDER = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'];
+
+type Verdict = 'held' | 'broke' | null;
 
 export function DayCloseCard({
   student,
@@ -115,32 +97,37 @@ export function DayCloseCard({
   const gen = (blocks.find((b) => b.order_index === 0) ?? blocks[0] ?? null) as ServicePlanBlock | null;
   const genOrder = gen?.order_index ?? 0;
   const seqs = daySequencesOf(student, stpLabel);
+  const [showProfile, setShowProfile] = useState(false);
   const [extraSeqId, setExtraSeqId] = useState<string | null>(null);
   const [tomorrow, setTomorrow] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // El texto del próximo foco: la parte elegida (chip) y la frase libre después de " — ".
+  // El próximo foco guardado: texto (con la frase libre después de " — ") + secuencia + paso.
   const cur = gen?.whats_next ?? '';
   const [mainRaw, ...noteParts] = cur.split(' — ');
   const main = String(mainRaw ?? '').trim();
   const note = noteParts.join(' — ').trim();
   const [noteDraft, setNoteDraft] = useState(note);
+  const savedSeqId = (gen as any)?.next_focus_sequence_id ?? null;
+  const savedStepId = (gen as any)?.next_focus_step_id ?? null;
 
-  const allChips: Chip[] = [
-    ...seqs.flatMap((s) => chipsFor(s.cfg, stpLabel)),
-    ...(extraSeqId && SEQUENCE_PAGES[extraSeqId] ? chipsFor(SEQUENCE_PAGES[extraSeqId], stpLabel) : []),
-  ];
-  const selected = allChips.find((c) => c.text === main) ?? null;
-  const chipIsKnown = !!selected;
+  // Veredicto por secuencia: arranca de lo guardado (si el foco quedó en un
+  // paso de esta secuencia → se rompió ahí).
+  const [verdicts, setVerdicts] = useState<Record<string, Verdict>>(() => {
+    const v: Record<string, Verdict> = {};
+    for (const s of seqs) {
+      if (savedSeqId === s.cfg.id && savedStepId) v[s.cfg.id] = 'broke';
+      else if (savedSeqId === s.cfg.id && !savedStepId && /run the whole sequence|whole/i.test(main)) v[s.cfg.id] = 'held';
+      else v[s.cfg.id] = null;
+    }
+    return v;
+  });
+  // Paso elegido (el que se rompió) para mostrar sus momentos.
+  const [openStep, setOpenStep] = useState<string | null>(savedStepId);
 
-  const writeFocus = (chip: Chip | null, seqId: string | null, nextNote = noteDraft) => {
-    const text = chip ? chip.text : (chipIsKnown ? '' : main);
-    const full = [text, nextNote.trim()].filter(Boolean).join(' — ');
-    onCommit(genOrder, {
-      whats_next: full || null,
-      next_focus_sequence_id: chip ? seqId : null,
-      next_focus_step_id: chip ? chip.stepId : null,
-    } as any);
+  const writeFocus = (text: string | null, seqId: string | null, stepId: string | null) => {
+    const full = [text ?? '', noteDraft.trim()].filter(Boolean).join(' — ');
+    onCommit(genOrder, { whats_next: full || null, next_focus_sequence_id: text ? seqId : null, next_focus_step_id: text ? stepId : null } as any);
   };
 
   const starOf = (s: DaySequence) => (blocks.find((b) => b.order_index === s.order) as any)?.coach_sequence_rating ?? null;
@@ -149,6 +136,37 @@ export function DayCloseCard({
     if (s.order === genOrder) onCommit(genOrder, { coach_sequence_rating: n, day_objective_status: status } as any);
     else { onCommit(s.order, { coach_sequence_rating: n } as any); onCommit(genOrder, { day_objective_status: status } as any); }
     onRateSequence(s.cfg.id, n);
+  };
+
+  const stepsOf = (cfg: SequencePageConfig) => cfg.stepIds.map((id) => ({ id, title: stpLabel(id) ?? id }));
+
+  // "Aguantó": el foco sigue → próximo foco = el paso siguiente de la cadena
+  // (o la línea completa si era el último / si el plan era la línea completa).
+  const held = (s: DaySequence) => {
+    setVerdicts((v) => ({ ...v, [s.cfg.id]: 'held' }));
+    setOpenStep(null);
+    const steps = stepsOf(s.cfg);
+    const tag = seqTag(s.cfg);
+    if (s.focusStepId) {
+      const i = steps.findIndex((x) => x.id === s.focusStepId);
+      const next = i >= 0 ? steps[i + 1] : null;
+      if (next) { writeFocus(`${tag} · ${next.title}`, s.cfg.id, next.id); return; }
+    }
+    writeFocus(`${tag} · run the whole sequence`, s.cfg.id, null);
+  };
+  const broke = (s: DaySequence) => {
+    setVerdicts((v) => ({ ...v, [s.cfg.id]: 'broke' }));
+    // Si el plan tenía foco, lo más probable es que se rompió ahí: queda
+    // preseleccionado y el coach lo cambia con un toque si fue otro paso.
+    if (s.focusStepId) { setOpenStep(s.focusStepId); writeFocus(`${seqTag(s.cfg)} · ${s.focusTitle ?? s.focusStepId}`, s.cfg.id, s.focusStepId); }
+    else setOpenStep(null);
+  };
+  const pickStep = (s: DaySequence, id: string, title: string) => {
+    setOpenStep(id);
+    writeFocus(`${seqTag(s.cfg)} · ${title}`, s.cfg.id, id);
+  };
+  const pickMoment = (s: DaySequence, stepId: string, stepTitle: string, short: string | null) => {
+    writeFocus(short ? `${seqTag(s.cfg)} · ${stepTitle} · ${short}` : `${seqTag(s.cfg)} · ${stepTitle}`, s.cfg.id, stepId);
   };
 
   const lastSeq = seqs[seqs.length - 1] ?? null;
@@ -162,28 +180,6 @@ export function DayCloseCard({
   const pickable = Object.values(SEQUENCE_PAGES)
     .filter((c) => BELT_ORDER.indexOf(c.belt) <= Math.max(myBelt, 0) + 1 && !seqs.some((s) => s.cfg.id === c.id))
     .sort((a, b) => BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) || (a.kind === 'entry' ? -1 : 0) - (b.kind === 'entry' ? -1 : 0) || a.number - b.number);
-
-  const ChipRow = ({ cfg }: { cfg: SequencePageConfig }) => (
-    <div className="flex flex-wrap gap-1.5 mt-2">
-      {chipsFor(cfg, stpLabel).map((c) => {
-        const on = selected?.text === c.text;
-        return (
-          <button
-            key={c.key}
-            type="button"
-            aria-pressed={on}
-            disabled={isClosed}
-            onClick={() => writeFocus(on ? null : c, cfg.id)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-semibold border disabled:opacity-70"
-            style={on ? { background: '#E0A62B', borderColor: '#E0A62B', color: '#061C2B' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}
-          >
-            <i className="inline-block w-[7px] h-[7px] rounded-full" style={{ background: c.command ? CMD_COLOR[c.command] : '#9CA3AF' }} />
-            {c.label}
-          </button>
-        );
-      })}
-    </div>
-  );
 
   const StatusButtons = () => (
     <div className="grid grid-cols-3 gap-1">
@@ -201,33 +197,112 @@ export function DayCloseCard({
     </div>
   );
 
+  /** La secuencia como lista numerada (la misma que ve el alumno). */
+  const StepList = ({ s, interactive }: { s: DaySequence; interactive: boolean }) => {
+    const steps = stepsOf(s.cfg);
+    const ms = momentsByStep(s.cfg.id, steps);
+    return (
+      <ol className="mt-2 space-y-1">
+        {steps.map((st, i) => {
+          const isFocus = st.id === s.focusStepId;
+          const isBroken = interactive && openStep === st.id && savedSeqId === s.cfg.id && savedStepId === st.id;
+          const mine = ms[st.id] ?? [];
+          const row = (
+            <span className="flex items-start gap-2 text-[13px] leading-snug w-full text-left" style={{ color: isBroken ? '#7A1F1A' : isFocus ? '#061C2B' : '#55666E' }}>
+              <span className="shrink-0 w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center" style={isBroken ? { background: '#E0413B', color: '#fff' } : isFocus ? { background: '#FFD166', color: '#061C2B' } : { background: '#E9E2D2', color: '#55666E' }}>{i + 1}</span>
+              <span className={isFocus || isBroken ? 'font-bold' : ''}>{st.title}{isFocus ? ' · planned focus' : ''}{isBroken ? ' · broke here' : ''}</span>
+            </span>
+          );
+          return (
+            <li key={st.id}>
+              {interactive ? (
+                <button type="button" disabled={isClosed} onClick={() => pickStep(s, st.id, st.title)} className="w-full rounded-[4px] px-1 py-0.5 disabled:opacity-70" style={isBroken ? { background: 'rgba(224,65,59,.10)' } : undefined}>{row}</button>
+              ) : row}
+              {interactive && isBroken && mine.length > 0 && (
+                <div className="ml-7 mt-1 mb-1">
+                  <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#55666E]">Which moment? · optional</p>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {mine.map((m) => {
+                      const on = main === `${seqTag(s.cfg)} · ${st.title} · ${m.short}`;
+                      return (
+                        <button key={m.key} type="button" aria-pressed={on} disabled={isClosed} onClick={() => pickMoment(s, st.id, st.title, on ? null : m.short)}
+                          className="px-2.5 py-1 rounded-full text-[11px] font-semibold border disabled:opacity-70"
+                          style={on ? { background: '#E0A62B', borderColor: '#E0A62B', color: '#061C2B' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
+                          {m.short}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    );
+  };
+
   return (
     <div className="bg-[#E9E2D2] rounded-[8px] border border-[#DCD7C6] p-3 space-y-2.5">
       <div className="flex items-center gap-2 min-w-0">
         {avatar}
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-sm font-bold text-[#10263B] truncate">{student.display_name}</p>
-          <p className="text-[11px] text-[#55666E] capitalize">
-            {student.belt_level?.replace(/_/g, ' ')}{seqs.length ? ` · today: ${seqs.map((s) => seqTag(s.cfg)).join(' · ')}` : ''}
-          </p>
+          <p className="text-[11px] text-[#55666E] capitalize">{student.belt_level?.replace(/_/g, ' ')}</p>
         </div>
+        <button type="button" onClick={() => setShowProfile((v) => !v)} aria-pressed={showProfile} className="shrink-0 w-9 h-9 rounded-full border border-[#DCD7C6] bg-white text-[#55666E] text-[14px]" title="Profile & bitácora">📋</button>
       </div>
+      {showProfile && profile}
 
-      {profile}
-
-      {/* Una tarjeta por secuencia del día: estrella + dónde se rompió. */}
       {seqs.map((s) => {
         const v = starOf(s);
+        const verdict = verdicts[s.cfg.id] ?? null;
         return (
           <div key={s.cfg.id} className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] p-2.5">
-            <p className="text-[14px] font-extrabold text-[#10263B] leading-tight">{s.cfg.eyebrow ? s.cfg.title : `Sequence #${s.cfg.number} · ${s.cfg.title}`}</p>
-            <p className="text-[11px] text-[#55666E] mt-0.5">{s.focusTitle ? `Focus today: ${s.focusTitle}` : 'Whole sequence'}</p>
-            <div className="mt-2">
+            {/* 1 · Vos planeaste */}
+            <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00A8CC' }}>You planned</p>
+            <p className="text-[15px] font-extrabold text-[#10263B] leading-tight mt-0.5">{seqTitle(s.cfg)}</p>
+            <p className="text-[12px] text-[#55666E] mt-0.5">{s.focusTitle ? `Focus: ${s.focusTitle}` : 'The whole line, start to finish'}</p>
+
+            {/* 2 · Estrella */}
+            <div className="mt-2.5">
               <StarRating value={v} size="lg" variant="official" readOnly={isClosed} onChange={(n) => rate(s, n)} />
             </div>
             <p className="text-[12px] text-[#55666E] mt-1">{v ? `${v}★ · ${STAR_LABEL[v]}` : 'Tap a star. 4★ = the sequence is theirs.'}</p>
-            <p className="text-[10px] font-mono uppercase tracking-[0.14em] mt-2.5" style={{ color: '#00A8CC' }}>Where did it break? · tap one, or none</p>
-            <ChipRow cfg={s.cfg} />
+
+            {/* 3 · ¿Aguantó? */}
+            <p className="text-[10px] font-mono uppercase tracking-[0.14em] mt-3" style={{ color: '#00A8CC' }}>{s.focusTitle ? 'Did the focus hold?' : 'Did the line come out clean?'}</p>
+            <div className="flex gap-1.5 mt-1.5">
+              <button type="button" disabled={isClosed} onClick={() => held(s)} aria-pressed={verdict === 'held'}
+                className="flex-1 py-2 rounded-[5px] text-[12px] font-bold border disabled:opacity-70"
+                style={verdict === 'held' ? { background: '#2FA36B', borderColor: '#2FA36B', color: '#fff' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
+                ✓ Yes, it held
+              </button>
+              <button type="button" disabled={isClosed} onClick={() => broke(s)} aria-pressed={verdict === 'broke'}
+                className="flex-1 py-2 rounded-[5px] text-[12px] font-bold border disabled:opacity-70"
+                style={verdict === 'broke' ? { background: '#E0413B', borderColor: '#E0413B', color: '#fff' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
+                ✗ It broke
+              </button>
+            </div>
+
+            {/* 4 · Dónde: la lista numerada de la secuencia */}
+            {verdict === 'broke' && (
+              <div className="mt-2.5">
+                <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#55666E]">Where? · tap the step</p>
+                <StepList s={s} interactive />
+              </div>
+            )}
+            {verdict === 'held' && (
+              <p className="text-[12px] mt-2" style={{ color: '#2FA36B' }}>
+                ✓ {s.focusTitle ? `${s.focusTitle} is theirs. Next focus moves one step along the line.` : 'The whole line is theirs.'}
+              </p>
+            )}
+            {verdict === null && !isClosed && (
+              <details className="mt-2">
+                <summary className="text-[11px] text-[#55666E] cursor-pointer">See the steps of this sequence</summary>
+                <StepList s={s} interactive={false} />
+              </details>
+            )}
           </div>
         );
       })}
@@ -240,33 +315,24 @@ export function DayCloseCard({
         </div>
       )}
 
-      {/* Detalle opcional del momento elegido: qué se ve y la instrucción. */}
-      {selected && (selected.symptom || selected.fixes?.length) && (
-        <details className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] px-2.5 py-2">
-          <summary className="text-[12px] text-[#55666E] cursor-pointer">Details (optional) · {selected.label}</summary>
-          {selected.symptom && <p className="text-[12px] text-[#10263B] mt-1.5"><span className="text-[#55666E]">What you see:</span> {selected.symptom}</p>}
-          {selected.fixes?.map((f, i) => <p key={i} className="text-[12px] text-[#10263B] mt-1"><span className="text-[#55666E]">Cue:</span> {f}</p>)}
-        </details>
-      )}
-
-      {/* Próximo foco: lo que el alumno ve esta noche. */}
+      {/* Próximo foco: UNO por alumno, lo que ve esta noche. */}
       <div className="rounded-[5px] px-3 py-2.5" style={{ background: '#061C2B' }}>
         <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00D2FF' }}>
           Next focus · the student sees this tonight{isClosed && main.length < 5 ? ' · still pending' : ''}
         </p>
-        <p className="text-[13px] font-semibold mt-1" style={{ color: '#F7F9FA' }}>{main || 'Tap a moment above, or write it below.'}</p>
+        <p className="text-[13px] font-semibold mt-1" style={{ color: '#F7F9FA' }}>{main || 'Answer above, or write it below.'}</p>
         <input
           type="text"
           defaultValue={note}
           disabled={isClosed && main.length >= 5}
           onChange={(e) => setNoteDraft(e.target.value)}
-          onBlur={(e) => { const nn = e.target.value; setNoteDraft(nn); const text = chipIsKnown ? selected!.text : main; const full = [text, nn.trim()].filter(Boolean).join(' — '); onCommit(genOrder, { whats_next: full || null } as any); }}
+          onBlur={(e) => { const nn = e.target.value; setNoteDraft(nn); const full = [main, nn.trim()].filter(Boolean).join(' — '); onCommit(genOrder, { whats_next: full || null } as any); }}
           placeholder={main ? 'Add a phrase in your words (optional)' : 'Or write the focus in your words'}
           className="mt-2 w-full px-2.5 py-1.5 rounded-[4px] text-[12px] bg-[#0E2A40] text-[#F7F9FA] placeholder:text-[#7C8C94] border border-[#1E3A52] disabled:opacity-60"
         />
-        {!chipIsKnown && main.length >= 5 && !isClosed && (
-          <button type="button" onClick={() => onCommit(genOrder, { whats_next: noteDraft.trim() || null, next_focus_sequence_id: null, next_focus_step_id: null } as any)} className="mt-1.5 text-[11px] underline" style={{ color: '#7DE3FF' }}>
-            Clear the written focus
+        {main && !isClosed && (
+          <button type="button" onClick={() => { setVerdicts({}); setOpenStep(null); onCommit(genOrder, { whats_next: noteDraft.trim() || null, next_focus_sequence_id: null, next_focus_step_id: null } as any); }} className="mt-1.5 text-[11px] underline" style={{ color: '#7DE3FF' }}>
+            Clear
           </button>
         )}
       </div>
@@ -277,12 +343,12 @@ export function DayCloseCard({
           <div className="flex gap-1.5">
             <button type="button" disabled={busy} onClick={() => carry(null, `Same sequence · ${seqTag(seqs[0].cfg)}`)}
               className="flex-1 py-2 rounded-[5px] text-[12px] font-bold border border-[#DCD7C6] bg-white text-[#10263B] disabled:opacity-60">
-              Same sequence tomorrow
+              Tomorrow · same ({seqTag(seqs[0].cfg)})
             </button>
             {moveOn && (
               <button type="button" disabled={busy} onClick={() => carry(moveOn.id, `Move on · ${seqTag(moveOn)}`)}
                 className="flex-1 py-2 rounded-[5px] text-[12px] font-bold border border-[#DCD7C6] bg-white text-[#10263B] disabled:opacity-60">
-                Move on to {seqTag(moveOn)}
+                Tomorrow · move on to {seqTag(moveOn)}
               </button>
             )}
           </div>
@@ -290,26 +356,22 @@ export function DayCloseCard({
         </div>
       )}
 
-      {/* Lo de siempre, plegado: estado, foco, flow, nota interna. */}
+      {/* Plegado: enfoque 0–3 (misma escala que el alumno), flow, estado, nota. */}
       <details className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] px-2.5 py-2">
         <summary className="text-[12px] text-[#55666E] cursor-pointer">
-          Focus · flow · internal note{gen?.day_objective_status ? ` · ${gen.day_objective_status.replace('_', ' ')}` : ''}
+          Focus · flow · internal note
+          {gen?.focus_level !== null && gen?.focus_level !== undefined ? ` · focus ${FOCUS_WORDS[gen.focus_level] ?? gen.focus_level}` : ''}
+          {gen?.flow_channel ? ` · ${FLOW[gen.flow_channel - 1]?.label ?? ''}` : ''}
         </summary>
         <div className="space-y-3 mt-2">
-          {seqs.length > 0 && (
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Objective of the day (set by the star, change if needed)</p>
-              <StatusButtons />
-            </div>
-          )}
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Focus level — how present were they today?</p>
-            <div className="grid grid-cols-5 gap-1">
-              {[1, 2, 3, 4, 5].map((n) => (
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Focus — how present were they? (same scale the student uses)</p>
+            <div className="grid grid-cols-4 gap-1">
+              {[0, 1, 2, 3].map((n) => (
                 <button key={n} type="button" disabled={isClosed} onClick={() => onCommit(genOrder, { focus_level: n })}
                   className="py-1.5 rounded-lg text-[11px] font-bold disabled:opacity-70"
                   style={gen?.focus_level === n ? { background: '#10263B', color: 'white' } : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }}>
-                  {n}
+                  {FOCUS_WORDS[n]}
                 </button>
               ))}
             </div>
@@ -317,13 +379,7 @@ export function DayCloseCard({
           <div>
             <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Flow channel — was the demand right today?</p>
             <div className="grid grid-cols-5 gap-1">
-              {([
-                { n: 1, color: '#3B82F6', label: 'Bored' },
-                { n: 2, color: '#06B6D4', label: 'Easy' },
-                { n: 3, color: '#10B981', label: 'Optimal' },
-                { n: 4, color: '#F59E0B', label: 'Hard' },
-                { n: 5, color: '#EF4444', label: 'Frustrated' },
-              ] as const).map((opt) => (
+              {FLOW.map((opt) => (
                 <button key={opt.n} type="button" disabled={isClosed} onClick={() => onCommit(genOrder, { flow_channel: opt.n })}
                   className="py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-70"
                   style={gen?.flow_channel === opt.n ? { background: opt.color, color: 'white' } : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }}>
@@ -332,6 +388,12 @@ export function DayCloseCard({
               ))}
             </div>
           </div>
+          {seqs.length > 0 && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Objective of the day (set by the star, change if needed)</p>
+              <StatusButtons />
+            </div>
+          )}
           <div>
             <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">🔒 Internal note · not sent to the student</p>
             <textarea
@@ -354,7 +416,18 @@ export function DayCloseCard({
             <option value="">— pick a sequence —</option>
             {pickable.map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.belt.replace('_belt', '')}</option>)}
           </select>
-          {extraSeqId && SEQUENCE_PAGES[extraSeqId] && <ChipRow cfg={SEQUENCE_PAGES[extraSeqId]} />}
+          {extraSeqId && SEQUENCE_PAGES[extraSeqId] && (() => {
+            const c = SEQUENCE_PAGES[extraSeqId];
+            const steps = c.stepIds.map((id) => ({ id, title: stpLabel(id) ?? id }));
+            return (
+              <div className="mt-1.5">
+                <button type="button" onClick={() => writeFocus(`${seqTag(c)} · run the whole sequence`, c.id, null)} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-[#DCD7C6] bg-white text-[#10263B] mr-1.5 mb-1.5">Whole line</button>
+                {steps.map((st, i) => (
+                  <button key={st.id} type="button" onClick={() => writeFocus(`${seqTag(c)} · ${st.title}`, c.id, st.id)} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-[#DCD7C6] bg-white text-[#10263B] mr-1.5 mb-1.5">{i + 1} · {st.title}</button>
+                ))}
+              </div>
+            );
+          })()}
         </details>
       )}
     </div>

@@ -257,6 +257,17 @@ interface PortalData {
   tasks?: import('@/lib/actions/lets-play').StudentTask[];
 }
 
+// Lo que el coach vio al cerrar el día: misma escala que la autoevaluación.
+const FOCUS_WORDS = ['Distracted', 'Some', 'Mostly', 'Locked in'];
+const FLOW_WORDS = ['Bored', 'Easy', 'Optimal', 'Hard', 'Frustrated'];
+function coachSawLine(r: any): string | null {
+  const f = r?.coach_focus; const fl = r?.coach_flow;
+  const parts: string[] = [];
+  if (f !== null && f !== undefined && FOCUS_WORDS[f]) parts.push(`Focus · ${FOCUS_WORDS[f]}`);
+  if (fl && FLOW_WORDS[fl - 1]) parts.push(`Flow · ${FLOW_WORDS[fl - 1]}`);
+  return parts.length ? parts.join(' · ') : null;
+}
+
 // ═══ SESIÓN ABIERTA (Marcelo 2026-09-10) ═══
 // El alumno planea, cierra el app, surfea, y vuelve. Esta tarjeta es la
 // puerta de vuelta: un toque y va a la evaluación con su plan tal cual.
@@ -2001,6 +2012,12 @@ function HomeTab({
                 )}
               </div>
             </div>
+            {coachSawLine(latestResult) && (
+              <div className="flex justify-between items-center gap-3">
+                <span className="text-xs" style={{ color: 'rgba(247,249,250,.78)' }}>Your coach saw</span>
+                <span className="text-sm" style={{ color: '#F7F9FA' }}>{coachSawLine(latestResult)}</span>
+              </div>
+            )}
 
             {data.surveyResultIds.includes(latestResult.id) ? (
               latestResult.student_visible_summary && (
@@ -2455,6 +2472,9 @@ function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: bool
                         label="Duration"
                         value={`${session.standalone_sessions.duration_minutes} min`}
                       />
+                    )}
+                    {coachSawLine(session) && (
+                      <DetailRow label="Your coach saw" value={coachSawLine(session)!} />
                     )}
                     {session.focus_rating && (
                       <DetailRow label="Focus" value={`${session.focus_rating}/5`} />

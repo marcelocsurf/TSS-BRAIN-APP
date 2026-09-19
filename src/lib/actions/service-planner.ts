@@ -301,7 +301,7 @@ export interface ServicePlanBlock {
   board_size_inches: number | null;
   board_id: string | null;  // linked inventory board (M108)
   // M47 — Coach-rated, per-block-per-student (filled at close).
-  focus_level: number | null;   // 1-5, how present + engaged
+  focus_level: number | null;   // 0-3 (Distracted · Some · Mostly · Locked in), misma escala que el alumno
   flow_channel: number | null;  // 1=bored, 3=optimal, 5=frustrated
   day_objective_status?: string | null; // session-level: achieved | partial | not_yet (block 0)
   whats_next?: string | null; // session-level: qué trabajar próximo (block 0) — REQUERIDO al cierre de surf
@@ -2535,6 +2535,10 @@ export async function closeServicePlan(
         coach_feedback: firstBlock.notes_post ?? null,
         achieved: achievedText,
         whats_next: firstBlock.whats_next ?? null,
+        // Lo que el coach vio (2026-09-19): enfoque 0–3 y flow 1–5 viajan a la
+        // sesión del alumno, para comparar con su autoevaluación.
+        coach_focus: firstBlock.focus_level ?? null,
+        coach_flow: firstBlock.flow_channel ?? null,
         homework: null,
         completion_state: 'closed',
         survey_unlocked: unlockSurveyToday,
