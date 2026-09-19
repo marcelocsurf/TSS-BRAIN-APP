@@ -125,6 +125,20 @@ export function SequenceFields({
   );
 }
 
+/** Secuencia principal del día (cabecera del plan que lee el coach). Opcional: los bloques ya dicen lo suyo. */
+export function DaySequenceSelect({ value, belt, onChange }: { value: string | null | undefined; belt: string | null; onChange: (v: string | null) => void }) {
+  const seqs = sequencesFor(belt);
+  return (
+    <div>
+      <label className={LBL} style={LBL_STYLE}>Main sequence of the day · optional (the blocks below say the rest)</label>
+      <select value={value ?? ''} onChange={(e) => onChange(e.target.value || null)} className={SEL}>
+        <option value="">— from the blocks —</option>
+        {seqs.map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {beltWord(c.belt)}</option>)}
+      </select>
+    </div>
+  );
+}
+
 /** Temas de teoría (Tres Círculos, Infinite Circle, Pre-Course, Blue…) para un día o un bloque de teoría. */
 export function TopicChips({ value, belt, onChange, label = 'Theory topics · what the student studies that day' }: {
   value: string[] | null | undefined;

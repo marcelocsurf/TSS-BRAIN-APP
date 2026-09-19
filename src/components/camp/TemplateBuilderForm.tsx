@@ -21,7 +21,7 @@ import { StepDrillPicker } from '@/components/shared/StepDrillPicker';
 import { ContentVideoManager } from '@/components/content/ContentVideoManager';
 import type { ContentVideo } from '@/lib/actions/content';
 import { ActivityForm } from '@/components/camp/ActivityForm';
-import { TopicChips, templateBelt } from '@/components/camp/SequenceFields';
+import { TopicChips, DaySequenceSelect, templateBelt } from '@/components/camp/SequenceFields';
 import { ACTIVITY_TYPES } from '@/lib/constants/brand';
 
 import { LEVEL_NAMES, LEVEL_BELT_COLOR, LEVEL_BELT_LABEL } from '@/lib/constants/belts';
@@ -652,6 +652,9 @@ export function TemplateBuilderForm({ mode, templateId, initialData, dayMedia }:
 
                 {/* Temas de teoría del día (2026-09-19): lo que el alumno ve
                     como "Also today · theory" y el coach como chips del día. */}
+                <div className="col-span-2">
+                  <DaySequenceSelect value={day.sequence_id ?? null} belt={templateBelt(includesCourse || null, levelName)} onChange={(v) => updateDay(dayIdx, { sequence_id: v })} />
+                </div>
                 <div className="col-span-2">
                   <TopicChips value={day.topic_ids ?? null} belt={templateBelt(includesCourse || null, levelName)} onChange={(next) => updateDay(dayIdx, { topic_ids: next })} />
                 </div>
