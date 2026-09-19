@@ -1,5 +1,6 @@
 'use server';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { isSidePair, resolveSidePair } from '@/lib/sequence-pages/side-pairs';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { emailEnabled } from '@/lib/email-switch';
 
@@ -1462,8 +1463,16 @@ export async function applyTemplateDayToStudents(
 
   // Re-seed from template
   const rows: any[] = [];
+  // "Tu lado": PAIR-* se resuelve por alumno (Regular → FS, Goofy → BS).
+  const { data: stanceRows } = await admin.from('students').select('id, goofy_or_regular').in('id', studentIds);
+  const stanceById = new Map<string, string | null>((stanceRows ?? []).map((r: any) => [r.id, r.goofy_or_regular ?? null]));
   for (const studentId of studentIds) {
-    for (const tb of templateBlocks) {
+    for (const tb0 of templateBlocks) {
+      const tb = isSidePair(tb0.sequence_id) ? (() => {
+        const r = resolveSidePair(tb0.sequence_id as any, stanceById.get(studentId));
+        const cfg = SEQUENCE_PAGES[r.sequenceId];
+        return { ...tb0, sequence_id: r.sequenceId, step_ids: cfg ? cfg.stepIds : null, step_id: null, focus_step_id: null, focus_moments: null };
+      })() : tb0;
       rows.push({
         camp_instance_id: session.camp_instance_id,
         camp_session_id: campSessionId,

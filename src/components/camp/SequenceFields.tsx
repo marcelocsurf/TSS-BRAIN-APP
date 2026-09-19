@@ -13,6 +13,7 @@ import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { PLAN_TOPICS, topicsForBelt } from '@/lib/sequence-pages/topics';
 import { THREE_CIRCLES_SEQUENCE_ID, THREE_CIRCLES_GAME_IDS, THREE_CIRCLES_GAME_TITLES, gameContext } from '@/lib/sequence-pages/three-circles';
+import { SIDE_PAIR_IDS, isSidePair, sidePairLabel } from '@/lib/sequence-pages/side-pairs';
 import type { TemplateBlockInput } from '@/lib/actions/camps';
 import type { TemplateCatalog } from '@/lib/actions/template-catalog';
 
@@ -56,7 +57,10 @@ export function SequenceFields({
 }) {
   const seqs = sequencesFor(belt);
   const seqId = block.sequence_id ?? '';
-  const cfg = seqId && seqId !== THREE_CIRCLES_SEQUENCE_ID ? SEQUENCE_PAGES[seqId] ?? null : null;
+  const isPair = isSidePair(seqId);
+  const cfg = seqId && seqId !== THREE_CIRCLES_SEQUENCE_ID && !isPair ? SEQUENCE_PAGES[seqId] ?? null : null;
+  // "Tu lado" solo tiene sentido con las secuencias de Blue (pares FS/BS).
+  const showPairs = !belt || BELT_ORDER.indexOf(belt) >= BELT_ORDER.indexOf('blue_belt');
   const titleOf = (id: string) => catalog?.stps.find((s) => s.id === id)?.title ?? id;
   const steps = cfg ? cfg.stepIds.map((id) => ({ id, title: titleOf(id) })) : [];
   const focus = block.focus_step_id ?? '';
@@ -66,6 +70,7 @@ export function SequenceFields({
   const pickSequence = (id: string) => {
     if (!id) { onChange({ sequence_id: null, focus_step_id: null, focus_moments: null }); return; }
     if (id === THREE_CIRCLES_SEQUENCE_ID) { onChange({ sequence_id: id, focus_step_id: null, focus_moments: null, step_id: null, step_ids: null }); return; }
+    if (isSidePair(id)) { onChange({ sequence_id: id, focus_step_id: null, focus_moments: null, step_id: null, step_ids: null, mission_id: null }); return; }
     const c = SEQUENCE_PAGES[id];
     // Línea completa por defecto: todos los pasos de la secuencia, sin paso único.
     onChange({ sequence_id: id, focus_step_id: null, focus_moments: null, step_ids: c ? c.stepIds : null, step_id: null });
@@ -89,6 +94,7 @@ export function SequenceFields({
             <option value="">— none · this block is not a sequence —</option>
             {seqs.map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {beltWord(c.belt)}</option>)}
             <option value={THREE_CIRCLES_SEQUENCE_ID}>The Three Circles · games</option>
+            {showPairs && SIDE_PAIR_IDS.map((pid) => <option key={pid} value={pid}>{sidePairLabel(pid)}</option>)}
           </select>
         </div>
         {cfg && (
@@ -101,6 +107,9 @@ export function SequenceFields({
           </div>
         )}
       </div>
+      {isPair && (
+        <p className="text-[11px] text-[#55666E]">Decided per student when the camp is created: Regular → frontside, Goofy → backside (no stance in the profile → frontside). The whole line; the coach sets the focus per student in the plan.</p>
+      )}
       {cfg && !focus && (
         <p className="text-[11px] text-[#55666E]">The student and the coach see “{seqTag(cfg)} · the whole line”. Pick a focus only when the day works one step of it.</p>
       )}

@@ -12,6 +12,7 @@
 // getServicePlan() / getCustomizedPlan().
 
 import { useState } from 'react';
+import { isSidePair, sidePairLabel } from '@/lib/sequence-pages/side-pairs';
 import Link from 'next/link';
 import {
   ChevronDown,
@@ -64,6 +65,7 @@ function sequenceLabelOf(b: Block): string | null {
   // "rehearsal on land" de "whole sequence" y de "focus: …").
   if (b.pilar_part && TEMPLATE_TITLE.test(b.pilar_part)) return b.pilar_part;
   const sid = (b as any).sequence_id as string | null | undefined;
+  if (isSidePair(sid)) return sidePairLabel(sid);
   if (sid === 'THREE-CIRCLES') {
     const g = b.mission_id ? gameContext(b.mission_id) : null;
     return g ? `The Three Circles · ${g.label}${b.mission?.title ? ` — ${b.mission.title}` : ''}` : 'The Three Circles';

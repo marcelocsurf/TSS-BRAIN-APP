@@ -1,5 +1,7 @@
 'use server';
 import { notifyEnrolled } from '@/lib/actions/enrollment-welcome';
+import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { isSidePair, resolveSidePair } from '@/lib/sequence-pages/side-pairs';
 
 import { createClient } from '@/lib/supabase/server';
 import { elSalvadorToday } from '@/lib/utils/tz';
@@ -991,6 +993,23 @@ export async function createCampInstance(input: {
     const { error: planErr } = await supabase.from('service_plans').insert(planRows);
     if (planErr) throw new Error(`Failed to seed service_plans: ${planErr.message}`);
 
+    // "Tu lado" (2026-09-19): un bloque PAIR-* se resuelve por alumno según su
+    // stance — Regular → frontside, Goofy → backside. Sin stance → frontside.
+    const stanceById = new Map<string, string | null>();
+    {
+      const { data: stRows } = await supabase.from('students').select('id, goofy_or_regular').in('id', input.student_ids);
+      for (const r of stRows ?? []) stanceById.set((r as any).id, (r as any).goofy_or_regular ?? null);
+    }
+    const resolveSeq = (tb: any, studentId: string): { sequence_id: string | null; step_ids: string[] | null } => {
+      const sid = tb.sequence_id as string | null;
+      if (isSidePair(sid)) {
+        const r = resolveSidePair(sid, stanceById.get(studentId));
+        const cfg = SEQUENCE_PAGES[r.sequenceId];
+        return { sequence_id: r.sequenceId, step_ids: cfg ? cfg.stepIds : null };
+      }
+      return { sequence_id: sid ?? null, step_ids: tb.step_ids ?? null };
+    };
+
     // One service_plan_block per (camp_session × student × template_block).
     const blockRows: any[] = [];
     for (const cs of createdSessions) {
@@ -1007,22 +1026,23 @@ export async function createCampInstance(input: {
           });
         } else {
           dayBlocks.forEach((tb, idx) => {
+            const rs = resolveSeq(tb, studentId);
             blockRows.push({
               camp_instance_id: instance.id,
               camp_session_id: cs.id,
               student_id: studentId,
               order_index: tb.block_order ?? idx,
-              step_id: tb.step_id ?? (((tb as any).sequence_id && !(tb as any).focus_step_id) ? null : ((tb as any).step_ids?.[0] ?? null)),
-              step_ids: (tb as any).step_ids ?? null,
+              step_id: tb.step_id ?? ((rs.sequence_id && !(tb as any).focus_step_id) ? null : (rs.step_ids?.[0] ?? null)),
+              step_ids: rs.step_ids,
               land_drill_id: tb.drill_id ?? null,
               land_drill_custom: tb.drill_custom ?? null,
               water_drill_id: tb.mission_id ?? null,
               water_drill_custom: tb.mission_custom ?? null,
               objective_text: tb.evaluation_focus ?? null,
               // Idioma del método (2026-09-18): secuencia + foco de la plantilla.
-              sequence_id: (tb as any).sequence_id ?? null,
-              focus_step_id: (tb as any).focus_step_id ?? null,
-              focus_moments: (tb as any).focus_moments ?? null,
+              sequence_id: rs.sequence_id,
+              focus_step_id: isSidePair((tb as any).sequence_id) ? null : ((tb as any).focus_step_id ?? null),
+              focus_moments: isSidePair((tb as any).sequence_id) ? null : ((tb as any).focus_moments ?? null),
             });
           });
         }

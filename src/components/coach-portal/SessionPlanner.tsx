@@ -70,6 +70,7 @@ import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { topicsForBelt } from '@/lib/sequence-pages/topics';
 import { gameContext } from '@/lib/sequence-pages/three-circles';
+import { isSidePair, sidePairLabel } from '@/lib/sequence-pages/side-pairs';
 import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
 import {
   listSpacesByToken, listBookingsForDayByToken, createBookingByToken, cancelBookingByToken,
@@ -2959,6 +2960,7 @@ function workLabelOf(
 ): string | null {
   // Título de plantilla ya en el idioma del método: se respeta tal cual.
   if (tb?.pilar_part && /^(Sequence #|Getting to the wave|The Three Circles|Your sequence|Prep for tomorrow|Refresh)/.test(tb.pilar_part)) return tb.pilar_part;
+  if (isSidePair(b.sequence_id ?? tb?.sequence_id)) return sidePairLabel((b.sequence_id ?? tb?.sequence_id) as any);
   if ((b.sequence_id ?? tb?.sequence_id) === 'THREE-CIRCLES') {
     const gid = (b as any).water_drill_id as string | null | undefined;
     const g = gid ? gameContext(gid) : null;
