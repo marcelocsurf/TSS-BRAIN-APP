@@ -8,9 +8,9 @@ import { elSalvadorToday } from '@/lib/utils/tz';
 import { BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
 import { getMaterialsForStudent } from '@/lib/constants/student-materials';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
-import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import { topicById } from '@/lib/sequence-pages/topics';
-import { THREE_CIRCLES_SEQUENCE_ID, gameContext } from '@/lib/sequence-pages/three-circles';
+import { THREE_CIRCLES_SEQUENCE_ID, THREE_CIRCLES_GAME_TITLES, gameContext } from '@/lib/sequence-pages/three-circles';
 
 // ─── Get comprehensive student data for the portal ───
 
@@ -444,7 +444,11 @@ export async function getStudentPortalData(token: string) {
         if (!cfg) continue;
         const txt = String(b.objective_text ?? '');
         const textFocus = txt.startsWith('Focus: ') ? txt.slice(7).split(' · ').map((x) => x.trim()).filter(Boolean) : [];
-        const structFocus = b.focus_step_id ? [stepTitle.get(b.focus_step_id) ?? b.focus_step_id] : [];
+        const structFocus = b.focus_step_id ? [(() => {
+          const el = elementTitle(cfg, b.focus_step_id, stepTitle.get(b.focus_step_id) ?? b.focus_step_id) as string;
+          const g = cfg.kind === 'circle' && b.water_drill_id ? THREE_CIRCLES_GAME_TITLES[b.water_drill_id as string] : null;
+          return g ? `${el} — ${g}` : el;
+        })()] : [];
         const existing = plans.find((p) => p.sequenceId === cfg.id);
         if (existing) {
           // Varios bloques de la misma secuencia en el día: los focos se suman.

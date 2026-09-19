@@ -32,7 +32,7 @@ import {
   MENTAL_SUBTYPES,
 } from '@/lib/constants/brand';
 import type { ServicePlanData } from '@/lib/actions/service-planner';
-import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { topicById } from '@/lib/sequence-pages/topics';
 import { gameContext } from '@/lib/sequence-pages/three-circles';
@@ -73,9 +73,9 @@ function sequenceLabelOf(b: Block): string | null {
   const cfg = (sid && SEQUENCE_PAGES[sid]) || resolveSequenceForSteps({ stepIds: b.step_ids ?? null, stepId: b.step_id ?? null }, null);
   if (!cfg) return null;
   const focus = (b as any).focus_step_id as string | null | undefined;
-  const focusTitle = focus && focus === b.step_id ? b.step_title : null;
+  const focusTitle = focus && focus === b.step_id ? elementTitle(cfg, focus, b.step_title ?? null) : null;
   const single = !focus && b.step_id && (!b.step_ids || b.step_ids.length <= 1) && b.step_title;
-  const base = cfg.eyebrow ? `${cfg.eyebrow.split(' · ')[0]} · ${cfg.title}` : `Sequence ${sequenceDisplayName(cfg)}`;
+  const base = cfg.kind === 'circle' ? cfg.title : cfg.eyebrow ? `${cfg.eyebrow.split(' · ')[0]} · ${cfg.title}` : `Sequence ${sequenceDisplayName(cfg)}`;
   return `${base}${focusTitle ? ` · focus: ${focusTitle}` : single ? ` · ${b.step_title}` : ''}`;
 }
 function topicsLabelOf(ids: string[] | null | undefined): string | null {

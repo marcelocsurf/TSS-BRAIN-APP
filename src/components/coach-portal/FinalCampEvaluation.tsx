@@ -19,6 +19,7 @@ import { GRADUATION_RULES, type GraduationRule } from '@/lib/constants/graduatio
 import { OCEAN_LEVELS, OCEAN_LEVEL_INFO } from '@/lib/constants/ocean-levels';
 import { SequenceEvaluation } from '@/components/evaluation/SequenceEvaluation';
 import { groupBySequence, sequenceVerdict, isMethodSequence } from '@/lib/constants/learning-blocks';
+import { CIRCLE_SEQUENCES } from '@/lib/sequence-pages';
 
 interface Props {
   token: string;
@@ -195,8 +196,19 @@ export function FinalCampEvaluation({
     sequence_order: stp.wb_sequence_order ?? null,
     sequence_step_order: stp.sequence_step_order ?? null,
   }));
+  // Los Tres Círculos como tres filas más (Marcelo 2026-09-19): mismas
+  // estrellas que los pasos reales (Posture = STP-018, etc.), otra lente.
+  // Solo cuando el catálogo trae todos los pasos del círculo (Novice y arriba).
+  const circleRows = CIRCLE_SEQUENCES.flatMap((c, ci) => {
+    const rows = c.stepIds.map((id, i) => {
+      const base = catalogRows.find((r) => r.step_id === id);
+      return base ? { ...base, sequence_id: c.id, sequence_name: c.title, sequence_order: 90 + ci, sequence_step_order: i + 1 } : null;
+    });
+    return rows.every(Boolean) ? (rows as typeof catalogRows) : [];
+  });
+  const allRows = [...catalogRows, ...circleRows];
   // Las mismas secuencias que Let's Play: sin Foundation ni Closing (2026-09-10).
-  const seqGroups = groupBySequence(catalogRows).groups.filter((g) => isMethodSequence(g.id));
+  const seqGroups = groupBySequence(allRows).groups.filter((g) => isMethodSequence(g.id));
 
   // Veredicto en el idioma del coach: "9/13 secuencias · 2 sin evaluar".
   // La regla NO cambia — sigue siendo 4★ en cada parte — pero contarlo en
@@ -615,7 +627,7 @@ export function FinalCampEvaluation({
                         Es la misma pantalla que en la ficha del alumno: cerrar
                         un camp es solo uno de los momentos en que se corre. */}
                     <SequenceEvaluation
-                      rows={catalogRows}
+                      rows={allRows}
                       studentId={s.student_id}
                       portalToken={token}
                       campInstanceId={campInstanceId}

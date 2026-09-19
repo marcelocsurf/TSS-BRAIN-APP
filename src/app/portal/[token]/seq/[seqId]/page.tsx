@@ -6,7 +6,7 @@ import { getCourseLocks } from '@/lib/portal/course-lock';
 import { CourseLockedScreen } from '@/components/portal/CourseLockedScreen';
 import { sequenceSide } from '@/lib/constants/learning-blocks';
 import { isGoofy, boardFlip } from '@/lib/stance';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { COURSES } from '@/lib/constants/courses';
@@ -38,6 +38,8 @@ export default async function SequencePageRoute({ params, searchParams }: { para
   const initialTab = sp.tab === 'feel' || sp.tab === 'do' || sp.tab === 'review' || sp.tab === 'think' ? sp.tab : null;
   const cfg = sequencePageFor(seqId);
   if (!cfg || !UUID_RE.test(token)) notFound();
+  // Los círculos viven en su propia página (/circles), no en la de 4 pestañas.
+  if (cfg.kind === 'circle') redirect(`/portal/${token}/circles`);
 
   const admin = createAdminClient();
   const { data: student } = await admin

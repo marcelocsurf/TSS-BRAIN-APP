@@ -1137,7 +1137,7 @@ function CoursesTab({
         <p className="text-[12.5px] mb-3" style={{ color: 'rgba(247,249,250,.75)' }}>The same page your students open, with your layer on top: how you teach it, correct it and validate it. Switch it off to show the clean page on the beach.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {/* En orden de cinta y número: White 1–5 · Yellow 6–7 · Blue entrada (0) y 8–13. */}
-          {Object.values(SEQUENCE_PAGES).slice().sort((a, b) => {
+          {Object.values(SEQUENCE_PAGES).filter((c) => c.kind !== 'circle').sort((a, b) => {
             const belt = (k: string) => ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'].indexOf(k);
             return belt(a.belt) - belt(b.belt) || a.number - b.number || (a.eyebrow ?? '').localeCompare(b.eyebrow ?? '');
           }).map((sq) => (

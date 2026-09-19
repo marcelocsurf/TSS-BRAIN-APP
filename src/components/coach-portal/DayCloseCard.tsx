@@ -13,7 +13,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { StarRating } from '@/components/sequence/StarRating';
-import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { resolveSequenceForSteps } from '@/lib/sequence-pages/resolve';
@@ -55,8 +55,14 @@ export function daySequencesOf(
     const cfg = (b.sequence_id && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, student.belt_level ?? null);
     if (!cfg) continue;
     const seen = out.find((x) => x.cfg.id === cfg.id);
-    if (seen) { if (!seen.focusStepId && b.focus_step_id) { seen.focusStepId = b.focus_step_id; seen.focusTitle = stpLabel(b.focus_step_id); } continue; }
-    out.push({ cfg, order: b.order_index, focusStepId: b.focus_step_id ?? null, focusTitle: b.focus_step_id ? stpLabel(b.focus_step_id) : null });
+    const ft = b.focus_step_id ? elementTitle(cfg, b.focus_step_id, stpLabel(b.focus_step_id)) : null;
+    if (seen) {
+      // Dos bloques del mismo círculo (Posture y Rotation): los focos se suman en el rótulo.
+      if (b.focus_step_id && !seen.focusStepId) { seen.focusStepId = b.focus_step_id; seen.focusTitle = ft; }
+      else if (ft && seen.focusTitle && !seen.focusTitle.includes(ft)) seen.focusTitle = `${seen.focusTitle} · ${ft}`;
+      continue;
+    }
+    out.push({ cfg, order: b.order_index, focusStepId: b.focus_step_id ?? null, focusTitle: ft });
   }
   return out;
 }
@@ -152,7 +158,7 @@ export function DayCloseCard({
     onRateSequence(s.cfg.id, n);
   };
 
-  const stepsOf = (cfg: SequencePageConfig) => cfg.stepIds.map((id) => ({ id, title: stpLabel(id) ?? id }));
+  const stepsOf = (cfg: SequencePageConfig) => cfg.stepIds.map((id) => ({ id, title: elementTitle(cfg, id, stpLabel(id)) ?? id }));
 
   // "Aguantó": el foco sigue → próximo foco = el paso siguiente de la cadena
   // (o la línea completa si era el último / si el plan era la línea completa).

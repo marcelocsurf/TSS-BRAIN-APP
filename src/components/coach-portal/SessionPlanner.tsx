@@ -64,7 +64,7 @@ import { WeekPlanBoard } from '@/components/coach-portal/WeekPlanBoard';
 import { useRouter } from 'next/navigation';
 import { TidePlannerHint } from '@/components/camp/TidePlannerHint';
 import { coachFocusOptions, focusOptionsForSequence } from '@/lib/sequence-pages/focus-options';
-import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
@@ -1336,7 +1336,10 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             for (const st of students) { const b = beltOf(st.belt_level); if (b) counts.set(b, (counts.get(b) ?? 0) + 1); }
             const majority = Array.from(counts.entries()).sort((x, y) => y[1] - x[1])[0]?.[0] ?? null;
             const belt = beltOf(data.camp.target_belt) || majority || 'white';
-            const seqs = Object.values(SEQUENCE_PAGES).filter((c) => c.belt === `${belt}_belt`).sort((x, y) => (x.kind === 'entry' ? -1 : 0) - (y.kind === 'entry' ? -1 : 0) || x.number - y.number);
+            // Los Tres Círculos (secuencias 'circle') entran para Novice y arriba, primero: son la intro del lenguaje.
+            const circlesOk = ['yellow', 'blue', 'purple', 'brown', 'black'].includes(belt);
+            const kindRank = (c: SequencePageConfig) => (c.kind === 'circle' ? -2 : c.kind === 'entry' ? -1 : 0);
+            const seqs = Object.values(SEQUENCE_PAGES).filter((c) => c.kind === 'circle' ? circlesOk : c.belt === `${belt}_belt`).sort((x, y) => kindRank(x) - kindRank(y) || x.number - y.number);
             if (!seqs.length) return null;
             // La secuencia de CADA alumno (bloque 0): la de la plantilla o la que
             // puso el coach. La del grupo es la mayoría; un alumno puede quedarse
@@ -2972,9 +2975,9 @@ function workLabelOf(
   const txt = String(b.objective_text ?? '');
   const focusTxt = txt.startsWith('Focus: ') ? txt.slice(7) : null;
   const stepId = b.focus_step_id ?? tb?.focus_step_id ?? (Array.isArray(b.step_ids) && b.step_ids.length > 1 ? null : (b.step_id ?? tb?.step_id ?? null));
-  const stepTitle = stepId ? stpLabel(stepId) : null;
+  const stepTitle = stepId ? elementTitle(cfg, stepId, stpLabel(stepId)) : null;
   if (cfg) {
-    const seq = cfg.eyebrow ? `${cfg.eyebrow.split(' · ')[0]} · ${cfg.title}` : `Sequence ${sequenceDisplayName(cfg)}`;
+    const seq = cfg.kind === 'circle' ? cfg.title : cfg.eyebrow ? `${cfg.eyebrow.split(' · ')[0]} · ${cfg.title}` : `Sequence ${sequenceDisplayName(cfg)}`;
     if (focusTxt) return `${seq} · focus: ${focusTxt}`;
     if (stepTitle && !txt.startsWith('Whole line')) return `${seq} · ${stepTitle}`;
     return `${seq} · whole sequence`;

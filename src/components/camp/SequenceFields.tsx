@@ -8,7 +8,7 @@
 // plan del coach y el "Next class" del alumno: la base ya lo guardaba
 // (00209), solo faltaba poder elegirlo acá.
 
-import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { PLAN_TOPICS, topicsForBelt } from '@/lib/sequence-pages/topics';
@@ -61,7 +61,7 @@ export function SequenceFields({
   const cfg = seqId && seqId !== THREE_CIRCLES_SEQUENCE_ID && !isPair ? SEQUENCE_PAGES[seqId] ?? null : null;
   // "Tu lado" solo tiene sentido con las secuencias de Blue (pares FS/BS).
   const showPairs = !belt || BELT_ORDER.indexOf(belt) >= BELT_ORDER.indexOf('blue_belt');
-  const titleOf = (id: string) => catalog?.stps.find((s) => s.id === id)?.title ?? id;
+  const titleOf = (id: string) => elementTitle(cfg, id, catalog?.stps.find((s) => s.id === id)?.title ?? null) ?? id;
   const steps = cfg ? cfg.stepIds.map((id) => ({ id, title: titleOf(id) })) : [];
   const focus = block.focus_step_id ?? '';
   const moments = cfg && focus ? (momentsByStep(cfg.id, steps)[focus] ?? []) : [];
@@ -73,11 +73,13 @@ export function SequenceFields({
     if (isSidePair(id)) { onChange({ sequence_id: id, focus_step_id: null, focus_moments: null, step_id: null, step_ids: null, mission_id: null }); return; }
     const c = SEQUENCE_PAGES[id];
     // Línea completa por defecto: todos los pasos de la secuencia, sin paso único.
-    onChange({ sequence_id: id, focus_step_id: null, focus_moments: null, step_ids: c ? c.stepIds : null, step_id: null });
+    onChange({ sequence_id: id, focus_step_id: null, focus_moments: null, step_ids: c ? c.stepIds : null, step_id: null, ...(c?.kind === 'circle' ? { mission_id: null } : {}) });
   };
   const pickFocus = (id: string) => {
-    if (!id) { onChange({ focus_step_id: null, focus_moments: null, step_id: null, step_ids: cfg ? cfg.stepIds : block.step_ids ?? null }); return; }
-    onChange({ focus_step_id: id, focus_moments: null, step_id: id, step_ids: cfg ? cfg.stepIds : block.step_ids ?? null });
+    if (!id) { onChange({ focus_step_id: null, focus_moments: null, step_id: null, step_ids: cfg ? cfg.stepIds : block.step_ids ?? null, ...(cfg?.kind === 'circle' ? { mission_id: null } : {}) }); return; }
+    // Círculo: el elemento trae su juego (Do it) — no se elige aparte.
+    const game = cfg?.kind === 'circle' ? cfg.games?.[id] ?? null : undefined;
+    onChange({ focus_step_id: id, focus_moments: null, step_id: id, step_ids: cfg ? cfg.stepIds : block.step_ids ?? null, ...(game !== undefined ? { mission_id: game } : {}) });
   };
   const toggleMoment = (key: string) => {
     const next = chosenMoments.includes(key) ? chosenMoments.filter((k) => k !== key) : [...chosenMoments, key];
@@ -101,7 +103,7 @@ export function SequenceFields({
           <div>
             <label className={LBL} style={LBL_STYLE}>Focus</label>
             <select value={focus} onChange={(e) => pickFocus(e.target.value)} className={SEL}>
-              <option value="">Whole sequence · start to finish</option>
+              <option value="">{cfg.kind === 'circle' ? 'Whole circle · all its elements' : 'Whole sequence · start to finish'}</option>
               {steps.map((s, i) => <option key={s.id} value={s.id}>{i + 1} · {s.title}</option>)}
             </select>
           </div>
@@ -110,7 +112,10 @@ export function SequenceFields({
       {isPair && (
         <p className="text-[11px] text-[#55666E]">Decided per student when the camp is created: Regular → frontside, Goofy → backside (no stance in the profile → frontside). The whole line; the coach sets the focus per student in the plan.</p>
       )}
-      {cfg && !focus && (
+      {cfg && cfg.kind === 'circle' && (
+        <p className="text-[11px] text-[#55666E]">{focus ? `Element chosen · the game comes with it: ${THREE_CIRCLES_GAME_TITLES[cfg.games?.[focus] ?? ''] ?? '—'}.` : 'Pick the element (Focus) to work today; its game comes with it. Whole circle = all its games across the day.'}</p>
+      )}
+      {cfg && cfg.kind !== 'circle' && !focus && (
         <p className="text-[11px] text-[#55666E]">The student and the coach see “{seqTag(cfg)} · the whole line”. Pick a focus only when the day works one step of it.</p>
       )}
       {/* Tres Círculos: el bloque ES un juego (Marcelo 2026-09-19). Uno por

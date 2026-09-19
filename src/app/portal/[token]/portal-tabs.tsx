@@ -2087,7 +2087,8 @@ function HomeTab({
                   <div className={many ? 'mt-1 space-y-2.5' : 'mt-1'}>
                     {plansArr.map((pl: any, i: number) => {
                       const isGame = pl.kind === 'game';
-                      const seqHref = isGame ? `/portal/${data.token}/circles` : `/portal/${data.token}/seq/${pl.sequenceId}`;
+                      const isCircle = pl.kind === 'circle';
+                      const seqHref = isGame || isCircle ? `/portal/${data.token}/circles` : `/portal/${data.token}/seq/${pl.sequenceId}`;
                       const rehearseHref = `${seqHref}?tab=feel`;
                       return (
                         <div key={pl.sequenceId} className={many ? 'rounded-[5px] px-3 py-2.5' : ''} style={many ? { background: 'rgba(247,249,250,.06)', border: '1px solid rgba(247,249,250,.14)' } : undefined}>
@@ -2099,9 +2100,9 @@ function HomeTab({
                           {/* Durante el camp el entreno es CON el coach y lo califica el coach
                               (Marcelo 2026-09-19): el alumno estudia y ensaya en tierra, no
                               registra solo. Por eso el juego no tiene "Play it" acá. */}
-                          <div className={`mt-2.5 grid gap-2 ${isGame ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                          <div className={`mt-2.5 grid gap-2 ${isGame || isCircle ? 'grid-cols-1' : 'grid-cols-2'}`}>
                             <a href={seqHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: '#00D2FF', color: T_NAVY, fontFamily: ARCHIVO }}>Study it</a>
-                            {!isGame && <a href={rehearseHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.5)', fontFamily: ARCHIVO }}>Rehearse it on land</a>}
+                            {!isGame && !isCircle && <a href={rehearseHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.5)', fontFamily: ARCHIVO }}>Rehearse it on land</a>}
                           </div>
                         </div>
                       );

@@ -53,7 +53,9 @@ export interface SequencePageConfig {
   id: string;
   /** 'loop' (default) = secuencia de maniobra con tablero y pies; 'entry' =
    *  secuencia de entrada (bloques 1-3), sin tablero ni pies. */
-  kind?: 'loop' | 'entry';
+  kind?: 'loop' | 'entry' | 'circle';
+  /** Círculos de poder como secuencia (2026-09-19): paso → su juego (Do it). */
+  games?: Record<string, string>;
   /** Rótulo de arriba cuando no es "Sequence #n". */
   eyebrow?: string;
   belt: 'white_belt' | 'yellow_belt' | 'blue_belt' | 'purple_belt';

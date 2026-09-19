@@ -8,6 +8,7 @@ import { BB_SEQ_13 } from './bb-seq-13';
 import { BB_NAV, BB_CATCH, BB_LINE } from './bb-entry';
 import { YB_SEQ_6, YB_SEQ_7 } from './yb-seq';
 import { WB_SEQ_1, WB_SEQ_2, WB_SEQ_3, WB_SEQ_4, WB_SEQ_5 } from './wb-seq';
+import { CIRCLE_BODY, CIRCLE_BOARD, CIRCLE_WAVE } from './circles-seq';
 
 /** Secuencias que ya tienen la página de 4 pestañas. Se agregan de a una. */
 export const SEQUENCE_PAGES: Record<string, SequencePageConfig> = {
@@ -27,7 +28,14 @@ export const SEQUENCE_PAGES: Record<string, SequencePageConfig> = {
   [WB_SEQ_3.id]: WB_SEQ_3,
   [WB_SEQ_4.id]: WB_SEQ_4,
   [WB_SEQ_5.id]: WB_SEQ_5,
+  // Los Tres Círculos como secuencias (kind 'circle'): plantilla, plan,
+  // cierre y evaluación final los tratan como a cualquier secuencia; las
+  // listas de Let's Play y el resolvedor por pasos los excluyen.
+  [CIRCLE_BODY.id]: CIRCLE_BODY,
+  [CIRCLE_BOARD.id]: CIRCLE_BOARD,
+  [CIRCLE_WAVE.id]: CIRCLE_WAVE,
 };
+export { isCircleSequence, CIRCLE_SEQUENCES, elementTitle } from './circles-seq';
 
 export function sequencePageFor(sequenceId: string | null | undefined): SequencePageConfig | null {
   if (!sequenceId) return null;

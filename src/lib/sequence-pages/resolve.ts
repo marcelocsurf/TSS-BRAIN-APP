@@ -23,7 +23,8 @@ export function resolveSequenceForSteps(
     const beltScore = bi === myBelt ? 0 : bi < myBelt ? 1 + (myBelt - bi) : 10 + (bi - myBelt);
     return beltScore * 2 + (c.kind === 'entry' ? 1 : 0);
   };
-  const candidates = Object.values(SEQUENCE_PAGES).slice().sort((a, b) => rank(a) - rank(b));
+  // Los círculos comparten pasos con las secuencias reales: nunca se resuelven por pasos.
+  const candidates = Object.values(SEQUENCE_PAGES).filter((c) => c.kind !== 'circle').sort((a, b) => rank(a) - rank(b));
   const ids = Array.isArray(input.stepIds) ? input.stepIds.filter(Boolean) : [];
   if (ids.length > 0) {
     return (
