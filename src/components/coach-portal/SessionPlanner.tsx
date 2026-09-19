@@ -1017,15 +1017,12 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               const allEmpty = students.every((s) => s.blocks.length === 0 || s.blocks.every((b) => !b.step_id && !b.land_drill_id && !b.water_drill_id));
               if (data.templatePlan.length > 0 && allEmpty) {
                 return (
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-1">
-                      Template empty for day {data.selectedDay.day_number}
+                  <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-lg p-3">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-[#00A8CC] mb-1">
+                      Free day · day {data.selectedDay.day_number}
                     </p>
-                    <p className="text-[12px] text-amber-900 leading-snug">
-                      Open{' '}
-                      <span className="font-mono">/camps/templates</span> as Head
-                      Coach to define this day's blocks (STP + drill + mission)
-                      so future services arrive pre-planned for every student.
+                    <p className="text-[12px] text-[#10263B] leading-snug">
+                      This service has no pre-planned blocks: you plan it here. Pick the sequence of the day in the simple plan below, adjust per student, and the close sets tomorrow.
                     </p>
                   </div>
                 );
@@ -1453,7 +1450,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                           </div>
                           {differs && <p className="text-[10px] mt-0.5" style={{ color: '#9A6A12' }}>Stays on {seqLabel(mySeq)} while the group works {seqLabel(groupSeq)}.</p>}
                           {yesterday && !chosen.size && (
-                            <button type="button" onClick={() => setFocus(new Set([yesterday]))} className="mt-1 text-[11px] px-2.5 py-1 rounded-full" style={{ background: '#FFF8E7', color: '#9A6A12' }}>Yesterday's mission: {yesterday} → use it</button>
+                            <button type="button" onClick={() => setFocus(new Set([yesterday]))} className="mt-1 text-[11px] px-2.5 py-1 rounded-full" style={{ background: '#FFF8E7', color: '#9A6A12' }}>Last focus: {yesterday} → use it</button>
                           )}
                           <div className="flex flex-wrap gap-1.5 mt-1.5">
                             {mySeq.stepIds.flatMap((id) => (ms[id] ?? []).map((m) => {
