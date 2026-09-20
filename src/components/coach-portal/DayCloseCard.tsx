@@ -207,93 +207,10 @@ export function DayCloseCard({
     .filter((c) => BELT_ORDER.indexOf(c.belt) <= Math.max(myBelt, 0) + 1 && !seqs.some((s) => s.cfg.id === c.id))
     .sort((a, b) => BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) || (a.kind === 'entry' ? -1 : 0) - (b.kind === 'entry' ? -1 : 0) || a.number - b.number);
 
-  const StatusButtons = () => (
-    <div className="grid grid-cols-3 gap-1">
-      {([
-        { v: 'achieved', label: 'Achieved', bg: '#D1FAE5', fg: '#047857' },
-        { v: 'partial', label: 'Partial', bg: '#FEF3C7', fg: '#92400E' },
-        { v: 'not_yet', label: 'Not yet', bg: '#FEE2E2', fg: '#991B1B' },
-      ] as const).map((opt) => (
-        <button key={opt.v} type="button" disabled={isClosed} onClick={() => onCommit(genOrder, { day_objective_status: opt.v } as any)}
-          className="py-1.5 rounded-lg text-[11px] font-bold disabled:opacity-70"
-          style={gen?.day_objective_status === opt.v ? { background: opt.bg, color: opt.fg, boxShadow: 'inset 0 0 0 2px ' + opt.fg } : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }}>
-          {opt.label}
-        </button>
-      ))}
-    </div>
-  );
-
-  /** La secuencia como lista numerada (la misma que ve el alumno). */
-  const StepList = ({ s, interactive }: { s: DaySequence; interactive: boolean }) => {
-    const steps = stepsOf(s.cfg);
-    const ms = momentsByStep(s.cfg.id, steps);
-    return (
-      <ol className="mt-2 space-y-1">
-        {steps.map((st, i) => {
-          const isFocus = st.id === s.focusStepId;
-          const isBroken = interactive && openStep === st.id && savedSeqId === s.cfg.id && savedStepId === st.id;
-          const mine = ms[st.id] ?? [];
-          const row = (
-            <span className="flex items-start gap-2 text-[13px] leading-snug w-full text-left" style={{ color: isBroken ? '#7A1F1A' : isFocus ? '#061C2B' : '#55666E' }}>
-              <span className="shrink-0 w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center" style={isBroken ? { background: '#E0413B', color: '#fff' } : isFocus ? { background: '#FFD166', color: '#061C2B' } : { background: '#E9E2D2', color: '#55666E' }}>{i + 1}</span>
-              <span className={isFocus || isBroken ? 'font-bold' : ''}>{st.title}{isFocus ? ' · planned focus' : ''}{isBroken ? ' · broke here' : ''}</span>
-            </span>
-          );
-          return (
-            <li key={st.id}>
-              {interactive ? (
-                <button type="button" disabled={isClosed} onClick={() => pickStep(s, st.id, st.title)} className="w-full rounded-[4px] px-1 py-0.5 disabled:opacity-70" style={isBroken ? { background: 'rgba(224,65,59,.10)' } : undefined}>{row}</button>
-              ) : row}
-              {/* GO DEEPER (Marcelo 2026-09-19): la misma profundidad que Let's Play.
-                  1) qué se ve cuando falla y el cue, de la página de la secuencia;
-                  2) los criterios de la misión del paso, Met / Partial / Not met
-                  (coach_criterion_evals): lo flojo se vuelve la frase del foco. */}
-              {interactive && isBroken && mine.length > 0 && (
-                <div className="ml-7 mt-1.5 mb-1 rounded-[4px] px-2.5 py-2" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
-                  <p className="text-[10px] font-mono uppercase tracking-[0.12em]" style={{ color: '#00A8CC' }}>What you see · the cue</p>
-                  {mine.map((m) => (
-                    <div key={m.key} className="mt-1">
-                      {mine.length > 1 && <p className="text-[12px] font-bold text-[#10263B]">{m.short}</p>}
-                      {m.symptom && <p className="text-[12px] text-[#10263B]"><span className="text-[#55666E]">See:</span> {m.symptom}</p>}
-                      {m.indicators.filter((i) => i.fix).slice(0, 2).map((i, k) => <p key={k} className="text-[12px] text-[#10263B]"><span className="text-[#55666E]">Cue:</span> {i.fix}</p>)}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {interactive && isBroken && token && (
-                <div className="ml-7 mt-1 mb-1">
-                  <StepDetailToggle
-                    studentId={student.student_id}
-                    stepId={st.id}
-                    portalToken={token}
-                    campInstanceId={campInstanceId}
-                    onFocusSaved={(f) => { if (f) { setNoteDraft(f); const full = [main || `${seqTag(s.cfg)} · ${st.title}`, f].filter(Boolean).join(NOTE_SEP); onCommit(genOrder, { whats_next: full } as any); } }}
-                  />
-                </div>
-              )}
-              {interactive && isBroken && momentsAddInfo(mine, st.title) && (
-                <div className="ml-7 mt-1 mb-1">
-                  <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#55666E]">Which moment of that step? · optional · sharpens the focus</p>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {mine.map((m) => {
-                      const on = main === `${seqTag(s.cfg)} · ${st.title} · ${m.short}`;
-                      return (
-                        <button key={m.key} type="button" aria-pressed={on} disabled={isClosed} onClick={() => pickMoment(s, st.id, st.title, on ? null : m.short)}
-                          className="px-2.5 py-1 rounded-full text-[11px] font-semibold border disabled:opacity-70"
-                          style={on ? { background: '#E0A62B', borderColor: '#E0A62B', color: '#061C2B' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
-                          {m.short}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-    );
-  };
+  // Contexto para la lista de pasos (componente de nivel superior: si se
+  // definiera adentro, React lo desmontaría en cada render y "Ver detalles"
+  // se cerraría solo — bug visto el 2026-09-19).
+  const stepCtx: StepCtx = { isClosed, openStep, savedSeqId, savedStepId, main, stepsOf, pickStep, pickMoment, token, campInstanceId, studentId: student.student_id, onFocusSaved: (st, f) => { if (f) { setNoteDraft(f); const full = [main || `${seqTag(st.cfg)} · ${st.title}`, f].filter(Boolean).join(NOTE_SEP); onCommit(genOrder, { whats_next: full } as any); } } };
 
   return (
     <div className="bg-[#E9E2D2] rounded-[8px] border border-[#DCD7C6] p-3 space-y-2.5">
@@ -342,7 +259,7 @@ export function DayCloseCard({
             {verdict === 'broke' && (
               <div className="mt-2.5">
                 <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#55666E]">Where did it break? · tap the step · it becomes the next focus</p>
-                <StepList s={s} interactive />
+                <StepListView s={s} interactive ctx={stepCtx} />
               </div>
             )}
             {verdict === 'held' && (
@@ -353,7 +270,7 @@ export function DayCloseCard({
             {verdict === null && !isClosed && (
               <details className="mt-2">
                 <summary className="text-[11px] text-[#55666E] cursor-pointer">See the steps of this sequence</summary>
-                <StepList s={s} interactive={false} />
+                <StepListView s={s} interactive={false} ctx={stepCtx} />
               </details>
             )}
           </div>
@@ -364,7 +281,7 @@ export function DayCloseCard({
       {seqs.length === 0 && (
         <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] p-2.5 space-y-1.5">
           <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Did they meet today&apos;s objective?</p>
-          <StatusButtons />
+          <StatusButtons value={gen?.day_objective_status ?? null} disabled={isClosed} onPick={(v) => onCommit(genOrder, { day_objective_status: v } as any)} />
         </div>
       )}
 
@@ -444,7 +361,7 @@ export function DayCloseCard({
           {seqs.length > 0 && (
             <div>
               <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Objective of the day (set by the star, change if needed)</p>
-              <StatusButtons />
+              <StatusButtons value={gen?.day_objective_status ?? null} disabled={isClosed} onPick={(v) => onCommit(genOrder, { day_objective_status: v } as any)} />
             </div>
           )}
           <div>
@@ -484,5 +401,105 @@ export function DayCloseCard({
         </details>
       )}
     </div>
+  );
+}
+
+type StepCtx = {
+  isClosed: boolean; openStep: string | null; savedSeqId: string | null; savedStepId: string | null; main: string;
+  stepsOf: (cfg: SequencePageConfig) => { id: string; title: string }[];
+  pickStep: (s: DaySequence, id: string, title: string) => void;
+  pickMoment: (s: DaySequence, stepId: string, stepTitle: string, short: string | null) => void;
+  token: string | null; campInstanceId: string | null; studentId: string;
+  onFocusSaved: (s: { cfg: SequencePageConfig; title: string }, f: string | null) => void;
+};
+
+function StatusButtons({ value, disabled, onPick }: { value: string | null; disabled: boolean; onPick: (v: 'achieved' | 'partial' | 'not_yet') => void }) {
+  return (
+    <div className="grid grid-cols-3 gap-1">
+      {([
+        { v: 'achieved', label: 'Achieved', bg: '#D1FAE5', fg: '#047857' },
+        { v: 'partial', label: 'Partial', bg: '#FEF3C7', fg: '#92400E' },
+        { v: 'not_yet', label: 'Not yet', bg: '#FEE2E2', fg: '#991B1B' },
+      ] as const).map((opt) => (
+        <button key={opt.v} type="button" disabled={disabled} onClick={() => onPick(opt.v)}
+          className="py-1.5 rounded-lg text-[11px] font-bold disabled:opacity-70"
+          style={value === opt.v ? { background: opt.bg, color: opt.fg, boxShadow: 'inset 0 0 0 2px ' + opt.fg } : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }}>
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** La secuencia como lista numerada (la misma que ve el alumno). */
+function StepListView({ s, interactive, ctx }: { s: DaySequence; interactive: boolean; ctx: StepCtx }) {
+  const { isClosed, openStep, savedSeqId, savedStepId, main, stepsOf, pickStep, pickMoment, token, campInstanceId, studentId, onFocusSaved } = ctx;
+  const steps = stepsOf(s.cfg);
+  const ms = momentsByStep(s.cfg.id, steps);
+  return (
+    <ol className="mt-2 space-y-1">
+      {steps.map((st, i) => {
+        const isFocus = st.id === s.focusStepId;
+        const isBroken = interactive && openStep === st.id && savedSeqId === s.cfg.id && savedStepId === st.id;
+        const mine = ms[st.id] ?? [];
+        const row = (
+          <span className="flex items-start gap-2 text-[13px] leading-snug w-full text-left" style={{ color: isBroken ? '#7A1F1A' : isFocus ? '#061C2B' : '#55666E' }}>
+            <span className="shrink-0 w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center" style={isBroken ? { background: '#E0413B', color: '#fff' } : isFocus ? { background: '#FFD166', color: '#061C2B' } : { background: '#E9E2D2', color: '#55666E' }}>{i + 1}</span>
+            <span className={isFocus || isBroken ? 'font-bold' : ''}>{st.title}{isFocus ? ' · planned focus' : ''}{isBroken ? ' · broke here' : ''}</span>
+          </span>
+        );
+        return (
+          <li key={st.id}>
+            {interactive ? (
+              <button type="button" disabled={isClosed} onClick={() => pickStep(s, st.id, st.title)} className="w-full rounded-[4px] px-1 py-0.5 disabled:opacity-70" style={isBroken ? { background: 'rgba(224,65,59,.10)' } : undefined}>{row}</button>
+            ) : row}
+            {/* GO DEEPER (Marcelo 2026-09-19): la misma profundidad que Let's Play.
+                1) qué se ve cuando falla y el cue, de la página de la secuencia;
+                2) los criterios de la misión del paso, Met / Partial / Not met
+                (coach_criterion_evals): lo flojo se vuelve la frase del foco. */}
+            {interactive && isBroken && mine.length > 0 && (
+              <div className="ml-7 mt-1.5 mb-1 rounded-[4px] px-2.5 py-2" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
+                <p className="text-[10px] font-mono uppercase tracking-[0.12em]" style={{ color: '#00A8CC' }}>What you see · the cue</p>
+                {mine.map((m) => (
+                  <div key={m.key} className="mt-1">
+                    {mine.length > 1 && <p className="text-[12px] font-bold text-[#10263B]">{m.short}</p>}
+                    {m.symptom && <p className="text-[12px] text-[#10263B]"><span className="text-[#55666E]">See:</span> {m.symptom}</p>}
+                    {m.indicators.filter((i) => i.fix).slice(0, 2).map((i, k) => <p key={k} className="text-[12px] text-[#10263B]"><span className="text-[#55666E]">Cue:</span> {i.fix}</p>)}
+                  </div>
+                ))}
+              </div>
+            )}
+            {interactive && isBroken && token && (
+              <div className="ml-7 mt-1 mb-1">
+                <StepDetailToggle
+                  studentId={studentId}
+                  stepId={st.id}
+                  portalToken={token}
+                  campInstanceId={campInstanceId}
+                  onFocusSaved={(f) => onFocusSaved({ cfg: s.cfg, title: st.title }, f)}
+                />
+              </div>
+            )}
+            {interactive && isBroken && momentsAddInfo(mine, st.title) && (
+              <div className="ml-7 mt-1 mb-1">
+                <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#55666E]">Which moment of that step? · optional · sharpens the focus</p>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {mine.map((m) => {
+                    const on = main === `${seqTag(s.cfg)} · ${st.title} · ${m.short}`;
+                    return (
+                      <button key={m.key} type="button" aria-pressed={on} disabled={isClosed} onClick={() => pickMoment(s, st.id, st.title, on ? null : m.short)}
+                        className="px-2.5 py-1 rounded-full text-[11px] font-semibold border disabled:opacity-70"
+                        style={on ? { background: '#E0A62B', borderColor: '#E0A62B', color: '#061C2B' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
+                        {m.short}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </li>
+        );
+      })}
+    </ol>
   );
 }
