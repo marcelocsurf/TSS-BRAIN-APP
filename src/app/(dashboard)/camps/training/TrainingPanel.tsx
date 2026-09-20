@@ -15,6 +15,9 @@ const OPTIONS: { key: ScenarioKey; label: string }[] = [
   { key: 'camp_wb3', label: 'Beginner v3' },
   { key: 'camp_yb3', label: 'Novice v3' },
   { key: 'camp_bb3', label: 'Foundation v3' },
+  { key: 'camp_wb_old', label: 'Beginner (actual)' },
+  { key: 'camp_yb_old', label: 'Novice (actual)' },
+  { key: 'camp_bb_old', label: 'Foundation (actual)' },
   { key: 'lesson', label: 'Clase de surf' },
   { key: 'skate', label: 'Clase de skate' },
 ];

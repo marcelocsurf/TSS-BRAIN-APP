@@ -11,7 +11,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { createCampInstance } from '@/lib/actions/camps';
 
-export type ScenarioKey = 'camp_wb' | 'camp_yb' | 'camp_bb' | 'camp_wb3' | 'camp_yb3' | 'camp_bb3' | 'lesson' | 'skate';
+export type ScenarioKey = 'camp_wb' | 'camp_yb' | 'camp_bb' | 'camp_wb3' | 'camp_yb3' | 'camp_bb3' | 'camp_wb_old' | 'camp_yb_old' | 'camp_bb_old' | 'lesson' | 'skate';
 
 const SCENARIOS: Record<ScenarioKey, { template_id: string; label: string; days: number; time: string; modality: 'group' }> = {
   camp_wb: { template_id: 'SVC-CAMP-WB-V2', label: 'Surf Camp Beginner · 6 días', days: 6, time: '08:00', modality: 'group' },
@@ -20,6 +20,10 @@ const SCENARIOS: Record<ScenarioKey, { template_id: string; label: string; days:
   camp_wb3: { template_id: 'SVC-CAMP-WB-V3', label: 'Surf Camp Beginner v3 · 6 días', days: 6, time: '08:00', modality: 'group' },
   camp_yb3: { template_id: 'SVC-CAMP-YB-V3', label: 'Surf Camp Novice v3 · 6 días', days: 6, time: '08:00', modality: 'group' },
   camp_bb3: { template_id: 'SVC-CAMP-BB-V3', label: 'Surf Camp Foundation v3 · 6 días', days: 6, time: '08:00', modality: 'group' },
+  // Las plantillas ORIGINALES que usan los coaches hoy (para comparar).
+  camp_wb_old: { template_id: 'SVC-CAMP-BEG', label: 'Surf Camp Beginner (actual) · 6 días', days: 6, time: '08:00', modality: 'group' },
+  camp_yb_old: { template_id: 'SVC-CAMP-NOV', label: 'Surf Camp Novice (actual) · 6 días', days: 6, time: '08:00', modality: 'group' },
+  camp_bb_old: { template_id: 'SVC-CAMP-FOUND-BB', label: 'Surf Camp Foundation (actual) · 6 días', days: 6, time: '08:00', modality: 'group' },
   lesson: { template_id: 'SVC-SL2', label: 'Clase de surf', days: 1, time: '14:00 - 15:30', modality: 'group' },
   skate: { template_id: 'SVC-SKATE-1', label: 'Clase de skate', days: 1, time: '16:00 - 17:00', modality: 'group' },
 };
