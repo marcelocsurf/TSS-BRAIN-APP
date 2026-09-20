@@ -363,7 +363,33 @@ async function handle(req: NextRequest) {
   } catch (e) { console.error('[daily-reminders] student reminder section failed', e); }
   if (studentReminders) console.log(`[daily-reminders] student reminders: ${studentReminders}`);
 
+  // ── Clases vacías que ya pasaron → se cancelan solas (Marcelo 2026-09-19).
+  // Un servicio cuyo último día ya pasó, sin alumnos activos y sin ningún día
+  // cerrado, no existió: cancelarlo saca el ruido de la agenda, del "Needs
+  // closing" y de los recordatorios. Nunca toca servicios con inscritos o con
+  // algún cierre hecho.
+  let autoCancelled = 0;
+  try {
+    const svToday = svNow.toISOString().slice(0, 10);
+    const { data: past } = await admin
+      .from('camp_instances')
+      .select('id, camp_name, notes, camp_participants(enrollment_status), camp_sessions(session_status)')
+      .lt('end_date', svToday)
+      .in('status', ['planned', 'active', 'draft'])
+      .eq('is_test', false);
+    const empty = ((past as any[]) ?? []).filter((c) =>
+      !(c.camp_participants ?? []).some((p: any) => p.enrollment_status === 'active') &&
+      !(c.camp_sessions ?? []).some((s: any) => s.session_status === 'completed'));
+    for (const c of empty) {
+      const note = `Auto-cancelled ${svToday} · no students enrolled by the end date`;
+      const { error } = await admin.from('camp_instances').update({ status: 'cancelled', notes: [c.notes as string | null, note].filter(Boolean).join(' · ') }).eq('id', c.id);
+      if (!error) autoCancelled++;
+    }
+    if (autoCancelled) console.log(`[daily-reminders] auto-cancelled empty past services: ${autoCancelled}`);
+  } catch (e) { console.error('[daily-reminders] auto-cancel section failed', e); }
+
   return NextResponse.json({
+    autoCancelled,
     closureRun,
     ok: true,
     date: today,
