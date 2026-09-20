@@ -94,14 +94,16 @@ export async function grantBookAccess(input: {
   const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
   const portalUrl = `${base}/portal/${student.portal_token}`;
 
-  // Email de entrega — nunca bloquea el grant, y tampoco la respuesta: la
-  // persona ya tiene el libro en su portal; el correo es la forma de volver.
-  // (2026-09-07: esperar a Resend sumaba ~1 s antes del redirect.)
-  void sendBookDeliveryEmail({
-    email,
-    firstName: student.first_name || firstName,
-    portalUrl,
-  }).catch((e) => console.error('[grantBookAccess] delivery email failed', e));
+  // Email de entrega — es la forma de VOLVER al libro (el link de regalo es de
+  // un solo uso). 2026-09-20: se esperaba con `void` y en Vercel la función
+  // se congela al responder, así que el correo muchas veces no salía y la
+  // gente "no podía abrir el libro" al día siguiente. Ahora se espera, con
+  // tope de 8 s para no colgar el redirect; si falla, queda en el log.
+  const emailResult = await Promise.race([
+    sendBookDeliveryEmail({ email, firstName: student.first_name || firstName, portalUrl }).catch((e) => ({ success: false, error: String(e?.message ?? e) })),
+    new Promise<{ success: boolean; error?: string }>((resolve) => setTimeout(() => resolve({ success: false, error: 'timeout 8s' }), 8000)),
+  ]);
+  if (!emailResult.success) console.error('[grantBookAccess] delivery email failed', email, (emailResult as any).error);
 
   console.log(`[book-purchase] granted · ${email} · source=${input.source ?? '?'}`);
   return { ok: true, portal_url: portalUrl, student_id: student.id };
