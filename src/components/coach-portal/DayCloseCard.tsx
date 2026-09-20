@@ -13,6 +13,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { StarRating } from '@/components/sequence/StarRating';
+import { StepDetailToggle } from '@/components/evaluation/StepDetailToggle';
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
@@ -99,6 +100,8 @@ export function DayCloseCard({
   onCommit,
   onRateSequence,
   onCarry,
+  token = null,
+  campInstanceId = null,
 }: {
   student: ServicePlanStudent;
   isClosed: boolean;
@@ -109,6 +112,9 @@ export function DayCloseCard({
   onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
   onRateSequence: (sequenceId: string, rating: number) => void;
   onCarry: (sequenceId: string | null) => Promise<string | null>;
+  /** Para "Go deeper": los criterios de la misión del paso (coach_criterion_evals). */
+  token?: string | null;
+  campInstanceId?: string | null;
 }) {
   const blocks = student.blocks;
   const gen = (blocks.find((b) => b.order_index === 0) ?? blocks[0] ?? null) as ServicePlanBlock | null;
@@ -238,6 +244,33 @@ export function DayCloseCard({
               {interactive ? (
                 <button type="button" disabled={isClosed} onClick={() => pickStep(s, st.id, st.title)} className="w-full rounded-[4px] px-1 py-0.5 disabled:opacity-70" style={isBroken ? { background: 'rgba(224,65,59,.10)' } : undefined}>{row}</button>
               ) : row}
+              {/* GO DEEPER (Marcelo 2026-09-19): la misma profundidad que Let's Play.
+                  1) qué se ve cuando falla y el cue, de la página de la secuencia;
+                  2) los criterios de la misión del paso, Met / Partial / Not met
+                  (coach_criterion_evals): lo flojo se vuelve la frase del foco. */}
+              {interactive && isBroken && mine.length > 0 && (
+                <div className="ml-7 mt-1.5 mb-1 rounded-[4px] px-2.5 py-2" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
+                  <p className="text-[10px] font-mono uppercase tracking-[0.12em]" style={{ color: '#00A8CC' }}>What you see · the cue</p>
+                  {mine.map((m) => (
+                    <div key={m.key} className="mt-1">
+                      {mine.length > 1 && <p className="text-[12px] font-bold text-[#10263B]">{m.short}</p>}
+                      {m.symptom && <p className="text-[12px] text-[#10263B]"><span className="text-[#55666E]">See:</span> {m.symptom}</p>}
+                      {m.indicators.filter((i) => i.fix).slice(0, 2).map((i, k) => <p key={k} className="text-[12px] text-[#10263B]"><span className="text-[#55666E]">Cue:</span> {i.fix}</p>)}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {interactive && isBroken && token && (
+                <div className="ml-7 mt-1 mb-1">
+                  <StepDetailToggle
+                    studentId={student.student_id}
+                    stepId={st.id}
+                    portalToken={token}
+                    campInstanceId={campInstanceId}
+                    onFocusSaved={(f) => { if (f) { setNoteDraft(f); const full = [main || `${seqTag(s.cfg)} · ${st.title}`, f].filter(Boolean).join(NOTE_SEP); onCommit(genOrder, { whats_next: full } as any); } }}
+                  />
+                </div>
+              )}
               {interactive && isBroken && momentsAddInfo(mine, st.title) && (
                 <div className="ml-7 mt-1 mb-1">
                   <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#55666E]">Which moment of that step? · optional · sharpens the focus</p>

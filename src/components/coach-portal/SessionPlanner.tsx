@@ -1667,6 +1667,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   profile={<StudentProfilePanel student={s} onSaveNote={(note) => saveInternalNote(s.student_id, note)} />}
                   onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
                   onRateSequence={(seqId, rating) => rateSequenceInline(s.student_id, seqId, rating)}
+                  token={token}
+                  campInstanceId={data.camp.id}
                   onCarry={async (seqId) => {
                     const r = await carryStudentPlanToNextDay(token, data.selectedDay.camp_session_id, s.student_id, { sequenceId: seqId });
                     if (!r.ok) { alert(r.error || 'Could not set tomorrow.'); return null; }
