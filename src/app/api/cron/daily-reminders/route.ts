@@ -259,19 +259,29 @@ async function handle(req: NextRequest) {
     const weekAgo = new Date(svNow.getTime() - 6 * 86400000).toISOString().slice(0, 10);
     const { data: openSes } = await admin
       .from('camp_sessions')
-      .select('id, session_date, session_status, closure_reminded_on, camp_instances:camp_instance_id!inner(camp_name, status, academy_id, coach_id, head_coach_id, head_coach_status, coaches:coach_id(id, display_name, email, portal_token), hc:head_coach_id(id, display_name, email, portal_token))')
+      .select('id, session_date, session_status, closure_reminded_on, camp_instances:camp_instance_id!inner(id, camp_name, status, academy_id, coach_id, head_coach_id, head_coach_status, coaches:coach_id(id, display_name, email, portal_token), hc:head_coach_id(id, display_name, email, portal_token))')
       .gte('session_date', weekAgo)
       .lte('session_date', svToday)
       .neq('session_status', 'completed')
       .eq('camp_instances.is_test', false);
+    // Un servicio SIN alumnos activos no tiene nada que cerrar: no se recuerda
+    // (Stanley 2026-09-19: le llegaba el aviso de un Ice Bath vacío).
+    const instIds = Array.from(new Set(((openSes as any[]) ?? []).map((x: any) => (Array.isArray(x.camp_instances) ? x.camp_instances[0] : x.camp_instances)?.id).filter(Boolean)));
+    const activeByInst = new Map<string, number>();
+    if (instIds.length) {
+      const { data: parts } = await admin.from('camp_participants').select('camp_instance_id').in('camp_instance_id', instIds).eq('enrollment_status', 'active');
+      for (const p of parts ?? []) activeByInst.set((p as any).camp_instance_id, (activeByInst.get((p as any).camp_instance_id) ?? 0) + 1);
+    }
     const byCoach = new Map<string, { name: string; email: string; token: string; academyId: string | null; pending: { service: string; date: string }[]; sessionIds: string[] }>();
     for (const ses of (openSes as any[]) ?? []) {
       // Idempotencia: si ya se recordó HOY esta sesión, no reenviar en esta
       // corrida (evita doble envío por reintento del cron o disparo manual).
       // Al día siguiente vuelve a ser elegible si sigue abierta (nag diario).
       if (ses.closure_reminded_on === svToday) continue;
+      if (ses.session_status === 'cancelled') continue;
       const inst = Array.isArray(ses.camp_instances) ? ses.camp_instances[0] : ses.camp_instances;
       if (!inst || inst.status === 'cancelled') continue;
+      if (!(activeByInst.get(inst.id) ?? 0)) continue;
       const useHead = inst.head_coach_id && inst.head_coach_status === 'accepted';
       const coach = useHead
         ? (Array.isArray(inst.hc) ? inst.hc[0] : inst.hc)
