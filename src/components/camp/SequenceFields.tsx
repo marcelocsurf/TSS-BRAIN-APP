@@ -9,6 +9,7 @@
 // (00209), solo faltaba poder elegirlo acá.
 
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
+import { sequenceElements } from '@/lib/sequence-pages/circles-seq';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { PLAN_TOPICS, topicsForBelt } from '@/lib/sequence-pages/topics';
@@ -62,7 +63,9 @@ export function SequenceFields({
   // "Tu lado" solo tiene sentido con las secuencias de Blue (pares FS/BS).
   const showPairs = !belt || BELT_ORDER.indexOf(belt) >= BELT_ORDER.indexOf('blue_belt');
   const titleOf = (id: string) => elementTitle(cfg, id, catalog?.stps.find((s) => s.id === id)?.title ?? null) ?? id;
-  const steps = cfg ? cfg.stepIds.map((id) => ({ id, title: titleOf(id) })) : [];
+  // Sub-elementos de un círculo de un paso (Board · Wave): se planean como pasos.
+  const steps = cfg ? sequenceElements(cfg, (id) => catalog?.stps.find((s) => s.id === id)?.title ?? null) : [];
+  const lessonOf = (id: string) => cfg?.elements?.find((e) => e.id === id)?.stepId ?? id;
   const focus = block.focus_step_id ?? '';
   const moments = cfg && focus ? (momentsByStep(cfg.id, steps)[focus] ?? []) : [];
   const chosenMoments = block.focus_moments ?? [];
@@ -78,8 +81,9 @@ export function SequenceFields({
   const pickFocus = (id: string) => {
     if (!id) { onChange({ focus_step_id: null, focus_moments: null, step_id: null, step_ids: cfg ? cfg.stepIds : block.step_ids ?? null, ...(cfg?.kind === 'circle' ? { mission_id: null } : {}) }); return; }
     // Círculo: el elemento trae su juego (Do it) — no se elige aparte.
-    const game = cfg?.kind === 'circle' ? cfg.games?.[id] ?? null : undefined;
-    onChange({ focus_step_id: id, focus_moments: null, step_id: id, step_ids: cfg ? cfg.stepIds : block.step_ids ?? null, ...(game !== undefined ? { mission_id: game } : {}) });
+    const lesson = lessonOf(id);
+    const game = cfg?.kind === 'circle' ? cfg.games?.[lesson] ?? null : undefined;
+    onChange({ focus_step_id: id, focus_moments: null, step_id: lesson, step_ids: cfg ? cfg.stepIds : block.step_ids ?? null, ...(game !== undefined ? { mission_id: game } : {}) });
   };
   const toggleMoment = (key: string) => {
     const next = chosenMoments.includes(key) ? chosenMoments.filter((k) => k !== key) : [...chosenMoments, key];

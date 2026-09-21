@@ -16,6 +16,7 @@
 import { useState, type ReactNode } from 'react';
 import { StarRating } from '@/components/sequence/StarRating';
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
+import { sequenceElements, isElementOf } from '@/lib/sequence-pages/circles-seq';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { resolveSequenceForSteps } from '@/lib/sequence-pages/resolve';
 import type { ServicePlanBlock, ServicePlanStudent } from '@/lib/actions/service-planner';
@@ -27,6 +28,14 @@ const STAR_LABEL: Record<number, string> = {
   4: 'Consistent · the sequence is theirs',
   5: 'Clean every time',
 };
+
+const FLOW = [
+  { n: 1, color: '#3B82F6', label: 'Bored' },
+  { n: 2, color: '#06B6D4', label: 'Easy' },
+  { n: 3, color: '#10B981', label: 'Optimal' },
+  { n: 4, color: '#F59E0B', label: 'Hard' },
+  { n: 5, color: '#EF4444', label: 'Frustrated' },
+] as const;
 
 export const seqTag = (c: SequencePageConfig) => (c.eyebrow ? c.title : `#${c.number} ${c.title}`);
 const seqTitle = (c: SequencePageConfig) => (c.eyebrow ? c.title : `Sequence #${c.number} · ${c.title}`);
@@ -103,7 +112,7 @@ export function deriveTomorrow(args: {
     .filter((x) => (x.star ?? 0) <= 3)
     .sort((a, b) => (a.star! - b.star!) || (b.s.order - a.s.order))[0];
   if (weak) {
-    const plannedFocus = weak.s.focusStepId && weak.s.cfg.stepIds.includes(weak.s.focusStepId) ? weak.s.focusStepId : null;
+    const plannedFocus = weak.s.focusStepId && isElementOf(weak.s.cfg, weak.s.focusStepId) ? weak.s.focusStepId : null;
     return { seqId: weak.s.cfg.id, stepId: brokenOf(weak.s) ?? plannedFocus, why: 'repeats' };
   }
   const plannedId = tomorrow?.planned?.sequence_id ?? null;
@@ -131,6 +140,7 @@ export function DayCloseCard({
   onCommit,
   onRateSequence,
   tomorrow = null,
+  campBelt = null,
 }: {
   student: ServicePlanStudent;
   isClosed: boolean;
@@ -142,6 +152,8 @@ export function DayCloseCard({
   /** rating null = borrar la estrella de hoy de esa secuencia ("se trabajó otra cosa"). */
   onRateSequence: (sequenceId: string, rating: number | null) => void;
   tomorrow?: TomorrowPlan;
+  /** Cinta del camp: el selector de "Change" llega hasta ella (+1), no solo hasta la del alumno. */
+  campBelt?: string | null;
 }) {
   const blocks = student.blocks;
   const gen = (blocks.find((b) => b.order_index === 0) ?? blocks[0] ?? null) as ServicePlanBlock | null;
@@ -172,7 +184,7 @@ export function DayCloseCard({
   });
   // "Change" a mano: la regla deja de sobrescribir la línea hasta "Reset to automatic".
   const [manual, setManual] = useState(false);
-  const stepsOf = (cfg: SequencePageConfig) => cfg.stepIds.map((id) => ({ id, title: elementTitle(cfg, id, stpLabel(id)) ?? id }));
+  const stepsOf = (cfg: SequencePageConfig) => sequenceElements(cfg, (id) => stpLabel(id));
   const stepTitleOf = (cfg: SequencePageConfig, id: string) => elementTitle(cfg, id, stpLabel(id)) ?? id;
 
   const derive = (o: { star?: [number, number]; broken?: Record<string, string | null> } = {}) =>
@@ -259,7 +271,7 @@ export function DayCloseCard({
     you: 'Set by you',
   };
 
-  const myBelt = BELT_ORDER.indexOf(String(student.belt_level ?? 'white_belt'));
+  const myBelt = Math.max(BELT_ORDER.indexOf(String(student.belt_level ?? 'white_belt')), BELT_ORDER.indexOf(String(campBelt ?? '')));
   const pickable = Object.values(SEQUENCE_PAGES)
     .filter((c) => c.id !== 'THREE-CIRCLES' && BELT_ORDER.indexOf(c.belt) <= Math.max(myBelt, 0) + 1)
     .sort((a, b) => BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) || (a.kind === 'entry' ? -1 : 0) - (b.kind === 'entry' ? -1 : 0) || a.number - b.number);
@@ -408,6 +420,24 @@ export function DayCloseCard({
           placeholder={seqs.length === 0 ? 'What to work on next' : 'Note for the student (optional)'}
           className="mt-2 w-full px-2.5 py-1.5 rounded-[4px] text-[12px] bg-[#0E2A40] text-[#F7F9FA] placeholder:text-[#7C8C94] border border-[#1E3A52] disabled:opacity-60"
         />
+      </div>
+
+      {/* FLOW · el termómetro del día (Marcelo 2026-09-21): una fila, opcional,
+          por alumno. Viaja a la sesión del alumno como coach_flow. */}
+      <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] px-2.5 py-2">
+        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Flow today · optional · was the demand right?</p>
+        <div className="grid grid-cols-5 gap-1">
+          {FLOW.map((opt) => {
+            const on = gen?.flow_channel === opt.n;
+            return (
+              <button key={opt.n} type="button" disabled={isClosed} aria-pressed={on} onClick={() => onCommit(genOrder, { flow_channel: on ? null : opt.n } as any)}
+                className="py-1.5 rounded-[5px] text-[10.5px] font-bold border disabled:opacity-70"
+                style={on ? { background: opt.color, borderColor: opt.color, color: '#fff' } : { background: '#fff', borderColor: '#DCD7C6', color: '#55666E' }}>
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Plegado: nota interna (no la ve el alumno). */}

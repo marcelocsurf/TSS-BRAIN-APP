@@ -12,6 +12,7 @@
 // require a Supabase auth session — the coach portal is token-based.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import { waterRuleBlocker } from '@/lib/constants/graduation';
 import { anyMedicalNote } from '@/lib/constants/medical';
 
@@ -302,7 +303,11 @@ export async function getCoachStudentDetail(
     lastBy = c?.display_name ?? null;
   }
   const nfSeq = (data as any).next_focus_sequence_id as string | null; const nfStep = (data as any).next_focus_step_id as string | null;
-  const nextFocusLabel = nfSeq || nfStep ? [nfSeq ? (seqName.get(nfSeq) ?? nfSeq) : null, nfStep ? (title.get(nfStep) ?? nfStep) : null].filter(Boolean).join(' · ') : null;
+  // Círculos y sub-elementos (2026-09-21) se nombran por el registro de secuencias, no por lessons.
+  const nfCfg = nfSeq ? SEQUENCE_PAGES[nfSeq] ?? null : null;
+  const nfSeqLabel = nfSeq ? (nfCfg ? (nfCfg.eyebrow ? nfCfg.title : `#${nfCfg.number} ${nfCfg.title}`) : (seqName.get(nfSeq) ?? nfSeq)) : null;
+  const nfStepLabel = nfStep ? (elementTitle(nfCfg, nfStep, title.get(nfStep) ?? null) ?? nfStep) : null;
+  const nextFocusLabel = nfSeq || nfStep ? [nfSeqLabel, nfStepLabel].filter(Boolean).join(' · ') : null;
   // Tarjeta de regreso: solo si hay historial y pasaron 14+ días.
   const ds = daysSince((data as any).last_session_date);
   let returning: CoachStudentDetail['returning'] = null;

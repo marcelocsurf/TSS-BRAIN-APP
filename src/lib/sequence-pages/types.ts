@@ -56,6 +56,10 @@ export interface SequencePageConfig {
   kind?: 'loop' | 'entry' | 'circle';
   /** Círculos de poder como secuencia (2026-09-19): paso → su juego (Do it). */
   games?: Record<string, string>;
+  /** Círculos de UN solo paso (Board, Wave · Marcelo 2026-09-21): los elementos
+   *  que se pueden planear o romper viven acá, con ids virtuales
+   *  ('CIRCLE-BOARD:P1'); stepId es la lección real detrás. */
+  elements?: { id: string; title: string; stepId: string }[];
   /** Rótulo de arriba cuando no es "Sequence #n". */
   eyebrow?: string;
   belt: 'white_belt' | 'yellow_belt' | 'blue_belt' | 'purple_belt';

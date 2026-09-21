@@ -46,6 +46,13 @@ export const CIRCLE_BOARD: SequencePageConfig = {
   title: 'Circle 2 · Board',
   stepIds: ['STP-035'],
   games: { 'STP-035': 'GAME-3C-BUTTON' },
+  // Lo que se planea y lo que se rompe en la tabla (Marcelo 2026-09-21).
+  elements: [
+    { id: 'CIRCLE-BOARD:P1', title: 'Back foot · P1 (tail)', stepId: 'STP-035' },
+    { id: 'CIRCLE-BOARD:P2', title: 'Back foot · P2 (centre)', stepId: 'STP-035' },
+    { id: 'CIRCLE-BOARD:P3', title: 'Back foot · P3 (forward)', stepId: 'STP-035' },
+    { id: 'CIRCLE-BOARD:FRONT', title: 'Front foot · centred', stepId: 'STP-035' },
+  ],
   think: {
     whatIs: { headline: 'How do I connect with my board so it becomes an extension of my body?', line: 'Where your back foot goes decides the line, the energy and the speed you can generate.', where: 'Before every turn.', whatFor: 'P1 for the tightest turns, P2 the default, P3 for speed.' },
     feet: { text: 'Three buttons on the board: P1 full tail, P2 neutral, P3 forward.', options: [{ back: 'P1', label: 'P1 · full tail', tradeoff: 'Maximum control, least speed.' }, { back: 'P2', label: 'P2 · neutral', tradeoff: 'Stability and speed. Your default.' }, { back: 'P3', label: 'P3 · forward', tradeoff: 'Acceleration and drive. Far less manoeuvrability.' }], rule: 'Press the button before anything else.', recommended: [] },
@@ -70,6 +77,12 @@ export const CIRCLE_WAVE: SequencePageConfig = {
   title: 'Circle 3 · Wave',
   stepIds: ['STP-033'],
   games: { 'STP-033': 'GAME-3C-POCKET-FOAM' },
+  // Lo que se rompe en la ola (Marcelo 2026-09-21).
+  elements: [
+    { id: 'CIRCLE-WAVE:SPEED', title: 'Lost speed', stepId: 'STP-033' },
+    { id: 'CIRCLE-WAVE:FAR', title: 'Too far from the pocket', stepId: 'STP-033' },
+    { id: 'CIRCLE-WAVE:FLAT', title: 'Went to the flat', stepId: 'STP-033' },
+  ],
   think: {
     whatIs: { headline: 'Where is the energy, and how do I use it?', line: 'Two energies: the pocket and the foam. Move away, come back, touch the foam without getting eaten, get back to the wall.', where: 'On the face, every wave.', whatFor: 'This is the general game: it makes you use the body and the board at once.' },
     bodyFromLesson: 'STP-033',
@@ -89,6 +102,22 @@ export function isCircleSequence(id: string | null | undefined): boolean { retur
 /** Nombre del ELEMENTO de un círculo para un paso (Posture, Rotation…); para
  *  secuencias normales devuelve el fallback (el título de la lección). */
 export function elementTitle(cfg: SequencePageConfig | null | undefined, stepId: string | null | undefined, fallback: string | null): string | null {
-  if (!cfg || cfg.kind !== 'circle' || !stepId) return fallback;
+  if (!cfg || !stepId) return fallback;
+  const sub = cfg.elements?.find((e) => e.id === stepId);
+  if (sub) return sub.title;
+  if (cfg.kind !== 'circle') return fallback;
   return cfg.details.find((d) => d.deeper?.lessonId === stepId)?.title ?? fallback;
+}
+
+/** Los elementos que se pueden planear o romper en una secuencia: los
+ *  sub-elementos de un círculo de un solo paso, o sus pasos. */
+export function sequenceElements(cfg: SequencePageConfig, titleOf: (stepId: string) => string | null): { id: string; title: string }[] {
+  if (cfg.elements?.length) return cfg.elements.map((e) => ({ id: e.id, title: e.title }));
+  return cfg.stepIds.map((id) => ({ id, title: elementTitle(cfg, id, titleOf(id)) ?? id }));
+}
+
+/** ¿Este id es un paso o un sub-elemento de la secuencia? */
+export function isElementOf(cfg: SequencePageConfig | null | undefined, id: string | null | undefined): boolean {
+  if (!cfg || !id) return false;
+  return cfg.stepIds.includes(id) || !!cfg.elements?.some((e) => e.id === id);
 }

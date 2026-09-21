@@ -67,6 +67,7 @@ import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { waterSequencesOfBlocks } from '@/lib/sequence-pages/day-sequences';
+import { sequenceElements, isElementOf } from '@/lib/sequence-pages/circles-seq';
 import { topicsForBelt } from '@/lib/sequence-pages/topics';
 import { gameContext } from '@/lib/sequence-pages/three-circles';
 import { isSidePair, sidePairLabel } from '@/lib/sequence-pages/side-pairs';
@@ -1449,7 +1450,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     {students.map((st) => {
                       const b0 = lineBlockOf(st);
                       const mySeq = seqOfStudent(st) ?? groupSeq;
-                      const focusId = b0?.focus_step_id && mySeq.stepIds.includes(b0.focus_step_id) ? b0.focus_step_id : null;
+                      const focusId = b0?.focus_step_id && isElementOf(mySeq, b0.focus_step_id) ? b0.focus_step_id : null;
                       const legacyFocus = !focusId && (b0?.objective_text ?? '').startsWith('Focus: ') ? String(b0?.objective_text).slice(7) : null;
                       const fromClose = /^Set at the close of day/i.test(b0?.notes_pre ?? '');
                       const differs = mySeq.id !== groupSeq.id;
@@ -1470,12 +1471,19 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                               <select value={focusId ?? ''} onChange={(e) => setFocusStep(st, mySeq, e.target.value || null)}
                                 className="px-2 py-1 border rounded-[5px] text-[11px] bg-white" style={{ borderColor: focusId ? '#E0A62B' : '#DCD7C6', color: '#061C2B' }} aria-label={`Focus for ${st.display_name}`}>
                                 <option value="">Whole line</option>
-                                {mySeq.stepIds.map((id, i) => <option key={id} value={id}>{i + 1} · {stepTitle(mySeq, id)}</option>)}
+                                {sequenceElements(mySeq, (id) => stpLabel(id)).map((el, i) => <option key={el.id} value={el.id}>{i + 1} · {el.title}</option>)}
                               </select>
                             </div>
                           </div>
                           {differs && <p className="text-[10px] mt-0.5" style={{ color: '#9A6A12' }}>Stays on {seqLabel(mySeq)} while the group works {seqLabel(groupSeq)}.</p>}
                           {legacyFocus && <p className="text-[10px] mt-0.5 text-[#55666E]">Focus: {legacyFocus}</p>}
+                          {/* Lo demás que la plantilla tiene hoy para este alumno (la línea de
+                              ayer se AGREGA, no pisa la misión): el cierre lo va a mostrar todo. */}
+                          {(() => {
+                            const others = waterSequencesOfBlocks(st.blocks as any, st.belt_level ?? null).filter((w) => w.order !== (b0?.order_index ?? -1) && w.cfg.id !== mySeq.id);
+                            if (!others.length) return null;
+                            return <p className="text-[10px] mt-0.5 text-[#55666E]">Also today: {others.map((w) => `${seqLabel(w.cfg)}${w.focusStepId ? ` · ${stepTitle(w.cfg, w.focusStepId)}` : ''}`).join(' · ')}</p>;
+                          })()}
                         </div>
                       );
                     })}
@@ -1673,6 +1681,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
                   onRateSequence={(seqId, rating) => rateSequenceInline(s.student_id, seqId, rating)}
                   tomorrow={data.tomorrow ? { day_number: data.tomorrow.day_number, planned: data.tomorrow.byStudent[s.student_id] ?? null, hasBlocks: !!data.tomorrow.hasBlocks?.[s.student_id] } : null}
+                  campBelt={data.camp.target_belt}
                 />
               ))}
             </div>

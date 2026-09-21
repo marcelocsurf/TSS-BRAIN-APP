@@ -1,5 +1,5 @@
 'use server';
-import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import { isSidePair, resolveSidePair } from '@/lib/sequence-pages/side-pairs';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { emailEnabled } from '@/lib/email-switch';
@@ -2512,6 +2512,7 @@ export async function closeServicePlan(
   const stepTitleCache: Record<string, string> = {};
   const stepTitleOf = async (id: string): Promise<string> => {
     if (stepTitleCache[id]) return stepTitleCache[id];
+    if (id.includes(':')) return (stepTitleCache[id] = id); // sub-elemento virtual: lo resuelve elementTitle
     const { data } = await admin.from('lessons').select('title').eq('id', id).maybeSingle();
     return (stepTitleCache[id] = (data as any)?.title ?? id);
   };
@@ -2531,7 +2532,10 @@ export async function closeServicePlan(
     if (!plannedFirst && nbs.length > 0) return;
     const differs = !plannedFirst || plannedFirst.cfg.id !== nf || (ns ?? null) !== (plannedFirst.focusStepId ?? null);
     if (!differs) return;
-    const planned = plannedFirst?.block ?? null;
+    // Misma secuencia que la plantilla → solo cambia el foco de ESE bloque.
+    // Otra secuencia → va al bloque 0 (se agrega); la misión de la plantilla
+    // no se pisa (Marcelo 2026-09-21: el repetir borró la postura del día 2).
+    const planned = plannedFirst && plannedFirst.cfg.id === nf ? plannedFirst.block : null;
     // Lo de hoy que se repite: el bloque de AGUA de esa secuencia (trae la misión / el juego).
     const seqIdOfBlock = (x: any) => {
       const c = (x.worked_sequence_id && SEQUENCE_PAGES[x.worked_sequence_id]) || (x.sequence_id && SEQUENCE_PAGES[x.sequence_id]) || resolveSequenceForSteps({ stepIds: x.step_ids, stepId: x.step_id }, belt);
@@ -2548,7 +2552,7 @@ export async function closeServicePlan(
       focus_step_id: ns,
       focus_moments: null,
       // Mismo formato que lee el plan simple ("Focus: <paso>" / "Whole line · #n").
-      objective_text: ns ? `Focus: ${await stepTitleOf(ns)}` : `Whole line · ${tagN}`,
+      objective_text: ns ? `Focus: ${elementTitle(cfgN, ns, await stepTitleOf(ns)) ?? ns}` : `Whole line · ${tagN}`,
       water_drill_id: sameAsToday?.water_drill_id ?? null,
       water_drill_custom: sameAsToday?.water_drill_custom ?? null,
       land_drill_id: sameAsToday?.land_drill_id ?? null,
@@ -2558,7 +2562,17 @@ export async function closeServicePlan(
     const target = planned ?? nbs.find((b: any) => b.order_index === 0) ?? null;
     // Sin misión de agua para copiar, tampoco se copia el drill de tierra: un
     // bloque solo de tierra no aparece en el cierre (daySequencesOf lo salta).
-    if (!patch.water_drill_id && !patch.water_drill_custom) { patch.land_drill_id = null; patch.land_drill_custom = null; }
+    if (!planned && !patch.water_drill_id && !patch.water_drill_custom) { patch.land_drill_id = null; patch.land_drill_custom = null; }
+    if (planned) {
+      // Misma secuencia que la plantilla: solo cambia el foco; los drills del
+      // bloque quedan, salvo el juego de un círculo, que sigue a su elemento.
+      delete patch.water_drill_id; delete patch.water_drill_custom; delete patch.land_drill_id; delete patch.land_drill_custom; delete patch.worked_sequence_id;
+      if (cfgN.games && ns) {
+        const el = cfgN.elements?.find((e) => e.id === ns);
+        const game = cfgN.games[ns] ?? (el ? cfgN.games[el.stepId] : undefined);
+        if (game) patch.water_drill_id = game;
+      }
+    }
     if (target) {
       const { error } = await admin.from('service_plan_blocks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', target.id);
       if (error) console.error('[close] tomorrow line update failed', error.message);
@@ -3612,7 +3626,7 @@ export async function getCampWeekMissionsByToken(
       if (landOnly) continue;
       const cfg = (b.sequence_id && b.sequence_id !== 'THREE-CIRCLES' && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, null);
       if (cfg || b.sequence_id === 'THREE-CIRCLES') {
-        const focus = b.focus_step_id ? stepTitle.get(b.focus_step_id) : null;
+        const focus = b.focus_step_id ? (elementTitle(cfg ?? null, b.focus_step_id, stepTitle.get(b.focus_step_id) ?? null) ?? null) : null;
         const label = cfg ? `${cfg.eyebrow ? cfg.title : `#${cfg.number} ${cfg.title}`}${focus ? ` · ${focus}` : ''}` : 'The Three Circles';
         if (!byStudent[b.student_id]) byStudent[b.student_id] = [];
         let entry = byStudent[b.student_id].find((e) => e.day === day);

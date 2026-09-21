@@ -498,12 +498,9 @@ export async function getStudentPortalData(token: string) {
         })()] : [];
         // El plan simple y el cierre escriben el texto "Focus: <paso>" Y el
         // paso estructurado (2026-09-21): el mismo título no se muestra dos veces.
-        const rawTitle = b.focus_step_id ? (stepTitle.get(b.focus_step_id) ?? '').toLowerCase() : '';
-        const textOnly = textFocus.filter((t) => {
-          const tl = t.toLowerCase();
-          if (rawTitle && tl === rawTitle) return false;
-          return !structFocus.some((s) => s.toLowerCase() === tl || s.toLowerCase().startsWith(`${tl} —`));
-        });
+        // Con foco estructurado, ese manda: el texto "Focus: …" es su espejo
+        // (y los títulos de elementos llevan " · " adentro: no se parten).
+        const textOnly = structFocus.length ? [] : textFocus;
         const focusAll = [...textOnly, ...structFocus];
         const existing = plans.find((p) => p.sequenceId === cfg.id);
         if (existing) {
