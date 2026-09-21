@@ -1423,7 +1423,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                       <button key={c.id} type="button" aria-pressed={on} onClick={() => pickSeq(c)}
                         className="px-3 py-2 rounded-full text-[12px] font-semibold border"
                         style={on ? { background: '#061C2B', borderColor: '#061C2B', color: '#F7F9FA' } : { background: '#fff', borderColor: '#d1d5db', color: '#061C2B' }}>
-                        {c.kind === 'entry' ? c.title : sequenceTag(c)}
+                        {seqLabel(c)}
                       </button>
                     );
                   })}
