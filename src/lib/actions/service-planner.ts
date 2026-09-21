@@ -49,6 +49,10 @@ export interface ServicePlanData {
   };
   // M153 — students whose official final evaluation is already saved.
   finalEvaluatedIds: string[];
+  /** Cierre en una línea (2026-09-20): lo que la plantilla ya tiene para
+   *  mañana, por alumno (la primera secuencia de agua del día siguiente).
+   *  null = no hay mañana. */
+  tomorrow?: { day_number: number; byStudent: Record<string, { sequence_id: string | null; focus_step_id: string | null }>; hasBlocks: Record<string, boolean> } | null;
   // M45 — list of all days (one camp_session per day) so the UI can render
   // a day picker. `selectedDay` is the day currently loaded in `plan` and
   // `students[].block` below.
@@ -311,6 +315,9 @@ export interface ServicePlanBlock {
   coach_sequence_rating?: number | null;
   next_focus_sequence_id?: string | null;
   next_focus_step_id?: string | null;
+  // Cierre en una línea (2026-09-20): "se trabajó otra cosa". La estrella
+  // califica ESTA secuencia cuando está; la planeada sigue en sequence_id.
+  worked_sequence_id?: string | null;
 }
 
 export interface ServicePlanStudent {
@@ -327,6 +334,30 @@ export interface ServicePlanStudent {
 }
 
 // ─── Load: plan + students + tools ─────────────────────────────────
+
+/**
+ * La primera secuencia de AGUA del día de un alumno, con la misma regla que
+ * daySequencesOf en el cierre: se saltan THREE-CIRCLES y los bloques solo de
+ * tierra; la secuencia sale de sequence_id o, en plantillas viejas, de los
+ * pasos; el foco se toma del primer bloque de esa secuencia que lo tenga
+ * (en v2 el bloque de tierra va antes que el de agua y no trae foco).
+ */
+function firstWaterSequenceOfDay(blocks: any[], belt: string | null): { cfg: import('@/lib/sequence-pages/types').SequencePageConfig; block: any; focusStepId: string | null } | null {
+  const sorted = [...(blocks ?? [])].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  for (const b of sorted) {
+    const landOnly = !!(b.land_drill_id || b.land_drill_custom) && !b.water_drill_id && !b.water_drill_custom && b.order_index !== 0;
+    if (landOnly) continue;
+    if (b.sequence_id === 'THREE-CIRCLES') continue;
+    const cfg = (b.sequence_id && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, belt);
+    if (!cfg) continue;
+    const withFocus = sorted.find((x) => {
+      const c = (x.sequence_id && SEQUENCE_PAGES[x.sequence_id]) || resolveSequenceForSteps({ stepIds: x.step_ids, stepId: x.step_id }, belt);
+      return c?.id === cfg.id && !!x.focus_step_id;
+    });
+    return { cfg, block: b, focusStepId: withFocus?.focus_step_id ?? null };
+  }
+  return null;
+}
 
 export async function getServicePlan(
   token: string,
@@ -648,9 +679,36 @@ export async function getServicePlan(
         coach_sequence_rating: b.coach_sequence_rating ?? null,
         next_focus_sequence_id: b.next_focus_sequence_id ?? null,
         next_focus_step_id: b.next_focus_step_id ?? null,
+        worked_sequence_id: b.worked_sequence_id ?? null,
       })),
     };
   });
+
+  // Cierre en una línea (2026-09-20): lo que la plantilla ya tiene para mañana,
+  // por alumno — la línea "Tomorrow" del cierre sale de acá cuando hoy fue 4★+.
+  let tomorrow: ServicePlanData['tomorrow'] = null;
+  {
+    const nextDay = daySummaries.filter((d) => d.day_number > selectedDay.day_number).sort((a, b) => a.day_number - b.day_number)[0];
+    if (nextDay) {
+      const { data: nb } = await admin
+        .from('service_plan_blocks')
+        .select('student_id, order_index, sequence_id, focus_step_id, step_id, step_ids, land_drill_id, land_drill_custom, water_drill_id, water_drill_custom')
+        .eq('camp_session_id', nextDay.camp_session_id)
+        .order('order_index');
+      const beltOf: Record<string, string | null> = {};
+      for (const st of students) beltOf[st.student_id] = st.belt_level;
+      const byStudentBlocks: Record<string, any[]> = {};
+      for (const b of nb ?? []) (byStudentBlocks[b.student_id] ??= []).push(b);
+      const byStudent: Record<string, { sequence_id: string | null; focus_step_id: string | null }> = {};
+      const hasBlocks: Record<string, boolean> = {};
+      for (const sid of Object.keys(byStudentBlocks)) {
+        hasBlocks[sid] = byStudentBlocks[sid].length > 0;
+        const first = firstWaterSequenceOfDay(byStudentBlocks[sid], beltOf[sid] ?? null);
+        if (first) byStudent[sid] = { sequence_id: first.cfg.id, focus_step_id: first.focusStepId };
+      }
+      tomorrow = { day_number: nextDay.day_number, byStudent, hasBlocks };
+    }
+  }
 
   // Coach's available drills (filtered by belt)
   const beltRank: Record<string, number> = {
@@ -821,6 +879,7 @@ export async function getServicePlan(
     selectedDay,
     students,
     finalEvaluatedIds,
+    tomorrow,
     availableDrills: availableDrills as any[],
     stpCatalog: (stpRows ?? []) as any[],
     graduationCatalog: (graduationUsesBlocks
@@ -1156,6 +1215,7 @@ export async function saveServicePlanBlock(
     coach_sequence_rating: number | null;
     next_focus_sequence_id: string | null;
     next_focus_step_id: string | null;
+    worked_sequence_id: string | null;
   }>
 ): Promise<void> {
   const admin = createAdminClient();
@@ -1239,6 +1299,7 @@ export async function saveServicePlanBlock(
     'coach_sequence_rating',
     'next_focus_sequence_id',
     'next_focus_step_id',
+    'worked_sequence_id',
   ] as const;
   const cleanPatch: Record<string, any> = {};
   for (const k of ALLOWED) {
@@ -2126,9 +2187,10 @@ export async function rateSequenceFromPortal(
   campSessionId: string,
   studentId: string,
   sequenceId: string,
-  rating: number,
+  /** null = borrar la estrella que este coach puso hoy a esos pasos ("se trabajó otra cosa", 2026-09-20). */
+  rating: number | null,
 ): Promise<{ ok: boolean; error?: string }> {
-  if (rating < 1 || rating > 5) return { ok: false, error: 'Rating must be 1-5.' };
+  if (rating !== null && (rating < 1 || rating > 5)) return { ok: false, error: 'Rating must be 1-5.' };
   const cfg = SEQUENCE_PAGES[sequenceId];
   if (!cfg) return { ok: false, error: 'Unknown sequence.' };
   const admin = createAdminClient();
@@ -2145,6 +2207,20 @@ export async function rateSequenceFromPortal(
   const { data: participant } = await admin.from('camp_participants').select('id').eq('camp_instance_id', session.camp_instance_id).eq('student_id', studentId).maybeSingle();
   if (!participant) return { ok: false, error: 'Student not enrolled in this service.' };
   const now = new Date().toISOString();
+  if (rating === null) {
+    // Solo lo que ESTE coach puso en las últimas horas: una estrella oficial
+    // vieja de otro camp no se toca.
+    const since = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
+    const { error } = await admin
+      .from('student_step_ratings')
+      .update({ coach_rating: null, coach_rated_at: null, coach_rated_by: null, last_updated: now })
+      .eq('student_id', studentId)
+      .in('step_id', cfg.stepIds)
+      .eq('coach_rated_by', coach.id)
+      .gte('coach_rated_at', since);
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  }
   const rows = cfg.stepIds.map((stepId) => ({ student_id: studentId, step_id: stepId, coach_rating: rating, coach_rated_at: now, coach_rated_by: coach.id, last_updated: now }));
   const { error } = await admin.from('student_step_ratings').upsert(rows, { onConflict: 'student_id,step_id' });
   if (error) return { ok: false, error: error.message };
@@ -2407,6 +2483,91 @@ export async function closeServicePlan(
     }
   } catch { /* best-effort */ }
 
+  // ═══ Cierre en una línea (Marcelo 2026-09-20) ═══
+  // La línea "Tomorrow" del cierre (next_focus_sequence_id + step del bloque 0)
+  // se vuelve el plan de mañana del alumno cuando difiere de lo que la
+  // plantilla ya tiene: repite por 1–3★, o el coach la cambió a mano. Mismo
+  // efecto que los viejos botones "Tomorrow · same / move on", sin tocarlos.
+  const { data: nextSess } = await admin
+    .from('camp_sessions')
+    .select('id, day_number')
+    .eq('camp_instance_id', sessionAny.camp_instance_id)
+    .gt('day_number', dayNo)
+    .order('day_number')
+    .limit(1)
+    .maybeSingle();
+  const nextBlocksByStudent: Record<string, any[]> = {};
+  // Un mañana ya cerrado (re-cierres fuera de orden) no se toca.
+  let nextClosed = false;
+  if (nextSess) {
+    const { data: np } = await admin.from('service_plans').select('completion_state').eq('camp_session_id', nextSess.id).maybeSingle();
+    nextClosed = (np as any)?.completion_state === 'closed';
+    const { data: nb } = await admin
+      .from('service_plan_blocks')
+      .select('id, student_id, order_index, sequence_id, focus_step_id, step_id, step_ids, land_drill_id, land_drill_custom, water_drill_id, water_drill_custom')
+      .eq('camp_session_id', nextSess.id)
+      .order('order_index');
+    for (const b of nb ?? []) (nextBlocksByStudent[b.student_id] ??= []).push(b);
+  }
+  const stepTitleCache: Record<string, string> = {};
+  const stepTitleOf = async (id: string): Promise<string> => {
+    if (stepTitleCache[id]) return stepTitleCache[id];
+    const { data } = await admin.from('lessons').select('title').eq('id', id).maybeSingle();
+    return (stepTitleCache[id] = (data as any)?.title ?? id);
+  };
+  const setTomorrowFromLine = async (studentId: string, firstBlock: any, studentBlocks: any[]) => {
+    if (!nextSess || nextClosed) return;
+    const nf: string | null = firstBlock.next_focus_sequence_id ?? null;
+    if (!nf || !SEQUENCE_PAGES[nf]) return;
+    const ns: string | null = firstBlock.next_focus_step_id ?? null;
+    const cfgN = SEQUENCE_PAGES[nf];
+    const nbs = nextBlocksByStudent[studentId] ?? [];
+    const belt: string | null = studById[studentId]?.belt_level ?? null;
+    // La misma regla que el cierre y que el mapa "tomorrow" del plan: la
+    // primera secuencia de AGUA de mañana (plantillas viejas resuelven por pasos).
+    const plannedFirst = firstWaterSequenceOfDay(nbs, belt);
+    // Mañana tiene bloques pero ninguno es una secuencia de agua (día de examen,
+    // teoría): ese día es así a propósito y no se pisa.
+    if (!plannedFirst && nbs.length > 0) return;
+    const differs = !plannedFirst || plannedFirst.cfg.id !== nf || (ns ?? null) !== (plannedFirst.focusStepId ?? null);
+    if (!differs) return;
+    const planned = plannedFirst?.block ?? null;
+    // Lo de hoy que se repite: el bloque de AGUA de esa secuencia (trae la misión / el juego).
+    const seqIdOfBlock = (x: any) => {
+      const c = (x.worked_sequence_id && SEQUENCE_PAGES[x.worked_sequence_id]) || (x.sequence_id && SEQUENCE_PAGES[x.sequence_id]) || resolveSequenceForSteps({ stepIds: x.step_ids, stepId: x.step_id }, belt);
+      return c?.id ?? null;
+    };
+    const sameAsToday = studentBlocks.find((x: any) => seqIdOfBlock(x) === nf && (x.water_drill_id || x.water_drill_custom))
+      ?? studentBlocks.find((x: any) => seqIdOfBlock(x) === nf) ?? null;
+    const tagN = cfgN.eyebrow ? cfgN.title : `#${cfgN.number} ${cfgN.title}`;
+    const patch: any = {
+      step_id: cfgN.stepIds[0] ?? null,
+      step_ids: cfgN.stepIds,
+      sequence_id: nf,
+      worked_sequence_id: null,
+      focus_step_id: ns,
+      focus_moments: null,
+      // Mismo formato que lee el plan simple ("Focus: <paso>" / "Whole line · #n").
+      objective_text: ns ? `Focus: ${await stepTitleOf(ns)}` : `Whole line · ${tagN}`,
+      water_drill_id: sameAsToday?.water_drill_id ?? null,
+      water_drill_custom: sameAsToday?.water_drill_custom ?? null,
+      land_drill_id: sameAsToday?.land_drill_id ?? null,
+      land_drill_custom: sameAsToday?.land_drill_custom ?? null,
+      notes_pre: `Set at the close of day ${dayNo}.`,
+    };
+    const target = planned ?? nbs.find((b: any) => b.order_index === 0) ?? null;
+    // Sin misión de agua para copiar, tampoco se copia el drill de tierra: un
+    // bloque solo de tierra no aparece en el cierre (daySequencesOf lo salta).
+    if (!patch.water_drill_id && !patch.water_drill_custom) { patch.land_drill_id = null; patch.land_drill_custom = null; }
+    if (target) {
+      const { error } = await admin.from('service_plan_blocks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', target.id);
+      if (error) console.error('[close] tomorrow line update failed', error.message);
+    } else {
+      const { error } = await admin.from('service_plan_blocks').insert({ camp_instance_id: sessionAny.camp_instance_id, camp_session_id: nextSess.id, student_id: studentId, order_index: 0, ...patch });
+      if (error) console.error('[close] tomorrow line insert failed', error.message);
+    }
+  };
+
   // 2. Idempotency — clear prior results for this camp_session.
   // OJO: NO borrar las SSR de alumnos ya Finished (short camp) — el re-cierre
   // no las reinserta (departed filtra sus blocks) y el link de su encuesta
@@ -2526,7 +2687,10 @@ export async function closeServicePlan(
     // no por el texto del primer bloque de la plantilla (salía el Kit).
     const seqTitles: string[] = [];
     for (const blk of studentBlocks as any[]) {
-      const cfg = (blk.sequence_id && blk.sequence_id !== 'THREE-CIRCLES' && SEQUENCE_PAGES[blk.sequence_id]) || resolveSequenceForSteps({ stepIds: blk.step_ids, stepId: blk.step_id }, stud?.belt_level ?? null);
+      // Cierre en una línea (2026-09-20): si el coach marcó "se trabajó otra
+      // cosa", la sesión se nombra por lo trabajado, no por lo planeado.
+      const seqIdOf = blk.worked_sequence_id ?? blk.sequence_id;
+      const cfg = (seqIdOf && seqIdOf !== 'THREE-CIRCLES' && SEQUENCE_PAGES[seqIdOf]) || resolveSequenceForSteps({ stepIds: blk.step_ids, stepId: blk.step_id }, stud?.belt_level ?? null);
       const label = cfg ? (cfg.eyebrow ? `${cfg.eyebrow.split(' · ')[0]} · ${cfg.title}` : `Sequence ${sequenceDisplayName(cfg)}`) : (blk.sequence_id === 'THREE-CIRCLES' ? 'The Three Circles' : null);
       if (label && !seqTitles.includes(label)) seqTitles.push(label);
     }
@@ -2571,6 +2735,8 @@ export async function closeServicePlan(
         }).eq('id', studentId);
       } catch { /* best-effort */ }
     }
+    // La línea de mañana → el plan de mañana (cierre en una línea, 2026-09-20).
+    try { await setTomorrowFromLine(studentId, firstBlock, studentBlocks); } catch (e) { console.error('[close] tomorrow line failed', e); }
 
     // Sync the student's profile snapshot (last_session_*)
     if (result) {

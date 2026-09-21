@@ -175,13 +175,14 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 
   // Cierre con video análisis (2026-09-18): una estrella para la secuencia
   // del día = esa nota en cada paso (una sola llamada).
-  const rateSequenceInline = (studentId: string, sequenceId: string, rating: number) => {
+  const rateSequenceInline = (studentId: string, sequenceId: string, rating: number | null) => {
     const cfg = SEQUENCE_PAGES[sequenceId];
     if (!cfg) return;
     setCoachRatings((prev) => {
       const next = { ...prev };
       const stepMap = { ...(next[studentId] ?? {}) };
-      for (const id of cfg.stepIds) stepMap[id] = rating;
+      // null = "se trabajó otra cosa": la estrella de hoy se borra de esos pasos.
+      for (const id of cfg.stepIds) { if (rating === null) delete stepMap[id]; else stepMap[id] = rating; }
       next[studentId] = stepMap;
       return next;
     });
@@ -357,10 +358,12 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     // alumno, el próximo coach y el host. Per-step STP grading sigue en la
     // Final Evaluation. (Las clases yoga/ice bath usan el cierre liviano y
     // no pasan por acá.)
+    // Cierre en una línea (2026-09-20): la estrella pone el estado del día y
+    // la línea de mañana sola. Lo único que puede faltar es la estrella.
     const noObjective = students.filter((s) => !(s.blocks[0]?.day_objective_status));
     if (noObjective.length > 0) {
       alert(
-        `Set "objective met" for: ${noObjective.map((s) => s.display_name).join(', ')}.\n\nIt takes one tap per student — it becomes their progress record.`
+        `Tap a star for: ${noObjective.map((s) => s.display_name).join(', ')}.\n\nOne star per student — it becomes their record and sets tomorrow.`
       );
       return;
     }
@@ -372,8 +375,11 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
       if (!confirm(`${noNext.length} student${noNext.length === 1 ? '' : 's'} without "what to work on next": ${noNext.map((s) => s.display_name).join(', ')}.\n\nClose now and add it later today? You can still write it after closing, and we remind you at 5 PM.`)) return;
     }
     // Anti copy-paste: el mismo texto pegado a 3+ alumnos no es seguimiento.
+    // Solo aplica al texto libre: la línea estructurada (secuencia + paso) se
+    // repite entre alumnos del mismo grupo por diseño.
     const counts = new Map<string, number>();
     for (const s of students) {
+      if (s.blocks[0]?.next_focus_sequence_id) continue;
       const t = (s.blocks[0]?.whats_next ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
       if (t) counts.set(t, (counts.get(t) ?? 0) + 1);
     }
@@ -419,6 +425,14 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
           closed_at: new Date().toISOString(),
         }));
         setClosedNow((prev) => new Set(prev).add(data.selectedDay.camp_session_id));
+        // Cierre en una línea (2026-09-20): la línea recién confirmada ya es el
+        // "qué sigue" de la ficha; la evaluación final del último día la
+        // pre-llena desde el perfil, así que se actualiza acá sin recargar.
+        setStudents((prev) => prev.map((s) => {
+          const b0 = s.blocks.find((b) => b.order_index === 0) ?? s.blocks[0];
+          if (!b0?.next_focus_sequence_id && !(b0?.whats_next ?? '').trim()) return s;
+          return { ...s, profile: { ...s.profile, next_recommended_focus: b0.whats_next ?? s.profile.next_recommended_focus, next_focus_sequence_id: b0.next_focus_sequence_id ?? null, next_focus_step_id: b0.next_focus_step_id ?? null } };
+        }));
         flash('🏁 Day finalized');
         // If this was the last day of a BELT camp, surface the final
         // official evaluation (rate every STP per student → graduation).
@@ -1667,13 +1681,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                   profile={<StudentProfilePanel student={s} onSaveNote={(note) => saveInternalNote(s.student_id, note)} />}
                   onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
                   onRateSequence={(seqId, rating) => rateSequenceInline(s.student_id, seqId, rating)}
-                  token={token}
-                  campInstanceId={data.camp.id}
-                  onCarry={async (seqId) => {
-                    const r = await carryStudentPlanToNextDay(token, data.selectedDay.camp_session_id, s.student_id, { sequenceId: seqId });
-                    if (!r.ok) { alert(r.error || 'Could not set tomorrow.'); return null; }
-                    return `set for day ${r.nextDay}`;
-                  }}
+                  tomorrow={data.tomorrow ? { day_number: data.tomorrow.day_number, planned: data.tomorrow.byStudent[s.student_id] ?? null, hasBlocks: !!data.tomorrow.hasBlocks?.[s.student_id] } : null}
                 />
               ))}
             </div>

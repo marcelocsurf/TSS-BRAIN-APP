@@ -1,22 +1,22 @@
 'use client';
 
-// ═══ Cierre del día · video análisis (Marcelo 2026-09-18 / 2026-09-19) ═══
-// Una sola lógica por alumno y por secuencia del día:
-//   1. "Vos planeaste": la secuencia y el foco, tal cual el plan.
-//   2. La estrella de la secuencia.
-//   3. ¿Aguantó el foco? (o ¿salió limpia la línea?) Sí / No.
-//   4. Si no: el PASO donde se rompió, en la lista numerada (la misma que ve
-//      el alumno), y opcional el momento de ese paso.
-// Eso es el próximo foco (texto + secuencia + paso). Un solo foco por alumno,
-// siempre con el nombre de la secuencia adelante. Foco 0–3 (misma escala que
-// el alumno), flow y nota quedan plegados. El video no es obligatorio.
+// ═══ Cierre en una línea (Marcelo 2026-09-20) ═══
+// Por alumno y por secuencia del día:
+//   1. "Vos planeaste": la secuencia, tal cual el plan.
+//   2. La estrella.
+//   3. Si fue 1–3★: ¿dónde se rompió? (opcional, un toque en el paso).
+// Y la línea de MAÑANA aparece sola: 1–3★ repite la secuencia (con el paso),
+// 4–5★ sigue lo que la plantilla ya tiene para mañana. Cerrar el día es
+// confirmar esa línea; cambiarla es un toque. "Se trabajó otra cosa" cambia
+// la secuencia que se califica (queda planeado · trabajado en la bitácora).
+// Lo que se SACÓ del cierre (confundía): aguantó / se rompió, momentos,
+// criterios de la misión, foco 0–3, flow, estado a mano, "mandar a otra
+// secuencia" y los botones "mañana igual / avanzar".
 
 import { useState, type ReactNode } from 'react';
 import { StarRating } from '@/components/sequence/StarRating';
-import { StepDetailToggle } from '@/components/evaluation/StepDetailToggle';
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
-import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { resolveSequenceForSteps } from '@/lib/sequence-pages/resolve';
 import type { ServicePlanBlock, ServicePlanStudent } from '@/lib/actions/service-planner';
 
@@ -27,20 +27,18 @@ const STAR_LABEL: Record<number, string> = {
   4: 'Consistent · the sequence is theirs',
   5: 'Clean every time',
 };
-// Misma escala y mismas palabras que la autoevaluación del alumno (Let's Play, HP).
-const FOCUS_WORDS = ['Distracted', 'Some', 'Mostly', 'Locked in'];
-const FLOW = [
-  { n: 1, color: '#3B82F6', label: 'Bored' },
-  { n: 2, color: '#06B6D4', label: 'Easy' },
-  { n: 3, color: '#10B981', label: 'Optimal' },
-  { n: 4, color: '#F59E0B', label: 'Hard' },
-  { n: 5, color: '#EF4444', label: 'Frustrated' },
-] as const;
 
 export const seqTag = (c: SequencePageConfig) => (c.eyebrow ? c.title : `#${c.number} ${c.title}`);
 const seqTitle = (c: SequencePageConfig) => (c.eyebrow ? c.title : `Sequence #${c.number} · ${c.title}`);
 
-export type DaySequence = { cfg: SequencePageConfig; order: number; focusStepId: string | null; focusTitle: string | null };
+export type DaySequence = {
+  /** La secuencia que se califica: la trabajada si el coach la cambió, si no la planeada. */
+  cfg: SequencePageConfig;
+  plannedCfg: SequencePageConfig;
+  order: number;
+  focusStepId: string | null;
+  focusTitle: string | null;
+};
 
 /** Las secuencias que ESTE alumno trabajó hoy (bloques de agua), en orden. */
 export function daySequencesOf(
@@ -53,17 +51,21 @@ export function daySequencesOf(
     const landOnly = !!(b.land_drill_id || b.land_drill_custom) && !b.water_drill_id && !b.water_drill_custom && b.order_index !== 0;
     if (landOnly) continue;
     if (b.sequence_id === 'THREE-CIRCLES') continue;
-    const cfg = (b.sequence_id && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, student.belt_level ?? null);
-    if (!cfg) continue;
-    const seen = out.find((x) => x.cfg.id === cfg.id);
-    const ft = b.focus_step_id ? elementTitle(cfg, b.focus_step_id, stpLabel(b.focus_step_id)) : null;
+    const plannedCfg = (b.sequence_id && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, student.belt_level ?? null);
+    if (!plannedCfg) continue;
+    const workedCfg = (b.worked_sequence_id && SEQUENCE_PAGES[b.worked_sequence_id]) || null;
+    const cfg = workedCfg ?? plannedCfg;
+    const seen = out.find((x) => x.plannedCfg.id === plannedCfg.id);
+    const ft = !workedCfg && b.focus_step_id ? elementTitle(plannedCfg, b.focus_step_id, stpLabel(b.focus_step_id)) : null;
     if (seen) {
       // Dos bloques del mismo círculo (Posture y Rotation): los focos se suman en el rótulo.
+      // Si el primero ya se cambió por otra secuencia, los focos planeados no aplican.
+      if (seen.cfg.id !== seen.plannedCfg.id) continue;
       if (b.focus_step_id && !seen.focusStepId) { seen.focusStepId = b.focus_step_id; seen.focusTitle = ft; }
       else if (ft && seen.focusTitle && !seen.focusTitle.includes(ft)) seen.focusTitle = `${seen.focusTitle} · ${ft}`;
       continue;
     }
-    out.push({ cfg, order: b.order_index, focusStepId: b.focus_step_id ?? null, focusTitle: ft });
+    out.push({ cfg, plannedCfg, order: b.order_index, focusStepId: workedCfg ? null : (b.focus_step_id ?? null), focusTitle: ft });
   }
   return out;
 }
@@ -75,20 +77,49 @@ export function nextSequenceAfter(cfg: SequencePageConfig): SequencePageConfig |
     .sort((a, b) => a.number - b.number)[0] ?? null;
 }
 
-const BELT_ORDER = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'];
+/** Lo que la plantilla ya tiene para mañana, para este alumno. null = no hay mañana. */
+export type TomorrowPlan = { day_number: number; planned: { sequence_id: string | null; focus_step_id: string | null } | null; /** mañana tiene bloques aunque ninguno sea secuencia (examen, teoría) */ hasBlocks?: boolean } | null;
 
-type Verdict = 'held' | 'broke' | null;
+export type TomorrowLine = { seqId: string; stepId: string | null; why: 'repeats' | 'plan' | 'moves' | 'keep' | 'you' };
 
-// Los momentos de un paso solo se preguntan cuando agregan algo: dos o más
-// distintos, o uno que no sea el mismo nombre del paso ("Cobra Pick Line" →
-// "Cobra, pick the line" no aporta; Marcelo 2026-09-19).
-const normWords = (t: string) => t.toLowerCase().replace(/\b(the|a|an|of|to|your|and)\b/g, '').replace(/[^a-z0-9]/g, '');
-function momentsAddInfo(moments: { short: string }[], stepTitle: string): boolean {
-  const distinct = Array.from(new Set(moments.map((m) => normWords(m.short))));
-  if (distinct.length >= 2) return true;
-  if (distinct.length === 1) return distinct[0] !== normWords(stepTitle);
-  return false;
+/**
+ * La regla (Marcelo 2026-09-20): con todas las secuencias del día calificadas,
+ * la más floja con 1–3★ se repite mañana (con el paso donde se rompió, o el
+ * foco planeado); si todo fue 4–5★, sigue lo que la plantilla ya tiene para
+ * mañana; sin plantilla, la siguiente de la cinta. Sin calificar → sin línea.
+ */
+export function deriveTomorrow(args: {
+  seqs: DaySequence[];
+  starOf: (s: DaySequence) => number | null;
+  brokenOf: (s: DaySequence) => string | null;
+  tomorrow: TomorrowPlan;
+  isLastDay: boolean;
+}): TomorrowLine | null {
+  const { seqs, starOf, brokenOf, tomorrow, isLastDay } = args;
+  if (seqs.length === 0) return null;
+  const rated = seqs.map((s) => ({ s, star: starOf(s) }));
+  if (rated.some((x) => !x.star)) return null;
+  const weak = rated
+    .filter((x) => (x.star ?? 0) <= 3)
+    .sort((a, b) => (a.star! - b.star!) || (b.s.order - a.s.order))[0];
+  if (weak) {
+    const plannedFocus = weak.s.focusStepId && weak.s.cfg.stepIds.includes(weak.s.focusStepId) ? weak.s.focusStepId : null;
+    return { seqId: weak.s.cfg.id, stepId: brokenOf(weak.s) ?? plannedFocus, why: 'repeats' };
+  }
+  const plannedId = tomorrow?.planned?.sequence_id ?? null;
+  if (!isLastDay && plannedId && SEQUENCE_PAGES[plannedId]) return { seqId: plannedId, stepId: tomorrow?.planned?.focus_step_id ?? null, why: 'plan' };
+  const last = seqs[seqs.length - 1];
+  // Mañana está planeado pero sin secuencia (examen, teoría): se sigue con la de hoy.
+  if (!isLastDay && tomorrow?.hasBlocks) return { seqId: last.cfg.id, stepId: null, why: 'keep' };
+  const next = nextSequenceAfter(last.cfg);
+  if (next) return { seqId: next.id, stepId: null, why: 'moves' };
+  return { seqId: last.cfg.id, stepId: null, why: 'keep' };
 }
+
+const BELT_ORDER = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'];
+// La frase libre del coach va después de " – " (guion corto): el largo " — "
+// aparece en títulos de pasos ("Bottom Turn Medium — Frontside").
+const NOTE_SEP = ' – ';
 
 export function DayCloseCard({
   student,
@@ -99,9 +130,7 @@ export function DayCloseCard({
   profile,
   onCommit,
   onRateSequence,
-  onCarry,
-  token = null,
-  campInstanceId = null,
+  tomorrow = null,
 }: {
   student: ServicePlanStudent;
   isClosed: boolean;
@@ -110,107 +139,131 @@ export function DayCloseCard({
   avatar: ReactNode;
   profile: ReactNode;
   onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
-  onRateSequence: (sequenceId: string, rating: number) => void;
-  onCarry: (sequenceId: string | null) => Promise<string | null>;
-  /** Para "Go deeper": los criterios de la misión del paso (coach_criterion_evals). */
-  token?: string | null;
-  campInstanceId?: string | null;
+  /** rating null = borrar la estrella de hoy de esa secuencia ("se trabajó otra cosa"). */
+  onRateSequence: (sequenceId: string, rating: number | null) => void;
+  tomorrow?: TomorrowPlan;
 }) {
   const blocks = student.blocks;
   const gen = (blocks.find((b) => b.order_index === 0) ?? blocks[0] ?? null) as ServicePlanBlock | null;
   const genOrder = gen?.order_index ?? 0;
   const seqs = daySequencesOf(student, stpLabel);
   const [showProfile, setShowProfile] = useState(false);
-  const [extraSeqId, setExtraSeqId] = useState<string | null>(null);
-  const [tomorrow, setTomorrow] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [changeOpen, setChangeOpen] = useState(false);
+  const [changeSeq, setChangeSeq] = useState<string>('');
 
-  // El próximo foco guardado: texto + secuencia + paso. La frase libre del
-  // coach va después de " – " (guion corto): el largo " — " aparece en títulos
-  // de pasos ("Bottom Turn Medium — Frontside") y partía el texto (bug 2026-09-19).
-  const NOTE_SEP = ' – ';
   const cur = gen?.whats_next ?? '';
   const sepIdx = cur.indexOf(NOTE_SEP);
   const main = (sepIdx >= 0 ? cur.slice(0, sepIdx) : cur).trim();
   const note = (sepIdx >= 0 ? cur.slice(sepIdx + NOTE_SEP.length) : '').trim();
   const [noteDraft, setNoteDraft] = useState(note);
-  const savedSeqId = (gen as any)?.next_focus_sequence_id ?? null;
-  const savedStepId = (gen as any)?.next_focus_step_id ?? null;
+  const savedSeqId = gen?.next_focus_sequence_id ?? null;
+  const savedStepId = gen?.next_focus_step_id ?? null;
 
-  // Veredicto por secuencia: arranca de lo guardado (si el foco quedó en un
-  // paso de esta secuencia → se rompió ahí).
-  const [verdicts, setVerdicts] = useState<Record<string, Verdict>>(() => {
-    const v: Record<string, Verdict> = {};
-    for (const s of seqs) {
-      if (savedSeqId === s.cfg.id && savedStepId) v[s.cfg.id] = 'broke';
-      else if (savedSeqId === s.cfg.id && !savedStepId && /run the whole sequence|whole/i.test(main)) v[s.cfg.id] = 'held';
-      else v[s.cfg.id] = null;
-    }
-    return v;
+  const blockOf = (order: number) => blocks.find((b) => b.order_index === order) ?? null;
+  const starOf = (s: DaySequence) => blockOf(s.order)?.coach_sequence_rating ?? null;
+  // Paso donde se rompió, por secuencia (local); el de la línea se guarda en
+  // next_focus_step_id. Se siembra solo si la línea guardada era un "repeats"
+  // (1–3★ en esa secuencia): el foco que trae la plantilla no es un paso roto.
+  const [broken, setBroken] = useState<Record<string, string | null>>(() => {
+    if (!savedSeqId || !savedStepId) return {};
+    const s = seqs.find((x) => x.cfg.id === savedSeqId);
+    const st = s ? starOf(s) : null;
+    return s && st !== null && st <= 3 ? { [savedSeqId]: savedStepId } : {};
   });
-  // Paso elegido (el que se rompió) para mostrar sus momentos.
-  const [openStep, setOpenStep] = useState<string | null>(savedStepId);
+  // "Change" a mano: la regla deja de sobrescribir la línea hasta "Reset to automatic".
+  const [manual, setManual] = useState(false);
+  const stepsOf = (cfg: SequencePageConfig) => cfg.stepIds.map((id) => ({ id, title: elementTitle(cfg, id, stpLabel(id)) ?? id }));
+  const stepTitleOf = (cfg: SequencePageConfig, id: string) => elementTitle(cfg, id, stpLabel(id)) ?? id;
 
-  const writeFocus = (text: string | null, seqId: string | null, stepId: string | null) => {
-    const full = [text ?? '', noteDraft.trim()].filter(Boolean).join(NOTE_SEP);
-    onCommit(genOrder, { whats_next: full || null, next_focus_sequence_id: text ? seqId : null, next_focus_step_id: text ? stepId : null } as any);
+  const derive = (o: { star?: [number, number]; broken?: Record<string, string | null> } = {}) =>
+    deriveTomorrow({
+      seqs,
+      starOf: (s) => (o.star && o.star[0] === s.order ? o.star[1] : starOf(s)),
+      brokenOf: (s) => (o.broken ?? broken)[s.cfg.id] ?? null,
+      tomorrow,
+      isLastDay,
+    });
+
+  /** La línea como texto ("#10 Snap Frontside · Bottom Turn Medium — Frontside") + campos estructurados. */
+  const linePatch = (l: TomorrowLine | null, noteText: string = noteDraft): Partial<ServicePlanBlock> => {
+    const n = noteText.trim();
+    if (!l || !SEQUENCE_PAGES[l.seqId]) return { whats_next: n || null, next_focus_sequence_id: null, next_focus_step_id: null } as any;
+    const cfg = SEQUENCE_PAGES[l.seqId];
+    const text = `${seqTag(cfg)}${l.stepId ? ` · ${stepTitleOf(cfg, l.stepId)}` : ''}`;
+    return { whats_next: [text, n].filter(Boolean).join(NOTE_SEP), next_focus_sequence_id: l.seqId, next_focus_step_id: l.stepId } as any;
   };
 
-  const starOf = (s: DaySequence) => (blocks.find((b) => b.order_index === s.order) as any)?.coach_sequence_rating ?? null;
+  // La línea que se muestra: lo guardado en el bloque (fuente de verdad).
+  const derived = derive();
+  const line: TomorrowLine | null = savedSeqId && SEQUENCE_PAGES[savedSeqId]
+    ? { seqId: savedSeqId, stepId: savedStepId, why: derived && derived.seqId === savedSeqId && (derived.stepId ?? null) === (savedStepId ?? null) ? derived.why : 'you' }
+    : null;
+  const isManual = manual || line?.why === 'you';
+
+  // Estado del día = la peor estrella del día (la misma regla que la línea).
+  // Sin todas las estrellas no hay estado: así Finalize pide la que falta.
+  const statusOf = (worst: number | null) => (worst === null ? null : worst >= 4 ? 'achieved' : worst >= 2 ? 'partial' : 'not_yet');
+  const worstStar = (o?: [number, number]) => {
+    const stars = seqs.map((s) => (o && o[0] === s.order ? o[1] : starOf(s)));
+    if (stars.some((x) => !x)) return null;
+    return Math.min(...(stars as number[]));
+  };
+
   const rate = (s: DaySequence, n: number) => {
-    const status = n >= 4 ? 'achieved' : n >= 2 ? 'partial' : 'not_yet';
-    if (s.order === genOrder) onCommit(genOrder, { coach_sequence_rating: n, day_objective_status: status } as any);
-    else { onCommit(s.order, { coach_sequence_rating: n } as any); onCommit(genOrder, { day_objective_status: status } as any); }
+    const nb = n >= 4 ? { ...broken, [s.cfg.id]: null } : broken;
+    if (n >= 4) setBroken(nb);
+    const worst = worstStar([s.order, n]);
+    const genPatch: Partial<ServicePlanBlock> = { day_objective_status: statusOf(worst), ...(isManual ? {} : linePatch(derive({ star: [s.order, n], broken: nb }))) } as any;
+    if (s.order === genOrder) onCommit(genOrder, { coach_sequence_rating: n, ...genPatch } as any);
+    else { onCommit(s.order, { coach_sequence_rating: n } as any); onCommit(genOrder, genPatch); }
     onRateSequence(s.cfg.id, n);
   };
 
-  const stepsOf = (cfg: SequencePageConfig) => cfg.stepIds.map((id) => ({ id, title: elementTitle(cfg, id, stpLabel(id)) ?? id }));
-
-  // "Aguantó": el foco sigue → próximo foco = el paso siguiente de la cadena
-  // (o la línea completa si era el último / si el plan era la línea completa).
-  const held = (s: DaySequence) => {
-    setVerdicts((v) => ({ ...v, [s.cfg.id]: 'held' }));
-    setOpenStep(null);
-    const steps = stepsOf(s.cfg);
-    const tag = seqTag(s.cfg);
-    if (s.focusStepId) {
-      const i = steps.findIndex((x) => x.id === s.focusStepId);
-      const next = i >= 0 ? steps[i + 1] : null;
-      if (next) { writeFocus(`${tag} · ${next.title}`, s.cfg.id, next.id); return; }
-    }
-    writeFocus(`${tag} · run the whole sequence`, s.cfg.id, null);
-  };
-  const broke = (s: DaySequence) => {
-    setVerdicts((v) => ({ ...v, [s.cfg.id]: 'broke' }));
-    // Si el plan tenía foco, lo más probable es que se rompió ahí: queda
-    // preseleccionado y el coach lo cambia con un toque si fue otro paso.
-    if (s.focusStepId) { setOpenStep(s.focusStepId); writeFocus(`${seqTag(s.cfg)} · ${s.focusTitle ?? s.focusStepId}`, s.cfg.id, s.focusStepId); }
-    else setOpenStep(null);
-  };
-  const pickStep = (s: DaySequence, id: string, title: string) => {
-    setOpenStep(id);
-    writeFocus(`${seqTag(s.cfg)} · ${title}`, s.cfg.id, id);
-  };
-  const pickMoment = (s: DaySequence, stepId: string, stepTitle: string, short: string | null) => {
-    writeFocus(short ? `${seqTag(s.cfg)} · ${stepTitle} · ${short}` : `${seqTag(s.cfg)} · ${stepTitle}`, s.cfg.id, stepId);
+  const pickBroken = (s: DaySequence, stepId: string) => {
+    const nb = { ...broken, [s.cfg.id]: broken[s.cfg.id] === stepId ? null : stepId };
+    setBroken(nb);
+    if (!isManual) onCommit(genOrder, linePatch(derive({ broken: nb })));
   };
 
-  const lastSeq = seqs[seqs.length - 1] ?? null;
-  const moveOn = lastSeq ? nextSequenceAfter(lastSeq.cfg) : null;
-  const carry = async (seqId: string | null, label: string) => {
-    setBusy(true);
-    try { const r = await onCarry(seqId); if (r) setTomorrow(`${label} · ${r}`); } finally { setBusy(false); }
+  // "Se trabajó otra cosa": cambia la secuencia que se califica; la estrella
+  // vuelve a cero, también la oficial que ya viajó a los pasos de la anterior.
+  const setWorked = (s: DaySequence, seqId: string | null) => {
+    setBroken((b) => ({ ...b, [s.cfg.id]: null }));
+    setManual(false);
+    if (starOf(s) !== null) onRateSequence(s.cfg.id, null);
+    const reset: Partial<ServicePlanBlock> = { worked_sequence_id: seqId, coach_sequence_rating: null } as any;
+    const genPatch: Partial<ServicePlanBlock> = { day_objective_status: null, ...linePatch(null) } as any;
+    if (s.order === genOrder) onCommit(genOrder, { ...reset, ...genPatch });
+    else { onCommit(s.order, reset); onCommit(genOrder, genPatch); }
+  };
+
+  const setByHand = (seqId: string, stepId: string | null) => {
+    setManual(true);
+    onCommit(genOrder, linePatch({ seqId, stepId, why: 'you' }));
+  };
+  const resetAuto = () => {
+    setManual(false);
+    setChangeOpen(false);
+    setChangeSeq('');
+    onCommit(genOrder, linePatch(derive()));
+  };
+
+  const lineCfg = line ? SEQUENCE_PAGES[line.seqId] : null;
+  const lineText = line && lineCfg ? `${seqTag(lineCfg)}${line.stepId ? ` · ${stepTitleOf(lineCfg, line.stepId)}` : ''}` : (main || null);
+  const allRated = seqs.length > 0 && seqs.every((s) => !!starOf(s));
+  const WHY: Record<TomorrowLine['why'], string> = {
+    repeats: 'Repeats · under 4★, not theirs yet',
+    plan: 'From the plan · 4★ and up',
+    moves: 'Moves on · 4★ and up, next in the belt',
+    keep: '4★ and up · keep it sharp',
+    you: 'Set by you',
   };
 
   const myBelt = BELT_ORDER.indexOf(String(student.belt_level ?? 'white_belt'));
   const pickable = Object.values(SEQUENCE_PAGES)
-    .filter((c) => BELT_ORDER.indexOf(c.belt) <= Math.max(myBelt, 0) + 1 && !seqs.some((s) => s.cfg.id === c.id))
+    .filter((c) => c.id !== 'THREE-CIRCLES' && BELT_ORDER.indexOf(c.belt) <= Math.max(myBelt, 0) + 1)
     .sort((a, b) => BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) || (a.kind === 'entry' ? -1 : 0) - (b.kind === 'entry' ? -1 : 0) || a.number - b.number);
-
-  // Contexto para la lista de pasos (componente de nivel superior: si se
-  // definiera adentro, React lo desmontaría en cada render y "Ver detalles"
-  // se cerraría solo — bug visto el 2026-09-19).
-  const stepCtx: StepCtx = { isClosed, openStep, savedSeqId, savedStepId, main, stepsOf, pickStep, pickMoment, token, campInstanceId, studentId: student.student_id, onFocusSaved: (st, f) => { if (f) { setNoteDraft(f); const full = [main || `${seqTag(st.cfg)} · ${st.title}`, f].filter(Boolean).join(NOTE_SEP); onCommit(genOrder, { whats_next: full } as any); } } };
+  const changeCfg = changeSeq ? SEQUENCE_PAGES[changeSeq] ?? null : null;
 
   return (
     <div className="bg-[#E9E2D2] rounded-[8px] border border-[#DCD7C6] p-3 space-y-2.5">
@@ -226,13 +279,17 @@ export function DayCloseCard({
 
       {seqs.map((s) => {
         const v = starOf(s);
-        const verdict = verdicts[s.cfg.id] ?? null;
+        const worked = s.cfg.id !== s.plannedCfg.id;
+        const steps = stepsOf(s.cfg);
+        const brokenId = broken[s.cfg.id] ?? null;
         return (
-          <div key={s.cfg.id} className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] p-2.5">
-            {/* 1 · Vos planeaste */}
-            <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00A8CC' }}>You planned</p>
+          <div key={s.plannedCfg.id} className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] p-2.5">
+            {/* 1 · Vos planeaste (o: se trabajó otra cosa) */}
+            <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00A8CC' }}>{worked ? 'Worked instead' : 'You planned'}</p>
             <p className="text-[15px] font-extrabold text-[#10263B] leading-tight mt-0.5">{seqTitle(s.cfg)}</p>
-            <p className="text-[12px] text-[#55666E] mt-0.5">{s.focusTitle ? `Focus: ${s.focusTitle}` : 'The whole line, start to finish'}</p>
+            <p className="text-[12px] text-[#55666E] mt-0.5">
+              {worked ? `Planned: ${seqTag(s.plannedCfg)}` : s.focusTitle ? `Focus: ${s.focusTitle}` : 'The whole line, start to finish'}
+            </p>
 
             {/* 2 · Estrella */}
             <div className="mt-2.5">
@@ -240,37 +297,33 @@ export function DayCloseCard({
             </div>
             <p className="text-[12px] text-[#55666E] mt-1">{v ? `${v}★ · ${STAR_LABEL[v]}` : 'Tap a star. 4★ = the sequence is theirs.'}</p>
 
-            {/* 3 · ¿Aguantó? */}
-            <p className="text-[10px] font-mono uppercase tracking-[0.14em] mt-3" style={{ color: '#00A8CC' }}>{s.focusTitle ? 'Did the focus hold?' : 'Did the line come out clean?'}</p>
-            <div className="flex gap-1.5 mt-1.5">
-              <button type="button" disabled={isClosed} onClick={() => held(s)} aria-pressed={verdict === 'held'}
-                className="flex-1 py-2 rounded-[5px] text-[12px] font-bold border disabled:opacity-70"
-                style={verdict === 'held' ? { background: '#2FA36B', borderColor: '#2FA36B', color: '#fff' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
-                {s.focusTitle ? '✓ Yes, it held' : '✓ Yes, clean'}
-              </button>
-              <button type="button" disabled={isClosed} onClick={() => broke(s)} aria-pressed={verdict === 'broke'}
-                className="flex-1 py-2 rounded-[5px] text-[12px] font-bold border disabled:opacity-70"
-                style={verdict === 'broke' ? { background: '#E0413B', borderColor: '#E0413B', color: '#fff' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
-                {s.focusTitle ? '✗ No, it broke' : '✗ No, it broke somewhere'}
-              </button>
-            </div>
-
-            {/* 4 · Dónde: la lista numerada de la secuencia */}
-            {verdict === 'broke' && (
+            {/* 3 · Solo con 1–3★: ¿dónde se rompió? Un toque, opcional. */}
+            {v !== null && v <= 3 && (
               <div className="mt-2.5">
-                <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#55666E]">Where did it break? · tap the step · it becomes the next focus</p>
-                <StepListView s={s} interactive ctx={stepCtx} />
+                <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#55666E]">Where did it break? · optional · tap the step</p>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {steps.map((st, i) => {
+                    const on = brokenId === st.id;
+                    return (
+                      <button key={st.id} type="button" aria-pressed={on} disabled={isClosed} onClick={() => pickBroken(s, st.id)}
+                        className="px-2.5 py-1.5 rounded-full text-[12px] font-semibold border disabled:opacity-70 text-left"
+                        style={on ? { background: '#E0413B', borderColor: '#E0413B', color: '#fff' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
+                        {i + 1} · {st.title}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
-            {verdict === 'held' && (
-              <p className="text-[12px] mt-2" style={{ color: '#2FA36B' }}>
-                ✓ {s.focusTitle ? `${s.focusTitle} is theirs. Next focus moves one step along the line.` : 'The whole line is theirs.'}
-              </p>
-            )}
-            {verdict === null && !isClosed && (
+
+            {/* Se trabajó otra cosa: la misma línea, otra secuencia. */}
+            {!isClosed && (
               <details className="mt-2">
-                <summary className="text-[11px] text-[#55666E] cursor-pointer">See the steps of this sequence</summary>
-                <StepListView s={s} interactive={false} ctx={stepCtx} />
+                <summary className="text-[11px] text-[#55666E] cursor-pointer">{worked ? 'Back to what was planned' : 'Worked something else'}</summary>
+                <select value={worked ? s.cfg.id : ''} onChange={(e) => setWorked(s, e.target.value || null)} className="mt-1.5 w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-[12px] bg-white">
+                  <option value="">{seqTag(s.plannedCfg)} · as planned</option>
+                  {pickable.filter((c) => c.id !== s.plannedCfg.id).map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.belt.replace('_belt', '')}</option>)}
+                </select>
               </details>
             )}
           </div>
@@ -285,133 +338,96 @@ export function DayCloseCard({
         </div>
       )}
 
-      {/* Próximo foco: UNO por alumno, lo que ve esta noche. */}
+      {/* MAÑANA: la línea aparece sola. Confirmar es registrar; cambiar es un toque. */}
       <div className="rounded-[5px] px-3 py-2.5" style={{ background: '#061C2B' }}>
         <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00D2FF' }}>
-          Next focus · the student sees this tonight{isClosed && main.length < 5 ? ' · still pending' : ''}
+          {isLastDay ? "What's next · goes to the final evaluation" : `Tomorrow${tomorrow?.day_number ? ` · day ${tomorrow.day_number}` : ''}`}
+          {isClosed && !lineText ? ' · not set' : ''}
         </p>
-        <p className="text-[13px] font-semibold mt-1" style={{ color: '#F7F9FA' }}>{main || 'Answer above, or write it below.'}</p>
-        <input
-          type="text"
-          defaultValue={note}
-          disabled={isClosed && main.length >= 5}
-          onChange={(e) => setNoteDraft(e.target.value)}
-          onBlur={(e) => { const nn = e.target.value; setNoteDraft(nn); const full = [main, nn.trim()].filter(Boolean).join(NOTE_SEP); onCommit(genOrder, { whats_next: full || null } as any); }}
-          placeholder={main ? 'Add a phrase in your words (optional)' : 'Or write the focus in your words'}
-          className="mt-2 w-full px-2.5 py-1.5 rounded-[4px] text-[12px] bg-[#0E2A40] text-[#F7F9FA] placeholder:text-[#7C8C94] border border-[#1E3A52] disabled:opacity-60"
-        />
-        {main && !isClosed && (
-          <button type="button" onClick={() => { setVerdicts({}); setOpenStep(null); onCommit(genOrder, { whats_next: noteDraft.trim() || null, next_focus_sequence_id: null, next_focus_step_id: null } as any); }} className="mt-1.5 text-[11px] underline" style={{ color: '#7DE3FF' }}>
-            Clear
-          </button>
+        {lineText ? (
+          <>
+            <p className="text-[15px] font-extrabold mt-1 leading-tight" style={{ color: '#F7F9FA' }}>{lineText}</p>
+            {line && <p className="text-[11px] mt-0.5" style={{ color: '#7DE3FF' }}>{WHY[line.why]}</p>}
+          </>
+        ) : (
+          <p className="text-[13px] mt-1" style={{ color: 'rgba(247,249,250,.7)' }}>
+            {seqs.length === 0 ? 'Write it below, in your words.' : allRated ? 'Set it below.' : 'Tap a star above. The line fills in by itself.'}
+          </p>
         )}
-      </div>
-
-      {/* Mañana: repetir o avanzar. Solo cuando hay un mañana. */}
-      {!isClosed && !isLastDay && seqs.length > 0 && (
-        <div className="space-y-1">
-          <div className="flex gap-1.5">
-            <button type="button" disabled={busy} onClick={() => carry(null, `Same sequence · ${seqTag(seqs[0].cfg)}`)}
-              className="flex-1 py-2 rounded-[5px] text-[12px] font-bold border border-[#DCD7C6] bg-white text-[#10263B] disabled:opacity-60">
-              Tomorrow · same ({seqTag(seqs[0].cfg)})
+        {!isClosed && seqs.length > 0 && (
+          <div className="flex gap-3 mt-1.5">
+            <button type="button" onClick={() => setChangeOpen((o) => !o)} aria-expanded={changeOpen} className="text-[11px] underline" style={{ color: '#7DE3FF' }}>
+              {changeOpen ? 'Close' : 'Change'}
             </button>
-            {moveOn && (
-              <button type="button" disabled={busy} onClick={() => carry(moveOn.id, `Move on · ${seqTag(moveOn)}`)}
-                className="flex-1 py-2 rounded-[5px] text-[12px] font-bold border border-[#DCD7C6] bg-white text-[#10263B] disabled:opacity-60">
-                Tomorrow · move on to {seqTag(moveOn)}
+            {isManual && line && (
+              <button type="button" onClick={resetAuto} className="text-[11px] underline" style={{ color: 'rgba(247,249,250,.7)' }}>
+                Reset to automatic
               </button>
             )}
           </div>
-          {tomorrow && <p className="text-[11px] text-[#2FA36B] font-semibold">✓ Tomorrow · {tomorrow}</p>}
-        </div>
-      )}
+        )}
+        {changeOpen && !isClosed && (
+          <div className="mt-1.5 space-y-1.5">
+            <select value={changeSeq} onChange={(e) => { setChangeSeq(e.target.value); if (e.target.value) setByHand(e.target.value, null); }} className="w-full px-2 py-1.5 rounded-[4px] text-[12px] bg-[#0E2A40] text-[#F7F9FA] border border-[#1E3A52]">
+              <option value="">— pick a sequence —</option>
+              {pickable.map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.belt.replace('_belt', '')}</option>)}
+            </select>
+            {changeCfg && (
+              <div className="flex flex-wrap gap-1.5">
+                <button type="button" onClick={() => setByHand(changeCfg.id, null)} aria-pressed={line?.seqId === changeCfg.id && !line?.stepId}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+                  style={line?.seqId === changeCfg.id && !line?.stepId ? { background: '#00D2FF', borderColor: '#00D2FF', color: '#061C2B' } : { background: 'transparent', borderColor: '#1E3A52', color: '#F7F9FA' }}>
+                  Whole line
+                </button>
+                {stepsOf(changeCfg).map((st, i) => {
+                  const on = line?.seqId === changeCfg.id && line?.stepId === st.id;
+                  return (
+                    <button key={st.id} type="button" onClick={() => setByHand(changeCfg.id, st.id)} aria-pressed={on}
+                      className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+                      style={on ? { background: '#00D2FF', borderColor: '#00D2FF', color: '#061C2B' } : { background: 'transparent', borderColor: '#1E3A52', color: '#F7F9FA' }}>
+                      {i + 1} · {st.title}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+        <input
+          type="text"
+          defaultValue={seqs.length === 0 ? cur : note}
+          disabled={isClosed && !!lineText}
+          onChange={(e) => setNoteDraft(e.target.value)}
+          onBlur={(e) => {
+            const nn = e.target.value;
+            setNoteDraft(nn);
+            if (seqs.length === 0) onCommit(genOrder, { whats_next: nn.trim() || null } as any);
+            else if (line) onCommit(genOrder, linePatch(line, nn));
+            else onCommit(genOrder, { whats_next: [main, nn.trim()].filter(Boolean).join(NOTE_SEP) || null } as any);
+          }}
+          placeholder={seqs.length === 0 ? 'What to work on next' : 'Note for the student (optional)'}
+          className="mt-2 w-full px-2.5 py-1.5 rounded-[4px] text-[12px] bg-[#0E2A40] text-[#F7F9FA] placeholder:text-[#7C8C94] border border-[#1E3A52] disabled:opacity-60"
+        />
+      </div>
 
-      {/* Plegado: enfoque 0–3 (misma escala que el alumno), flow, estado, nota. */}
+      {/* Plegado: nota interna (no la ve el alumno). */}
       <details className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] px-2.5 py-2">
-        <summary className="text-[12px] text-[#55666E] cursor-pointer">
-          Focus · flow · internal note
-          {gen?.focus_level !== null && gen?.focus_level !== undefined ? ` · focus ${FOCUS_WORDS[gen.focus_level] ?? gen.focus_level}` : ''}
-          {gen?.flow_channel ? ` · ${FLOW[gen.flow_channel - 1]?.label ?? ''}` : ''}
-        </summary>
-        <div className="space-y-3 mt-2">
-          <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Focus — how present were they? (same scale the student uses)</p>
-            <div className="grid grid-cols-4 gap-1">
-              {[0, 1, 2, 3].map((n) => (
-                <button key={n} type="button" disabled={isClosed} onClick={() => onCommit(genOrder, { focus_level: n })}
-                  className="py-1.5 rounded-lg text-[11px] font-bold disabled:opacity-70"
-                  style={gen?.focus_level === n ? { background: '#10263B', color: 'white' } : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }}>
-                  {FOCUS_WORDS[n]}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Flow channel — was the demand right today?</p>
-            <div className="grid grid-cols-5 gap-1">
-              {FLOW.map((opt) => (
-                <button key={opt.n} type="button" disabled={isClosed} onClick={() => onCommit(genOrder, { flow_channel: opt.n })}
-                  className="py-1.5 rounded-lg text-[10px] font-bold disabled:opacity-70"
-                  style={gen?.flow_channel === opt.n ? { background: opt.color, color: 'white' } : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }}>
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          {seqs.length > 0 && (
-            <div>
-              <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Objective of the day (set by the star, change if needed)</p>
-              <StatusButtons value={gen?.day_objective_status ?? null} disabled={isClosed} onPick={(v) => onCommit(genOrder, { day_objective_status: v } as any)} />
-            </div>
-          )}
-          <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">🔒 Internal note · not sent to the student</p>
-            <textarea
-              defaultValue={gen?.notes_post ?? ''}
-              disabled={isClosed}
-              onBlur={(e) => onCommit(genOrder, { notes_post: e.target.value })}
-              rows={2}
-              placeholder="e.g. Great pop-up, much steadier stance today"
-              className="w-full px-2.5 py-2 border border-[#DCD7C6] rounded-lg text-[12px] bg-white disabled:opacity-70"
-            />
-          </div>
+        <summary className="text-[12px] text-[#55666E] cursor-pointer">Internal note{gen?.notes_post ? ' · written' : ''}</summary>
+        <div className="mt-2">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">🔒 Not sent to the student</p>
+          <textarea
+            defaultValue={gen?.notes_post ?? ''}
+            disabled={isClosed}
+            onBlur={(e) => onCommit(genOrder, { notes_post: e.target.value })}
+            rows={2}
+            placeholder="e.g. Struggles on the skate, repeat on land"
+            className="w-full px-2.5 py-2 border border-[#DCD7C6] rounded-lg text-[12px] bg-white disabled:opacity-70"
+          />
         </div>
       </details>
-
-      {/* Otra secuencia: mandar al alumno a una que no entrenó hoy. */}
-      {!isClosed && (
-        <details className="px-1">
-          <summary className="text-[11px] text-[#55666E] cursor-pointer">Send them to another sequence</summary>
-          <select value={extraSeqId ?? ''} onChange={(e) => setExtraSeqId(e.target.value || null)} className="mt-1.5 w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-[11px] bg-white">
-            <option value="">— pick a sequence —</option>
-            {pickable.map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.belt.replace('_belt', '')}</option>)}
-          </select>
-          {extraSeqId && SEQUENCE_PAGES[extraSeqId] && (() => {
-            const c = SEQUENCE_PAGES[extraSeqId];
-            const steps = c.stepIds.map((id) => ({ id, title: stpLabel(id) ?? id }));
-            return (
-              <div className="mt-1.5">
-                <button type="button" onClick={() => writeFocus(`${seqTag(c)} · run the whole sequence`, c.id, null)} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-[#DCD7C6] bg-white text-[#10263B] mr-1.5 mb-1.5">Whole line</button>
-                {steps.map((st, i) => (
-                  <button key={st.id} type="button" onClick={() => writeFocus(`${seqTag(c)} · ${st.title}`, c.id, st.id)} className="text-[11px] font-semibold px-2.5 py-1 rounded-full border border-[#DCD7C6] bg-white text-[#10263B] mr-1.5 mb-1.5">{i + 1} · {st.title}</button>
-                ))}
-              </div>
-            );
-          })()}
-        </details>
-      )}
     </div>
   );
 }
-
-type StepCtx = {
-  isClosed: boolean; openStep: string | null; savedSeqId: string | null; savedStepId: string | null; main: string;
-  stepsOf: (cfg: SequencePageConfig) => { id: string; title: string }[];
-  pickStep: (s: DaySequence, id: string, title: string) => void;
-  pickMoment: (s: DaySequence, stepId: string, stepTitle: string, short: string | null) => void;
-  token: string | null; campInstanceId: string | null; studentId: string;
-  onFocusSaved: (s: { cfg: SequencePageConfig; title: string }, f: string | null) => void;
-};
 
 function StatusButtons({ value, disabled, onPick }: { value: string | null; disabled: boolean; onPick: (v: 'achieved' | 'partial' | 'not_yet') => void }) {
   return (
@@ -428,78 +444,5 @@ function StatusButtons({ value, disabled, onPick }: { value: string | null; disa
         </button>
       ))}
     </div>
-  );
-}
-
-/** La secuencia como lista numerada (la misma que ve el alumno). */
-function StepListView({ s, interactive, ctx }: { s: DaySequence; interactive: boolean; ctx: StepCtx }) {
-  const { isClosed, openStep, savedSeqId, savedStepId, main, stepsOf, pickStep, pickMoment, token, campInstanceId, studentId, onFocusSaved } = ctx;
-  const steps = stepsOf(s.cfg);
-  const ms = momentsByStep(s.cfg.id, steps);
-  return (
-    <ol className="mt-2 space-y-1">
-      {steps.map((st, i) => {
-        const isFocus = st.id === s.focusStepId;
-        const isBroken = interactive && openStep === st.id && savedSeqId === s.cfg.id && savedStepId === st.id;
-        const mine = ms[st.id] ?? [];
-        const row = (
-          <span className="flex items-start gap-2 text-[13px] leading-snug w-full text-left" style={{ color: isBroken ? '#7A1F1A' : isFocus ? '#061C2B' : '#55666E' }}>
-            <span className="shrink-0 w-5 h-5 rounded-full text-[11px] font-bold flex items-center justify-center" style={isBroken ? { background: '#E0413B', color: '#fff' } : isFocus ? { background: '#FFD166', color: '#061C2B' } : { background: '#E9E2D2', color: '#55666E' }}>{i + 1}</span>
-            <span className={isFocus || isBroken ? 'font-bold' : ''}>{st.title}{isFocus ? ' · planned focus' : ''}{isBroken ? ' · broke here' : ''}</span>
-          </span>
-        );
-        return (
-          <li key={st.id}>
-            {interactive ? (
-              <button type="button" disabled={isClosed} onClick={() => pickStep(s, st.id, st.title)} className="w-full rounded-[4px] px-1 py-0.5 disabled:opacity-70" style={isBroken ? { background: 'rgba(224,65,59,.10)' } : undefined}>{row}</button>
-            ) : row}
-            {/* GO DEEPER (Marcelo 2026-09-19): la misma profundidad que Let's Play.
-                1) qué se ve cuando falla y el cue, de la página de la secuencia;
-                2) los criterios de la misión del paso, Met / Partial / Not met
-                (coach_criterion_evals): lo flojo se vuelve la frase del foco. */}
-            {interactive && isBroken && mine.length > 0 && (
-              <div className="ml-7 mt-1.5 mb-1 rounded-[4px] px-2.5 py-2" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
-                <p className="text-[10px] font-mono uppercase tracking-[0.12em]" style={{ color: '#00A8CC' }}>What you see · the cue</p>
-                {mine.map((m) => (
-                  <div key={m.key} className="mt-1">
-                    {mine.length > 1 && <p className="text-[12px] font-bold text-[#10263B]">{m.short}</p>}
-                    {m.symptom && <p className="text-[12px] text-[#10263B]"><span className="text-[#55666E]">See:</span> {m.symptom}</p>}
-                    {m.indicators.filter((i) => i.fix).slice(0, 2).map((i, k) => <p key={k} className="text-[12px] text-[#10263B]"><span className="text-[#55666E]">Cue:</span> {i.fix}</p>)}
-                  </div>
-                ))}
-              </div>
-            )}
-            {interactive && isBroken && token && (
-              <div className="ml-7 mt-1 mb-1">
-                <StepDetailToggle
-                  studentId={studentId}
-                  stepId={st.id}
-                  portalToken={token}
-                  campInstanceId={campInstanceId}
-                  onFocusSaved={(f) => onFocusSaved({ cfg: s.cfg, title: st.title }, f)}
-                />
-              </div>
-            )}
-            {interactive && isBroken && momentsAddInfo(mine, st.title) && (
-              <div className="ml-7 mt-1 mb-1">
-                <p className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#55666E]">Which moment of that step? · optional · sharpens the focus</p>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {mine.map((m) => {
-                    const on = main === `${seqTag(s.cfg)} · ${st.title} · ${m.short}`;
-                    return (
-                      <button key={m.key} type="button" aria-pressed={on} disabled={isClosed} onClick={() => pickMoment(s, st.id, st.title, on ? null : m.short)}
-                        className="px-2.5 py-1 rounded-full text-[11px] font-semibold border disabled:opacity-70"
-                        style={on ? { background: '#E0A62B', borderColor: '#E0A62B', color: '#061C2B' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
-                        {m.short}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </li>
-        );
-      })}
-    </ol>
   );
 }
