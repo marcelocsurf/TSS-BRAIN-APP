@@ -408,21 +408,8 @@ export function BeltRoadmap({
                 </section>
               )}
 
-              {/* Lo último que le dijo su coach */}
-              {data.coachFocus && (
-                <div
-                  className="rounded-2xl px-4 py-3.5"
-                  style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.28)' }}
-                >
-                  <p className="text-[9px] tracking-[.18em] uppercase" style={{ color: CYAN }}>
-                    From your coach
-                  </p>
-                  <p className="text-[13.5px] mt-1 leading-snug" style={{ color: '#eaf4fa' }}>
-                    <Target size={13} style={{ color: CYAN }} className="inline -mt-0.5 mr-1.5" />
-                    {data.coachFocus}
-                  </p>
-                </div>
-              )}
+              {/* 'From your coach' salió de acá (Marcelo 2026-09-21): el alumno
+                  ve sus puntajes y decide; el plan del coach vive en Next class. */}
 
               <p className="text-[11.5px] text-center leading-snug pt-1" style={{ color: '#6f8698' }}>
                 Your coach decides when you&apos;re ready. This is the same list they fill in.

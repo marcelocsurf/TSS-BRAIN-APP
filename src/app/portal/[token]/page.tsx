@@ -17,7 +17,7 @@ import { getActiveStudentOrCoachImpersonation } from '@/lib/actions/impersonate'
 import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 import { PortalTabs } from './portal-tabs';
 import { getCoachSideForStudent } from '@/lib/actions/dual-profile';
-import { getNextMove, getThreeCirclesProgress } from '@/lib/actions/sequence';
+import { getThreeCirclesProgress, getHomeSequenceData } from '@/lib/actions/sequence';
 import { getOpenSession, getTasks } from '@/lib/actions/lets-play';
 import { RenewalGate } from './RenewalGate';
 import { TermsGate } from './TermsGate';
@@ -73,7 +73,6 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
 
   // Fetch parallel data — materials use admin access control via student_level_access
   const { getPendingExperienceForStudent } = await import('@/lib/actions/experience-survey');
-  const { getCoachFocusState } = await import('@/lib/actions/portal');
   const { getLineup } = await import('@/lib/actions/community');
   // PERF (reporte 2026-08-23: el programa tardaba 40-60s en aparecer): las
   // tarjetas del Home eran autocontenidas y disparaban su server action al
@@ -90,7 +89,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
 
   const [materials, drills, drillsMissions, pendingSurveys, submittedSurveys, courseCatalog, myCoach, pendingExperience,
     hbProgram, hbSeason, hbCompetitions, hbAppointments, hbScores, hbMessages, hbTeamWall, hbTodayExtras, hbPresentations,
-    lineupRes, coachFocusState] = await Promise.all([
+    lineupRes] = await Promise.all([
     getStudentMaterials(token, beltLevel).catch(() => ({ unlocked: [], locked: [] })),
     getStudentDrillsForSelfTraining(beltLevel),
     getDrillsMissionsForBelt(beltLevel),
@@ -114,7 +113,6 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     // demás — en serie sumaban dos viajes más a cada carga del portal (el
     // incidente de los 40-60s empezó exactamente así).
     getLineup(token).then((r) => (r.ok ? r.data : null)).catch(() => null),
-    getCoachFocusState(token).catch(() => ({ flagged: 0, pending: 0, clearedByStudent: false })),
   ]);
 
   const termsPending = isImpersonatingThisStudent ? false : await needsTermsAcceptance(student.id);
@@ -170,6 +168,8 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   // libro quedan abiertos. Ver src/lib/portal/course-lock.ts.
   const courseLocks = isOwner ? {} : await getCourseLocks(student.id);
   const activeLock = activeCourse ? courseLocks[activeCourse.key] ?? null : null;
+  // El camino y los puntajes por secuencia, de UNA sola carga (2026-09-21).
+  const homeSeq = await getHomeSequenceData(token, activeCourse?.belt ?? 'white');
 
   // Build course data
   const courseData = {
@@ -230,7 +230,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           levelQuizDone: !!(student as any).level_quiz_completed_at || (student as any).belt_provisional === false,
           // El próximo movimiento: la primera secuencia sin lograr y el paso
           // que la frena. Sale de las notas que el coach ya puso.
-          nextMove: await getNextMove(token, activeCourse?.belt ?? 'white'),
+          nextMove: homeSeq.nextMove,
           // Compuerta SUAVE (Marcelo 2026-09-17): para Yellow y Blue, los Tres
           // Círculos son el primer requisito en la ola. Si no están a 4★, el
           // Home los recomienda primero; nada se bloquea.
@@ -250,26 +250,9 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           // El plan guardado antes del agua, si hay uno abierto (Marcelo 2026-09-10).
           openSession: await getOpenSession(token),
           tasks: await getTasks(token),
-          // ¿Lo que el coach dejó para trabajar sigue pendiente, o el alumno ya
-          // lo llevó a 4 por su cuenta?
-          coachFocusState,
-          // Foco ELEGIBLE del coach (2026-09-16): secuencia + paso; el Home lo
-          // abre en Let's Play en vez de mostrar solo texto.
-          coachFocusPick: await (async () => {
-            const seqId = (student as any).next_focus_sequence_id as string | null;
-            if (!seqId) return null;
-            try {
-              const { createAdminClient } = await import('@/lib/supabase/admin');
-              const admin = createAdminClient();
-              const stepId = (student as any).next_focus_step_id as string | null;
-              const { data: ls } = await admin.from('lessons').select('id, title, wb_sequence_name, wb_sequence_order').eq('wb_sequence_id', seqId).limit(60);
-              const meta = (ls ?? [])[0] as any;
-              const st = stepId ? (ls ?? []).find((l: any) => l.id === stepId) as any : null;
-              const { sequenceLabel } = await import('@/lib/constants/learning-blocks');
-              const seqLabel = meta ? sequenceLabel(seqId, meta.wb_sequence_order, meta.wb_sequence_name ?? seqId) : seqId;
-              return { sequenceId: seqId, stepId: stepId || null, label: st ? `${seqLabel} · ${st.title}` : seqLabel, note: (student as any).next_recommended_focus ?? null };
-            } catch { return null; }
-          })(),
+          // Tus puntajes por secuencia (Marcelo 2026-09-21): reemplazan la
+          // sugerencia del coach en el Home; el alumno ve y decide.
+          sequenceScores: homeSeq.scores,
           // The Lineup: el canal de la comunidad. Si falla, el portal sigue.
           lineup: lineupRes,
         }}

@@ -230,6 +230,8 @@ interface PortalData {
   coachFocusPick?: { sequenceId: string; stepId: string | null; label: string; note: string | null } | null;
   /** The Lineup: el canal de la comunidad (null si falló la carga). */
   lineup?: import('@/lib/actions/community').LineupData | null;
+  /** Tus puntajes por secuencia (2026-09-21): qué vale cada una de tu cinta. */
+  sequenceScores?: Awaited<ReturnType<typeof import('@/lib/actions/sequence').getSequenceScores>>;
   nextMove?: {
     sequenceId?: string;
     sequenceOrder: number;
@@ -429,36 +431,10 @@ function nextMoveRows(
   onTrainSequence?: (args: TrainSequenceArgs) => void,
   onOpenStep?: (stepId: string) => void,
 ): { rows: NextMoveRow[]; coachCleared: boolean } {
-  const student = data.student as any;
-  const coachFocus: string | null = (data as any).standaloneEvaluation?.focus || student?.next_recommended_focus || null;
-  const coachCleared = !!coachFocus && !!(data as any).coachFocusState?.clearedByStudent;
+  // 'From your coach' salió de acá (Marcelo 2026-09-21): el alumno ve sus
+  // puntajes en el Home y decide; el plan del coach vive en Next class.
+  const coachCleared = false;
   const rows: NextMoveRow[] = [];
-  const pick = (data as any).coachFocusPick as PortalData['coachFocusPick'];
-  if (pick && !coachCleared) {
-    // Foco ELEGIBLE (2026-09-16): la fila abre la secuencia (o el paso) en
-    // Let's Play; la nota del coach, si la hay, va como razón.
-    const noteOnly = pick.note && pick.note !== pick.label && !pick.note.startsWith(pick.label) ? pick.note : (pick.note?.includes(' — ') ? pick.note.split(' — ').slice(1).join(' — ') : null);
-    const pendingStep: string | null = (data as any).coachFocusState?.firstPendingStepId ?? pick.stepId ?? null;
-    rows.push({
-      key: 'coach', label: 'From your coach', title: pick.label, accent: BRAND.colors.cyan,
-      reason: noteOnly || 'Stays here until you take it to 4★ on your own.',
-      action: 'Train it →',
-      onClick: () => {
-        if (onTrainSequence) onTrainSequence({ sequenceId: pick.sequenceId, mode: pick.stepId || pendingStep ? 'step_focus' : 'sequence_run', focusStepId: pick.stepId || pendingStep || undefined, intention: noteOnly || undefined });
-        else if (pendingStep) onOpenStep?.(pendingStep);
-      },
-    });
-  } else if (coachFocus && !coachCleared) {
-    // Si el coach dejó pasos bajo 4★, la fila abre el primero pendiente en
-    // Let's Play; si solo dejó una nota en texto, queda como aviso.
-    const coachStep: string | null = (data as any).coachFocusState?.firstPendingStepId ?? null;
-    rows.push({
-      key: 'coach', label: 'From your coach', title: coachFocus, accent: BRAND.colors.cyan,
-      reason: (data as any).standaloneEvaluation?.note || 'Stays here until you take it to 4★ on your own.',
-      action: coachStep ? 'Train it →' : null,
-      onClick: coachStep ? () => onOpenStep?.(coachStep) : undefined,
-    });
-  }
   // LOS TRES CÍRCULOS (Marcelo 2026-09-17): primer requisito en la ola para
   // Yellow y Blue. Compuerta suave: va antes del camino, no lo bloquea.
   const circlesNext = (data as any).circlesNext as PortalData['circlesNext'];
@@ -1376,36 +1352,40 @@ function HomeTab({
         )}
       </div>
 
-          {/* Sin curso ni membresía (solo libro / lead) no hay camino que
-              entrenar: "Your next move" apuntaba a Let's Play, que está
-              cerrado (Marcelo 2026-09-17, caso Gabriel). */}
-          {data.canTrack !== false && !data.courseLocked && (coachFocus || data.nextMove) && (
-            <div>
-              <h1 className="text-[36px] mb-3" style={{ ...H_BIG, color: '#F7F9FA' }}>Your next move</h1>
-              {/* Una sola cosa en el Home; la lista completa vive en Let's Play.
-                  La frase del libro (sessionCue) salió de acá (Marcelo
-                  2026-09-11: "mucha info para leer"). */}
-              <NextMovesBlock data={data} mode="top" onTrainSequence={onTrainSequence} onOpenStep={onOpenStep} onGoTo={onGoTo} />
-
-              {false && sessionCue.cue && (
-                <div
-                  className="px-4 py-3"
-                  style={{
-                    borderTop: coachFocus || data.nextMove ? '1px solid rgba(255,255,255,.08)' : undefined,
-                  }}
-                >
-                  <p className="text-sm italic leading-relaxed" style={{ fontFamily: 'var(--font-tagline)', color: '#dbe8f1' }}>
-                    {sessionCue.cue}
-                  </p>
-                  <p className="text-[13px] mt-1.5 leading-snug" style={{ color: '#eaf4fa' }}>
-                    <span className="font-mono uppercase text-[12px] tracking-wider mr-1.5" style={{ color: '#00D2FF' }}>Today</span>
-                    {sessionCue.today}
-                  </p>
-                  <p className="text-[12px] mt-1.5" style={{ color: '#b3c4d1' }}>From One Wave · Marcelo Castellanos</p>
+          {/* TUS SECUENCIAS (Marcelo 2026-09-21): qué vale cada secuencia de tu
+              cinta, y vos decidís qué entrenar. Reemplaza "Your next move"
+              (la sugerencia). La estrella oficial del coach manda. */}
+          {data.canTrack !== false && !data.courseLocked && (data.sequenceScores?.rows?.length ?? 0) > 0 && (() => {
+            const sc = data.sequenceScores!;
+            const main = sc.rows.filter((r) => !r.aside);
+            const rowsToShow = main.length ? main : sc.rows;
+            const owned = rowsToShow.filter((r) => r.state === 'owned').length;
+            const beltWord = sc.belt.charAt(0).toUpperCase() + sc.belt.slice(1);
+            return (
+              <div>
+                <h1 className="text-[36px] mb-1" style={{ ...H_BIG, color: '#F7F9FA' }}>Your sequences</h1>
+                <p className="text-[14px] mb-3" style={{ color: '#D9E4EA' }}>{beltWord} Belt · {owned} of {rowsToShow.length} are yours. Tap one to train it.</p>
+                <div className="rounded-lg overflow-hidden" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
+                  {rowsToShow.map((r, idx) => {
+                    const ownedRow = r.state === 'owned';
+                    const value = ownedRow ? '✓ yours' : r.state === 'unrated' ? 'not yet' : r.state === 'partial' ? (r.minRating != null ? `${r.minRating}★ · in progress` : 'in progress') : `${r.minRating ?? '—'}★`;
+                    return (
+                      <button key={r.id} type="button"
+                        onClick={() => { if (onTrainSequence) onTrainSequence({ sequenceId: r.id, mode: 'sequence_run' }); else onGoTo('sequence'); }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left"
+                        style={{ borderTop: idx ? `1px solid ${T_BORDER}` : undefined }}>
+                        <span className="min-w-0 flex-1 text-[16px] font-extrabold leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: T_INK }}>
+                          {r.label}{r.side === 'fs' ? <span className="ml-1.5 text-[11px] font-semibold" style={{ color: '#55666E' }}>frontside</span> : r.side === 'bs' ? <span className="ml-1.5 text-[11px] font-semibold" style={{ color: '#55666E' }}>backside</span> : null}
+                        </span>
+                        <span className="shrink-0 rounded-[5px] px-2.5 py-1.5 text-[13px] font-black" style={{ background: ownedRow ? '#0A7C5D' : '#fff', color: ownedRow ? '#F7F9FA' : T_INK, border: `1px solid ${ownedRow ? '#0A7C5D' : T_BORDER}`, minWidth: 64, textAlign: 'center' }}>{value}</span>
+                        <ArrowRight size={16} style={{ color: T_INK }} />
+                      </button>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            );
+          })()}
 
       {/* ── Horas surfeadas + racha: dos casillas navy con borde cyan (mock de
           Home 2026-09-14). Las mismas cifras del cockpit. ── */}
@@ -2237,6 +2217,13 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
 // TAB 2: SESSIONS (improved with expanded details)
 // ═══════════════════════════════════════
 
+// La fecha de la clase (camp_sessions.session_date) manda sobre la del cierre.
+function effectiveDate(s: any): number {
+  const d = s?.camp_sessions?.session_date ? `${s.camp_sessions.session_date}T12:00:00` : s?.created_at;
+  const t = d ? new Date(d).getTime() : 0;
+  return Number.isFinite(t) ? t : 0;
+}
+
 function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: boolean }) {
   const { sessions, selfTrainingSessions, surveyResultIds, hasSurveyEver } = data;
   const closedMultiBlock = data.closedMultiBlock ?? [];
@@ -2255,10 +2242,7 @@ function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: bool
       _type: 'multi_block' as const,
       created_at: m.closed_at || m.created_at,
     })),
-  ].sort(
-    (a: any, b: any) =>
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
+  ].sort((a: any, b: any) => effectiveDate(b) - effectiveDate(a));
 
   if (allSessions.length === 0) {
     return (
@@ -2283,7 +2267,7 @@ function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: bool
           ? `Self-Training: ${session.drill_name || 'Free session'}`
           : isMultiBlock
           ? `Coach Session · ${session.total_actual_minutes ?? session.total_planned_minutes}min`
-          : session.standalone_sessions?.mission || 'Session';
+          : session.standalone_sessions?.mission || session.mission || 'Session';
 
         return (
           <div
@@ -2301,7 +2285,7 @@ function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: bool
                   </div>
                   <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                     <span className="text-[12px] text-gray-500">
-                      {new Date(session.created_at).toLocaleDateString('en-US', {
+                      {new Date(session.camp_sessions?.session_date ? `${session.camp_sessions.session_date}T12:00:00` : session.created_at).toLocaleDateString('en-US', {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',
@@ -2476,6 +2460,25 @@ function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: bool
                         label="Duration"
                         value={`${session.standalone_sessions.duration_minutes} min`}
                       />
+                    )}
+                    {/* Bitácora en el idioma del cierre (2026-09-21): qué se
+                        trabajó, la estrella del coach y dónde se rompió. */}
+                    {Array.isArray(session.close?.lines) && session.close.lines.length > 0 && (
+                      <div className="pt-1">
+                        <p className="text-xs text-gray-400 mb-1">Your coach&apos;s stars</p>
+                        <div className="space-y-1">
+                          {session.close.lines.map((l: any, i: number) => (
+                            <div key={`${l.plannedId ?? l.label}-${i}`} className="flex items-start justify-between gap-3 rounded-xl px-2.5 py-2" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
+                              <div className="min-w-0">
+                                <p className="text-[13px] font-semibold" style={{ color: '#10263B' }}>{l.label}</p>
+                                {l.planned && <p className="text-[11px]" style={{ color: '#55666E' }}>Planned: {l.planned}</p>}
+                                {l.broke && <p className="text-[11px]" style={{ color: '#7A1F1A' }}>Broke at: {l.broke}</p>}
+                              </div>
+                              <span className="shrink-0 text-[13px] font-black" style={{ color: '#10263B' }}>{l.star ? `${l.star}★` : '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     )}
                     {coachSawLine(session) && (
                       <DetailRow label="Your coach saw" value={coachSawLine(session)!} />

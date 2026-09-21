@@ -27,7 +27,6 @@ import {
   saveStudentInternalNote,
   applyPlanHeaderToWeek,
   applyStudentBoardToWeek,
-  carryStudentPlanToNextDay,
   type ServicePlanData,
   type ServicePlanStudent,
   type ServicePlanBlock, finalizeStudentEarlyByToken } from '@/lib/actions/service-planner';
@@ -66,12 +65,11 @@ import { TidePlannerHint } from '@/components/camp/TidePlannerHint';
 import { coachFocusOptions, focusOptionsForSequence } from '@/lib/sequence-pages/focus-options';
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
-import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
+import { waterSequencesOfBlocks } from '@/lib/sequence-pages/day-sequences';
 import { topicsForBelt } from '@/lib/sequence-pages/topics';
 import { gameContext } from '@/lib/sequence-pages/three-circles';
 import { isSidePair, sidePairLabel } from '@/lib/sequence-pages/side-pairs';
-import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
 import {
   listSpacesByToken, listBookingsForDayByToken, createBookingByToken, cancelBookingByToken,
   type AcademySpace, type SpaceBooking,
@@ -1382,16 +1380,42 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             const seqLabel = (c: SequencePageConfig) => (c.kind === 'entry' || c.kind === 'circle' ? c.title : sequenceTag(c));
             const assign = (studentId: string, c: SequencePageConfig) =>
               commitStudentBlock(studentId, 0, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${seqLabel(c)}` } as any);
-            const pickSeq = (c: SequencePageConfig) => { for (const st of students) assign(st.student_id, c); };
-            const carry = (studentId: string, name: string) => {
-              startTransition(async () => {
-                const r = await carryStudentPlanToNextDay(token, data.selectedDay.camp_session_id, studentId);
-                if (!r.ok) alert(r.error || 'Could not carry it over.');
-                else alert(`${name}: same sequence and focus set for day ${r.nextDay}.`);
-              });
+            const pickSeq = (c: SequencePageConfig) => { for (const st of students) assignLine(st, c); };
+            // ═══ UNA LÍNEA POR ALUMNO (Marcelo 2026-09-21) ═══
+            // La plantilla la llena; el coach cambia la secuencia de un alumno
+            // o el PASO en el que se enfoca, solo si hoy lo pide. El foco es el
+            // mismo dato que deja el cierre (focus_step_id); los momentos, la
+            // teoría como bloques y "pasar a mañana" ya no se manejan acá.
+            const stepTitle = (c: SequencePageConfig, id: string) => elementTitle(c, id, stpLabel(id)) ?? id;
+            // El bloque de la línea: el 0 si existe; si no, el primer bloque de
+            // AGUA del día (los días de plantilla arrancan en 1 y ahí viven el
+            // foco de la plantilla y lo que dejó el cierre de ayer).
+            const lineBlockOf = (st: ServicePlanStudent): ServicePlanBlock | null => {
+              const b0 = st.blocks.find((x) => x.order_index === 0);
+              if (b0) return b0;
+              const w = waterSequencesOfBlocks(st.blocks as any, st.belt_level ?? null)[0];
+              return w ? (st.blocks.find((x) => x.order_index === w.order) ?? null) : null;
             };
+            const clearCarry = (b: ServicePlanBlock | null) => (b && /^Set at the close of day/i.test(b.notes_pre ?? '') ? { notes_pre: null } : {});
+            const setFocusStep = (st: ServicePlanStudent, c: SequencePageConfig, stepId: string | null) => {
+              const b = lineBlockOf(st);
+              commitStudentBlock(st.student_id, b?.order_index ?? 0, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: stepId, focus_moments: null, objective_text: stepId ? `Focus: ${stepTitle(c, stepId)}` : `Whole line · ${seqLabel(c)}`, ...clearCarry(b) } as any);
+            };
+            const assignLine = (st: ServicePlanStudent, c: SequencePageConfig) => {
+              const b = lineBlockOf(st);
+              const changed = !!b && (b.worked_sequence_id ?? b.sequence_id) !== c.id;
+              const games = (c as any).games as Record<string, string> | undefined;
+              // Cambia la secuencia: los drills del bloque anterior no aplican; un círculo trae su juego.
+              const drills = changed ? { land_drill_id: null, land_drill_custom: null, water_drill_id: games ? (games[c.stepIds[0]] ?? null) : null, water_drill_custom: null, worked_sequence_id: null } : {};
+              commitStudentBlock(st.student_id, b?.order_index ?? 0, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${seqLabel(c)}`, ...drills, ...clearCarry(b) } as any);
+            };
+            const topics = topicsForBelt(belt);
+            const chosenTopics = new Set(plan.topics ?? []);
+            const toggleTopic = (id: string) => { const n = new Set(chosenTopics); if (n.has(id)) n.delete(id); else n.add(id); commitPlanField('topics', n.size ? Array.from(n) : null); };
+            const topicLabel = topics.filter((t) => chosenTopics.has(t.id)).map((t) => t.title).join(' · ');
             return (
-              <Section icon={Waves} title="Simple plan · today we work on" subtitle="One sequence for the group, then the moments each student practices — one at a time. The whole line is always the goal.">
+              <Section icon={Waves} title="Today · one line per student" subtitle="The template fills it. Change a student's sequence, or the step to focus on, only if today says otherwise.">
+                <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">Everyone works on</p>
                 <div className="flex flex-wrap gap-1.5">
                   {seqs.map((c) => {
                     const on = groupSeq?.id === c.id;
@@ -1404,87 +1428,54 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     );
                   })}
                 </div>
-                {/* Temas de teoría del día (Marcelo 2026-09-17): Tres Círculos,
-                    Infinite Circle y los temas del curso de Blue. Van en
-                    service_plans.topics y el alumno los ve en "Next class". */}
-                {(() => {
-                  const topics = topicsForBelt(belt);
-                  const chosen = new Set(plan.topics ?? []);
-                  const toggle = (id: string) => { const n = new Set(chosen); if (n.has(id)) n.delete(id); else n.add(id); commitPlanField('topics', n.size ? Array.from(n) : null); };
-                  return (
-                    <div className="mt-3">
-                      <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Theory today · optional</p>
-                      <div className="flex flex-wrap gap-1.5 mt-1.5">
-                        {topics.map((t) => {
-                          const on = chosen.has(t.id);
-                          return (
-                            <button key={t.id} type="button" aria-pressed={on} onClick={() => toggle(t.id)}
-                              className="px-3 py-1.5 rounded-full text-[11px] font-semibold border"
-                              style={on ? { background: '#00A8CC', borderColor: '#00A8CC', color: '#F7F9FA' } : { background: '#fff', borderColor: '#d1d5db', color: '#061C2B' }}>
-                              {t.title}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })()}
+                {/* Teoría del día: una línea plegada (service_plans.topics; el alumno la ve en "Next class"). */}
+                <details className="mt-3">
+                  <summary className="text-[11px] text-[#55666E] cursor-pointer">Theory today{topicLabel ? ` · ${topicLabel}` : ' · none · tap to add'}</summary>
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {topics.map((t) => {
+                      const on = chosenTopics.has(t.id);
+                      return (
+                        <button key={t.id} type="button" aria-pressed={on} onClick={() => toggleTopic(t.id)}
+                          className="px-3 py-1.5 rounded-full text-[11px] font-semibold border"
+                          style={on ? { background: '#00A8CC', borderColor: '#00A8CC', color: '#F7F9FA' } : { background: '#fff', borderColor: '#d1d5db', color: '#061C2B' }}>
+                          {t.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </details>
                 {groupSeq && (
-                  <div className="space-y-2 mt-2">
+                  <div className="space-y-2 mt-3">
                     {students.map((st) => {
-                      const b0 = st.blocks.find((x) => x.order_index === 0);
-                      const cur = b0?.objective_text ?? '';
+                      const b0 = lineBlockOf(st);
                       const mySeq = seqOfStudent(st) ?? groupSeq;
-                      const ms = momentsByStep(mySeq.id, mySeq.stepIds.map((id) => ({ id, title: stpLabel(id) ?? id })));
-                      const chosen = new Set(cur.startsWith('Focus: ') ? cur.slice(7).split(' · ') : []);
-                      const yesterday = st.profile?.next_recommended_focus ?? null;
-                      const setFocus = (next: Set<string>) => {
-                        // Estructurado: "STP-016:clave" por momento + paso del primero; el texto sigue igual.
-                        const picked = mySeq.stepIds.flatMap((id) => (ms[id] ?? []).filter((m) => next.has(m.short)).map((m) => ({ stepId: id, key: `${id}:${m.key}` })));
-                        commitStudentBlock(st.student_id, 0, {
-                          sequence_id: mySeq.id,
-                          focus_step_id: picked[0]?.stepId ?? null,
-                          focus_moments: picked.length ? picked.map((x) => x.key) : null,
-                          objective_text: next.size ? `Focus: ${Array.from(next).join(' · ')}` : `Whole line · ${sequenceTag(mySeq)}`,
-                        } as any);
-                      };
+                      const focusId = b0?.focus_step_id && mySeq.stepIds.includes(b0.focus_step_id) ? b0.focus_step_id : null;
+                      const legacyFocus = !focusId && (b0?.objective_text ?? '').startsWith('Focus: ') ? String(b0?.objective_text).slice(7) : null;
+                      const fromClose = /^Set at the close of day/i.test(b0?.notes_pre ?? '');
                       const differs = mySeq.id !== groupSeq.id;
                       return (
                         <div key={st.student_id} className="rounded-[5px] border p-2.5" style={{ borderColor: differs ? '#E0A62B' : '#DCD7C6', background: differs ? '#FFFBF0' : 'transparent' }}>
                           <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <p className="text-[12.5px] font-semibold" style={{ color: '#061C2B' }}>{st.display_name} <span className="text-[10px] font-normal text-[#55666E]">· {chosen.size ? `focus: ${Array.from(chosen).join(' · ')}` : 'whole line'}</span></p>
-                            <div className="flex items-center gap-1.5">
+                            <p className="text-[12.5px] font-semibold" style={{ color: '#061C2B' }}>
+                              {st.display_name}
+                              {fromClose && <span className="ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full align-middle" style={{ background: '#E6F7FB', color: '#00789A' }}>from yesterday&apos;s close</span>}
+                            </p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               {/* Secuencia de ESTE alumno: puede quedarse en otra mientras el grupo avanza. */}
-                              <select value={mySeq.id} onChange={(e) => { const c = SEQUENCE_PAGES[e.target.value]; if (c) assign(st.student_id, c); }}
+                              <select value={mySeq.id} onChange={(e) => { const c = SEQUENCE_PAGES[e.target.value]; if (c) assignLine(st, c); }}
                                 className="px-2 py-1 border rounded-[5px] text-[11px] bg-white" style={{ borderColor: differs ? '#E0A62B' : '#DCD7C6', color: '#061C2B' }} aria-label={`Sequence for ${st.display_name}`}>
                                 {seqs.map((c) => <option key={c.id} value={c.id}>{seqLabel(c)}{c.id === groupSeq.id ? ' · group' : ''}</option>)}
                               </select>
-                              {data.daySummaries.some((d) => d.day_number > data.selectedDay.day_number) && (
-                                <button type="button" onClick={() => carry(st.student_id, st.display_name)} title="Same sequence and focus, tomorrow"
-                                  className="px-2 py-1 rounded-[5px] text-[11px] font-semibold border" style={{ borderColor: '#DCD7C6', color: '#061C2B', background: '#fff' }}>
-                                  Move to tomorrow
-                                </button>
-                              )}
+                              {/* Foco: un paso de la línea, o la línea completa. */}
+                              <select value={focusId ?? ''} onChange={(e) => setFocusStep(st, mySeq, e.target.value || null)}
+                                className="px-2 py-1 border rounded-[5px] text-[11px] bg-white" style={{ borderColor: focusId ? '#E0A62B' : '#DCD7C6', color: '#061C2B' }} aria-label={`Focus for ${st.display_name}`}>
+                                <option value="">Whole line</option>
+                                {mySeq.stepIds.map((id, i) => <option key={id} value={id}>{i + 1} · {stepTitle(mySeq, id)}</option>)}
+                              </select>
                             </div>
                           </div>
                           {differs && <p className="text-[10px] mt-0.5" style={{ color: '#9A6A12' }}>Stays on {seqLabel(mySeq)} while the group works {seqLabel(groupSeq)}.</p>}
-                          {yesterday && !chosen.size && (
-                            <button type="button" onClick={() => setFocus(new Set([yesterday]))} className="mt-1 text-[11px] px-2.5 py-1 rounded-full" style={{ background: '#FFF8E7', color: '#9A6A12' }}>Last focus: {yesterday} → use it</button>
-                          )}
-                          <div className="flex flex-wrap gap-1.5 mt-1.5">
-                            {mySeq.stepIds.flatMap((id) => (ms[id] ?? []).map((m) => {
-                              const on = chosen.has(m.short);
-                              return (
-                                <button key={`${id}:${m.key}`} type="button" aria-pressed={on}
-                                  onClick={() => { const n = new Set(chosen); if (on) n.delete(m.short); else n.add(m.short); setFocus(n); }}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[11px] font-semibold border"
-                                  style={on ? { background: '#E0A62B', borderColor: '#E0A62B', color: '#061C2B' } : { background: '#fff', borderColor: '#e5e7eb', color: '#4b5563' }}>
-                                  <i className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#9CA3AF' }} />
-                                  {m.short}
-                                </button>
-                              );
-                            }))}
-                          </div>
+                          {legacyFocus && <p className="text-[10px] mt-0.5 text-[#55666E]">Focus: {legacyFocus}</p>}
                         </div>
                       );
                     })}

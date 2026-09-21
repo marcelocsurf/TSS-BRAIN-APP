@@ -10,7 +10,7 @@ import {
   TRAINING_SEQUENCE_ORDER,
   BLUE_COURSE_PRELUDE,
   stepKey,
-  SEQUENCE_PASS_STARS, sequenceSide, type SequenceSide, SEQUENCE_ROLE } from '@/lib/constants/learning-blocks';
+  SEQUENCE_PASS_STARS, sequenceSide, type SequenceSide, SEQUENCE_ROLE, sequencePrefix } from '@/lib/constants/learning-blocks';
 import { sideBalance } from '@/lib/sequence-sides';
 import { effectiveStars, starsFromCriteria } from '@/lib/stars';
 
@@ -825,9 +825,69 @@ export async function getWeeklyPracticeCount(portalToken: string): Promise<numbe
  * secuencia que todavía no está lograda y el paso que la frena. Sale de las
  * notas que el coach ya puso — no hay nada nuevo que llenar.
  */
+/**
+ * Tus puntajes por secuencia (Marcelo 2026-09-21): el Home muestra qué vale
+ * cada secuencia de tu cinta y VOS decidís qué entrenar. Sin sugerencias.
+ * Mismo cálculo que Let's Play (mySequenceForStudent): la estrella oficial
+ * del coach manda; el paso más flojo es lo que vale la secuencia.
+ */
+export async function getSequenceScores(
+  portalToken: string,
+  belt: string,
+  preloaded?: SequenceData
+): Promise<{
+  belt: string;
+  rows: { id: string; order: number; name: string; label: string; state: 'owned' | 'working' | 'partial' | 'unrated'; minRating: number | null; side: 'fs' | 'bs' | 'both' | null; aside: boolean }[];
+} | null> {
+  try {
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return null;
+    const data = preloaded ?? await mySequenceForStudent(studentId, belt);
+    const beltKey = data.belt.replace(/_belt$/, '');
+    const mine = data.sequences.filter((s) => s.belt === beltKey);
+    const pool = mine.length ? mine : data.sequences;
+    const rows = pool
+      .map((s) => {
+        const pre = sequencePrefix(s.id, s.order);
+        return {
+          id: s.id, order: s.order, name: s.name,
+          label: pre?.startsWith('#') ? `${pre} ${s.name}` : s.name,
+          state: s.state, minRating: s.minRating,
+          side: (s.side as 'fs' | 'bs' | 'both' | null) ?? null,
+          aside: !!SEQUENCE_ROLE[s.id],
+        };
+      })
+      .sort((a, b) => (a.aside === b.aside ? a.order - b.order : a.aside ? 1 : -1));
+    return { belt: beltKey, rows };
+  } catch {
+    return null;
+  }
+}
+
+/** El Home carga la secuencia UNA vez (Marcelo 2026-08-23: el portal lento):
+ *  el camino y los puntajes salen del mismo dato. */
+export async function getHomeSequenceData(portalToken: string, belt: string): Promise<{
+  nextMove: Awaited<ReturnType<typeof getNextMove>>;
+  scores: Awaited<ReturnType<typeof getSequenceScores>>;
+}> {
+  try {
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return { nextMove: null, scores: null };
+    const data = await mySequenceForStudent(studentId, belt);
+    const [nextMove, scores] = await Promise.all([
+      getNextMove(portalToken, belt, data),
+      getSequenceScores(portalToken, belt, data),
+    ]);
+    return { nextMove, scores };
+  } catch {
+    return { nextMove: null, scores: null };
+  }
+}
+
 export async function getNextMove(
   portalToken: string,
-  belt: string
+  belt: string,
+  preloaded?: SequenceData
 ): Promise<{
   sequenceId: string;
   sequenceOrder: number;
@@ -852,7 +912,7 @@ export async function getNextMove(
   try {
     const studentId = await studentIdFromPortalToken(portalToken);
     if (!studentId) return null;
-    const data = await mySequenceForStudent(studentId, belt);
+    const data = preloaded ?? await mySequenceForStudent(studentId, belt);
     const beltKey = data.belt.replace(/_belt$/, '');
     const sideAdvice = sideBalance(data.sequences.filter((s) => s.belt === beltKey)).advice;
     // EL CAMINO (doctrina 2026-09-10 "Your next move follows the path, not

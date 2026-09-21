@@ -119,6 +119,53 @@ export async function getStudentPortalData(token: string) {
   const sessions = [...(sessionResults || []), ...unmatchedCascade]
     .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
+  // ═══ Bitácora en el idioma del cierre (Marcelo 2026-09-21) ═══
+  // Por sesión de camp: qué se planeó, qué se trabajó, la estrella del coach
+  // y dónde se rompió. Vive en service_plan_blocks (no en el resultado), así
+  // que se trae por (alumno, sesión) y se pega acá.
+  try {
+    const campSessionIds = Array.from(new Set((sessionResults || []).map((r: any) => r.camp_session_id).filter(Boolean)));
+    if (campSessionIds.length > 0) {
+      const { data: closeBlocks } = await admin
+        .from('service_plan_blocks')
+        .select('camp_session_id, order_index, sequence_id, worked_sequence_id, step_id, step_ids, focus_step_id, land_drill_id, land_drill_custom, water_drill_id, water_drill_custom, coach_sequence_rating, next_focus_sequence_id, next_focus_step_id')
+        .eq('student_id', student.id)
+        .in('camp_session_id', campSessionIds);
+      const bySession = new Map<string, any[]>();
+      for (const b of closeBlocks ?? []) (bySession.get(b.camp_session_id) ?? bySession.set(b.camp_session_id, []).get(b.camp_session_id)!).push(b);
+      const stepIds = new Set<string>();
+      for (const b of closeBlocks ?? []) if (b.next_focus_step_id) stepIds.add(b.next_focus_step_id);
+      const stepTitle = new Map<string, string>();
+      if (stepIds.size) {
+        const { data: ls } = await admin.from('lessons').select('id, title').in('id', Array.from(stepIds));
+        for (const l of ls ?? []) stepTitle.set(l.id, l.title);
+      }
+      const { waterSequencesOfBlocks, seqShortLabel } = await import('@/lib/sequence-pages/day-sequences');
+      for (const r of sessions as any[]) {
+        const blocks = r.camp_session_id ? bySession.get(r.camp_session_id) : null;
+        if (!blocks?.length) continue;
+        const seqs = waterSequencesOfBlocks(blocks, student.belt_level ?? null);
+        if (!seqs.length) continue;
+        // Días cerrados antes de las estrellas por secuencia (00210): sin líneas.
+        if (seqs.every((x) => x.star == null)) continue;
+        const gen = blocks.find((b: any) => b.order_index === 0) ?? [...blocks].sort((a: any, b: any) => a.order_index - b.order_index)[0];
+        const nfSeq = gen?.next_focus_sequence_id ?? null;
+        const nfStep = gen?.next_focus_step_id ?? null;
+        r.close = {
+          lines: seqs.map((s) => ({
+            plannedId: s.plannedCfg.id,
+            label: seqShortLabel(s.cfg),
+            planned: s.cfg.id !== s.plannedCfg.id ? seqShortLabel(s.plannedCfg) : null,
+            star: s.star,
+            // Dónde se rompió: la línea de mañana repite ESTA secuencia con un paso
+            // que el coach tocó (distinto del foco planeado: ese no es un paso roto).
+            broke: nfSeq === s.cfg.id && nfStep && nfStep !== s.focusStepId && (s.star ?? 5) <= 3 ? (elementTitle(s.cfg, nfStep, stepTitle.get(nfStep) ?? nfStep) ?? stepTitle.get(nfStep) ?? nfStep) : null,
+          })),
+        };
+      }
+    }
+  } catch { /* la bitácora sigue sin las líneas del cierre */ }
+
   const surveyResultIds = new Set((surveys || []).map((s: any) => s.session_result_id));
   const hasSurveyEver = (surveys || []).length > 0;
 
@@ -449,14 +496,23 @@ export async function getStudentPortalData(token: string) {
           const g = cfg.kind === 'circle' && b.water_drill_id ? THREE_CIRCLES_GAME_TITLES[b.water_drill_id as string] : null;
           return g ? `${el} — ${g}` : el;
         })()] : [];
+        // El plan simple y el cierre escriben el texto "Focus: <paso>" Y el
+        // paso estructurado (2026-09-21): el mismo título no se muestra dos veces.
+        const rawTitle = b.focus_step_id ? (stepTitle.get(b.focus_step_id) ?? '').toLowerCase() : '';
+        const textOnly = textFocus.filter((t) => {
+          const tl = t.toLowerCase();
+          if (rawTitle && tl === rawTitle) return false;
+          return !structFocus.some((s) => s.toLowerCase() === tl || s.toLowerCase().startsWith(`${tl} —`));
+        });
+        const focusAll = [...textOnly, ...structFocus];
         const existing = plans.find((p) => p.sequenceId === cfg.id);
         if (existing) {
           // Varios bloques de la misma secuencia en el día: los focos se suman.
-          for (const f of [...textFocus, ...structFocus]) if (!existing.focus.includes(f)) existing.focus.push(f);
+          for (const f of focusAll) if (!existing.focus.includes(f)) existing.focus.push(f);
           continue;
         }
         seen.add(cfg.id);
-        plans.push({ sequenceId: cfg.id, number: cfg.number, title: cfg.title, label: sequenceDisplayName(cfg), kind: cfg.kind ?? 'sequence', focus: [...textFocus, ...structFocus], notes: b.notes_pre ?? null });
+        plans.push({ sequenceId: cfg.id, number: cfg.number, title: cfg.title, label: sequenceDisplayName(cfg), kind: cfg.kind ?? 'sequence', focus: focusAll, notes: b.notes_pre ?? null });
       }
       const plan = plans[0] ?? null;
       const topics = (topicsBySession.get(sess.id) ?? [])
