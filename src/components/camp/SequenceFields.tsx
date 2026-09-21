@@ -9,9 +9,8 @@
 // (00209), solo faltaba poder elegirlo acá.
 
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
-import { sequenceElements } from '@/lib/sequence-pages/circles-seq';
+import { sequenceElements, isElementOf } from '@/lib/sequence-pages/circles-seq';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
-import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { PLAN_TOPICS, topicsForBelt } from '@/lib/sequence-pages/topics';
 import { THREE_CIRCLES_SEQUENCE_ID, THREE_CIRCLES_GAME_IDS, THREE_CIRCLES_GAME_TITLES, gameContext } from '@/lib/sequence-pages/three-circles';
 import { SIDE_PAIR_IDS, isSidePair, sidePairLabel } from '@/lib/sequence-pages/side-pairs';
@@ -67,8 +66,9 @@ export function SequenceFields({
   const steps = cfg ? sequenceElements(cfg, (id) => catalog?.stps.find((s) => s.id === id)?.title ?? null) : [];
   const lessonOf = (id: string) => cfg?.elements?.find((e) => e.id === id)?.stepId ?? id;
   const focus = block.focus_step_id ?? '';
-  const moments = cfg && focus ? (momentsByStep(cfg.id, steps)[focus] ?? []) : [];
-  const chosenMoments = block.focus_moments ?? [];
+  // Misiones del bloque (hasta 3 elementos, en orden · 2026-09-21). Los valores
+  // viejos (claves de momentos) se ignoran.
+  const chosenMissions = (block.focus_moments ?? []).filter((id) => isElementOf(cfg, id)).slice(0, 3);
 
   const pickSequence = (id: string) => {
     if (!id) { onChange({ sequence_id: null, focus_step_id: null, focus_moments: null }); return; }
@@ -85,9 +85,12 @@ export function SequenceFields({
     const game = cfg?.kind === 'circle' ? cfg.games?.[lesson] ?? null : undefined;
     onChange({ focus_step_id: id, focus_moments: null, step_id: lesson, step_ids: cfg ? cfg.stepIds : block.step_ids ?? null, ...(game !== undefined ? { mission_id: game } : {}) });
   };
-  const toggleMoment = (key: string) => {
-    const next = chosenMoments.includes(key) ? chosenMoments.filter((k) => k !== key) : [...chosenMoments, key];
-    onChange({ focus_moments: next.length ? next : null });
+  const toggleMission = (id: string) => {
+    const next = chosenMissions.includes(id) ? chosenMissions.filter((k) => k !== id) : chosenMissions.length >= 3 ? chosenMissions : [...chosenMissions, id];
+    const first = next[0] ?? null;
+    const lesson = first ? lessonOf(first) : null;
+    const game = cfg?.kind === 'circle' ? (lesson ? cfg.games?.[lesson] ?? null : null) : undefined;
+    onChange({ focus_moments: next.length ? next : null, focus_step_id: first, step_id: lesson, step_ids: cfg ? cfg.stepIds : block.step_ids ?? null, ...(game !== undefined ? { mission_id: game } : {}) });
   };
 
   return (
@@ -138,21 +141,22 @@ export function SequenceFields({
           <p className="text-[11px] text-[#55666E] mt-1">The student sees the game in “Next class” with “Play it” and “Study it”. Add another block for the next game of the day.</p>
         </div>
       )}
-      {moments.length > 0 && (
+      {cfg && steps.length > 0 && (
         <div>
-          <label className={LBL} style={LBL_STYLE}>Moments of that step · optional</label>
+          <label className={LBL} style={LBL_STYLE}>Missions · up to three parts, in order · optional</label>
           <div className="flex flex-wrap gap-1.5">
-            {moments.map((m) => {
-              const on = chosenMoments.includes(m.key);
+            {steps.map((st, i) => {
+              const pos = chosenMissions.indexOf(st.id); const on = pos >= 0;
               return (
-                <button key={m.key} type="button" aria-pressed={on} onClick={() => toggleMoment(m.key)}
+                <button key={st.id} type="button" aria-pressed={on} onClick={() => toggleMission(st.id)}
                   className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
                   style={on ? { background: '#061C2B', borderColor: '#061C2B', color: '#F7F9FA' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
-                  {m.short}
+                  {on && chosenMissions.length > 1 ? `M${pos + 1} · ` : `${i + 1} · `}{st.title}
                 </button>
               );
             })}
           </div>
+          <p className="text-[11px] text-[#55666E] mt-1">One star for the sequence; these are the missions the student sees, in this order.</p>
         </div>
       )}
     </div>

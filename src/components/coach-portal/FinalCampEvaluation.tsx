@@ -1,5 +1,7 @@
 'use client';
 
+import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+
 // M45 — FinalCampEvaluation
 //
 // Triggered when the coach closes the LAST day of a multi-day camp. The
@@ -262,7 +264,10 @@ export function FinalCampEvaluation({
       const p: any = s.profile ?? {};
       const seqId = p.next_focus_sequence_id ?? '';
       if (!seqId || !focusGroups.some((g) => g.id === seqId)) continue;
-      const stepId = p.next_focus_step_id && focusGroups.find((g) => g.id === seqId)!.steps.some((x) => x.id === p.next_focus_step_id) ? p.next_focus_step_id : '';
+      // Un sub-elemento ('BB-SEQ-08:rotation') se evalúa por su lección (2026-09-21).
+      const rawStep: string = p.next_focus_step_id ?? '';
+      const lessonStep = rawStep ? (SEQUENCE_PAGES[seqId]?.elements?.find((e) => e.id === rawStep)?.stepId ?? rawStep) : '';
+      const stepId = lessonStep && focusGroups.find((g) => g.id === seqId)!.steps.some((x) => x.id === lessonStep) ? lessonStep : '';
       seed[s.student_id] = { sequenceId: seqId, stepId, note: '' };
     }
     return seed;

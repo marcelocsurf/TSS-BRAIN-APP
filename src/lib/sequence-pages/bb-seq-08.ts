@@ -13,6 +13,16 @@ export const BB_SEQ_08: SequencePageConfig = {
   title: 'Frontside Pumping',
   // Como en la pestaña Course: FP1 → Posture (White) → Pump.
   stepIds: ['STP-035', 'STP-018', 'STP-036'],
+  // La cadena del pump (Marcelo 2026-09-21): lo que se planea y lo que se
+  // rompe. Las estrellas siguen en las tres lecciones (stepId).
+  elements: [
+    { id: 'BB-SEQ-08:feet', title: 'Foot position · centred, any button', stepId: 'STP-035' },
+    { id: 'STP-018', title: 'Power stance', stepId: 'STP-018' },
+    { id: 'BB-SEQ-08:rotation', title: 'Rotation · lead with the oblique', stepId: 'STP-036' },
+    { id: 'BB-SEQ-08:projection', title: 'Projection · extend, weight forward', stepId: 'STP-036' },
+    { id: 'BB-SEQ-08:swim', title: 'Swim · the arm over the head', stepId: 'STP-036' },
+    { id: 'BB-SEQ-08:back', title: 'Back to posture · get low', stepId: 'STP-018' },
+  ],
   think: {
     whatIs: {
       // Regla de Marcelo (2026-09-11, doctrine_rules): la ola Y tu biomecánica, juntas — nunca una sin la otra.
@@ -32,7 +42,7 @@ export const BB_SEQ_08: SequencePageConfig = {
     },
     bodyFromLesson: 'STP-036',
     keyWords: [
-      { label: 'Body', words: ['Posture', 'Oblique', 'Extend', 'Swim', 'Low', 'Posture'] },
+      { label: 'Body', words: ['Feet', 'Power stance', 'Rotation', 'Projection', 'Swim', 'Back to posture'] },
       { label: 'Method', words: ['Posture', 'Rotation / rail', 'Projection', 'Maneuver (the Cruz)', 'Back to posture'] },
     ],
     board: {
@@ -76,7 +86,7 @@ export const BB_SEQ_08: SequencePageConfig = {
     {
       key: 'posture',
       command: 'posture',
-      title: 'Start with posture',
+      title: 'Power stance · start in posture',
       symptom: 'The pump does not start from posture: chest away from the nose, standing tall, weight not on the front foot.',
       indicators: [
         { ok: 'The cycle starts in posture: chest to the nose, low, weight on the front foot.', no: 'You start tall or with the weight back; there is nothing to compress from.', fix: 'Posture first, then move.' },
@@ -86,7 +96,7 @@ export const BB_SEQ_08: SequencePageConfig = {
     {
       key: 'oblique',
       command: 'rail',
-      title: '1 · Lead with the oblique · get on the rail',
+      title: '1 · Rotation · lead with the oblique · get on the rail',
       symptom: 'The legs push first and the hand follows late; no rhythm.',
       indicators: [
         { ok: 'The leading hand goes first: the oblique projects you forward before the legs extend.', no: 'The legs push first and the hands follow late.', fix: 'Hand first, then extend.' },
@@ -96,7 +106,7 @@ export const BB_SEQ_08: SequencePageConfig = {
     {
       key: 'extend',
       command: 'projection',
-      title: '2 · Extend, weight forward · projection',
+      title: '2 · Projection · extend, weight forward',
       symptom: 'The board stalls on the down-cycle; the weight went to the back foot.',
       indicators: [
         { ok: 'At full extension the chest is still over the front foot, never behind it.', no: 'The chest drops behind the front foot; the board loses speed.', fix: 'Chest over the front foot.' },
@@ -111,7 +121,7 @@ export const BB_SEQ_08: SequencePageConfig = {
     {
       key: 'swim',
       command: 'maneuver',
-      title: '3 · Swim the arm, elbow over the head · the Cruz',
+      title: '3 · Swim · the arm over the head · the Cruz',
       symptom: 'The arm stays low; the pump is legs only.',
       indicators: [
         { ok: 'The arm swims through with the elbow higher than the head.', no: 'The arm stays low or swings sideways.', fix: 'Elbow above the head.' },
@@ -121,7 +131,7 @@ export const BB_SEQ_08: SequencePageConfig = {
     {
       key: 'low',
       command: 'posture',
-      title: '4 · Get low, back to posture',
+      title: '4 · Back to posture · get low',
       symptom: 'You end taller each cycle; the pump dies out.',
       indicators: [
         { ok: 'You get low and land back in the same posture you started from, every cycle.', no: 'You end taller each cycle; the pump dies out.', fix: 'Low, then back to posture.' },

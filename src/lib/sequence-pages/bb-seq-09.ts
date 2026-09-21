@@ -15,6 +15,15 @@ export const BB_SEQ_09: SequencePageConfig = {
   title: 'Backside Pumping',
   // Como en la pestaña Course: FP1 → Posture (White) → BS mechanics → Pump.
   stepIds: ['STP-035', 'STP-018', 'STP-038', 'STP-037'],
+  // La cadena del pump backside (Marcelo 2026-09-21), misma lógica que la #8.
+  elements: [
+    { id: 'BB-SEQ-09:feet', title: 'Foot position · centred, any button', stepId: 'STP-035' },
+    { id: 'STP-038', title: 'Power stance · chest open, eyes over the shoulder', stepId: 'STP-038' },
+    { id: 'BB-SEQ-09:rotation', title: 'Rotation · back hand, palm up, throws to the line', stepId: 'STP-037' },
+    { id: 'BB-SEQ-09:projection', title: 'Projection · extend, weight forward', stepId: 'STP-037' },
+    { id: 'BB-SEQ-09:elbow', title: 'Elbow strike · the M is your body', stepId: 'STP-037' },
+    { id: 'BB-SEQ-09:back', title: 'Back to posture · get low', stepId: 'STP-018' },
+  ],
   think: {
     whatIs: {
       headline: 'Backside pumping is the same partnership — the wave’s energy plus your biomechanics — on a wave that breaks behind you: chest open to the wave, eyes over the back shoulder.',
@@ -25,7 +34,7 @@ export const BB_SEQ_09: SequencePageConfig = {
     feet: BB_SEQ_08.think.feet,
     bodyFromLesson: 'STP-037',
     keyWords: [
-      { label: 'Body', words: ['Posture', 'Palm up', 'Extend', 'Elbow (the M)', 'Low', 'Posture'] },
+      { label: 'Body', words: ['Feet', 'Power stance', 'Rotation', 'Projection', 'Elbow strike', 'Back to posture'] },
       // Marcelo 2026-09-09: en backside la maniobra es el codazo, la M (no la Cruz).
       { label: 'Method', words: ['Posture', 'Rotation / rail', 'Projection', 'Maneuver (the elbow strike · the M)', 'Back to posture'] },
     ],
@@ -47,7 +56,7 @@ export const BB_SEQ_09: SequencePageConfig = {
     {
       key: 'posture',
       command: 'posture',
-      title: 'Start with posture · chest open, eyes over the shoulder',
+      title: 'Power stance · chest open, eyes over the shoulder',
       symptom: 'Closed chest facing the nose, eyes forward, standing tall or with the weight back.',
       indicators: [
         { ok: 'The cycle starts in posture: low, weight on the front foot, chest open toward the wave, eyes over the back shoulder.', no: 'Chest closed toward the nose or eyes looking forward; there is nothing to rotate from.', fix: 'Open the chest, eyes over the shoulder, then move.' },
@@ -57,7 +66,7 @@ export const BB_SEQ_09: SequencePageConfig = {
     {
       key: 'palm',
       command: 'rail',
-      title: '1 · Back hand, palm up, throws to the line · get on the rail',
+      title: '1 · Rotation · back hand, palm up, throws to the line · get on the rail',
       symptom: 'The front hand leads or both hands swing; the line has no direction.',
       indicators: [
         { ok: 'The back hand (wave side) opens the palm up and throws toward where you want to draw the line, before the legs extend.', no: 'The front hand leads, or the palm stays down; the body does not get on the rail.', fix: 'Palm up, throw to the line.' },
@@ -67,7 +76,7 @@ export const BB_SEQ_09: SequencePageConfig = {
     {
       key: 'extend',
       command: 'projection',
-      title: '2 · Extend, weight forward · projection',
+      title: '2 · Projection · extend, weight forward',
       symptom: 'The board stalls on the down-cycle; the weight went to the back foot.',
       indicators: [
         { ok: 'At full extension the chest is still over the front foot, never behind it.', no: 'The chest drops behind the front foot; the board loses speed.', fix: 'Chest over the front foot.' },
@@ -89,7 +98,7 @@ export const BB_SEQ_09: SequencePageConfig = {
     {
       key: 'low',
       command: 'posture',
-      title: '4 · Get low, back to posture',
+      title: '4 · Back to posture · get low',
       symptom: 'You end taller each cycle; the pump dies out.',
       indicators: [
         { ok: 'You get low and land back in the same open-chest posture you started from, every cycle.', no: 'You end taller or the chest closes; the pump dies out.', fix: 'Low, then back to posture.' },

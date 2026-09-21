@@ -47,6 +47,8 @@ export type DaySequence = {
   order: number;
   focusStepId: string | null;
   focusTitle: string | null;
+  /** Misiones del día (hasta 3 elementos, en orden), si el plan las tiene. */
+  focusMoments: string[];
 };
 
 /** Las secuencias que ESTE alumno trabajó hoy (bloques de agua), en orden. */
@@ -74,7 +76,8 @@ export function daySequencesOf(
       else if (ft && seen.focusTitle && !seen.focusTitle.includes(ft)) seen.focusTitle = `${seen.focusTitle} · ${ft}`;
       continue;
     }
-    out.push({ cfg, plannedCfg, order: b.order_index, focusStepId: workedCfg ? null : (b.focus_step_id ?? null), focusTitle: ft });
+    const fm = !workedCfg && Array.isArray(b.focus_moments) ? (b.focus_moments as string[]).filter((id) => isElementOf(plannedCfg, id)).slice(0, 3) : [];
+    out.push({ cfg, plannedCfg, order: b.order_index, focusStepId: workedCfg ? null : (b.focus_step_id ?? null), focusTitle: ft, focusMoments: fm });
   }
   return out;
 }
@@ -87,9 +90,9 @@ export function nextSequenceAfter(cfg: SequencePageConfig): SequencePageConfig |
 }
 
 /** Lo que la plantilla ya tiene para mañana, para este alumno. null = no hay mañana. */
-export type TomorrowPlan = { day_number: number; planned: { sequence_id: string | null; focus_step_id: string | null } | null; /** mañana tiene bloques aunque ninguno sea secuencia (examen, teoría) */ hasBlocks?: boolean } | null;
+export type TomorrowPlan = { day_number: number; planned: { sequence_id: string | null; focus_step_id: string | null; focus_moments?: string[] | null } | null; /** mañana tiene bloques aunque ninguno sea secuencia (examen, teoría) */ hasBlocks?: boolean } | null;
 
-export type TomorrowLine = { seqId: string; stepId: string | null; why: 'repeats' | 'plan' | 'moves' | 'keep' | 'you' };
+export type TomorrowLine = { seqId: string; stepId: string | null; why: 'repeats' | 'plan' | 'moves' | 'keep' | 'you'; /** misiones (hasta 3, en orden) */ moments?: string[] | null };
 
 /**
  * La regla (Marcelo 2026-09-20): con todas las secuencias del día calificadas,
@@ -113,10 +116,15 @@ export function deriveTomorrow(args: {
     .sort((a, b) => (a.star! - b.star!) || (b.s.order - a.s.order))[0];
   if (weak) {
     const plannedFocus = weak.s.focusStepId && isElementOf(weak.s.cfg, weak.s.focusStepId) ? weak.s.focusStepId : null;
-    return { seqId: weak.s.cfg.id, stepId: brokenOf(weak.s) ?? plannedFocus, why: 'repeats' };
+    const broke = brokenOf(weak.s);
+    const moments = broke ? [broke] : weak.s.focusMoments.length ? weak.s.focusMoments : plannedFocus ? [plannedFocus] : null;
+    return { seqId: weak.s.cfg.id, stepId: broke ?? plannedFocus, why: 'repeats', moments };
   }
   const plannedId = tomorrow?.planned?.sequence_id ?? null;
-  if (!isLastDay && plannedId && SEQUENCE_PAGES[plannedId]) return { seqId: plannedId, stepId: tomorrow?.planned?.focus_step_id ?? null, why: 'plan' };
+  if (!isLastDay && plannedId && SEQUENCE_PAGES[plannedId]) {
+    const pm = (tomorrow?.planned?.focus_moments ?? []).filter((id) => isElementOf(SEQUENCE_PAGES[plannedId], id)).slice(0, 3);
+    return { seqId: plannedId, stepId: pm[0] ?? tomorrow?.planned?.focus_step_id ?? null, why: 'plan', moments: pm.length ? pm : null };
+  }
   const last = seqs[seqs.length - 1];
   // Mañana está planeado pero sin secuencia (examen, teoría): se sigue con la de hoy.
   if (!isLastDay && tomorrow?.hasBlocks) return { seqId: last.cfg.id, stepId: null, why: 'keep' };
@@ -170,6 +178,7 @@ export function DayCloseCard({
   const [noteDraft, setNoteDraft] = useState(note);
   const savedSeqId = gen?.next_focus_sequence_id ?? null;
   const savedStepId = gen?.next_focus_step_id ?? null;
+  const savedMoments: string[] = Array.isArray(gen?.next_focus_moments) ? (gen!.next_focus_moments as string[]) : [];
 
   const blockOf = (order: number) => blocks.find((b) => b.order_index === order) ?? null;
   const starOf = (s: DaySequence) => blockOf(s.order)?.coach_sequence_rating ?? null;
@@ -178,6 +187,7 @@ export function DayCloseCard({
   // (1–3★ en esa secuencia): el foco que trae la plantilla no es un paso roto.
   const [broken, setBroken] = useState<Record<string, string | null>>(() => {
     if (!savedSeqId || !savedStepId) return {};
+    if (savedMoments.length > 1) return {}; // una lista de misiones no es un paso roto
     const s = seqs.find((x) => x.cfg.id === savedSeqId);
     const st = s ? starOf(s) : null;
     return s && st !== null && st <= 3 ? { [savedSeqId]: savedStepId } : {};
@@ -199,16 +209,21 @@ export function DayCloseCard({
   /** La línea como texto ("#10 Snap Frontside · Bottom Turn Medium — Frontside") + campos estructurados. */
   const linePatch = (l: TomorrowLine | null, noteText: string = noteDraft): Partial<ServicePlanBlock> => {
     const n = noteText.trim();
-    if (!l || !SEQUENCE_PAGES[l.seqId]) return { whats_next: n || null, next_focus_sequence_id: null, next_focus_step_id: null } as any;
+    if (!l || !SEQUENCE_PAGES[l.seqId]) return { whats_next: n || null, next_focus_sequence_id: null, next_focus_step_id: null, next_focus_moments: null } as any;
     const cfg = SEQUENCE_PAGES[l.seqId];
-    const text = `${seqTag(cfg)}${l.stepId ? ` · ${stepTitleOf(cfg, l.stepId)}` : ''}`;
-    return { whats_next: [text, n].filter(Boolean).join(NOTE_SEP), next_focus_sequence_id: l.seqId, next_focus_step_id: l.stepId } as any;
+    const ms = (l.moments ?? []).filter((id) => isElementOf(cfg, id)).slice(0, 3);
+    const stepId = ms[0] ?? l.stepId;
+    const text = ms.length > 1
+      ? `${seqTag(cfg)} · ${ms.map((id) => stepTitleOf(cfg, id)).join(' · ')}`
+      : `${seqTag(cfg)}${stepId ? ` · ${stepTitleOf(cfg, stepId)}` : ''}`;
+    return { whats_next: [text, n].filter(Boolean).join(NOTE_SEP), next_focus_sequence_id: l.seqId, next_focus_step_id: stepId, next_focus_moments: ms.length ? ms : null } as any;
   };
 
   // La línea que se muestra: lo guardado en el bloque (fuente de verdad).
   const derived = derive();
+  const sameMoments = (a: string[] | null | undefined, b: string[] | null | undefined) => (a ?? []).join('|') === (b ?? []).join('|');
   const line: TomorrowLine | null = savedSeqId && SEQUENCE_PAGES[savedSeqId]
-    ? { seqId: savedSeqId, stepId: savedStepId, why: derived && derived.seqId === savedSeqId && (derived.stepId ?? null) === (savedStepId ?? null) ? derived.why : 'you' }
+    ? { seqId: savedSeqId, stepId: savedStepId, moments: savedMoments.length ? savedMoments : null, why: derived && derived.seqId === savedSeqId && (derived.stepId ?? null) === (savedStepId ?? null) && sameMoments(derived.moments, savedMoments) ? derived.why : 'you' }
     : null;
   const isManual = manual || line?.why === 'you';
 
@@ -249,9 +264,15 @@ export function DayCloseCard({
     else { onCommit(s.order, reset); onCommit(genOrder, genPatch); }
   };
 
-  const setByHand = (seqId: string, stepId: string | null) => {
+  const setByHand = (seqId: string, moments: string[]) => {
     setManual(true);
-    onCommit(genOrder, linePatch({ seqId, stepId, why: 'you' }));
+    onCommit(genOrder, linePatch({ seqId, stepId: moments[0] ?? null, moments: moments.length ? moments : null, why: 'you' }));
+  };
+  // Hasta tres partes, en el orden en que se tocan; tocar una elegida la saca.
+  const toggleMission = (seqId: string, id: string) => {
+    const cur = line?.seqId === seqId ? (line.moments ?? (line.stepId ? [line.stepId] : [])) : [];
+    const next = cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= 3 ? cur : [...cur, id];
+    setByHand(seqId, next);
   };
   const resetAuto = () => {
     setManual(false);
@@ -261,7 +282,10 @@ export function DayCloseCard({
   };
 
   const lineCfg = line ? SEQUENCE_PAGES[line.seqId] : null;
-  const lineText = line && lineCfg ? `${seqTag(lineCfg)}${line.stepId ? ` · ${stepTitleOf(lineCfg, line.stepId)}` : ''}` : (main || null);
+  const lineMoments = line && lineCfg ? (line.moments ?? []).filter((id) => isElementOf(lineCfg, id)) : [];
+  const lineText = line && lineCfg
+    ? (lineMoments.length > 1 ? `${seqTag(lineCfg)} · ${lineMoments.map((id, i) => `${i + 1} ${stepTitleOf(lineCfg, id)}`).join(' · ')}` : `${seqTag(lineCfg)}${line.stepId ? ` · ${stepTitleOf(lineCfg, line.stepId)}` : ''}`)
+    : (main || null);
   const allRated = seqs.length > 0 && seqs.every((s) => !!starOf(s));
   const WHY: Record<TomorrowLine['why'], string> = {
     repeats: 'Repeats · under 4★, not theirs yet',
@@ -300,7 +324,7 @@ export function DayCloseCard({
             <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00A8CC' }}>{worked ? 'Worked instead' : 'You planned'}</p>
             <p className="text-[15px] font-extrabold text-[#10263B] leading-tight mt-0.5">{seqTitle(s.cfg)}</p>
             <p className="text-[12px] text-[#55666E] mt-0.5">
-              {worked ? `Planned: ${seqTag(s.plannedCfg)}` : s.focusTitle ? `Focus: ${s.focusTitle}` : 'The whole line, start to finish'}
+              {worked ? `Planned: ${seqTag(s.plannedCfg)}` : s.focusMoments.length > 1 ? `Missions: ${s.focusMoments.map((id, i) => `${i + 1} ${stepTitleOf(s.cfg, id)}`).join(' · ')}` : s.focusTitle ? `Focus: ${s.focusTitle}` : 'The whole line, start to finish'}
             </p>
 
             {/* 2 · Estrella */}
@@ -314,7 +338,8 @@ export function DayCloseCard({
               <div className="mt-2.5">
                 <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#55666E]">Where did it break? · optional · tap the step</p>
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
-                  {steps.map((st, i) => {
+                  {[...steps].sort((a, b) => { const ia = s.focusMoments.indexOf(a.id); const ib = s.focusMoments.indexOf(b.id); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); }).map((st) => {
+                    const i = steps.findIndex((x) => x.id === st.id);
                     const on = brokenId === st.id;
                     return (
                       <button key={st.id} type="button" aria-pressed={on} disabled={isClosed} onClick={() => pickBroken(s, st.id)}
@@ -380,27 +405,30 @@ export function DayCloseCard({
         )}
         {changeOpen && !isClosed && (
           <div className="mt-1.5 space-y-1.5">
-            <select value={changeSeq} onChange={(e) => { setChangeSeq(e.target.value); if (e.target.value) setByHand(e.target.value, null); }} className="w-full px-2 py-1.5 rounded-[4px] text-[12px] bg-[#0E2A40] text-[#F7F9FA] border border-[#1E3A52]">
+            <select value={changeSeq} onChange={(e) => { setChangeSeq(e.target.value); if (e.target.value) setByHand(e.target.value, []); }} className="w-full px-2 py-1.5 rounded-[4px] text-[12px] bg-[#0E2A40] text-[#F7F9FA] border border-[#1E3A52]">
               <option value="">— pick a sequence —</option>
               {pickable.map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.belt.replace('_belt', '')}</option>)}
             </select>
             {changeCfg && (
               <div className="flex flex-wrap gap-1.5">
-                <button type="button" onClick={() => setByHand(changeCfg.id, null)} aria-pressed={line?.seqId === changeCfg.id && !line?.stepId}
+                <button type="button" onClick={() => setByHand(changeCfg.id, [])} aria-pressed={line?.seqId === changeCfg.id && !line?.stepId}
                   className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
                   style={line?.seqId === changeCfg.id && !line?.stepId ? { background: '#00D2FF', borderColor: '#00D2FF', color: '#061C2B' } : { background: 'transparent', borderColor: '#1E3A52', color: '#F7F9FA' }}>
                   Whole line
                 </button>
                 {stepsOf(changeCfg).map((st, i) => {
-                  const on = line?.seqId === changeCfg.id && line?.stepId === st.id;
+                  const chosen = line?.seqId === changeCfg.id ? (line.moments ?? (line.stepId ? [line.stepId] : [])) : [];
+                  const pos = chosen.indexOf(st.id);
+                  const on = pos >= 0;
                   return (
-                    <button key={st.id} type="button" onClick={() => setByHand(changeCfg.id, st.id)} aria-pressed={on}
+                    <button key={st.id} type="button" onClick={() => toggleMission(changeCfg.id, st.id)} aria-pressed={on}
                       className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
                       style={on ? { background: '#00D2FF', borderColor: '#00D2FF', color: '#061C2B' } : { background: 'transparent', borderColor: '#1E3A52', color: '#F7F9FA' }}>
-                      {i + 1} · {st.title}
+                      {on && chosen.length > 1 ? `M${pos + 1} · ` : `${i + 1} · `}{st.title}
                     </button>
                   );
                 })}
+                <p className="basis-full text-[10px]" style={{ color: 'rgba(247,249,250,.6)' }}>Tap up to three parts, in order: they become tomorrow&apos;s missions.</p>
               </div>
             )}
           </div>

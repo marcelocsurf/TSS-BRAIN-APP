@@ -1,5 +1,6 @@
 'use server';
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
+import { isElementOf } from '@/lib/sequence-pages/circles-seq';
 import { isSidePair, resolveSidePair } from '@/lib/sequence-pages/side-pairs';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { emailEnabled } from '@/lib/email-switch';
@@ -52,7 +53,7 @@ export interface ServicePlanData {
   /** Cierre en una línea (2026-09-20): lo que la plantilla ya tiene para
    *  mañana, por alumno (la primera secuencia de agua del día siguiente).
    *  null = no hay mañana. */
-  tomorrow?: { day_number: number; byStudent: Record<string, { sequence_id: string | null; focus_step_id: string | null }>; hasBlocks: Record<string, boolean> } | null;
+  tomorrow?: { day_number: number; byStudent: Record<string, { sequence_id: string | null; focus_step_id: string | null; focus_moments?: string[] | null }>; hasBlocks: Record<string, boolean> } | null;
   // M45 — list of all days (one camp_session per day) so the UI can render
   // a day picker. `selectedDay` is the day currently loaded in `plan` and
   // `students[].block` below.
@@ -318,6 +319,8 @@ export interface ServicePlanBlock {
   // Cierre en una línea (2026-09-20): "se trabajó otra cosa". La estrella
   // califica ESTA secuencia cuando está; la planeada sigue en sequence_id.
   worked_sequence_id?: string | null;
+  /** Misiones de mañana (hasta 3 elementos, en orden) elegidas en el cierre (2026-09-21). */
+  next_focus_moments?: string[] | null;
 }
 
 export interface ServicePlanStudent {
@@ -680,6 +683,7 @@ export async function getServicePlan(
         next_focus_sequence_id: b.next_focus_sequence_id ?? null,
         next_focus_step_id: b.next_focus_step_id ?? null,
         worked_sequence_id: b.worked_sequence_id ?? null,
+        next_focus_moments: b.next_focus_moments ?? null,
       })),
     };
   });
@@ -692,19 +696,19 @@ export async function getServicePlan(
     if (nextDay) {
       const { data: nb } = await admin
         .from('service_plan_blocks')
-        .select('student_id, order_index, sequence_id, focus_step_id, step_id, step_ids, land_drill_id, land_drill_custom, water_drill_id, water_drill_custom')
+        .select('student_id, order_index, sequence_id, focus_step_id, focus_moments, step_id, step_ids, land_drill_id, land_drill_custom, water_drill_id, water_drill_custom')
         .eq('camp_session_id', nextDay.camp_session_id)
         .order('order_index');
       const beltOf: Record<string, string | null> = {};
       for (const st of students) beltOf[st.student_id] = st.belt_level;
       const byStudentBlocks: Record<string, any[]> = {};
       for (const b of nb ?? []) (byStudentBlocks[b.student_id] ??= []).push(b);
-      const byStudent: Record<string, { sequence_id: string | null; focus_step_id: string | null }> = {};
+      const byStudent: Record<string, { sequence_id: string | null; focus_step_id: string | null; focus_moments?: string[] | null }> = {};
       const hasBlocks: Record<string, boolean> = {};
       for (const sid of Object.keys(byStudentBlocks)) {
         hasBlocks[sid] = byStudentBlocks[sid].length > 0;
         const first = firstWaterSequenceOfDay(byStudentBlocks[sid], beltOf[sid] ?? null);
-        if (first) byStudent[sid] = { sequence_id: first.cfg.id, focus_step_id: first.focusStepId };
+        if (first) byStudent[sid] = { sequence_id: first.cfg.id, focus_step_id: first.focusStepId, focus_moments: Array.isArray(first.block?.focus_moments) ? first.block.focus_moments.filter((x: string) => isElementOf(first.cfg, x)) : null };
       }
       tomorrow = { day_number: nextDay.day_number, byStudent, hasBlocks };
     }
@@ -1216,6 +1220,8 @@ export async function saveServicePlanBlock(
     next_focus_sequence_id: string | null;
     next_focus_step_id: string | null;
     worked_sequence_id: string | null;
+    next_focus_moments: string[] | null;
+    focus_moments: string[] | null;
   }>
 ): Promise<void> {
   const admin = createAdminClient();
@@ -1300,6 +1306,7 @@ export async function saveServicePlanBlock(
     'next_focus_sequence_id',
     'next_focus_step_id',
     'worked_sequence_id',
+    'next_focus_moments',
   ] as const;
   const cleanPatch: Record<string, any> = {};
   for (const k of ALLOWED) {
@@ -2504,7 +2511,7 @@ export async function closeServicePlan(
     nextClosed = (np as any)?.completion_state === 'closed';
     const { data: nb } = await admin
       .from('service_plan_blocks')
-      .select('id, student_id, order_index, sequence_id, focus_step_id, step_id, step_ids, land_drill_id, land_drill_custom, water_drill_id, water_drill_custom')
+      .select('id, student_id, order_index, sequence_id, focus_step_id, focus_moments, step_id, step_ids, land_drill_id, land_drill_custom, water_drill_id, water_drill_custom')
       .eq('camp_session_id', nextSess.id)
       .order('order_index');
     for (const b of nb ?? []) (nextBlocksByStudent[b.student_id] ??= []).push(b);
@@ -2522,6 +2529,9 @@ export async function closeServicePlan(
     if (!nf || !SEQUENCE_PAGES[nf]) return;
     const ns: string | null = firstBlock.next_focus_step_id ?? null;
     const cfgN = SEQUENCE_PAGES[nf];
+    // Misiones de mañana (hasta 3, en orden): viajan a focus_moments del bloque.
+    const nm: string[] | null = Array.isArray(firstBlock.next_focus_moments) ? firstBlock.next_focus_moments.filter((x: string) => isElementOf(cfgN, x)).slice(0, 3) : null;
+    const missions = nm && nm.length ? nm : null;
     const nbs = nextBlocksByStudent[studentId] ?? [];
     const belt: string | null = studById[studentId]?.belt_level ?? null;
     // La misma regla que el cierre y que el mapa "tomorrow" del plan: la
@@ -2530,7 +2540,8 @@ export async function closeServicePlan(
     // Mañana tiene bloques pero ninguno es una secuencia de agua (día de examen,
     // teoría): ese día es así a propósito y no se pisa.
     if (!plannedFirst && nbs.length > 0) return;
-    const differs = !plannedFirst || plannedFirst.cfg.id !== nf || (ns ?? null) !== (plannedFirst.focusStepId ?? null);
+    const plannedMissions = plannedFirst && Array.isArray(plannedFirst.block?.focus_moments) ? plannedFirst.block.focus_moments.filter((x: string) => isElementOf(plannedFirst.cfg, x)) : [];
+    const differs = !plannedFirst || plannedFirst.cfg.id !== nf || (ns ?? null) !== (plannedFirst.focusStepId ?? null) || (missions ?? []).join('|') !== plannedMissions.join('|');
     if (!differs) return;
     // Misma secuencia que la plantilla → solo cambia el foco de ESE bloque.
     // Otra secuencia → va al bloque 0 (se agrega); la misión de la plantilla
@@ -2549,10 +2560,12 @@ export async function closeServicePlan(
       step_ids: cfgN.stepIds,
       sequence_id: nf,
       worked_sequence_id: null,
-      focus_step_id: ns,
-      focus_moments: null,
+      focus_step_id: missions ? missions[0] : ns,
+      focus_moments: missions,
       // Mismo formato que lee el plan simple ("Focus: <paso>" / "Whole line · #n").
-      objective_text: ns ? `Focus: ${elementTitle(cfgN, ns, await stepTitleOf(ns)) ?? ns}` : `Whole line · ${tagN}`,
+      objective_text: missions && missions.length > 1
+        ? `Focus: ${(await Promise.all(missions.map(async (m) => elementTitle(cfgN, m, await stepTitleOf(m)) ?? m))).join(' · ')}`
+        : ns ? `Focus: ${elementTitle(cfgN, ns, await stepTitleOf(ns)) ?? ns}` : `Whole line · ${tagN}`,
       water_drill_id: sameAsToday?.water_drill_id ?? null,
       water_drill_custom: sameAsToday?.water_drill_custom ?? null,
       land_drill_id: sameAsToday?.land_drill_id ?? null,
@@ -2567,9 +2580,10 @@ export async function closeServicePlan(
       // Misma secuencia que la plantilla: solo cambia el foco; los drills del
       // bloque quedan, salvo el juego de un círculo, que sigue a su elemento.
       delete patch.water_drill_id; delete patch.water_drill_custom; delete patch.land_drill_id; delete patch.land_drill_custom; delete patch.worked_sequence_id;
-      if (cfgN.games && ns) {
-        const el = cfgN.elements?.find((e) => e.id === ns);
-        const game = cfgN.games[ns] ?? (el ? cfgN.games[el.stepId] : undefined);
+      if (cfgN.games && (missions?.[0] ?? ns)) {
+        const nsx = (missions?.[0] ?? ns) as string;
+        const el = cfgN.elements?.find((e) => e.id === nsx);
+        const game = cfgN.games[nsx] ?? (el ? cfgN.games[el.stepId] : undefined);
         if (game) patch.water_drill_id = game;
       }
     }

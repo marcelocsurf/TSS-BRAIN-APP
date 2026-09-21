@@ -9,6 +9,7 @@ import { BELT_HIERARCHY, type BeltLevel } from '@/lib/constants/belts';
 import { getMaterialsForStudent } from '@/lib/constants/student-materials';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
+import { isElementOf } from '@/lib/sequence-pages/circles-seq';
 import { topicById } from '@/lib/sequence-pages/topics';
 import { THREE_CIRCLES_SEQUENCE_ID, THREE_CIRCLES_GAME_TITLES, gameContext } from '@/lib/sequence-pages/three-circles';
 
@@ -458,7 +459,7 @@ export async function getStudentPortalData(token: string) {
       const plans: { sequenceId: string; number: number; title: string; label: string; kind: string; focus: string[]; notes: string | null; gameId?: string | null }[] = [];
       const seen = new Set<string>();
       // Títulos de paso para el foco estructurado (focus_step_id) de la plantilla.
-      const focusStepIds = Array.from(new Set(dayBlocks.map((b: any) => b.focus_step_id).filter(Boolean))) as string[];
+      const focusStepIds = Array.from(new Set(dayBlocks.flatMap((b: any) => [b.focus_step_id, ...(Array.isArray(b.focus_moments) ? b.focus_moments : [])]).filter((id: any) => typeof id === 'string' && id && !id.includes(':')))) as string[];
       const stepTitle = new Map<string, string>();
       if (focusStepIds.length) {
         const { data: ls } = await admin.from('lessons').select('id, title').in('id', focusStepIds);
@@ -491,11 +492,16 @@ export async function getStudentPortalData(token: string) {
         if (!cfg) continue;
         const txt = String(b.objective_text ?? '');
         const textFocus = txt.startsWith('Focus: ') ? txt.slice(7).split(' · ').map((x) => x.trim()).filter(Boolean) : [];
-        const structFocus = b.focus_step_id ? [(() => {
-          const el = elementTitle(cfg, b.focus_step_id, stepTitle.get(b.focus_step_id) ?? b.focus_step_id) as string;
-          const g = cfg.kind === 'circle' && b.water_drill_id ? THREE_CIRCLES_GAME_TITLES[b.water_drill_id as string] : null;
-          return g ? `${el} — ${g}` : el;
-        })()] : [];
+        // Misiones del día (2026-09-21): hasta tres elementos en orden; si no, el foco único.
+        const missionIds: string[] = Array.isArray(b.focus_moments) ? (b.focus_moments as string[]).filter((id) => isElementOf(cfg, id)).slice(0, 3) : [];
+        const structFocus = missionIds.length > 1
+          ? missionIds.map((id, i) => `Mission ${i + 1} · ${elementTitle(cfg, id, stepTitle.get(id) ?? id) ?? id}`)
+          : (missionIds[0] ?? b.focus_step_id) ? [(() => {
+            const fid = (missionIds[0] ?? b.focus_step_id) as string;
+            const el = elementTitle(cfg, fid, stepTitle.get(fid) ?? fid) as string;
+            const g = cfg.kind === 'circle' && b.water_drill_id ? THREE_CIRCLES_GAME_TITLES[b.water_drill_id as string] : null;
+            return g ? `${el} — ${g}` : el;
+          })()] : [];
         // El plan simple y el cierre escriben el texto "Focus: <paso>" Y el
         // paso estructurado (2026-09-21): el mismo título no se muestra dos veces.
         // Con foco estructurado, ese manda: el texto "Focus: …" es su espejo
