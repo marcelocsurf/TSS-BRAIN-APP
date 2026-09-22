@@ -77,11 +77,12 @@ export const CIRCLE_WAVE: SequencePageConfig = {
   title: 'Circle 3 · Wave',
   stepIds: ['STP-033'],
   games: { 'STP-033': 'GAME-3C-POCKET-FOAM' },
-  // Lo que se rompe en la ola (Marcelo 2026-09-21).
+  // El foco se dice en positivo, no por el error (Marcelo 2026-09-22).
   elements: [
-    { id: 'CIRCLE-WAVE:SPEED', title: 'Lost speed', stepId: 'STP-033' },
-    { id: 'CIRCLE-WAVE:FAR', title: 'Too far from the pocket', stepId: 'STP-033' },
-    { id: 'CIRCLE-WAVE:FLAT', title: 'Went to the flat', stepId: 'STP-033' },
+    { id: 'CIRCLE-WAVE:POCKET', title: 'Stay close to the pocket', stepId: 'STP-033' },
+    { id: 'CIRCLE-WAVE:FACE', title: 'Stay on the face · never touch the flat', stepId: 'STP-033' },
+    { id: 'CIRCLE-WAVE:UPDOWN', title: 'Use the face · up and down', stepId: 'STP-033' },
+    { id: 'CIRCLE-WAVE:HOLD', title: 'Hold your energy and release it · timing of the two forces', stepId: 'STP-033' },
   ],
   think: {
     whatIs: { headline: 'Where is the energy, and how do I use it?', line: 'Two energies: the pocket and the foam. Move away, come back, touch the foam without getting eaten, get back to the wall.', where: 'On the face, every wave.', whatFor: 'This is the general game: it makes you use the body and the board at once.' },

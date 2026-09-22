@@ -1383,7 +1383,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             const groupSeq = groupId ? SEQUENCE_PAGES[groupId] ?? null : null;
             const sequenceTag = (c: SequencePageConfig) => `#${c.number} ${c.title}`;
             // Entradas y círculos ya traen su nombre ("Circle 1 · Body"); las numeradas llevan "#n".
-            const seqLabel = (c: SequencePageConfig) => (c.kind === 'entry' || c.kind === 'circle' ? c.title : sequenceTag(c));
+            // El número lo pierde solo lo que tiene rótulo propio (los círculos y
+            // las de entrada). La #6 es 'entry' y se quedaba sin su "#6".
+            const seqLabel = (c: SequencePageConfig) => (c.eyebrow ? c.title : sequenceTag(c));
             const assign = (studentId: string, c: SequencePageConfig) =>
               commitStudentBlock(studentId, 0, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${seqLabel(c)}` } as any);
             const pickSeq = (c: SequencePageConfig) => { for (const st of students) assignLine(st, c); };
@@ -2050,7 +2052,7 @@ function GeneralPlanSummary({
             )}
           </div>
         )}
-        <SummaryRow label="Venue call" value={goLabel} />
+        {plan.venue_go_no_go && <SummaryRow label="Venue call" value={goLabel} />}
         {conditions.length > 0 && (
           <div>
             <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">
@@ -2072,14 +2074,8 @@ function GeneralPlanSummary({
         {plan.venue_analysis && (
           <SummaryRow label="Venue read" value={plan.venue_analysis} />
         )}
-        <SummaryRow
-          label={<><Flame size={11} strokeWidth={1.75} /> Warm-up</>}
-          value={warmUpLabel || '—'}
-        />
-        <SummaryRow
-          label={<><Brain size={11} strokeWidth={1.75} /> Mental hack</>}
-          value={mentalLabel || '—'}
-        />
+        {warmUpLabel && <SummaryRow label={<><Flame size={11} strokeWidth={1.75} /> Warm-up</>} value={warmUpLabel} />}
+        {mentalLabel && <SummaryRow label={<><Brain size={11} strokeWidth={1.75} /> Mental hack</>} value={mentalLabel} />}
         {plan.notes_general && (
           <SummaryRow
             label={<><NotebookPen size={11} strokeWidth={1.75} /> Notes</>}
@@ -2091,19 +2087,43 @@ function GeneralPlanSummary({
             each student is set to surf, not just the group read. */}
         {students.some((s) => s.missions.length > 0) && (
           <div>
-            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1 inline-flex items-center gap-1">
-              <Users size={11} strokeWidth={1.75} /> Missions per student
+            <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-2 inline-flex items-center gap-1.5">
+              <Users size={12} strokeWidth={1.75} /> Missions per student
             </p>
-            <div className="space-y-1">
+            <div className="space-y-2.5">
               {students.map((s, i) => (
-                <div key={i} className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] px-2.5 py-1.5">
-                  <p className="text-[12px] font-semibold text-[var(--tss-navy)] leading-tight">{s.name}</p>
+                <div key={i} className="rounded-lg bg-white border border-[#DCD7C6] overflow-hidden">
+                  <p className="text-[17px] font-extrabold leading-tight px-3 pt-2.5 pb-2" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#10263B' }}>{s.name}</p>
                   {s.missions.length > 0 ? (
-                    s.missions.map((m, j) => (
-                      <p key={j} className="text-[11px] text-[#55666E] leading-snug">🌊 {m}</p>
-                    ))
+                    <ol>
+                      {s.missions.map((m, j) => {
+                        // "Circle 3 · Wave · focus: a · b" → secuencia + partes.
+                        const cut = m.indexOf(' · focus: ');
+                        const seq = cut >= 0 ? m.slice(0, cut) : m.replace(/ · whole sequence$/, '');
+                        const parts = cut >= 0 ? m.slice(cut + 10).split(' · ').map((x) => x.trim()).filter(Boolean) : [];
+                        return (
+                          <li key={j} className="flex items-start gap-2.5 px-3 py-2.5" style={{ borderTop: '1px solid #EDF0F2' }}>
+                            <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black" style={{ background: '#061C2B', color: '#00D2FF' }}>{j + 1}</span>
+                            <span className="min-w-0">
+                              <span className="block text-[15px] font-bold leading-snug" style={{ color: '#10263B' }}>{seq}</span>
+                              {parts.length > 0 ? (
+                                <span className="block mt-0.5">
+                                  {parts.map((x, k) => (
+                                    <span key={k} className="block text-[14px] leading-snug" style={{ color: '#10263B' }}>
+                                      {parts.length > 1 && <span className="font-mono text-[11px] mr-1.5" style={{ color: '#00A8CC' }}>M{k + 1}</span>}{x}
+                                    </span>
+                                  ))}
+                                </span>
+                              ) : (
+                                <span className="block text-[13px] mt-0.5" style={{ color: '#55666E' }}>The whole line, start to finish</span>
+                              )}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ol>
                   ) : (
-                    <p className="text-[11px] text-[#55666E] italic">No mission set yet</p>
+                    <p className="text-[14px] px-3 pb-2.5" style={{ color: '#55666E' }}>No mission set yet</p>
                   )}
                 </div>
               ))}
