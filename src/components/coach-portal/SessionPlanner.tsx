@@ -1405,11 +1405,49 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             const clearCarry = (b: ServicePlanBlock | null) => (b && /^Set at the close of day/i.test(b.notes_pre ?? '') ? { notes_pre: null } : {});
             // Misiones del día (Marcelo 2026-09-21): hasta tres partes de la línea,
             // en orden. focus_step_id = la primera; focus_moments = todas.
+            // Misiones sobre un bloque cualquiera: la línea del alumno o una
+            // secuencia agregada (Marcelo 2026-09-22: el círculo de la tabla
+            // necesita elegir la posición del pie igual que la línea).
+            const setMissionsOn = (st: ServicePlanStudent, orderIndex: number, c: SequencePageConfig, ids: string[], b: ServicePlanBlock | null) => {
+              const ms = ids.filter((id) => isElementOf(c, id)).slice(0, 3);
+              const games = (c as any).games as Record<string, string> | undefined;
+              // En un círculo, el elemento trae su juego.
+              const lesson = ms[0] ? (c.elements?.find((e) => e.id === ms[0])?.stepId ?? ms[0]) : c.stepIds[0];
+              commitStudentBlock(st.student_id, orderIndex, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: ms[0] ?? null, focus_moments: ms.length ? ms : null, objective_text: ms.length ? `Focus: ${ms.map((id) => stepTitle(c, id)).join(' · ')}` : `Whole line · ${seqLabel(c)}`, ...(games ? { water_drill_id: games[lesson] ?? null } : {}), ...clearCarry(b) } as any);
+            };
             const setFocusMissions = (st: ServicePlanStudent, c: SequencePageConfig, ids: string[]) => {
               const b = lineBlockOf(st);
-              const ms = ids.filter((id) => isElementOf(c, id)).slice(0, 3);
-              commitStudentBlock(st.student_id, b?.order_index ?? 0, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: ms[0] ?? null, focus_moments: ms.length ? ms : null, objective_text: ms.length ? `Focus: ${ms.map((id) => stepTitle(c, id)).join(' · ')}` : `Whole line · ${seqLabel(c)}`, ...clearCarry(b) } as any);
+              setMissionsOn(st, b?.order_index ?? 0, c, ids, b);
             };
+            // Las misiones guardadas de un bloque, o su foco único.
+            const missionsOf = (b: ServicePlanBlock | null | undefined, c: SequencePageConfig): string[] => {
+              const ms = (Array.isArray(b?.focus_moments) ? (b!.focus_moments as string[]) : []).filter((id) => isElementOf(c, id)).slice(0, 3);
+              if (ms.length) return ms;
+              return b?.focus_step_id && isElementOf(c, b.focus_step_id) ? [b.focus_step_id] : [];
+            };
+            const missionsLabel = (list: string[], c: SequencePageConfig) => (list.length ? list.map((id, i) => `${list.length > 1 ? `${i + 1} ` : ''}${stepTitle(c, id)}`).join(' · ') : 'Whole line');
+            // Los chips de misiones, iguales para la línea y para lo agregado.
+            const missionChips = (st: ServicePlanStudent, orderIndex: number, c: SequencePageConfig, list: string[], b: ServicePlanBlock | null) => (
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                <button type="button" onClick={() => setMissionsOn(st, orderIndex, c, [], b)} aria-pressed={!list.length}
+                  className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+                  style={!list.length ? { background: '#061C2B', borderColor: '#061C2B', color: '#F7F9FA' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
+                  Whole line
+                </button>
+                {sequenceElements(c, (id) => stpLabel(id)).map((el, i) => {
+                  const pos = list.indexOf(el.id); const on = pos >= 0;
+                  return (
+                    <button key={el.id} type="button" aria-pressed={on}
+                      onClick={() => { const next = list.includes(el.id) ? list.filter((x) => x !== el.id) : list.length >= 3 ? list : [...list, el.id]; setMissionsOn(st, orderIndex, c, next, b); }}
+                      className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+                      style={on ? { background: '#E0A62B', borderColor: '#E0A62B', color: '#061C2B' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
+                      {on && list.length > 1 ? `M${pos + 1} · ` : `${i + 1} · `}{el.title}
+                    </button>
+                  );
+                })}
+                <p className="basis-full text-[10px] text-[#55666E]">Tap up to three parts, in order. One star for the sequence; these are the missions.</p>
+              </div>
+            );
             const assignLine = (st: ServicePlanStudent, c: SequencePageConfig) => {
               const b = lineBlockOf(st);
               const changed = !!b && (b.worked_sequence_id ?? b.sequence_id) !== c.id;
@@ -1459,10 +1497,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                       const b0 = lineBlockOf(st);
                       const mySeq = seqOfStudent(st) ?? groupSeq;
                       const focusId = b0?.focus_step_id && isElementOf(mySeq, b0.focus_step_id) ? b0.focus_step_id : null;
-                      const missions = (Array.isArray(b0?.focus_moments) ? (b0!.focus_moments as string[]) : []).filter((id) => isElementOf(mySeq, id)).slice(0, 3);
-                      const missionList = missions.length ? missions : focusId ? [focusId] : [];
-                      const missionLabel = missionList.length ? missionList.map((id, i) => `${missionList.length > 1 ? `${i + 1} ` : ''}${stepTitle(mySeq, id)}`).join(' · ') : 'Whole line';
-                      const toggle = (id: string) => { const next = missionList.includes(id) ? missionList.filter((x) => x !== id) : missionList.length >= 3 ? missionList : [...missionList, id]; setFocusMissions(st, mySeq, next); };
+                      const missionList = missionsOf(b0, mySeq);
+                      const missionLabel = missionsLabel(missionList, mySeq);
                       const legacyFocus = !focusId && (b0?.objective_text ?? '').startsWith('Focus: ') ? String(b0?.objective_text).slice(7) : null;
                       const fromClose = /^Set at the close of day/i.test(b0?.notes_pre ?? '');
                       const differs = mySeq.id !== groupSeq.id;
@@ -1486,24 +1522,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                             <summary className="text-[11px] cursor-pointer" style={{ color: missionList.length ? '#9A6A12' : '#55666E' }} aria-label={`Focus for ${st.display_name}`}>
                               {missionList.length > 1 ? 'Missions · ' : 'Focus · '}{missionLabel}
                             </summary>
-                            <div className="flex flex-wrap gap-1.5 mt-1.5">
-                              <button type="button" onClick={() => setFocusMissions(st, mySeq, [])} aria-pressed={!missionList.length}
-                                className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
-                                style={!missionList.length ? { background: '#061C2B', borderColor: '#061C2B', color: '#F7F9FA' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
-                                Whole line
-                              </button>
-                              {sequenceElements(mySeq, (id) => stpLabel(id)).map((el, i) => {
-                                const pos = missionList.indexOf(el.id); const on = pos >= 0;
-                                return (
-                                  <button key={el.id} type="button" onClick={() => toggle(el.id)} aria-pressed={on}
-                                    className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
-                                    style={on ? { background: '#E0A62B', borderColor: '#E0A62B', color: '#061C2B' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
-                                    {on && missionList.length > 1 ? `M${pos + 1} · ` : `${i + 1} · `}{el.title}
-                                  </button>
-                                );
-                              })}
-                              <p className="basis-full text-[10px] text-[#55666E]">Tap up to three parts, in order. One star for the sequence; these are the missions.</p>
-                            </div>
+                            {missionChips(st, b0?.order_index ?? 0, mySeq, missionList, b0 ?? null)}
                           </details>
                           <div className="hidden">
                           </div>
@@ -1520,14 +1539,26 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                               commitStudentBlock(st.student_id, nextOrder, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${seqLabel(c)}`, water_drill_id: games ? (games[c.stepIds[0]] ?? null) : null, notes_pre: 'Added by the coach.' } as any);
                             };
                             return (
-                              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                                {others.length > 0 && <span className="text-[10px] text-[#55666E]">Also today:</span>}
-                                {others.map((w) => (
-                                  <span key={w.order} className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6', color: '#10263B' }}>
-                                    {seqLabel(w.cfg)}{w.focusStepId ? ` · ${stepTitle(w.cfg, w.focusStepId)}` : ''}
-                                    <button type="button" aria-label={`Remove ${seqLabel(w.cfg)}`} onClick={() => removeStudentBlock(st.student_id, w.order)} className="text-[#55666E] hover:text-[#E0413B]">×</button>
-                                  </span>
-                                ))}
+                              <div className="mt-1 space-y-1">
+                                {/* Cada secuencia agregada, con su MISMO selector de foco/misiones. */}
+                                {others.map((w) => {
+                                  const wb = st.blocks.find((x) => x.order_index === w.order) ?? null;
+                                  const wList = missionsOf(wb, w.cfg);
+                                  return (
+                                    <div key={w.order} className="rounded-[5px] px-2 py-1.5" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
+                                      <div className="flex items-center justify-between gap-2">
+                                        <span className="text-[11px] font-semibold" style={{ color: '#10263B' }}>Also today · {seqLabel(w.cfg)}</span>
+                                        <button type="button" aria-label={`Remove ${seqLabel(w.cfg)} for ${st.display_name}`} onClick={() => removeStudentBlock(st.student_id, w.order)} className="text-[12px] px-1 text-[#55666E] hover:text-[#E0413B]">×</button>
+                                      </div>
+                                      <details className="mt-0.5">
+                                        <summary className="text-[11px] cursor-pointer" style={{ color: wList.length ? '#9A6A12' : '#55666E' }} aria-label={`Focus for ${st.display_name} · ${seqLabel(w.cfg)}`}>
+                                          {wList.length > 1 ? 'Missions · ' : 'Focus · '}{missionsLabel(wList, w.cfg)}
+                                        </summary>
+                                        {missionChips(st, w.order, w.cfg, wList, wb)}
+                                      </details>
+                                    </div>
+                                  );
+                                })}
                                 {/* + otra secuencia hoy (Marcelo 2026-09-21): se agrega como bloque propio. */}
                                 <select value="" onChange={(e) => { if (e.target.value) addSeq(e.target.value); }} className="text-[10px] px-1.5 py-0.5 border rounded-[5px] bg-white" style={{ borderColor: '#DCD7C6', color: '#10263B' }} aria-label={`Add a sequence for ${st.display_name}`}>
                                   <option value="">+ another sequence today</option>
