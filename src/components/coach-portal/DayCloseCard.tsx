@@ -394,7 +394,7 @@ export function DayCloseCard({
       {/* MAÑANA: la línea aparece sola. Confirmar es registrar; cambiar es un toque. */}
       <div className="rounded-[5px] px-3.5 py-3" style={{ background: '#061C2B' }}>
         <p className="text-[11px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00D2FF' }}>
-          {isLastDay ? "What's next · goes to the final evaluation" : `Next training session${tomorrow?.day_number ? ` · day ${tomorrow.day_number}` : ''} · they will work on`}
+          {isLastDay ? "What's next · the final evaluation" : `Next training session${tomorrow?.day_number ? ` · day ${tomorrow.day_number}` : ''}`}
           {isClosed && !lineText ? ' · not set' : ''}
         </p>
         {lineText ? (
