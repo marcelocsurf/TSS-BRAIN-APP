@@ -211,6 +211,9 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
             </Card>
             {cur.response && (
               <Card title="How the board answers · brake and accelerator" color={CIRCLE_COLOR.board}>
+                <p className="text-[17px] font-extrabold leading-tight mb-1.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: INK }}>
+                  Press to brake. Stay forward to run.
+                </p>
                 <p className="text-[14px] leading-[1.45] mb-3" style={{ color: MUTED }}>
                   The positions above are not three names to memorise. The board itself has a brake and an accelerator, and your weight is what presses them.
                 </p>
