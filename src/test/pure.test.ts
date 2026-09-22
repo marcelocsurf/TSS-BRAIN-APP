@@ -4,6 +4,7 @@ import { pickWeakestCriterion } from '@/lib/utils/criteria';
 import { dobError } from '@/lib/utils/dob';
 import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
 import { computeV2, isValidV2Answers } from '@/lib/quiz/surf-level-v2';
+import { studentBlockNote, isInternalBlockNote, carriedFromClose } from '@/lib/planner/block-notes';
 
 vi.mock('@/lib/utils/tz', () => ({
   elSalvadorToday: () => '2026-09-05',
@@ -126,5 +127,40 @@ describe('sideBalance — el lado flojo es el próximo movimiento, sin perder el
     const b = sideBalance([seq('WB-SEQ-1', 1, 'Board Control', 5), seq('BB-NAV', 7.1, 'Navigating', 3)]);
     expect(b.pairs).toHaveLength(0);
     expect(b.fs).toBeNull();
+  });
+});
+
+// Las marcas internas del planner NO son notas para el alumno. Si alguien
+// agrega una marca nueva y olvida esta lista, el alumno la ve entre comillas
+// como si se la hubiera escrito su coach.
+describe('notes_pre — marca interna vs. nota del coach', () => {
+  const MARCAS = [
+    'Set at the close of day 3.',
+    'Moved on at the close of day 2.',
+    'Carried over from day 5.',
+    'Added at the close.',
+    'Added by the coach.',
+  ];
+  it('ninguna marca del planner llega al alumno', () => {
+    for (const m of MARCAS) {
+      expect(isInternalBlockNote(m)).toBe(true);
+      expect(studentBlockNote(m)).toBeNull();
+    }
+  });
+  it('la nota de verdad del coach sí llega, sin espacios de más', () => {
+    expect(studentBlockNote('  Acordate de mirar la sección   ')).toBe('Acordate de mirar la sección');
+    expect(studentBlockNote('')).toBeNull();
+    expect(studentBlockNote(null)).toBeNull();
+  });
+  it('una nota que empieza parecido no se traga', () => {
+    expect(studentBlockNote('Added by the coach of the other group, ignorá esto')).toBeNull();
+    expect(studentBlockNote('Carried the board yourself today — bien ahí')).toBe('Carried the board yourself today — bien ahí');
+  });
+  it('el planner reconoce de qué día viene la misión', () => {
+    expect(carriedFromClose('Set at the close of day 3.')?.day).toBe('3');
+    expect(carriedFromClose('Moved on at the close of day 12.')?.day).toBe('12');
+    expect(carriedFromClose('Carried over from day 5.')?.day).toBe('5');
+    expect(carriedFromClose('Added by the coach.')).toBeUndefined();
+    expect(carriedFromClose('Buen pop up hoy')).toBeUndefined();
   });
 });

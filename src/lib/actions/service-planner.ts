@@ -3563,9 +3563,28 @@ export async function setStudentDayBoardByToken(
     // tabla vieja del bloque 1 quedaba bloqueando el inventario). Los demás
     // bloques quedan sin tabla para no dejar asignaciones viejas.
     const { data: myBlocks } = await admin
-      .from('service_plan_blocks').select('id, order_index')
+      .from('service_plan_blocks').select('id, order_index, board_id')
       .eq('camp_session_id', campSessionId).eq('student_id', studentId)
       .order('order_index');
+
+    // Liberar la tabla que deja de usar (2026-09-22). Sin esto, cambiar o
+    // quitar la tabla dejaba la vieja en 'in_use' para siempre: recepción no
+    // la podía rentar y el selector de la semana la mostraba "en uso".
+    // saveServicePlanBlock ya hacía este intercambio; esta acción no.
+    const dropped = Array.from(new Set(
+      (myBlocks ?? []).map((b: any) => b.board_id).filter((id: any): id is string => !!id && id !== board.board_id),
+    ));
+    for (const oldId of dropped) {
+      // Solo si ya no la usa nadie más (otro alumno, otro servicio ese día).
+      const { data: stillUsed } = await admin
+        .from('service_plan_blocks').select('id')
+        .eq('board_id', oldId)
+        .not('student_id', 'eq', studentId)
+        .limit(1);
+      if (stillUsed && stillUsed.length > 0) continue;
+      await admin.from('boards').update({ status: 'available' }).eq('id', oldId).neq('status', 'in_repair');
+    }
+
     if (myBlocks && myBlocks.length > 0) {
       await admin.from('service_plan_blocks').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', (myBlocks[0] as any).id);
       const restIds = myBlocks.slice(1).map((b: any) => b.id);

@@ -1,5 +1,6 @@
 'use server';
 
+import { studentBlockNote } from '@/lib/planner/block-notes';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
@@ -483,7 +484,7 @@ export async function getStudentPortalData(token: string) {
           if (!gid || seen.has(`game:${gid}`)) continue;
           seen.add(`game:${gid}`);
           const ctx = gameContext(gid);
-          plans.push({ sequenceId: THREE_CIRCLES_SEQUENCE_ID, number: 0, title: 'The Three Circles', label: `The Three Circles · ${ctx?.label ?? ''}${gameTitle.get(gid) ? ` — ${gameTitle.get(gid)}` : ''}`.replace(' ·  —', ' —'), kind: 'game', focus: [], notes: b.notes_pre ?? null, gameId: gid });
+          plans.push({ sequenceId: THREE_CIRCLES_SEQUENCE_ID, number: 0, title: 'The Three Circles', label: `The Three Circles · ${ctx?.label ?? ''}${gameTitle.get(gid) ? ` — ${gameTitle.get(gid)}` : ''}`.replace(' ·  —', ' —'), kind: 'game', focus: [], notes: studentBlockNote(b.notes_pre), gameId: gid });
           continue;
         }
         // Estructurado primero (sequence_id guardado por el plan simple o la
@@ -515,7 +516,7 @@ export async function getStudentPortalData(token: string) {
           continue;
         }
         seen.add(cfg.id);
-        plans.push({ sequenceId: cfg.id, number: cfg.number, title: cfg.title, label: sequenceDisplayName(cfg), kind: cfg.kind ?? 'sequence', focus: focusAll, notes: b.notes_pre ?? null });
+        plans.push({ sequenceId: cfg.id, number: cfg.number, title: cfg.title, label: sequenceDisplayName(cfg), kind: cfg.kind ?? 'sequence', focus: focusAll, notes: studentBlockNote(b.notes_pre) });
       }
       const plan = plans[0] ?? null;
       const topics = (topicsBySession.get(sess.id) ?? [])

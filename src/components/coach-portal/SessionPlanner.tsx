@@ -11,9 +11,6 @@ import {
   WATER_TEMP_OPTIONS,
   SKY_OPTIONS,
   INCIDENT_TYPE_OPTIONS,
-  BOARD_TYPE_OPTIONS,
-  BOARD_SIZE_FEET_OPTIONS,
-  BOARD_SIZE_INCHES_OPTIONS,
 } from '@/lib/constants/brand';
 import {
   saveServicePlanHeader,
@@ -25,19 +22,18 @@ import {
   saveOfficialStepRatingFromPortal,
   rateSequenceFromPortal,
   saveStudentInternalNote,
-  applyPlanHeaderToWeek,
   applyStudentBoardToWeek,
+  setStudentDayBoardByToken,
   type ServicePlanData,
   type ServicePlanStudent,
   type ServicePlanBlock, finalizeStudentEarlyByToken } from '@/lib/actions/service-planner';
+import { carriedFromClose, isInternalBlockNote } from '@/lib/planner/block-notes';
 import { StarRating } from '@/components/sequence/StarRating';
 import { DayCloseCard } from '@/components/coach-portal/DayCloseCard';
 import { VenuePicker } from '@/components/coach-portal/VenuePicker';
 import {
   Waves,
   ChevronRight,
-  Flame,
-  Brain,
   Users,
   NotebookPen,
   Target,
@@ -55,7 +51,6 @@ import {
   User,
   Zap,
   Dumbbell,
-  Key,
   CalendarClock,
 } from 'lucide-react';
 import { FinalCampEvaluation } from '@/components/coach-portal/FinalCampEvaluation';
@@ -81,14 +76,6 @@ import { usesBeltEvaluation } from '@/lib/constants/service-kinds';
 import { exigeCierreDeDias } from '@/lib/utils/camp-window';
 import { sequenceLabel } from '@/lib/constants/learning-blocks';
 import { displayDate } from '@/lib/utils/tz';
-
-// Mental hack quick-picks (curated subset of canonical options). Coach
-// can also write a custom one. Keys are stored as service_plans.mental_hack.
-const MENTAL_HACK_QUICK: { id: string; label: string; Icon: React.ComponentType<any> }[] = [
-  { id: 'breathe_reset',     label: 'Breathe + reset', Icon: Wind },
-  { id: 'key_words',         label: 'Key words',       Icon: Key },
-  { id: 'visualize_success', label: 'Visualize',       Icon: Target },
-];
 
 // ────────────────────────────────────────────────────────────────────
 // SessionPlanner — coach's session-planning UI. Two phases driven by
@@ -138,13 +125,6 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     // Sin código (2026-09-18): el coach lee el nombre del paso, no STP-010.
     return stp ? stp.title : id;
   };
-  const warmUpLabel = plan.warm_up_drill_id
-    ? drillTitle(plan.warm_up_drill_id)
-    : plan.warm_up_custom;
-  const mentalLabel =
-    MENTAL_HACK_QUICK.find((o) => o.id === plan.mental_hack)?.label ??
-    plan.mental_hack;
-
   // ── commit helpers (state + persist delta, no stale reads) ──
   const commitPlanPatch = (patch: Partial<ServicePlanData['plan']>) => {
     setPlan((p) => ({ ...p, ...patch }));
@@ -237,6 +217,53 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     });
   };
 
+  // ═══ TABLA DEL DÍA · UNA SOLA REGLA (Marcelo 2026-09-22) ═══
+  // La escribe el servidor en el PRIMER bloque del alumno y limpia los
+  // demás — exactamente lo que hace la vista semana. Antes el planner la
+  // escribía por su cuenta y podía dejar dos bloques con tabla: la vista
+  // semana leía una y esta pantalla otra, y el inventario quedaba trabado.
+  // El servidor además valida día cerrado y doble reserva de la misma tabla.
+  const setDayBoard = (
+    studentId: string,
+    board: { board_id: string | null; board_type: string | null; board_size_feet: number | null; board_size_inches: number | null },
+  ) => {
+    // Foto de cómo estaba, para deshacer si el servidor rechaza (día cerrado,
+    // tabla ya tomada, sin señal). Sin esto la pantalla mostraba una tabla
+    // que en la base no existía, y el botón de la semana la copiaba a todos.
+    let before: ServicePlanBlock[] | null = null;
+    const rollback = () => {
+      if (!before) return;
+      setStudents((prev) => prev.map((s) => (s.student_id === studentId ? { ...s, blocks: before! } : s)));
+    };
+    setStudents((prev) =>
+      prev.map((s) => {
+        if (s.student_id !== studentId) return s;
+        if (!before) before = s.blocks;
+        const firstOrder = s.blocks.length ? Math.min(...s.blocks.map((b) => b.order_index)) : 0;
+        const blank = { board_id: null, board_type: null, board_size_feet: null, board_size_inches: null };
+        const nextBlocks = s.blocks.length
+          ? s.blocks.map((b) => (b.order_index === firstOrder ? { ...b, ...board } : { ...b, ...blank }))
+          : [{
+              id: null, order_index: 0, step_id: null,
+              land_drill_id: null, land_drill_custom: null, water_drill_id: null, water_drill_custom: null,
+              objective_text: null, notes_pre: null, status: null, notes_post: null,
+              focus_level: null, flow_channel: null, ...board,
+            } as ServicePlanBlock];
+        return { ...s, blocks: nextBlocks };
+      }),
+    );
+    startTransition(async () => {
+      try {
+        const r = await setStudentDayBoardByToken(token, data.selectedDay.camp_session_id, studentId, board);
+        if (!r.ok) { rollback(); alert(r.error || 'No se pudo guardar la tabla.'); return; }
+        flash('✓ Board');
+      } catch {
+        rollback();
+        alert('Sin conexión — la tabla no se guardó.');
+      }
+    });
+  };
+
   const commitStudentBlock = (
     studentId: string,
     orderIndex: number,
@@ -294,16 +321,6 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         alert(e.message || 'Save failed');
       }
     });
-  };
-
-  // M45 — Add a fresh empty block at the next order_index for one student.
-  const addStudentBlock = (studentId: string) => {
-    const student = students.find((s) => s.student_id === studentId);
-    if (!student) return;
-    const nextIdx = student.blocks.length
-      ? Math.max(...student.blocks.map((b) => b.order_index)) + 1
-      : 0;
-    commitStudentBlock(studentId, nextIdx, {});
   };
 
   // M45 — Remove a block (must keep at least one).
@@ -461,9 +478,6 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     });
   };
 
-  const warmupOptions = data.availableDrills.filter(
-    (d) => d.block_name?.toLowerCase().includes('warm') || d.step_id === 'STP-002'
-  );
 
   // M45 — a student counts as "evaluated" once every GRADABLE block (sequence
   // step) has a status set. Non-gradable blocks don't require a status.
@@ -985,10 +999,14 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               falta se pone en "Adjust" o en el plan simple, no acá. ═══ */}
           {(() => {
             const pl: any = plan;
-            const boards = students.filter((s) => s.blocks.some((b) => b.board_id || b.board_type)).length;
+            // La tabla vive en el PRIMER bloque del alumno (misma regla que la
+            // tarjeta de arriba y que el servidor): contarla en cualquier
+            // bloque hacía que el chip dijera "lista" y la tarjeta "sin tabla".
+            const firstBlockOf = (s: ServicePlanStudent) => (s.blocks.length ? [...s.blocks].sort((a, b) => a.order_index - b.order_index)[0] : null);
+            const boards = students.filter((s) => { const fb = firstBlockOf(s); return !!(fb?.board_id || fb?.board_type); }).length;
             const planned = students.filter((s) => s.blocks.some((b) => b.sequence_id || b.step_id || (b.step_ids ?? []).length)).length;
             // De dónde viene la misión de hoy: el cierre de la sesión anterior.
-            const carried = students.filter((s) => s.blocks.some((b) => /^Set at the close of day/i.test(b.notes_pre ?? ''))).length;
+            const carried = students.filter((s) => s.blocks.some((b) => !!carriedFromClose(b.notes_pre))).length;
             const n = students.length;
             const items: { ok: boolean; label: string }[] = [
               { ok: !!pl.surf_venue, label: pl.surf_venue ? `Spot · ${pl.surf_venue}` : 'Spot · not set' },
@@ -1266,14 +1284,15 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               {/* Marcelo (2026-09-10): "no tener que hacer todo el análisis de la
                   zona, solo decir si hay condición segura". Una pregunta; lo demás
                   es opcional y va plegado. */}
-              {plan.venue_go_no_go && plan.venue_go_no_go !== 'go' && (
-                <SmallField
-                  label="What changes today (optional)"
-                  value={plan.venue_analysis ?? ''}
-                  onBlur={(v) => commitPlanField('venue_analysis', v || null)}
-                  placeholder="e.g. strong current — whitewater only"
-                />
-              )}
+              {/* Siempre visible (2026-09-22): estaba solo cuando la llamada
+                  NO era 'go', así que un texto escrito en 'caution' quedaba
+                  guardado y sin forma de borrarlo al pasar a 'go'. */}
+              <SmallField
+                label="What changes today (optional)"
+                value={plan.venue_analysis ?? ''}
+                onBlur={(v) => commitPlanField('venue_analysis', v || null)}
+                placeholder="e.g. strong current — whitewater only"
+              />
 
               {/* Everything else is optional context — tucked away so the common
                   case is just the go/no-go call + wave size. */}
@@ -1319,13 +1338,6 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     </div>
                   </div>
 
-                  <TextArea
-                    label="Extra notes (optional)"
-                    value={plan.venue_analysis}
-                    onBlur={(v) => commitPlanField('venue_analysis', v)}
-                    placeholder="Only if there's something the dropdowns above can't capture."
-                    rows={2}
-                  />
                 </div>
               </details>
             </div>
@@ -1341,6 +1353,21 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             defaultStart={(plan.class_start_time ?? data.camp.scheduled_time ?? '09:00').slice(0, 5)}
             title={(data.camp.camp_name ?? '').split(' · ')[0]}
           />
+
+          {/* Nota del día, privada (Marcelo 2026-09-22): vivía en el fold
+              "If you want to plan more" junto a warm-up y mental hack, que
+              nadie leía. La nota sí la usan los coaches, así que queda —
+              una sola vez, acá, con lo demás que es del día. La lee
+              GeneralPlanSummary al evaluar. */}
+          <Section icon={ClipboardList} title="Note for the day" subtitle="Private — only coaches see it. The student never does.">
+            <TextArea
+              label=""
+              value={plan.notes_general}
+              onBlur={(v) => commitPlanField('notes_general', v || null)}
+              placeholder="Anything the next coach should know about today. Not about one student — that note lives on the student."
+              rows={2}
+            />
+          </Section>
             </div>
           </details>
 
@@ -1406,7 +1433,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               const w = waterSequencesOfBlocks(st.blocks as any, st.belt_level ?? null)[0];
               return w ? (st.blocks.find((x) => x.order_index === w.order) ?? null) : null;
             };
-            const clearCarry = (b: ServicePlanBlock | null) => (b && /^Set at the close of day/i.test(b.notes_pre ?? '') ? { notes_pre: null } : {});
+            const clearCarry = (b: ServicePlanBlock | null) => (b && isInternalBlockNote(b.notes_pre) ? { notes_pre: null } : {});
             // Misiones del día (Marcelo 2026-09-21): hasta tres partes de la línea,
             // en orden. focus_step_id = la primera; focus_moments = todas.
             // Misiones sobre un bloque cualquiera: la línea del alumno o una
@@ -1495,20 +1522,63 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     })}
                   </div>
                 </details>
-                {groupSeq && (
+                {/* La ficha de cada alumno NO depende de que ya haya una
+                    secuencia elegida (Marcelo 2026-09-22): antes vivía adentro
+                    de {groupSeq && …} y en un día sin plan — un Half Day Surf
+                    Trip, un camp recién creado — desaparecían la tabla, la nota
+                    y la alerta médica, sin ningún otro lugar donde ponerlas. */}
+                {students.length > 0 && (
                   <div className="space-y-2 mt-3">
                     {students.map((st) => {
                       const b0 = lineBlockOf(st);
-                      const mySeq = seqOfStudent(st) ?? groupSeq;
-                      const focusId = b0?.focus_step_id && isElementOf(mySeq, b0.focus_step_id) ? b0.focus_step_id : null;
-                      const missionList = missionsOf(b0, mySeq);
-                      const missionLabel = missionsLabel(missionList, mySeq);
+                      const mySeq: SequencePageConfig | null = seqOfStudent(st) ?? groupSeq;
+                      const focusId = mySeq && b0?.focus_step_id && isElementOf(mySeq, b0.focus_step_id) ? b0.focus_step_id : null;
+                      const missionList = mySeq ? missionsOf(b0, mySeq) : [];
                       const legacyFocus = !focusId && (b0?.objective_text ?? '').startsWith('Focus: ') ? String(b0?.objective_text).slice(7) : null;
-                      const fromClose = /^Set at the close of day/i.test(b0?.notes_pre ?? '');
-                      const closeDay = (b0?.notes_pre ?? '').match(/close of day (\d+)/i)?.[1] ?? null;
-                      const differs = mySeq.id !== groupSeq.id;
-                      const others = waterSequencesOfBlocks(st.blocks as any, st.belt_level ?? null).filter((w) => w.order !== (b0?.order_index ?? -1) && w.cfg.id !== mySeq.id);
+                      const carry = carriedFromClose(b0?.notes_pre);
+                      const fromClose = !!carry;
+                      const closeDay = carry?.day ?? null;
+                      const differs = !!mySeq && !!groupSeq && mySeq.id !== groupSeq.id;
+                      const others = waterSequencesOfBlocks(st.blocks as any, st.belt_level ?? null).filter((w) => w.order !== (b0?.order_index ?? -1) && w.cfg.id !== mySeq?.id);
                       const nextOrder = Math.max(0, ...st.blocks.map((x) => x.order_index)) + 1;
+                      // ═══ TABLA DEL DÍA (Marcelo 2026-09-22) ═══
+                      // Vive en el PRIMER bloque del alumno (igual que el
+                      // servidor: applyStudentBoardToWeek / setStudentDayBoard
+                      // escriben myBlocks[0]). Un solo lugar, y se ve sin abrir.
+                      const boardBlock = st.blocks.length ? [...st.blocks].sort((x, y) => x.order_index - y.order_index)[0] : null;
+                      const boardOrder = boardBlock?.order_index ?? 0;
+                      const invBoard = boardBlock?.board_id ? (data.availableBoards.find((x) => x.id === boardBlock.board_id) ?? null) : null;
+                      const boardSize = boardBlock?.board_size_feet ? `${boardBlock.board_size_feet}'${boardBlock.board_size_inches ?? 0}"` : null;
+                      const boardLabel = invBoard
+                        ? [invBoard.code, boardSize].filter(Boolean).join(' · ')
+                        : boardBlock?.board_type
+                          ? [boardBlock.board_type === 'own' ? 'their own board' : boardBlock.board_type, boardSize].filter(Boolean).join(' · ')
+                          : null;
+                      const boardValue = boardBlock?.board_id ?? (boardBlock?.board_type ? `type:${boardBlock.board_type}` : '');
+                      const boardConflicts = new Set(data.boardConflictIds);
+                      const boardOptions = data.availableBoards.filter((b) => b.id === boardBlock?.board_id || (b.status !== 'in_repair' && !boardConflicts.has(b.id)));
+                      // Una tabla guardada con un tipo viejo ('hard', 'soft') o
+                      // una del inventario que hoy está en reparación no tiene
+                      // opción propia: el select se veía VACÍO mientras la línea
+                      // de arriba mostraba la tabla. Se agrega su propia opción.
+                      const boardKnown = !boardValue
+                        || ['type:own', 'type:soft-top', 'type:shortboard', 'type:longboard'].includes(boardValue)
+                        || boardOptions.some((x) => x.id === boardValue);
+                      const boardPatchOf = (v: string) => {
+                        const inv = data.availableBoards.find((x) => x.id === v) ?? null;
+                        const own = v === 'type:own';
+                        return {
+                          board_id: inv?.id ?? null,
+                          board_type: inv ? (inv.board_type ?? null) : v.startsWith('type:') ? v.slice(5) : null,
+                          board_size_feet: inv?.length_feet ?? (own ? (parseInt(st.profile.board_length_feet ?? '', 10) || null) : null),
+                          board_size_inches: inv?.length_inches ?? (own ? (parseInt(st.profile.board_length_inches ?? '', 10) || null) : null),
+                        };
+                      };
+                      const usuallyRides = [
+                        st.profile.board_type,
+                        st.profile.board_length_feet ? `${st.profile.board_length_feet}'${st.profile.board_length_inches && st.profile.board_length_inches !== '0' ? `${st.profile.board_length_inches}"` : ''}` : null,
+                        st.profile.board_volume_liters ? `${st.profile.board_volume_liters}L` : null,
+                      ].filter(Boolean).join(' · ');
                       const addSeq = (id: string) => {
                         const c = SEQUENCE_PAGES[id]; if (!c) return;
                         const games = (c as any).games as Record<string, string> | undefined;
@@ -1524,6 +1594,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                           <p className="text-[18px] font-extrabold leading-tight mt-0.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#061C2B' }}>{st.display_name}</p>
 
                           {/* LA MISIÓN DE HOY */}
+                          {!mySeq ? (
+                            <p className="text-[15px] mt-2.5" style={{ color: '#B45309' }}>No sequence for today yet — pick one above.</p>
+                          ) : (<>
                           <p className="text-[17px] font-extrabold leading-tight mt-2.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#10263B' }}>{seqLabel(mySeq)}</p>
                           {missionList.length > 0 ? (
                             <ol className="mt-1.5 space-y-1">
@@ -1538,7 +1611,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                             <p className="text-[15px] mt-1" style={{ color: '#55666E' }}>The whole line, start to finish</p>
                           )}
                           {legacyFocus && <p className="text-[13px] mt-1" style={{ color: '#55666E' }}>Focus: {legacyFocus}</p>}
-                          {differs && <p className="text-[13px] mt-1.5" style={{ color: '#9A6A12' }}>Stays here while the group works {seqLabel(groupSeq)}.</p>}
+                          {differs && groupSeq && <p className="text-[13px] mt-1.5" style={{ color: '#9A6A12' }}>Stays here while the group works {seqLabel(groupSeq)}.</p>}
+                          </>)}
 
                           {/* Lo que además trabaja hoy */}
                           {others.length > 0 && (
@@ -1557,21 +1631,62 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                             </div>
                           )}
 
+                          {/* La tabla del día se lee acá; se cambia adentro. */}
+                          <p className="text-[13px] mt-2.5">
+                            <span className="font-mono uppercase tracking-[0.12em] text-[11px]" style={{ color: '#55666E' }}>Board · </span>
+                            <span style={{ color: boardLabel ? '#10263B' : '#B45309', fontWeight: boardLabel ? 600 : 700 }}>{boardLabel ?? 'not set yet'}</span>
+                          </p>
+
                           {/* UN SOLO enlace: todo lo editable vive acá adentro. */}
                           <details className="mt-2.5">
                             <summary className="text-[13px] font-semibold cursor-pointer py-1" style={{ color: '#00789A' }} aria-label={`Change today for ${st.display_name}`}>Change today</summary>
                             <div className="mt-2 space-y-3">
                               <div>
-                                <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Sequence</p>
-                                <select value={mySeq.id} onChange={(e) => { const c = SEQUENCE_PAGES[e.target.value]; if (c) assignLine(st, c); }}
-                                  className="w-full px-2.5 py-2.5 border rounded-[5px] text-[14px] bg-white" style={{ borderColor: differs ? '#E0A62B' : '#DCD7C6', color: '#061C2B' }} aria-label={`Sequence for ${st.display_name}`}>
-                                  {seqs.map((c) => <option key={c.id} value={c.id}>{seqLabel(c)}{c.id === groupSeq.id ? ' · group' : ''}</option>)}
+                                <div className="flex items-baseline justify-between gap-2 mb-1">
+                                  <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E]">Board today</p>
+                                  {usuallyRides && (
+                                    <p className="text-[11px] truncate" style={{ color: '#55666E' }}>Usually rides: <span className="font-semibold" style={{ color: '#10263B' }}>{usuallyRides}</span></p>
+                                  )}
+                                </div>
+                                <select value={boardValue} onChange={(e) => { if (e.target.value === boardValue) return; setDayBoard(st.student_id, boardPatchOf(e.target.value)); }}
+                                  className="w-full px-2.5 py-2.5 border rounded-[5px] text-[14px] bg-white" style={{ borderColor: '#DCD7C6', color: '#061C2B' }} aria-label={`Board for ${st.display_name}`}>
+                                  {!boardKnown && <option value={boardValue}>{boardLabel ?? 'Board already set'} · keep it</option>}
+                                  <option value="">No board yet</option>
+                                  <option value="type:own">Their own board</option>
+                                  {boardOptions.map((b) => (
+                                    <option key={b.id} value={b.id}>{b.code}{b.length_feet != null ? ` · ${b.length_feet}'${b.length_inches ?? 0}"` : ''}{b.volume_liters ? ` · ${b.volume_liters}L` : ''}</option>
+                                  ))}
+                                  <option value="type:soft-top">Soft-top · no code</option>
+                                  <option value="type:shortboard">Shortboard · no code</option>
+                                  <option value="type:longboard">Longboard · no code</option>
                                 </select>
+                                {data.daySummaries.length > 1 && !!boardValue && (
+                                  <ApplyToWeekButton
+                                    label="📅 Same board every day"
+                                    doneLabel="✓ Board set for the whole camp"
+                                    onApply={() => applyStudentBoardToWeek(token, data.selectedDay.camp_session_id, st.student_id, {
+                                      board_id: boardBlock?.board_id ?? null,
+                                      board_type: boardBlock?.board_type ?? null,
+                                      board_size_feet: boardBlock?.board_size_feet ?? null,
+                                      board_size_inches: boardBlock?.board_size_inches ?? null,
+                                    })}
+                                  />
+                                )}
                               </div>
                               <div>
-                                <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1" aria-label={`Focus for ${st.display_name}`}>Missions · up to three, in order</p>
-                                {missionChips(st, b0?.order_index ?? 0, mySeq, missionList, b0 ?? null)}
+                                <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Sequence</p>
+                                <select value={mySeq?.id ?? ''} onChange={(e) => { const c = SEQUENCE_PAGES[e.target.value]; if (c) assignLine(st, c); }}
+                                  className="w-full px-2.5 py-2.5 border rounded-[5px] text-[14px] bg-white" style={{ borderColor: differs ? '#E0A62B' : '#DCD7C6', color: '#061C2B' }} aria-label={`Sequence for ${st.display_name}`}>
+                                  {!mySeq && <option value="">— pick one —</option>}
+                                  {seqs.map((c) => <option key={c.id} value={c.id}>{seqLabel(c)}{groupSeq && c.id === groupSeq.id ? ' · group' : ''}</option>)}
+                                </select>
                               </div>
+                              {mySeq && (
+                                <div>
+                                  <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1" aria-label={`Focus for ${st.display_name}`}>Missions · up to three, in order</p>
+                                  {missionChips(st, b0?.order_index ?? 0, mySeq, missionList, b0 ?? null)}
+                                </div>
+                              )}
                               {others.map((w) => {
                                 const wb = st.blocks.find((x) => x.order_index === w.order) ?? null;
                                 const wList = missionsOf(wb, w.cfg);
@@ -1587,10 +1702,16 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                               })}
                               <select value="" onChange={(e) => { if (e.target.value) addSeq(e.target.value); }} className="w-full px-2.5 py-2.5 border rounded-[5px] text-[14px] bg-white" style={{ borderColor: '#DCD7C6', color: '#10263B' }} aria-label={`Add a sequence for ${st.display_name}`}>
                                 <option value="">+ another sequence today</option>
-                                {seqs.filter((c) => c.id !== mySeq.id && !others.some((w) => w.cfg.id === c.id)).map((c) => <option key={c.id} value={c.id}>{seqLabel(c)}</option>)}
+                                {seqs.filter((c) => c.id !== mySeq?.id && !others.some((w) => w.cfg.id === c.id)).map((c) => <option key={c.id} value={c.id}>{seqLabel(c)}</option>)}
                               </select>
                             </div>
                           </details>
+
+                          {/* Ficha + bitácora + nota para el próximo coach:
+                              la misma que ya usa la evaluación, en una línea. */}
+                          <div className="mt-2">
+                            <StudentProfilePanel student={st} onSaveNote={(note) => saveInternalNote(st.student_id, note)} />
+                          </div>
                         </div>
                       );
                     })}
@@ -1600,138 +1721,6 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             );
           })()}
 
-          {/* 4. PER-STUDENT PLANNING — plegado (2026-09-18): el plan simple
-              ya reparte la secuencia; acá van tablas, focos y bloques extra. */}
-          <details className="group rounded-lg border border-dashed border-[#DCD7C6] bg-[#F7F9FA]/60">
-            <summary className="cursor-pointer list-none px-4 py-3 text-[12px] font-semibold text-[#10263B] flex items-center justify-between">
-              <span>Per student · boards, focus, extra blocks · {students.length}</span>
-              <ChevronDown size={16} className="text-[#55666E] transition group-open:rotate-180" />
-            </summary>
-            <div className="px-2 pb-2">
-          <Section
-            icon={Users}
-            title="Today's students"
-            subtitle="Belt · swim · red flag at a glance. Tap one to plan their mission."
-          >
-            <div className="space-y-3">
-              {(() => {
-                const dayTpl = data.templatePlan.find(
-                  (d) => d.day_number === data.selectedDay?.day_number,
-                );
-                const tplBlocks = dayTpl?.blocks ?? [];
-                return students.map((s) => (
-                  <StudentPlanCard
-                    key={s.student_id}
-                    student={s}
-                    token={token}
-                    stpCatalog={data.stpCatalog}
-                    availableDrills={data.availableDrills}
-                    availableBoards={data.availableBoards}
-                    boardConflictIds={data.boardConflictIds}
-                    templateBlocks={tplBlocks}
-                    onCommit={(orderIndex, patch) => commitStudentBlock(s.student_id, orderIndex, patch)}
-                    onSaveNote={(note) => saveInternalNote(s.student_id, note)}
-                    onAddBlock={() => addStudentBlock(s.student_id)}
-                    onRemoveBlock={(orderIndex) => removeStudentBlock(s.student_id, orderIndex)}
-                    onShowDrill={(id) => setDrillDetailId(id)}
-                    multiDay={data.daySummaries.length > 1}
-                    onApplyBoardToWeek={(board) =>
-                      applyStudentBoardToWeek(token, data.selectedDay.camp_session_id, s.student_id, board)
-                    }
-                  />
-                ));
-              })()}
-            </div>
-          </Section>
-
-            </div>
-          </details>
-
-          {/* ═══ SI QUERÉS PLANEAR MÁS (auditoría coach 2026-09-10): lo mínimo
-              para hoy va arriba; calentamiento, mental hack y notas quedan
-              plegados. Nada de esto es obligatorio para cerrar. ═══ */}
-          <details className="group rounded-lg border border-dashed border-[#DCD7C6] bg-[#F7F9FA]/60">
-            <summary className="cursor-pointer list-none px-4 py-3 text-[12px] font-semibold text-[#10263B] flex items-center justify-between">
-              <span>If you want to plan more · warm-up, mental hack, notes</span>
-              <ChevronDown size={16} className="text-[#55666E] transition group-open:rotate-180" />
-            </summary>
-            <div className="px-2 pb-2 space-y-3">
-          {/* 2. GROUP WARM-UP */}
-          <Section icon={Flame} title="Warm-up" subtitle="Pick from your tools or write your own">
-            <PickerOrCustom
-              options={warmupOptions.map((d) => ({
-                id: d.id,
-                label: d.title,
-                sublabel: d.key_words?.join(' · ') ?? '',
-              }))}
-              selectedId={plan.warm_up_drill_id}
-              customValue={plan.warm_up_custom}
-              onPick={(id) => commitPlanPatch({ warm_up_drill_id: id, warm_up_custom: null })}
-              onCustom={(v) => commitPlanPatch({ warm_up_custom: v, warm_up_drill_id: null })}
-              customPlaceholder="e.g. Joint mobility + 10 sand pop-ups"
-            />
-            {(plan.warm_up_drill_id || plan.warm_up_custom) && data.daySummaries.length > 1 && (
-              <ApplyToWeekButton
-                onApply={() => applyPlanHeaderToWeek(token, data.selectedDay.camp_session_id, {
-                  warm_up_drill_id: plan.warm_up_drill_id,
-                  warm_up_custom: plan.warm_up_custom,
-                })}
-              />
-            )}
-          </Section>
-
-          {/* 3. MENTAL HACK */}
-          <Section icon={Brain} title="Mental hack" subtitle="Get them in the zone">
-            <div className="grid grid-cols-3 gap-2">
-              {MENTAL_HACK_QUICK.map((opt) => {
-                const isSelected = plan.mental_hack === opt.id;
-                return (
-                  <button
-                    key={opt.id}
-                    type="button"
-                    onClick={() => commitPlanField('mental_hack', opt.id)}
-                    className="py-3 rounded-[5px] text-xs font-medium transition-all border"
-                    style={
-                      isSelected
-                        ? { background: BRAND.colors.navy, color: 'white', borderColor: BRAND.colors.navy }
-                        : { background: 'white', color: '#374151', borderColor: '#E5E7EB' }
-                    }
-                  >
-                    <opt.Icon size={16} strokeWidth={1.75} className="mx-auto mb-0.5" />
-                    <div>{opt.label}</div>
-                  </button>
-                );
-              })}
-            </div>
-            <SmallField
-              label="Or custom"
-              value={
-                plan.mental_hack && !MENTAL_HACK_QUICK.find((o) => o.id === plan.mental_hack)
-                  ? plan.mental_hack
-                  : ''
-              }
-              onBlur={(v) => commitPlanField('mental_hack', v || null)}
-              placeholder="Visualization · breath ladder · etc."
-            />
-  {plan.mental_hack && data.daySummaries.length > 1 && (
-              <ApplyToWeekButton
-                onApply={() => applyPlanHeaderToWeek(token, data.selectedDay.camp_session_id, { mental_hack: plan.mental_hack })}
-              />
-            )}
-                    </Section>
-
-          {/* 5. GENERAL NOTES */}
-          <Section icon={NotebookPen} title="Notes (private)">
-            <TextArea
-              label=""
-              value={plan.notes_general}
-              onBlur={(v) => commitPlanField('notes_general', v)}
-              placeholder="Anything else you want to remember about the session…"
-              rows={3}
-            />
-          </Section>
-            </div>
-          </details>
         </>
       )}
 
@@ -1740,8 +1729,6 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         <>
           <GeneralPlanSummary
             plan={plan}
-            warmUpLabel={warmUpLabel}
-            mentalLabel={mentalLabel}
             students={students.map((s) => {
               // objective_text is stored as "<block type> · <title>". The
               // water missions are the blocks whose type is "Water Mission";
@@ -2020,13 +2007,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 
 function GeneralPlanSummary({
   plan,
-  warmUpLabel,
-  mentalLabel,
   students,
 }: {
   plan: ServicePlanData['plan'];
-  warmUpLabel: string | null | undefined;
-  mentalLabel: string | null | undefined;
   students: { name: string; missions: string[] }[];
 }) {
   const hhmm = (t: string | null) => {
@@ -2096,8 +2079,6 @@ function GeneralPlanSummary({
         {plan.venue_analysis && (
           <SummaryRow label="Venue read" value={plan.venue_analysis} />
         )}
-        {warmUpLabel && <SummaryRow label={<><Flame size={11} strokeWidth={1.75} /> Warm-up</>} value={warmUpLabel} />}
-        {mentalLabel && <SummaryRow label={<><Brain size={11} strokeWidth={1.75} /> Mental hack</>} value={mentalLabel} />}
         {plan.notes_general && (
           <SummaryRow
             label={<><NotebookPen size={11} strokeWidth={1.75} /> Notes</>}
@@ -2352,59 +2333,6 @@ function TextArea({
 
 // ─── Picker with custom write-in fallback ──────────────────────────
 
-function PickerOrCustom({
-  options,
-  selectedId,
-  customValue,
-  onPick,
-  onCustom,
-  customPlaceholder,
-}: {
-  options: Array<{ id: string; label: string; sublabel?: string }>;
-  selectedId: string | null;
-  customValue: string | null;
-  onPick: (id: string | null) => void;
-  onCustom: (v: string) => void;
-  customPlaceholder?: string;
-}) {
-  return (
-    <div className="space-y-2">
-      {options.length > 0 && (
-        <div className="space-y-1 max-h-48 overflow-y-auto">
-          {options.map((o) => (
-            <button
-              key={o.id}
-              type="button"
-              onClick={() => onPick(selectedId === o.id ? null : o.id)}
-              className={`w-full text-left px-3 py-2 rounded-lg border text-[12px] transition-colors ${
-                selectedId === o.id
-                  ? 'border-[var(--tss-navy)] bg-[var(--tss-navy)] text-white'
-                  : 'border-[#DCD7C6] hover:border-[#55666E]'
-              }`}
-            >
-              <div className="font-medium">{o.label}</div>
-              {o.sublabel && (
-                <div
-                  className={`text-[10px] mt-0.5 ${
-                    selectedId === o.id ? 'text-white/70' : 'text-[#55666E]'
-                  }`}
-                >
-                  {o.sublabel}
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-      <SmallField
-        label="Or write your own"
-        value={customValue}
-        onBlur={onCustom}
-        placeholder={customPlaceholder}
-      />
-    </div>
-  );
-}
 
 // ─── Student profile / bitácora panel (collapsible) ──────────────
 //
@@ -2813,320 +2741,12 @@ function ProfileLine({
   );
 }
 
-// ─── Per-student PLANNING card ────────────────────────────────────
-
-function StudentPlanCard({
-  student,
-  stpCatalog,
-  availableDrills,
-  availableBoards,
-  boardConflictIds,
-  templateBlocks,
-  onCommit,
-  onAddBlock,
-  onRemoveBlock,
-  onShowDrill,
-  onSaveNote,
-  multiDay,
-  onApplyBoardToWeek,
-  token,
-}: {
-  student: ServicePlanStudent;
-  token: string;
-  stpCatalog: ServicePlanData['stpCatalog'];
-  availableDrills: ServicePlanData['availableDrills'];
-  availableBoards: ServicePlanData['availableBoards'];
-  boardConflictIds: string[];
-  onSaveNote: (note: string) => void;
-  templateBlocks: ServicePlanData['templatePlan'][number]['blocks'];
-  onCommit: (orderIndex: number, patch: Partial<ServicePlanBlock>) => void;
-  onAddBlock: () => void;
-  onRemoveBlock: (orderIndex: number) => void;
-  onShowDrill: (drillId: string) => void;
-  multiDay: boolean;
-  onApplyBoardToWeek: (board: { board_id: string | null; board_type: string | null; board_size_feet: number | null; board_size_inches: number | null }) => Promise<{ ok: boolean; days?: number; skipped?: number; error?: string }>;
-}) {
-  const [showFullPlan, setShowFullPlan] = useState(false);
-  const blocks = student.blocks.length > 0
-    ? student.blocks
-    : [{
-        id: null,
-        order_index: 0,
-        step_id: null,
-        land_drill_id: null,
-        land_drill_custom: null,
-        water_drill_id: null,
-        water_drill_custom: null,
-        objective_text: null,
-        notes_pre: null,
-        status: null,
-        notes_post: null,
-        board_type: null,
-        board_size_feet: null,
-        board_size_inches: null,
-        board_id: null,
-        focus_level: null,
-        flow_channel: null,
-      } as ServicePlanBlock];
-
-  return (
-    <div className="bg-[#F7F9FA]/60 rounded-[5px] border border-[#DCD7C6] p-3 space-y-3">
-      <div className="flex items-center gap-2 min-w-0">
-        <StudentAvatar url={student.photo_url} name={student.display_name} />
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-[var(--tss-navy)] truncate">
-            {student.display_name}
-          </p>
-          <p className="text-[10px] text-[#55666E] capitalize">
-            {student.belt_level?.replace(/_/g, ' ')}
-          </p>
-        </div>
-      </div>
-
-      {/* Lo que el alumno ve en su portal ("Tomorrow you will work on"):
-          las secuencias del día, en orden, una por una. Misma resolución
-          que portal.ts, para que coach y alumno hablen el mismo idioma. */}
-      {(() => {
-        const seen = new Set<string>();
-        const seqs: string[] = [];
-        for (const b of blocks) {
-          const tb = templateBlocks.find((t) => t.block_order === b.order_index);
-          // Solo agua (o el bloque 0 del plan simple): el repaso y la prep de mañana no son "hoy".
-          if (b.order_index !== 0 && tb && !/water|mission|get_in_stp/i.test(String(tb.block_type ?? ''))) continue;
-          if (b.order_index !== 0 && !tb && (b.land_drill_id || b.land_drill_custom) && !b.water_drill_id && !b.water_drill_custom) continue;
-          const cfg = resolveSequenceForSteps(
-            { stepIds: b.step_ids ?? tb?.step_ids ?? null, stepId: b.step_id ?? tb?.step_id ?? null },
-            student.belt_level,
-          );
-          if (!cfg || seen.has(cfg.id)) continue;
-          seen.add(cfg.id);
-          seqs.push(sequenceDisplayName(cfg));
-        }
-        if (seqs.length === 0) return null;
-        return (
-          <p className="text-[11px] text-[#10263B]">
-            <span className="font-mono uppercase tracking-wider text-[10px] text-[#55666E]">Today · </span>
-            {seqs.join('  →  ')}
-            <span className="text-[#55666E]"> · what the student sees</span>
-          </p>
-        );
-      })()}
-
-      {/* Profile / bitácora — review before planning */}
-      <StudentProfilePanel student={student} onSaveNote={onSaveNote} />
-
-      {/* M49 — Board assignment lives ONCE per student per day. Saved on
-          block 0 so it persists even when the coach adds more blocks. */}
-      {(() => {
-        const firstBlock = blocks[0];
-        return (
-          <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-2.5 space-y-2">
-            <div className="flex items-baseline justify-between gap-2">
-              <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
-                Board for today
-              </p>
-              {/* Reference from intake: the board the student said they
-                  usually ride (type + exact size + volume). Blank when
-                  they've never surfed / didn't fill it — coach then picks
-                  based on level + needs. */}
-              {(() => {
-                const p = student.profile;
-                const feet = p.board_length_feet;
-                const inches = p.board_length_inches;
-                const size = feet
-                  ? `${feet}'${inches && inches !== '0' ? inches + '"' : ''}`
-                  : null;
-                const vol = p.board_volume_liters
-                  ? `${p.board_volume_liters}L`
-                  : null;
-                const ref = [p.board_type, size, vol].filter(Boolean).join(' · ');
-                if (!ref) return null;
-                return (
-                  <p className="text-[10px] text-[#55666E] truncate">
-                    Usually rides:{' '}
-                    <span className="font-semibold text-[var(--tss-navy)]">
-                      {ref}
-                    </span>
-                  </p>
-                );
-              })()}
-            </div>
-            {/* M134 — one decision: the student's own board, or one from the
-                academy fleet. Sizes come along automatically (intake profile
-                for own board, inventory record for academy boards); manual
-                tweaks live behind "Adjust manually". */}
-            {(() => {
-              const p = student.profile;
-              const mode = firstBlock.board_id ? 'academy' : firstBlock.board_type ? 'own' : null;
-              const conflicts = new Set(boardConflictIds);
-              const options = availableBoards
-                .filter((b) => b.id === firstBlock.board_id || (b.status !== 'in_repair' && !conflicts.has(b.id)))
-                .map((b) => ({
-                  value: b.id,
-                  label: `${b.code}${b.length_feet ? ` · ${b.length_feet}'${b.length_inches || ''}` : ''}${b.volume_liters ? ` · ${b.volume_liters}L` : ''}`,
-                }));
-              const picked = availableBoards.find((b) => b.id === firstBlock.board_id);
-              return (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onCommit(firstBlock.order_index, {
-                        board_id: null,
-                        board_type: p.board_type ?? 'own',
-                        board_size_feet: p.board_length_feet ? parseInt(p.board_length_feet, 10) || null : null,
-                        board_size_inches: p.board_length_inches ? parseInt(p.board_length_inches, 10) || null : null,
-                      })}
-                      className="py-2 rounded-lg text-xs font-semibold transition-all"
-                      style={mode === 'own'
-                        ? { background: '#E0F2FE', color: '#075985', boxShadow: 'inset 0 0 0 2px #0284C7' }
-                        : { background: '#F3F4F6', color: '#6B7280' }}
-                    >
-                      🏄 Tabla propia
-                    </button>
-                    <div className={mode === 'academy' ? '' : 'opacity-80'}>
-                      <SelectField
-                        label=""
-                        value={firstBlock.board_id}
-                        options={options}
-                        onChange={(v) => {
-                          const b = availableBoards.find((x) => x.id === v);
-                          onCommit(firstBlock.order_index, {
-                            board_id: v,
-                            board_type: b?.board_type ?? firstBlock.board_type,
-                            board_size_feet: b?.length_feet ?? firstBlock.board_size_feet,
-                            board_size_inches: b?.length_inches ?? firstBlock.board_size_inches,
-                          });
-                        }}
-                      />
-                    </div>
-                  </div>
-                  {mode === 'academy' && picked && (
-                    <p className="text-[10px] text-[#55666E]">Asignada: <span className="font-semibold">{picked.code}</span>{firstBlock.board_size_feet ? ` · ${firstBlock.board_size_feet}'${firstBlock.board_size_inches ?? ''}` : ''}</p>
-                  )}
-                  {mode === 'own' && (
-                    <p className="text-[10px] text-[#55666E]">
-                      Own board{firstBlock.board_size_feet ? ` · ${firstBlock.board_size_feet}'${firstBlock.board_size_inches ?? ''}` : ''}
-                    </p>
-                  )}
-                  <details className="group">
-                    <summary className="cursor-pointer list-none text-[10px] font-mono uppercase tracking-wider text-[#55666E] flex items-center gap-1">
-                      <ChevronRight size={11} className="transition-transform group-open:rotate-90" /> Adjust manually
-                    </summary>
-                    <div className="grid grid-cols-3 gap-2 mt-2">
-                      <SelectField
-                        label="Type"
-                        value={firstBlock.board_type}
-                        options={BOARD_TYPE_OPTIONS}
-                        onChange={(v) => onCommit(firstBlock.order_index, { board_type: v })}
-                      />
-                      <SelectField
-                        label="Feet"
-                        value={firstBlock.board_size_feet != null ? String(firstBlock.board_size_feet) : null}
-                        options={BOARD_SIZE_FEET_OPTIONS.map((n) => ({ value: String(n), label: `${n}'` }))}
-                        onChange={(v) => onCommit(firstBlock.order_index, { board_size_feet: v ? parseInt(v, 10) : null })}
-                      />
-                      <SelectField
-                        label="Inches"
-                        value={firstBlock.board_size_inches != null ? String(firstBlock.board_size_inches) : null}
-                        options={BOARD_SIZE_INCHES_OPTIONS.map((n) => ({ value: String(n), label: `${n}"` }))}
-                        onChange={(v) => onCommit(firstBlock.order_index, { board_size_inches: v ? parseInt(v, 10) : null })}
-                      />
-                    </div>
-                  </details>
-                </div>
-              );
-            })()}
-            {/* M136 — assign this board once, reuse it every day of the camp. */}
-            {multiDay && (firstBlock.board_type || firstBlock.board_id) && (
-              <ApplyToWeekButton
-                label="📅 Usar esta tabla toda la semana"
-                doneLabel="✓ Tabla aplicada toda la semana"
-                onApply={() => onApplyBoardToWeek({
-                  board_id: firstBlock.board_id,
-                  board_type: firstBlock.board_type,
-                  board_size_feet: firstBlock.board_size_feet,
-                  board_size_inches: firstBlock.board_size_inches,
-                })}
-              />
-            )}
-          </div>
-        );
-      })()}
-
-      {/* M45/M134 — One BlockEditor per block. After a template lands many
-          blocks, the daily view opens with ONLY the water missions (what the
-          coach actually adapts per student); "Ver plan completo" expands the
-          rest (warm-up, mental, land drills, closing). */}
-      {(() => {
-        const isWater = (b: ServicePlanBlock) => {
-          const tb = templateBlocks.find((t) => t.block_order === b.order_index);
-          // Con plantilla: manda el tipo del bloque (un 'custom' con texto de
-          // misión no es agua). Sin plantilla: la secuencia o la misión de agua.
-          if (tb?.block_type) return /water|mission|get_in_stp/i.test(String(tb.block_type));
-          if (b.sequence_id) return true;
-          return !!(b.water_drill_id || b.water_drill_custom);
-        };
-        const waterBlocks = blocks.filter(isWater);
-        const collapsible = blocks.length > 2 && waterBlocks.length > 0 && waterBlocks.length < blocks.length;
-        const visible = collapsible && !showFullPlan ? waterBlocks : blocks;
-        return (
-          <>
-            {collapsible && (
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
-                  {showFullPlan ? `Full plan · ${blocks.length} blocks` : `🌊 Water missions · ${waterBlocks.length} of ${blocks.length} blocks`}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setShowFullPlan(!showFullPlan)}
-                  className="text-[11px] font-semibold text-[var(--tss-cyan,#0369A1)] underline underline-offset-2"
-                >
-                  {showFullPlan ? 'Ver solo agua' : 'Ver plan completo'}
-                </button>
-              </div>
-            )}
-            <div className="space-y-3">
-              {visible.map((b) => (
-                <BlockEditor
-                  key={b.id ?? `new-${b.order_index}`}
-                  block={b}
-                  blockNumber={blocks.indexOf(b) + 1}
-                  canRemove={blocks.length > 1}
-                  stpCatalog={stpCatalog}
-                  availableDrills={availableDrills}
-                  templateBlock={templateBlocks.find((tb) => tb.block_order === b.order_index) ?? null}
-                  token={token}
-                  belt={student.belt_level}
-                  onCommit={(patch) => onCommit(b.order_index, patch)}
-                  onRemove={() => onRemoveBlock(b.order_index)}
-                  onShowDrill={onShowDrill}
-                />
-              ))}
-            </div>
-            {(!collapsible || showFullPlan) && (
-              <button
-                type="button"
-                onClick={onAddBlock}
-                className="w-full py-2 rounded-lg border-2 border-dashed border-[#DCD7C6] text-[12px] text-[#55666E] hover:border-[var(--tss-navy)] hover:text-[var(--tss-navy)] transition-colors"
-              >
-                + Add another block
-              </button>
-            )}
-          </>
-        );
-      })()}
-    </div>
-  );
-}
-
 // ═══ Idioma del método en el planner (Marcelo 2026-09-17/18) ═══
 // Un bloque se nombra por su SECUENCIA y su foco ("Sequence #3 · Pop-Up ·
 // Feet Position Center"), nunca por códigos viejos de la plantilla
 // (CMS-WB-04, STP-017, "EDPF coach loop").
 const CODE_PREFIX = /^(?:[A-Z]{2,4}-[A-Z]{2}-\d+[A-Z]?|STP-\d+[A-Z]?)\s*[·—-]\s*/;
 function stripCode(t: string | null | undefined): string { return String(t ?? '').replace(CODE_PREFIX, '').trim(); }
-const GENERIC_DRILL = /^EDPF coach loop$/i;
 function workLabelOf(
   b: { step_id?: string | null; step_ids?: string[] | null; sequence_id?: string | null; focus_step_id?: string | null; objective_text?: string | null },
   tb: { step_id?: string | null; step_ids?: string[] | null; sequence_id?: string | null; focus_step_id?: string | null; pilar_part?: string | null; mission_custom?: string | null; mission?: { title: string } | null } | null | undefined,
@@ -3159,343 +2779,6 @@ function workLabelOf(
   if (legacy) return legacy;
   const plain = stripCode(txt.replace(/^[^·]+·\s*/, ''));
   return plain || null;
-}
-
-// M45 — One block's planning editor (Sequence focus + drill + mission +
-// objective + board + pre-note). Used inside StudentPlanCard, one per
-// block, so a single student can have multiple blocks per day.
-function BlockEditor({
-  block,
-  blockNumber,
-  canRemove,
-  stpCatalog,
-  availableDrills,
-  templateBlock,
-  token,
-  belt,
-  onCommit,
-  onRemove,
-  onShowDrill,
-}: {
-  block: ServicePlanBlock;
-  blockNumber: number;
-  canRemove: boolean;
-  stpCatalog: ServicePlanData['stpCatalog'];
-  availableDrills: ServicePlanData['availableDrills'];
-  templateBlock: ServicePlanData['templatePlan'][number]['blocks'][number] | null;
-  token: string;
-  belt: string | null;
-  onCommit: (patch: Partial<ServicePlanBlock>) => void;
-  onRemove: () => void;
-  onShowDrill: (drillId: string) => void;
-}) {
-  const [showLandPicker, setShowLandPicker] = useState(false);
-  const [showWaterPicker, setShowWaterPicker] = useState(false);
-  const [showAdjust, setShowAdjust] = useState(false);
-
-  const stepDrills = availableDrills.filter(
-    (d) => d.type === 'drill' && d.step_id === block.step_id
-  );
-  const stepMissions = availableDrills.filter(
-    (d) => d.type === 'mission' && d.step_id === block.step_id
-  );
-  const landLabel = block.land_drill_id
-    ? availableDrills.find((d) => d.id === block.land_drill_id)?.title
-    : null;
-  const waterLabel = block.water_drill_id
-    ? availableDrills.find((d) => d.id === block.water_drill_id)?.title
-    : null;
-  // La secuencia del curso a la que apunta este bloque (plan simple o
-  // plantilla). Es lo que el alumno ve en su portal.
-  const seqCfg = ((block.sequence_id ?? templateBlock?.sequence_id) && SEQUENCE_PAGES[(block.sequence_id ?? templateBlock?.sequence_id) as string]) || resolveSequenceForSteps(
-    { stepIds: block.step_ids ?? templateBlock?.step_ids ?? null, stepId: block.step_id ?? templateBlock?.step_id ?? null },
-    belt,
-  );
-  const stpLabel = (id: string | null) => (id ? stpCatalog.find((x) => x.id === id)?.title ?? null : null);
-  const legacyMd = templateBlock
-    ? ([
-        ['Explain', templateBlock.explain_md],
-        ['Demonstrate', templateBlock.demonstrate_md],
-        ['Simulate', templateBlock.simulate_md],
-        ['Feedback', templateBlock.feedback_md],
-      ] as const).filter(([, v]) => !!v)
-    : [];
-
-  return (
-    <div className="bg-[#F7F9FA] rounded-lg border border-[#DCD7C6] p-2.5 space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
-          Block {blockNumber}
-        </p>
-        {canRemove && (
-          <button
-            type="button"
-            onClick={onRemove}
-            className="text-[10px] text-red-500 hover:text-red-700"
-          >
-            Remove
-          </button>
-        )}
-      </div>
-
-      {/* Read-only plan from the template — the WHAT. The coach reads this
-          and evaluates; tweaking is optional under "Adjust". */}
-      {templateBlock && (
-        <div className="rounded-lg bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan)] px-3 py-2 space-y-1">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-[var(--tss-cyan,#5AC3E7)]">
-            {templateBlock.block_type
-              ? String(templateBlock.block_type).replace(/_/g, ' ')
-              : 'Plan'}
-            {templateBlock.mission_time ? ` · ${templateBlock.mission_time} min` : ''}
-          </p>
-          {templateBlock.pilar_part && (
-            <p className="text-[12px] font-medium text-[#10263B]">{templateBlock.pilar_part}</p>
-          )}
-          {seqCfg && (
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <p className="text-[12px] font-semibold text-[#10263B]">
-                <span className="font-mono uppercase tracking-wider text-[10px] text-[#55666E]">Sequence · </span>
-                {sequenceDisplayName(seqCfg)}
-              </p>
-              <a
-                href={`/coach-portal/${token}/seq/${seqCfg.id}`}
-                className="text-[11px] font-semibold text-[var(--tss-cyan,#0369A1)] underline underline-offset-2"
-              >
-                Open as the student sees it
-              </a>
-            </div>
-          )}
-          {(templateBlock.step_title || templateBlock.step_id) && (
-            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Step · </span>{templateBlock.step_title ?? stpLabel(templateBlock.step_id ?? null) ?? templateBlock.step_id}</p>
-          )}
-          {stripCode(templateBlock.mission?.title ?? templateBlock.mission_custom) && (
-            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Mission · </span>{stripCode(templateBlock.mission?.title ?? templateBlock.mission_custom)}</p>
-          )}
-          {(templateBlock.drill?.title || (templateBlock.drill_custom && !GENERIC_DRILL.test(templateBlock.drill_custom))) && (
-            <p className="text-[11px] text-[#55666E]"><span className="text-[#55666E]">Drill · </span>{stripCode(templateBlock.drill?.title ?? templateBlock.drill_custom)}</p>
-          )}
-          {legacyMd.length > 0 && (
-            <details className="text-[11px] text-[#55666E]">
-              <summary className="cursor-pointer text-[10px] font-mono uppercase tracking-wider">Template notes</summary>
-              <div className="mt-1 space-y-1">
-                {legacyMd.map(([k, v]) => (
-                  <p key={k}><span className="text-[#55666E]">{k} · </span>{v}</p>
-                ))}
-              </div>
-            </details>
-          )}
-          {templateBlock.equipment && (
-            <p className="text-[10px] text-[#55666E]">{templateBlock.equipment}</p>
-          )}
-        </div>
-      )}
-
-      {!templateBlock && seqCfg && (
-        <div className="rounded-lg bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan)] px-3 py-2 flex items-center justify-between gap-2 flex-wrap">
-          <p className="text-[12px] font-semibold text-[#10263B]">
-            <span className="font-mono uppercase tracking-wider text-[10px] text-[#55666E]">Sequence · </span>
-            {sequenceDisplayName(seqCfg)}
-          </p>
-          <a
-            href={`/coach-portal/${token}/seq/${seqCfg.id}`}
-            className="text-[11px] font-semibold text-[var(--tss-cyan,#0369A1)] underline underline-offset-2"
-          >
-            Open as the student sees it
-          </a>
-        </div>
-      )}
-
-      {/* Optional per-student adjustment — collapsed by default so the
-          common case (follow the plan + evaluate) stays clean. */}
-      <button
-        type="button"
-        onClick={() => setShowAdjust((v) => !v)}
-        className="text-[10px] text-[#55666E] hover:text-[var(--tss-navy)]"
-      >
-        {showAdjust ? '▴ Hide adjustments' : '▾ Adjust for this student (optional)'}
-      </button>
-
-      {showAdjust && (<>
-
-      {/* Sequence focus */}
-      <div>
-        <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">
-          Sequence focus
-        </label>
-        <select
-          value={block.step_id ?? ''}
-          onChange={(e) => onCommit({ step_id: e.target.value || null })}
-          className="w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs"
-        >
-          <option value="">— pick a step —</option>
-          {/* Agrupado por SECUENCIA con el rótulo de la fuente única. */}
-          {groupCatalogBySequence(stpCatalog).map((g) => (
-            <optgroup key={g.key} label={g.label}>
-              {g.items.map((stp) => (
-                <option key={stp.id} value={stp.id}>
-                  {stp.title}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </select>
-      </div>
-
-      {/* Land drill */}
-      <div>
-        <div className="flex items-center justify-between mb-0.5">
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
-            Land drill
-          </label>
-          {block.land_drill_id && (
-            <button
-              type="button"
-              onClick={() => onShowDrill(block.land_drill_id!)}
-              className="text-[10px] text-[var(--tss-cyan,#5AC3E7)] font-semibold hover:underline"
-            >
-              How to teach →
-            </button>
-          )}
-        </div>
-        {!showLandPicker ? (
-          <button
-            type="button"
-            onClick={() => setShowLandPicker(true)}
-            className="w-full text-left px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA] hover:bg-[#F7F9FA]"
-          >
-            {landLabel || block.land_drill_custom || (
-              <span className="text-[#55666E] italic">— tap to pick —</span>
-            )}
-          </button>
-        ) : (
-          <div className="space-y-1.5 bg-[#F7F9FA] p-2 rounded-lg border border-[#DCD7C6]">
-            {stepDrills.length > 0 ? (
-              stepDrills.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => {
-                    onCommit({ land_drill_id: d.id, land_drill_custom: null });
-                    setShowLandPicker(false);
-                  }}
-                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-[#F7F9FA]"
-                >
-                  <strong>{d.id}</strong> · {d.title}
-                </button>
-              ))
-            ) : (
-              <p className="text-[10px] text-[#55666E] italic">No drills indexed for this step. Use custom below.</p>
-            )}
-            <SmallField
-              label=""
-              value={block.land_drill_custom}
-              onBlur={(v) => {
-                onCommit({ land_drill_custom: v, land_drill_id: null });
-                setShowLandPicker(false);
-              }}
-              placeholder="Or write your own land drill"
-            />
-            <button
-              type="button"
-              onClick={() => setShowLandPicker(false)}
-              className="text-[10px] text-[#55666E] hover:text-[#10263B]"
-            >
-              cancel
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Water mission */}
-      <div>
-        <div className="flex items-center justify-between mb-0.5">
-          <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
-            In-water mission
-          </label>
-          {block.water_drill_id && (
-            <button
-              type="button"
-              onClick={() => onShowDrill(block.water_drill_id!)}
-              className="text-[10px] text-[var(--tss-cyan,#5AC3E7)] font-semibold hover:underline"
-            >
-              How to teach →
-            </button>
-          )}
-        </div>
-        {!showWaterPicker ? (
-          <button
-            type="button"
-            onClick={() => setShowWaterPicker(true)}
-            className="w-full text-left px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-xs bg-[#F7F9FA] hover:bg-[#F7F9FA]"
-          >
-            {waterLabel || block.water_drill_custom || (
-              <span className="text-[#55666E] italic">— tap to pick —</span>
-            )}
-          </button>
-        ) : (
-          <div className="space-y-1.5 bg-[#F7F9FA] p-2 rounded-lg border border-[#DCD7C6]">
-            {stepMissions.length > 0 ? (
-              stepMissions.map((d) => (
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => {
-                    onCommit({ water_drill_id: d.id, water_drill_custom: null });
-                    setShowWaterPicker(false);
-                  }}
-                  className="w-full text-left px-2 py-1 text-[11px] rounded hover:bg-[#F7F9FA]"
-                >
-                  <strong>{d.id}</strong> · {d.title}
-                </button>
-              ))
-            ) : (
-              <p className="text-[10px] text-[#55666E] italic">No missions indexed for this step. Use custom below.</p>
-            )}
-            <SmallField
-              label=""
-              value={block.water_drill_custom}
-              onBlur={(v) => {
-                onCommit({ water_drill_custom: v, water_drill_id: null });
-                setShowWaterPicker(false);
-              }}
-              placeholder="Or write your own water mission"
-            />
-            <button
-              type="button"
-              onClick={() => setShowWaterPicker(false)}
-              className="text-[10px] text-[#55666E] hover:text-[#10263B]"
-            >
-              cancel
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Objective — en el idioma del método, sin códigos (2026-09-18). El
-          texto guardado (objective_text) no se toca; se muestra traducido. */}
-      <div>
-        <label className="block text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5">Today&apos;s work</label>
-        <p className="text-[12px] font-semibold text-[#10263B] rounded-lg px-2 py-1.5" style={{ background: 'rgba(6,28,43,.04)', border: '1px solid #DCD7C6' }}>
-          {workLabelOf(block, templateBlock, belt, stpLabel) ?? 'Pick a step above'}
-        </p>
-      </div>
-
-      {/* M49 — Board assignment moved to the student-level card (one
-          board per student per day) so the coach picks it once, not
-          per block. */}
-
-      {/* Pre-session note */}
-      <TextArea
-        label="Pre-block note"
-        value={block.notes_pre}
-        onBlur={(v) => onCommit({ notes_pre: v })}
-        placeholder="What to watch for in this block"
-        rows={2}
-      />
-
-      </>)}
-    </div>
-  );
 }
 
 // ─── Per-student EVALUATION card ──────────────────────────────────
@@ -4094,21 +3377,3 @@ function PlannerSpaces({ token, date, defaultStart, title }: {
   );
 }
 
-// Grupos de secuencia para el select del foco (el catálogo ya viene ordenado
-// por secuencia). Pasos sin secuencia caen a "Other".
-function groupCatalogBySequence(stps: ServicePlanData['stpCatalog']) {
-  const groups: Array<{ key: string; label: string; items: ServicePlanData['stpCatalog'] }> = [];
-  for (const stp of stps) {
-    const key = stp.wb_sequence_id ?? '_none';
-    const last = groups[groups.length - 1];
-    if (last && last.key === key) last.items.push(stp);
-    else groups.push({
-      key,
-      label: stp.wb_sequence_id
-        ? sequenceLabel(stp.wb_sequence_id, stp.wb_sequence_order, stp.wb_sequence_name ?? '')
-        : 'Other',
-      items: [stp],
-    });
-  }
-  return groups;
-}
