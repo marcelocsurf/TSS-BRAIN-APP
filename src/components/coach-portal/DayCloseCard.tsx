@@ -367,6 +367,22 @@ export function DayCloseCard({
         );
       })}
 
+      {/* + otra secuencia que también trabajaron hoy (Marcelo 2026-09-21): un bloque más, con su estrella. */}
+      {!isClosed && (
+        <details className="px-1">
+          <summary className="text-[11px] text-[#55666E] cursor-pointer">+ another sequence they also worked today</summary>
+          <select value="" onChange={(e) => {
+              const c = SEQUENCE_PAGES[e.target.value]; if (!c) return;
+              const nextOrder = Math.max(0, ...blocks.map((b) => b.order_index)) + 1;
+              const games = (c as any).games as Record<string, string> | undefined;
+              onCommit(nextOrder, { sequence_id: c.id, worked_sequence_id: null, step_id: c.stepIds[0], step_ids: c.stepIds, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${seqTag(c)}`, water_drill_id: games ? (games[c.stepIds[0]] ?? null) : null, notes_pre: 'Added at the close.' } as any);
+            }} className="mt-1.5 w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-[12px] bg-white">
+            <option value="">— pick the sequence —</option>
+            {pickable.filter((c) => !seqs.some((s) => s.cfg.id === c.id || s.plannedCfg.id === c.id)).map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.belt.replace('_belt', '')}</option>)}
+          </select>
+        </details>
+      )}
+
       {/* Sin secuencias (clase suelta): el estado del día a mano. */}
       {seqs.length === 0 && (
         <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] p-2.5 space-y-1.5">
@@ -378,13 +394,24 @@ export function DayCloseCard({
       {/* MAÑANA: la línea aparece sola. Confirmar es registrar; cambiar es un toque. */}
       <div className="rounded-[5px] px-3 py-2.5" style={{ background: '#061C2B' }}>
         <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00D2FF' }}>
-          {isLastDay ? "What's next · goes to the final evaluation" : `Tomorrow${tomorrow?.day_number ? ` · day ${tomorrow.day_number}` : ''}`}
+          {isLastDay ? "What's next · goes to the final evaluation" : `Tomorrow${tomorrow?.day_number ? ` · day ${tomorrow.day_number}` : ''} · they will work on`}
           {isClosed && !lineText ? ' · not set' : ''}
         </p>
         {lineText ? (
           <>
-            <p className="text-[15px] font-extrabold mt-1 leading-tight" style={{ color: '#F7F9FA' }}>{lineText}</p>
-            {line && <p className="text-[11px] mt-0.5" style={{ color: '#7DE3FF' }}>{WHY[line.why]}</p>}
+            {lineMoments.length > 1 && lineCfg ? (
+              <>
+                <p className="text-[17px] font-extrabold mt-1 leading-tight" style={{ color: '#F7F9FA' }}>{seqTag(lineCfg)}</p>
+                <ol className="mt-1 space-y-0.5">
+                  {lineMoments.map((id, i) => (
+                    <li key={id} className="text-[13px] leading-snug" style={{ color: '#F7F9FA' }}><span className="font-mono text-[11px] mr-1.5" style={{ color: '#00D2FF' }}>M{i + 1}</span>{stepTitleOf(lineCfg, id)}</li>
+                  ))}
+                </ol>
+              </>
+            ) : (
+              <p className="text-[17px] font-extrabold mt-1 leading-tight" style={{ color: '#F7F9FA' }}>{lineText}</p>
+            )}
+            {line && <p className="text-[11px] mt-1" style={{ color: '#7DE3FF' }}>{WHY[line.why]} · the student sees this tonight</p>}
           </>
         ) : (
           <p className="text-[13px] mt-1" style={{ color: 'rgba(247,249,250,.7)' }}>

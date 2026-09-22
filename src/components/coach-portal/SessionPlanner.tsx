@@ -392,11 +392,16 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         return;
       }
     }
+    const tomorrowLines = students.map((s) => {
+      const raw = (s.blocks[0]?.whats_next ?? '').trim();
+      const i = raw.indexOf(' – ');
+      return `${s.display_name}: ${(i >= 0 ? raw.slice(0, i) : raw).trim() || 'not set'}`;
+    }).join('\n');
     if (
       !confirm(
         'Finalize this session?\n\n' +
-          '• Each student gets their results in their profile + portal\n' +
-          '• Each student receives a coach-rating survey\n' +
+          'TOMORROW · what each student will work on\n' + tomorrowLines + '\n\n' +
+          '• Each student sees this tonight; your plan for tomorrow already has it\n' +
           '• The session locks — no more edits\n\n' +
           'Continue?'
       )
@@ -1508,8 +1513,28 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                               ayer se AGREGA, no pisa la misión): el cierre lo va a mostrar todo. */}
                           {(() => {
                             const others = waterSequencesOfBlocks(st.blocks as any, st.belt_level ?? null).filter((w) => w.order !== (b0?.order_index ?? -1) && w.cfg.id !== mySeq.id);
-                            if (!others.length) return null;
-                            return <p className="text-[10px] mt-0.5 text-[#55666E]">Also today: {others.map((w) => `${seqLabel(w.cfg)}${w.focusStepId ? ` · ${stepTitle(w.cfg, w.focusStepId)}` : ''}`).join(' · ')}</p>;
+                            const nextOrder = Math.max(0, ...st.blocks.map((x) => x.order_index)) + 1;
+                            const addSeq = (id: string) => {
+                              const c = SEQUENCE_PAGES[id]; if (!c) return;
+                              const games = (c as any).games as Record<string, string> | undefined;
+                              commitStudentBlock(st.student_id, nextOrder, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${seqLabel(c)}`, water_drill_id: games ? (games[c.stepIds[0]] ?? null) : null, notes_pre: 'Added by the coach.' } as any);
+                            };
+                            return (
+                              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                                {others.length > 0 && <span className="text-[10px] text-[#55666E]">Also today:</span>}
+                                {others.map((w) => (
+                                  <span key={w.order} className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6', color: '#10263B' }}>
+                                    {seqLabel(w.cfg)}{w.focusStepId ? ` · ${stepTitle(w.cfg, w.focusStepId)}` : ''}
+                                    <button type="button" aria-label={`Remove ${seqLabel(w.cfg)}`} onClick={() => removeStudentBlock(st.student_id, w.order)} className="text-[#55666E] hover:text-[#E0413B]">×</button>
+                                  </span>
+                                ))}
+                                {/* + otra secuencia hoy (Marcelo 2026-09-21): se agrega como bloque propio. */}
+                                <select value="" onChange={(e) => { if (e.target.value) addSeq(e.target.value); }} className="text-[10px] px-1.5 py-0.5 border rounded-[5px] bg-white" style={{ borderColor: '#DCD7C6', color: '#10263B' }} aria-label={`Add a sequence for ${st.display_name}`}>
+                                  <option value="">+ another sequence today</option>
+                                  {seqs.filter((c) => c.id !== mySeq.id && !others.some((w) => w.cfg.id === c.id)).map((c) => <option key={c.id} value={c.id}>{seqLabel(c)}</option>)}
+                                </select>
+                              </div>
+                            );
                           })()}
                         </div>
                       );
@@ -1713,6 +1738,42 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               ))}
             </div>
           </Section>
+
+          {/* MAÑANA · resumen (Marcelo 2026-09-21): lo que cada alumno va a
+              trabajar mañana, todo junto, antes de Finalize. Es lo mismo que
+              dice cada tarjeta; acá se ve de un vistazo. */}
+          {(() => {
+            const sep = ' – ';
+            const nextDay = data.daySummaries.filter((d) => d.day_number > data.selectedDay.day_number).sort((a, b) => a.day_number - b.day_number)[0] ?? null;
+            const rows = students.map((s) => {
+              const b0 = s.blocks.find((b) => b.order_index === 0) ?? s.blocks[0];
+              const raw = (b0?.whats_next ?? '').trim();
+              const i = raw.indexOf(sep);
+              const main = (i >= 0 ? raw.slice(0, i) : raw).trim();
+              const note = (i >= 0 ? raw.slice(i + sep.length) : '').trim();
+              return { id: s.student_id, name: s.display_name, main, note };
+            });
+            const missing = rows.filter((r) => !r.main).length;
+            return (
+              <div className="rounded-[8px] p-3.5" style={{ background: '#061C2B' }}>
+                <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00D2FF' }}>
+                  {nextDay ? `Tomorrow · day ${nextDay.day_number} · what each student will work on` : "What's next · what each student takes home"}
+                </p>
+                <div className="mt-2 space-y-1.5">
+                  {rows.map((r) => (
+                    <div key={r.id} className="flex items-start gap-3">
+                      <span className="shrink-0 w-[38%] text-[13px] font-semibold truncate" style={{ color: '#F7F9FA' }}>{r.name}</span>
+                      <span className="min-w-0 flex-1 text-[13px] leading-snug" style={{ color: r.main ? '#F7F9FA' : '#FFD166' }}>
+                        {r.main || (isClosed ? 'not set' : 'tap a star, it fills in')}{r.note ? <span style={{ color: 'rgba(247,249,250,.6)' }}> — {r.note}</span> : null}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {!isClosed && missing > 0 && <p className="text-[11px] mt-2" style={{ color: '#FFD166' }}>{missing} without tomorrow yet. Rate above and it fills in; use Change to set it by hand.</p>}
+                {!isClosed && missing === 0 && <p className="text-[11px] mt-2" style={{ color: '#7DE3FF' }}>Finalize confirms these lines: the student sees them tonight and your plan for tomorrow already has them.</p>}
+              </div>
+            );
+          })()}
 
           {/* M48 — Incident report at close. Optional. Default = no
               incidents; coach taps '+ Add incident' to file one per
