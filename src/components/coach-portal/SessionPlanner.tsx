@@ -987,13 +987,15 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             const pl: any = plan;
             const boards = students.filter((s) => s.blocks.some((b) => b.board_id || b.board_type)).length;
             const planned = students.filter((s) => s.blocks.some((b) => b.sequence_id || b.step_id || (b.step_ids ?? []).length)).length;
+            // De dónde viene la misión de hoy: el cierre de la sesión anterior.
+            const carried = students.filter((s) => s.blocks.some((b) => /^Set at the close of day/i.test(b.notes_pre ?? ''))).length;
             const n = students.length;
             const items: { ok: boolean; label: string }[] = [
               { ok: !!pl.surf_venue, label: pl.surf_venue ? `Spot · ${pl.surf_venue}` : 'Spot · not set' },
               { ok: !!pl.class_start_time, label: pl.class_start_time ? `Start · ${String(pl.class_start_time).slice(0, 5)}` : 'Start · not set' },
               { ok: pl.transport_needed === false || (!!pl.transport_needed && !!pl.transport_depart), label: pl.transport_needed ? `Van · ${String(pl.transport_depart ?? '?').slice(0, 5)}` : pl.transport_needed === false ? 'No transport' : 'Transport · not decided' },
               { ok: n > 0 && boards === n, label: `Boards · ${boards}/${n}` },
-              { ok: n > 0 && planned === n, label: `Sequence · ${planned}/${n} planned` },
+              { ok: n > 0 && planned === n, label: carried > 0 ? `Missions · ${carried}/${n} from the close` : `Missions · ${planned}/${n} set` },
               { ok: pl.venue_go_no_go === 'go' || pl.venue_go_no_go === 'modified', label: pl.venue_go_no_go ? `Safety · ${String(pl.venue_go_no_go).replace('_', '-')}` : 'Safety · Go or No-Go' },
             ];
             const ready = items.filter((i) => i.ok).length;
@@ -1463,7 +1465,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             const toggleTopic = (id: string) => { const n = new Set(chosenTopics); if (n.has(id)) n.delete(id); else n.add(id); commitPlanField('topics', n.size ? Array.from(n) : null); };
             const topicLabel = topics.filter((t) => chosenTopics.has(t.id)).map((t) => t.title).join(' · ');
             return (
-              <Section icon={Waves} title="Today · one line per student" subtitle="The template fills it. Change a student's sequence, or the step to focus on, only if today says otherwise.">
+              <Section icon={Waves} title="Today · one line per student" subtitle="Each student already carries the mission you set at the last close. Change it only if today says otherwise.">
                 <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">Everyone works on</p>
                 <div className="flex flex-wrap gap-1.5">
                   {seqs.map((c) => {
@@ -1503,72 +1505,92 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                       const missionLabel = missionsLabel(missionList, mySeq);
                       const legacyFocus = !focusId && (b0?.objective_text ?? '').startsWith('Focus: ') ? String(b0?.objective_text).slice(7) : null;
                       const fromClose = /^Set at the close of day/i.test(b0?.notes_pre ?? '');
+                      const closeDay = (b0?.notes_pre ?? '').match(/close of day (\d+)/i)?.[1] ?? null;
                       const differs = mySeq.id !== groupSeq.id;
+                      const others = waterSequencesOfBlocks(st.blocks as any, st.belt_level ?? null).filter((w) => w.order !== (b0?.order_index ?? -1) && w.cfg.id !== mySeq.id);
+                      const nextOrder = Math.max(0, ...st.blocks.map((x) => x.order_index)) + 1;
+                      const addSeq = (id: string) => {
+                        const c = SEQUENCE_PAGES[id]; if (!c) return;
+                        const games = (c as any).games as Record<string, string> | undefined;
+                        commitStudentBlock(st.student_id, nextOrder, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${seqLabel(c)}`, water_drill_id: games ? (games[c.stepIds[0]] ?? null) : null, notes_pre: 'Added by the coach.' } as any);
+                      };
                       return (
-                        <div key={st.student_id} className="rounded-[5px] border p-2.5" style={{ borderColor: differs ? '#E0A62B' : '#DCD7C6', background: differs ? '#FFFBF0' : 'transparent' }}>
-                          <div className="flex items-center justify-between gap-2 flex-wrap">
-                            <p className="text-[12.5px] font-semibold" style={{ color: '#061C2B' }}>
-                              {st.display_name}
-                              {fromClose && <span className="ml-1.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full align-middle" style={{ background: '#E6F7FB', color: '#00789A' }}>from yesterday&apos;s close</span>}
-                            </p>
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {/* Secuencia de ESTE alumno: puede quedarse en otra mientras el grupo avanza. */}
-                              <select value={mySeq.id} onChange={(e) => { const c = SEQUENCE_PAGES[e.target.value]; if (c) assignLine(st, c); }}
-                                className="px-2 py-1 border rounded-[5px] text-[11px] bg-white" style={{ borderColor: differs ? '#E0A62B' : '#DCD7C6', color: '#061C2B' }} aria-label={`Sequence for ${st.display_name}`}>
-                                {seqs.map((c) => <option key={c.id} value={c.id}>{seqLabel(c)}{c.id === groupSeq.id ? ' · group' : ''}</option>)}
-                              </select>
+                        <div key={st.student_id} className="rounded-[8px] border p-3.5" style={{ borderColor: differs ? '#E0A62B' : '#DCD7C6', background: '#fff' }}>
+                          {/* De dónde viene (Marcelo 2026-09-22): la misión ya se
+                              decidió al cerrar la sesión anterior; acá se lee sola. */}
+                          <p className="text-[11px] font-mono uppercase tracking-[0.14em]" style={{ color: fromClose ? '#00A8CC' : '#55666E' }}>
+                            {fromClose ? `From the close of day ${closeDay ?? '—'}` : 'From the template'}
+                          </p>
+                          <p className="text-[18px] font-extrabold leading-tight mt-0.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#061C2B' }}>{st.display_name}</p>
+
+                          {/* LA MISIÓN DE HOY */}
+                          <p className="text-[17px] font-extrabold leading-tight mt-2.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#10263B' }}>{seqLabel(mySeq)}</p>
+                          {missionList.length > 0 ? (
+                            <ol className="mt-1.5 space-y-1">
+                              {missionList.map((id, k) => (
+                                <li key={id} className="flex items-start gap-2.5">
+                                  <span className="shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[12px] font-black" style={{ background: '#061C2B', color: '#00D2FF' }}>{k + 1}</span>
+                                  <span className="text-[15px] leading-snug pt-0.5" style={{ color: '#10263B' }}>{stepTitle(mySeq, id)}</span>
+                                </li>
+                              ))}
+                            </ol>
+                          ) : (
+                            <p className="text-[15px] mt-1" style={{ color: '#55666E' }}>The whole line, start to finish</p>
+                          )}
+                          {legacyFocus && <p className="text-[13px] mt-1" style={{ color: '#55666E' }}>Focus: {legacyFocus}</p>}
+                          {differs && <p className="text-[13px] mt-1.5" style={{ color: '#9A6A12' }}>Stays here while the group works {seqLabel(groupSeq)}.</p>}
+
+                          {/* Lo que además trabaja hoy */}
+                          {others.length > 0 && (
+                            <div className="mt-2.5 space-y-1.5">
+                              {others.map((w) => {
+                                const wb = st.blocks.find((x) => x.order_index === w.order) ?? null;
+                                const wList = missionsOf(wb, w.cfg);
+                                return (
+                                  <div key={w.order} className="rounded-[5px] px-2.5 py-2" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
+                                    <p className="text-[11px] font-mono uppercase tracking-[0.12em]" style={{ color: '#55666E' }}>Also today</p>
+                                    <p className="text-[15px] font-bold leading-snug" style={{ color: '#10263B' }}>{seqLabel(w.cfg)}</p>
+                                    <p className="text-[14px] leading-snug" style={{ color: wList.length ? '#10263B' : '#55666E' }}>{missionsLabel(wList, w.cfg)}</p>
+                                  </div>
+                                );
+                              })}
                             </div>
-                          </div>
-                          {/* Misiones: la línea completa, o hasta tres partes en orden. */}
-                          <details className="mt-1.5">
-                            <summary className="text-[11px] cursor-pointer" style={{ color: missionList.length ? '#9A6A12' : '#55666E' }} aria-label={`Focus for ${st.display_name}`}>
-                              {missionList.length > 1 ? 'Missions · ' : 'Focus · '}{missionLabel}
-                            </summary>
-                            {missionChips(st, b0?.order_index ?? 0, mySeq, missionList, b0 ?? null)}
-                          </details>
-                          <div className="hidden">
-                          </div>
-                          {differs && <p className="text-[10px] mt-0.5" style={{ color: '#9A6A12' }}>Stays on {seqLabel(mySeq)} while the group works {seqLabel(groupSeq)}.</p>}
-                          {legacyFocus && <p className="text-[10px] mt-0.5 text-[#55666E]">Focus: {legacyFocus}</p>}
-                          {/* Lo demás que la plantilla tiene hoy para este alumno (la línea de
-                              ayer se AGREGA, no pisa la misión): el cierre lo va a mostrar todo. */}
-                          {(() => {
-                            const others = waterSequencesOfBlocks(st.blocks as any, st.belt_level ?? null).filter((w) => w.order !== (b0?.order_index ?? -1) && w.cfg.id !== mySeq.id);
-                            const nextOrder = Math.max(0, ...st.blocks.map((x) => x.order_index)) + 1;
-                            const addSeq = (id: string) => {
-                              const c = SEQUENCE_PAGES[id]; if (!c) return;
-                              const games = (c as any).games as Record<string, string> | undefined;
-                              commitStudentBlock(st.student_id, nextOrder, { step_id: c.stepIds[0], step_ids: c.stepIds, sequence_id: c.id, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${seqLabel(c)}`, water_drill_id: games ? (games[c.stepIds[0]] ?? null) : null, notes_pre: 'Added by the coach.' } as any);
-                            };
-                            return (
-                              <div className="mt-1 space-y-1">
-                                {/* Cada secuencia agregada, con su MISMO selector de foco/misiones. */}
-                                {others.map((w) => {
-                                  const wb = st.blocks.find((x) => x.order_index === w.order) ?? null;
-                                  const wList = missionsOf(wb, w.cfg);
-                                  return (
-                                    <div key={w.order} className="rounded-[5px] px-2 py-1.5" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
-                                      <div className="flex items-center justify-between gap-2">
-                                        <span className="text-[11px] font-semibold" style={{ color: '#10263B' }}>Also today · {seqLabel(w.cfg)}</span>
-                                        <button type="button" aria-label={`Remove ${seqLabel(w.cfg)} for ${st.display_name}`} onClick={() => removeStudentBlock(st.student_id, w.order)} className="text-[12px] px-1 text-[#55666E] hover:text-[#E0413B]">×</button>
-                                      </div>
-                                      <details className="mt-0.5">
-                                        <summary className="text-[11px] cursor-pointer" style={{ color: wList.length ? '#9A6A12' : '#55666E' }} aria-label={`Focus for ${st.display_name} · ${seqLabel(w.cfg)}`}>
-                                          {wList.length > 1 ? 'Missions · ' : 'Focus · '}{missionsLabel(wList, w.cfg)}
-                                        </summary>
-                                        {missionChips(st, w.order, w.cfg, wList, wb)}
-                                      </details>
-                                    </div>
-                                  );
-                                })}
-                                {/* + otra secuencia hoy (Marcelo 2026-09-21): se agrega como bloque propio. */}
-                                <select value="" onChange={(e) => { if (e.target.value) addSeq(e.target.value); }} className="text-[10px] px-1.5 py-0.5 border rounded-[5px] bg-white" style={{ borderColor: '#DCD7C6', color: '#10263B' }} aria-label={`Add a sequence for ${st.display_name}`}>
-                                  <option value="">+ another sequence today</option>
-                                  {seqs.filter((c) => c.id !== mySeq.id && !others.some((w) => w.cfg.id === c.id)).map((c) => <option key={c.id} value={c.id}>{seqLabel(c)}</option>)}
+                          )}
+
+                          {/* UN SOLO enlace: todo lo editable vive acá adentro. */}
+                          <details className="mt-2.5">
+                            <summary className="text-[13px] font-semibold cursor-pointer py-1" style={{ color: '#00789A' }} aria-label={`Change today for ${st.display_name}`}>Change today</summary>
+                            <div className="mt-2 space-y-3">
+                              <div>
+                                <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Sequence</p>
+                                <select value={mySeq.id} onChange={(e) => { const c = SEQUENCE_PAGES[e.target.value]; if (c) assignLine(st, c); }}
+                                  className="w-full px-2.5 py-2.5 border rounded-[5px] text-[14px] bg-white" style={{ borderColor: differs ? '#E0A62B' : '#DCD7C6', color: '#061C2B' }} aria-label={`Sequence for ${st.display_name}`}>
+                                  {seqs.map((c) => <option key={c.id} value={c.id}>{seqLabel(c)}{c.id === groupSeq.id ? ' · group' : ''}</option>)}
                                 </select>
                               </div>
-                            );
-                          })()}
+                              <div>
+                                <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1" aria-label={`Focus for ${st.display_name}`}>Missions · up to three, in order</p>
+                                {missionChips(st, b0?.order_index ?? 0, mySeq, missionList, b0 ?? null)}
+                              </div>
+                              {others.map((w) => {
+                                const wb = st.blocks.find((x) => x.order_index === w.order) ?? null;
+                                const wList = missionsOf(wb, w.cfg);
+                                return (
+                                  <div key={w.order}>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E]" aria-label={`Focus for ${st.display_name} · ${seqLabel(w.cfg)}`}>Also today · {seqLabel(w.cfg)}</p>
+                                      <button type="button" aria-label={`Remove ${seqLabel(w.cfg)} for ${st.display_name}`} onClick={() => removeStudentBlock(st.student_id, w.order)} className="text-[13px] px-2 py-1" style={{ color: '#E0413B' }}>Remove</button>
+                                    </div>
+                                    {missionChips(st, w.order, w.cfg, wList, wb)}
+                                  </div>
+                                );
+                              })}
+                              <select value="" onChange={(e) => { if (e.target.value) addSeq(e.target.value); }} className="w-full px-2.5 py-2.5 border rounded-[5px] text-[14px] bg-white" style={{ borderColor: '#DCD7C6', color: '#10263B' }} aria-label={`Add a sequence for ${st.display_name}`}>
+                                <option value="">+ another sequence today</option>
+                                {seqs.filter((c) => c.id !== mySeq.id && !others.some((w) => w.cfg.id === c.id)).map((c) => <option key={c.id} value={c.id}>{seqLabel(c)}</option>)}
+                              </select>
+                            </div>
+                          </details>
                         </div>
                       );
                     })}
