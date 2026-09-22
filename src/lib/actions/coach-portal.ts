@@ -69,6 +69,8 @@ export async function reportIncident(input: {
 export interface CoachPortalData {
   unclosedPast: {
     camp_id: string; camp_name: string; day_number: number; date: string;
+    /** true = el coach ya abrió la evaluación y la dejó a medias ("Later"). */
+    started: boolean;
   }[];
   pendingStaffInvites: {
     id: string; role: string; response_token: string; camp_name: string;
@@ -643,12 +645,16 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
   // Días PASADOS sin cierre (14 días) de servicios donde este coach es el
   // responsable — tarjeta "Needs closing" en Plan: un toque abre el planner
   // en ese día. Antes vivían enterrados en "Past" y nadie los encontraba.
+  // Una evaluación EMPEZADA y sin terminar es deuda tenga la fecha que tenga
+  // (Marcelo 2026-09-22: "le di evaluar después y no la volví a encontrar" —
+  // había abierto un día futuro, y la lista solo miraba días pasados).
   const twoWeeksAgo = new Date(Date.now() - 14 * 86400000).toISOString().slice(0, 10);
+  const horizon = new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10);
   const { data: unclosedRows } = await admin
     .from('camp_sessions')
-    .select('id, day_number, session_date, session_status, camp_instances:camp_instance_id!inner(id, camp_name, status, coach_id, head_coach_id, camp_participants(enrollment_status))')
+    .select('id, day_number, session_date, session_status, service_plans(completion_state), camp_instances:camp_instance_id!inner(id, camp_name, status, coach_id, head_coach_id, camp_participants(enrollment_status))')
     .gte('session_date', twoWeeksAgo)
-    .lt('session_date', today)
+    .lte('session_date', horizon)
     .neq('session_status', 'completed');
   const unclosedPast = ((unclosedRows as any[]) ?? [])
     .map((r: any) => {
@@ -657,10 +663,15 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       if (inst.coach_id !== coach.id && inst.head_coach_id !== coach.id) return null;
       const hasStudents = (inst.camp_participants ?? []).some((p: any) => p.enrollment_status === 'active');
       if (!hasStudents) return null; // clase vacía que pasó = ruido, no deuda
-      return { camp_id: inst.id, camp_name: inst.camp_name, day_number: r.day_number, date: r.session_date };
+      const plan = Array.isArray(r.service_plans) ? r.service_plans[0] : r.service_plans;
+      const started = plan?.completion_state === 'in_progress';
+      // Un día que todavía no llegó y que nadie abrió no es deuda: es el plan.
+      if (!started && !(r.session_date < today)) return null;
+      return { camp_id: inst.id, camp_name: inst.camp_name, day_number: r.day_number, date: r.session_date, started };
     })
     .filter(Boolean)
-    .sort((a: any, b: any) => a.date.localeCompare(b.date)) as CoachPortalData['unclosedPast'];
+    // Lo empezado primero: es donde el coach se quedó.
+    .sort((a: any, b: any) => (a.started === b.started ? a.date.localeCompare(b.date) : a.started ? -1 : 1)) as CoachPortalData['unclosedPast'];
 
   return {
     coach,

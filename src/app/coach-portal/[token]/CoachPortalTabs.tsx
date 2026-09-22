@@ -196,7 +196,7 @@ export function CoachPortalTabs({
             {isSupport ? (
               <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} spaceBookings={(data as any).academySpaceBookings ?? []} emergencyPlan={data.emergencyPlan} onGoTo={(t) => setActiveTab(t as Tab)} />
             ) : (
-              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} todayLogistics={(data as any).todayLogistics ?? null} studentSide={studentSide} onRunToday={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run' }); setActiveTab('plan'); }} />
+              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} todayLogistics={(data as any).todayLogistics ?? null} studentSide={studentSide} onRunToday={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run' }); setActiveTab('plan'); }} unclosed={(data as any).unclosedPast ?? []} onOpenDay={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run' }); setActiveTab('plan'); }} />
             )}
           </div>
         )}
@@ -538,6 +538,8 @@ function HomeTab({
   todayLogistics = null,
   studentSide = null,
   onRunToday,
+  unclosed = [],
+  onOpenDay,
 }: {
   coach: any;
   stats: any;
@@ -550,6 +552,9 @@ function HomeTab({
   todayLogistics?: any;
   /** Abre directo el planner de HOY en modo "Dar la clase" (prueba E2E 2026-09-18). */
   onRunToday?: (campId: string, dayNumber?: number) => void;
+  /** Días sin cerrar; los que el coach ya empezó van primero. */
+  unclosed?: { camp_id: string; camp_name: string; day_number: number; date: string; started: boolean }[];
+  onOpenDay?: (campId: string, dayNumber: number) => void;
   /** Si este coach además entrena como alumno, el link a su portal. */
   studentSide?: { href: string; name: string } | null;
   emergencyPlan?: {
@@ -581,8 +586,47 @@ function HomeTab({
   const certLabel = coach.certification_level ? (CERT_LABELS[coach.certification_level] || coach.certification_level) : null;
   const nextCertLabel = certRank >= 1 && certRank < 5 ? CERT_LABELS[`tss_level_${certRank + 1}`] : null;
 
+  // ═══ SIN TERMINAR DE EVALUAR (Marcelo 2026-09-22) ═══
+  // El coach planea, se va a la playa, cierra el app y vuelve cuando puede —
+  // muchas veces en el video análisis. Lo que dejó a medias es lo PRIMERO que
+  // ve al abrir, con un toque que lo devuelve al mismo lugar.
+  const started = (unclosed ?? []).filter((u) => u.started);
+  const pending = started.length ? started : (unclosed ?? []);
+
   return (
     <div className="space-y-4">
+      {pending.length > 0 && (
+        <div className="rounded-lg overflow-hidden" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.45)' }}>
+          <div className="px-4 pt-3.5 pb-3">
+            <p className="text-[11px]" style={{ ...F_LABEL, color: '#00D2FF' }}>
+              {started.length ? 'Unfinished evaluation · pick it up where you left it' : 'Days still to close'}
+            </p>
+            <div className="mt-2.5 space-y-2">
+              {pending.slice(0, 4).map((u) => (
+                <button key={`${u.camp_id}-${u.day_number}`} type="button"
+                  onClick={() => (onOpenDay ? onOpenDay(u.camp_id, u.day_number) : onGoTo?.('plan'))}
+                  className="w-full flex items-center justify-between gap-3 rounded-lg px-3.5 py-3 text-left transition-opacity hover:opacity-90"
+                  style={{ background: 'rgba(255,255,255,.06)' }}>
+                  <span className="min-w-0">
+                    <span className="block text-[17px] font-extrabold leading-tight truncate" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F7F9FA' }}>
+                      Day {u.day_number} · {(u.camp_name ?? '').replace(/^PRUEBA · /, '').split(' · ')[0]}
+                    </span>
+                    <span className="block text-[13px] mt-0.5" style={{ color: 'rgba(247,249,250,.7)' }}>
+                      {new Date(u.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      {u.started ? ' · started, not finished' : ' · not closed'}
+                    </span>
+                  </span>
+                  <span className="shrink-0 rounded-full px-3.5 py-2 text-[13px] font-bold" style={{ background: '#00D2FF', color: '#061C2B' }}>
+                    {u.started ? 'Finish →' : 'Close →'}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[12px] mt-2.5" style={{ color: 'rgba(247,249,250,.6)' }}>Everything you already rated is saved. Nothing is lost when you close the app.</p>
+          </div>
+        </div>
+      )}
+
       {/* ── INK HERO — Brand Manual v10 (Archivo Expanded · Plex Mono · #00D2FF) ── */}
       <div className="rounded-lg overflow-hidden" style={{ background: '#061C2B' }}>
         <div className="px-5 pt-5 pb-6">
@@ -1998,8 +2042,8 @@ function PlanTab({
                   </span>
                   <span className="shrink-0 text-[11px] text-[#55666E]" style={F_MONO}>D{u.day_number}</span>
                 </span>
-                <span className="shrink-0 text-[11px] px-[13px] py-[5px] rounded-[5px]" style={{ ...F_MONO, background: '#FFD166', color: '#061C2B', fontWeight: 700 }}>
-                  Close →
+                <span className="shrink-0 text-[11px] px-[13px] py-[5px] rounded-[5px]" style={{ ...F_MONO, background: (u as any).started ? '#00D2FF' : '#FFD166', color: '#061C2B', fontWeight: 700 }}>
+                  {(u as any).started ? 'Finish →' : 'Close →'}
                 </span>
               </button>
             ))}
