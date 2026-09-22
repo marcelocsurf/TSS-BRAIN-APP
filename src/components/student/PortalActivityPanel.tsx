@@ -224,7 +224,9 @@ export function PortalActivityPanel({ selfTraining, stepRatings, lessonsComplete
                       {s.mission_completion ? ` · ${({ yes: 'done', partial: 'almost', no: 'not yet' } as Record<string, string>)[s.mission_completion] ?? s.mission_completion}` : ''}
                       {isCustom ? ' · does not count toward step mastery' : ''}
                     </p>
-                    {s.intention_text && (
+                    {/* En una sesión propia el título YA es la intención: no
+                        repetirla abajo entre comillas (2026-09-22). */}
+                    {s.intention_text && s.intention_text !== (s.drill_name || s.linked_step_id) && (
                       <p className="text-[10px] text-[#55666E] italic mt-0.5 truncate">
                         &ldquo;{s.intention_text}&rdquo;
                       </p>

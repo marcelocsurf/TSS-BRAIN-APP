@@ -47,6 +47,8 @@ export interface Circle {
   /** Tabla: posiciones del pie de atrás. */
   feet?: { pos: 'P1' | 'P2' | 'P3'; label: string; line: string; energy: string }[];
   frontFoot?: string[];
+  /** Tabla: cómo RESPONDE la tabla — acelerar y frenar (Marcelo 2026-09-22). */
+  response?: { title: string; note: string }[];
   /** Ola: lo que se lee. */
   reads?: { word: string; note: string }[];
   formula?: string;
@@ -161,6 +163,17 @@ export const CIRCLES: Circle[] = [
       { pos: 'P1', label: 'P1 · full tail', line: 'The tightest turns. The tail stays live so a turn can come out of anything.', energy: 'Maximum control and manoeuvrability, least speed.' },
       { pos: 'P2', label: 'P2 · neutral', line: 'The balance point: ready for whatever comes next.', energy: 'Stability and speed. Your default.' },
       { pos: 'P3', label: 'P3 · forward', line: 'Long, fast lines. Where you go when speed is the only job.', energy: 'Acceleration, drive and projection. The pumping position. Far less manoeuvrability.' },
+    ],
+    // Marcelo (2026-09-22): antes de las posiciones hay que entender cómo
+    // responde la tabla. El peso atrás frena, el peso adelante acelera, y cada
+    // tabla acelera más desde su parte más ancha y gruesa — casi siempre un
+    // poco adelante de la mitad. Sin esto, P1/P2/P3 se memorizan sin entender.
+    response: [
+      { title: 'Press the back foot and the board brakes', note: 'Push through the back foot and the tail sinks into the water. The board slows down. That is your brake, and you use it on purpose: to wait for a section, to hold a line, to turn tight. It is a press, for a moment — not your body falling back.' },
+      { title: 'Stay forward and the board runs', note: 'With your weight on the front foot the board keeps its speed. That is the default and the accelerator both: down the line, through a flat section, setting up the next move. Power Posture already puts you there, which is why throwing your weight back is an error and pressing the tail on purpose is a tool.' },
+      { title: 'Every board has one place where it accelerates most', note: 'It is the widest and thickest part of the board — where the volume is, around the centre. It is not a spot you stand on: it is a direction. The closer your weight gets to it, the more speed the board gives you.' },
+      { title: 'Now the positions make sense', note: 'All three sit behind that place — none of them is on it. What changes is how close you get. P1 is the furthest back, so it brakes and turns tight. P3 is the closest, so it is the one that accelerates. You are not memorising three positions: you are choosing how much brake or accelerator you want.' },
+      { title: 'Know your own board', note: 'Every board is widest in a slightly different place. Lay yours on the sand, find where it is widest and thickest, and remember it. That is the direction your speed comes from, and it moves when you change boards.' },
     ],
     frontFoot: [
       'The front foot lands centred across the board, on the stringer. That is the neutral position: you can press the same with the tips of your toes and with the heel.',

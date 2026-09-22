@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { BRAND } from '@/lib/constants/brand';
 import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
+  getNextIntention,
 } from '@/lib/actions/portal';
-import { Clock, CircleDot, Waves, ThumbsUp, Frown, Meh, Smile } from 'lucide-react';
+import { FocusPicker, FlowPicker, OutcomePicker } from '@/components/portal/close-pickers';
+import { Clock, CircleDot, Waves, ThumbsUp } from 'lucide-react';
 
 // Custom Session — free-form training that gets logged but does NOT count
 // toward step mastery. Lives inside the unified "Let's Play" tab as an
@@ -29,9 +31,23 @@ export function CustomSessionFlow({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [focusRating, setFocusRating] = useState<number | null>(null);
+  const [flow, setFlow] = useState<number | null>(null);
+  const [outcome, setOutcome] = useState<'yes' | 'partial' | 'no' | null>(null);
+  const [nextIntention, setNextIntention] = useState('');
+  const [prefilled, setPrefilled] = useState(false);
   const [waterMinutes, setWaterMinutes] = useState(30);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
+
+  // Lo que dejó anotado como "la próxima" la última vez ya viene escrito:
+  // así el círculo se cierra sin que tenga que acordarse (Marcelo 2026-09-22).
+  useEffect(() => {
+    let alive = true;
+    getNextIntention(portalToken)
+      .then((t) => { if (alive && t) setFocus((f) => { if (f) return f; setPrefilled(true); return t; }); })
+      .catch(() => { /* si falla, arranca en blanco */ });
+    return () => { alive = false; };
+  }, [portalToken]);
 
   // ── Plan phase ──
   if (phase === 'plan') {
@@ -65,8 +81,15 @@ export function CustomSessionFlow({
             onChange={(e) => setFocus(e.target.value)}
             placeholder="e.g. Free surf with friends. Or: long paddle conditioning. Or: just have fun."
             rows={3}
+            onFocus={() => setPrefilled(false)}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
           />
+          {/* Que no sea silencioso: se ve de dónde salió y que puede cambiarlo. */}
+          {prefilled && (
+            <p className="text-[11px] text-[#00789A] mt-1.5">
+              This is what you wrote last time. Change it if today is different.
+            </p>
+          )}
 
           <div className="mt-4">
             <label className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
@@ -107,6 +130,7 @@ export function CustomSessionFlow({
                   warm_up: null,
                   drill_id: null,
                   drill_name: focus.trim(),
+                  intention_text: focus.trim(),
                   mental_hack: null,
                   duration_minutes: duration,
                   notes: null,
@@ -170,33 +194,16 @@ export function CustomSessionFlow({
     return (
       <div className="space-y-4 pb-4">
         <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm space-y-4">
-          <div>
-            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
-              How did it feel?
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { value: 1, label: 'Off', Icon: Frown },
-                { value: 2, label: 'OK', Icon: Meh },
-                { value: 3, label: 'Locked in', Icon: Smile },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setFocusRating(opt.value)}
-                  className={`flex flex-col items-center gap-1 py-3 rounded-lg text-xs font-medium border ${
-                    focusRating === opt.value
-                      ? 'border-transparent text-white'
-                      : 'border-gray-200 text-gray-600'
-                  }`}
-                  style={focusRating === opt.value ? { background: BRAND.colors.navy } : {}}
-                >
-                  <opt.Icon size={18} strokeWidth={1.75} />
-                  {opt.label}
-                </button>
-              ))}
-            </div>
+          {/* Lo que te propusiste, arriba de todo: se evalúa contra ESO,
+              no contra la memoria (Marcelo 2026-09-22). */}
+          <div className="rounded-lg px-3 py-2.5" style={{ background: 'rgba(0,210,255,.08)', border: '1px solid rgba(0,210,255,.25)' }}>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">You set out to</p>
+            <p className="text-[15px] font-bold leading-snug mt-0.5" style={{ color: '#061C2B' }}>{focus}</p>
           </div>
+
+          <OutcomePicker value={outcome} onChange={setOutcome} />
+          <FocusPicker value={focusRating} onChange={setFocusRating} />
+          <FlowPicker flow={flow} onChange={setFlow} />
 
           <div>
             <label className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
@@ -248,6 +255,26 @@ export function CustomSessionFlow({
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none"
             />
           </div>
+
+          {/* El círculo se cierra acá: lo que escriba vuelve escrito la
+              próxima vez que abra una sesión suya. */}
+          <div>
+            <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+              What do you work on next?
+            </label>
+            <input
+              type="text"
+              value={nextIntention}
+              onChange={(e) => setNextIntention(e.target.value)}
+              placeholder="In your own words — it will be waiting for you next session."
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            />
+          </div>
+
+          <p className="text-[11px] leading-relaxed text-gray-500">
+            This session stays in your history and counts your time in the water.
+            It does not move any star of the method — those come from the sequences.
+          </p>
         </div>
 
         {error && (
@@ -256,20 +283,19 @@ export function CustomSessionFlow({
 
         <button
           type="button"
-          disabled={pending}
+          disabled={pending || !outcome}
           onClick={() => {
             if (!sessionId) return;
-            const fullNotes = focusRating
-              ? `[focus ${focusRating}/3] ${notes.trim()}`.trim()
-              : notes.trim();
             startTransition(async () => {
               try {
-                await completeSelfTrainingSession(
-                  portalToken,
-                  sessionId,
-                  fullNotes || undefined,
-                  Math.max(duration, waterMinutes)
-                );
+                await completeSelfTrainingSession(portalToken, sessionId, {
+                  notes: notes.trim() || null,
+                  totalWaterMinutes: Math.max(duration, waterMinutes),
+                  missionCompletion: outcome,
+                  focusRating,
+                  flowChannel: flow,
+                  nextIntention: nextIntention.trim() || null,
+                });
                 setPhase('done');
               } catch (e: any) {
                 setError(e.message || 'Failed to save');
@@ -279,7 +305,7 @@ export function CustomSessionFlow({
           className="w-full py-3 rounded-xl text-white text-sm font-semibold disabled:opacity-40"
           style={{ background: BRAND.colors.navy }}
         >
-          {pending ? 'Saving…' : 'Save Session'}
+          {pending ? 'Saving…' : !outcome ? 'Did you meet it?' : 'Save Session'}
         </button>
       </div>
     );

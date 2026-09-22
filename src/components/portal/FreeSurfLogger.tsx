@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { BRAND } from '@/lib/constants/brand';
 import { logFreeSurf } from '@/lib/actions/portal';
+import { OutcomePicker } from '@/components/portal/close-pickers';
 import { Clock, ThumbsUp } from 'lucide-react';
 
 // Surfboard glyph — compass geometry (two symmetric arcs + stringer), matching
@@ -22,12 +23,31 @@ function SurfboardIcon({ size = 22, color = '#061C2B' }: { size?: number; color?
 
 const MINUTE_CHIPS = [30, 60, 120, 240, 480];
 
+// Free surf es expresión, no entrenamiento: no se le pide foco ni flow
+// (Marcelo 2026-09-22). Solo una intención — de un toque — y, al cerrarla,
+// una sola pregunta. Si le pedimos más, deja de ser free surf.
+const INTENTIONS = [
+  'Just have fun',
+  'Catch as many waves as I can',
+  'Feel the water',
+  'Long sessions, build my paddle',
+  'Surf with friends',
+  'Reset my head',
+];
+
 export function FreeSurfLogger({ token }: { token: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [minutes, setMinutes] = useState(60);
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [notes, setNotes] = useState('');
+  // Dos estados separados: el chip elegido y lo que escribió a mano. Con uno
+  // solo, tocar un chip le borraba el texto y escribir un texto igual a un
+  // chip lo hacía desaparecer del campo.
+  const [chip, setChip] = useState('');
+  const [ownText, setOwnText] = useState('');
+  const [outcome, setOutcome] = useState<'yes' | 'partial' | 'no' | null>(null);
+  const intention = (chip || ownText).trim();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
@@ -67,7 +87,7 @@ export function FreeSurfLogger({ token }: { token: string }) {
         </h3>
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={() => { setOpen(false); setChip(''); setOwnText(''); setOutcome(null); setNotes(''); setError(''); }}
           className="text-xs text-gray-400 hover:text-[var(--tss-navy)]"
         >
           Cancel
@@ -82,6 +102,39 @@ export function FreeSurfLogger({ token }: { token: string }) {
         Training is intervention — building something that is not there yet.
         Both count. The only mistake is confusing one for the other.
       </p>
+
+      {/* La intención: un toque, o escribila. Sin intención no se pregunta
+          nada más — registrar una surfeada tiene que seguir siendo de dos
+          segundos. */}
+      <div>
+        <label className="block text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
+          What were you there for? (optional)
+        </label>
+        <div className="flex flex-wrap gap-1.5">
+          {INTENTIONS.map((i) => {
+            const on = intention === i;
+            return (
+              <button key={i} type="button" aria-pressed={on}
+                onClick={() => { const next = on ? '' : i; setChip(next); if (!next && !ownText.trim()) setOutcome(null); }}
+                className="px-2.5 py-1.5 rounded-full text-[12px] font-semibold border"
+                style={on ? { background: '#061C2B', borderColor: '#061C2B', color: '#F7F9FA' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
+                {i}
+              </button>
+            );
+          })}
+        </div>
+        <input
+          type="text"
+          value={ownText}
+          onChange={(e) => { setOwnText(e.target.value); if (e.target.value.trim()) setChip(''); else if (!chip) setOutcome(null); }}
+          placeholder="Or write your own"
+          className="mt-2 w-full px-3 py-2 border border-[#DCD7C6] bg-[#F7F9FA] rounded-[5px] text-sm"
+        />
+      </div>
+
+      {!!intention && (
+        <OutcomePicker value={outcome} onChange={setOutcome} question="Did you meet it?" />
+      )}
 
       <div>
         <label className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-gray-400 mb-1.5">
@@ -148,7 +201,10 @@ export function FreeSurfLogger({ token }: { token: string }) {
           setError('');
           startTransition(async () => {
             try {
-              await logFreeSurf(token, minutes, date || undefined, notes || undefined);
+              await logFreeSurf(token, minutes, date || undefined, notes || undefined, {
+                intention: intention || null,
+                missionCompletion: outcome,
+              });
               setDone(true);
               // No router.refresh(): vuelve a pedir la página con la URL interna
               // de Next, que puede traer ?tab=course de un deep-link anterior, y

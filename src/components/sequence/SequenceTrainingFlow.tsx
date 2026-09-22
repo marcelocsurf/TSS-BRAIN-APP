@@ -9,6 +9,7 @@
 //     opcional) y, opcional, la cadena.
 // Mismas tres pantallas que el flujo por pieza. Lo nuevo es la entrada.
 
+import { FocusPicker, FlowPicker } from '@/components/portal/close-pickers';
 import { useEffect, useRef, useState } from 'react';
 import {
   getSequenceTraining,
@@ -28,7 +29,8 @@ import { VenueScoutLauncher, type VenueCheckResult } from '@/components/venue-sc
 import { sequenceLabel, SIDE_WORD } from '@/lib/constants/learning-blocks';
 import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
 import { MomentChips } from './MySequenceTab';
-import { COMMAND_COLORS, WaveBoard } from '@/components/portal/sequence-page/WaveBoard';
+import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
+import { WaveGuide, WAVE_KIT_SEQUENCE } from '@/components/portal/sequence-page/WaveGuide';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { boardFlip } from '@/lib/stance';
 import { StarRating } from './StarRating';
@@ -99,23 +101,6 @@ function CriteriaGrid({ list, value, onPick }: { list: string[]; value: Record<n
   );
 }
 
-function FlowPicker({ flow, onChange }: { flow: number | null; onChange: (n: number | null) => void }) {
-  return (
-    <div>
-      <p className="text-[12px] text-[#55666E] mb-1" style={F_M}>How did the challenge feel? Flow lives between boredom and frustration.</p>
-      <div className="grid grid-cols-5 gap-1">
-        {(['Bored', 'Easy', 'Flow', 'Hard', 'Too much'] as const).map((l, i) => {
-          const n = i + 1; const sel = flow === n;
-          return (
-            <button key={l} type="button" aria-pressed={sel} onClick={() => onChange(sel ? null : n)}
-              className="py-2 rounded-lg text-[12px] font-bold"
-              style={sel ? { background: n === 3 ? GREEN : INK, color: n === 3 ? INK : PAPER } : { background: '#F7F9FA', color: '#55666E' }}>{l}</button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // "Go deeper": cada nivel se abre solo si el alumno quiere. Cerrado = nada
 // que llenar. Marcelo (2026-09-04): una sola cosa obligatoria, las estrellas.
@@ -133,27 +118,6 @@ function DeeperToggle({ open, onToggle, label, hint }: { open: boolean; onToggle
   );
 }
 
-function FocusPicker({ value, onChange }: { value: number | null; onChange: (n: number | null) => void }) {
-  const labels = ['Distracted', 'Some', 'Mostly', 'Locked in'];
-  return (
-    <div>
-      <p className="text-[12px] text-[#55666E] mb-1.5" style={F_M}><Brain size={11} className="inline mr-1 -mt-0.5" />Focus during practice</p>
-      <div className="grid grid-cols-4 gap-1.5">
-        {[0, 1, 2, 3].map((n) => {
-          const sel = value === n;
-          return (
-            <button key={n} type="button" aria-pressed={sel} onClick={() => onChange(sel ? null : n)}
-              className="py-2.5 rounded-[5px] border-[1.5px] flex flex-col items-center gap-0.5"
-              style={sel ? { background: INK, borderColor: INK, color: PAPER } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: '#55666E' }}>
-              <span className="text-base font-bold leading-none">{n}</span>
-              <span className="text-[12px] leading-tight opacity-80">{labels[n]}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 interface Props {
   portalToken: string;
@@ -647,7 +611,13 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             chica: de un vistazo, los pasos y dónde pasan (Marcelo 2026-09-10). */}
         {sequencePageFor(seq.id)?.think.board && (
           <div className="rounded-lg p-2" style={{ background: INK }}>
-            <WaveBoard data={sequencePageFor(seq.id)!.think.board!} title={`${seq.name} on the wave face`} flip={boardFlip(twoSided ? (side ?? 'fs') : seq.side, goofy)} />
+            <WaveGuide
+              data={sequencePageFor(seq.id)!.think.board!}
+              title={`${seq.name} on the wave face`}
+              waveDirection={boardFlip(twoSided ? (side ?? 'fs') : seq.side, goofy) ? 'left' : 'right'}
+              kitSequence={WAVE_KIT_SEQUENCE[seq.id]}
+              legendColor="rgba(247,249,250,.8)"
+            />
           </div>
         )}
         {(focusMoment || intention.trim()) && (

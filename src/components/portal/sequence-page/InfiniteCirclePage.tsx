@@ -6,7 +6,8 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { MarkReadButton } from './ThreeCirclesPage';
-import { WaveBoard, COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
+import { COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
+import { WaveGuide } from './WaveGuide';
 import { InfinityCircle } from './InfinityCircle';
 import { LOOP_INTRO, LOOP_SIDES, type LoopSide, type LoopStep } from '@/lib/sequence-pages/infinite-circle';
 
@@ -56,7 +57,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
           <Card eyebrow="01 · What it is">
             <p className="text-[14px] leading-relaxed" style={{ color: TEXT }}>{LOOP_INTRO.what}</p>
             {video && <div className="mt-3"><InfinityCircle side={side} /></div>}
-            <div className="mt-3"><WaveBoard data={cur.board} title="One turn of the circle on the wave face" /></div>
+            <div className="mt-3"><WaveGuide data={cur.board} title="One turn of the circle on the wave face" legendColor="rgba(247,249,250,.8)" /></div>
             <p className="text-[13.5px] mt-2 leading-relaxed" style={{ color: MUTED }}>{LOOP_INTRO.before}</p>
             <p className="text-[13.5px] mt-2 leading-relaxed rounded-xl px-3 py-2.5" style={{ background: 'rgba(0,210,255,.07)', color: PAPER }}>{LOOP_INTRO.why}</p>
           </Card>

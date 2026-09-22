@@ -698,6 +698,8 @@ export async function createSelfTrainingSession(
     venue_notes?: string | null;
     /** 'drill' (default — counts toward step metrics) or 'custom' (free-form, doesn't count). */
     kind?: 'drill' | 'custom';
+    /** Lo que el alumno se propone hoy, en sus palabras. */
+    intention_text?: string | null;
   }
 ) {
   const studentId = await studentIdFromPortalToken(portalToken);
@@ -716,6 +718,9 @@ export async function createSelfTrainingSession(
     completed: false,
     notes: data.notes,
     kind: data.kind || 'drill',
+    // La intención vive en su propia columna, no solo dentro de drill_name:
+    // así el cierre puede preguntar "¿la cumpliste?" y la bitácora leerla.
+    intention_text: data.intention_text ?? null,
   };
 
   // Venue analysis fields (optional — columns may not exist yet)
@@ -744,17 +749,45 @@ export async function createSelfTrainingSession(
 export async function completeSelfTrainingSession(
   portalToken: string,
   sessionId: string,
-  notes?: string,
-  totalWaterMinutes?: number
+  close?: {
+    notes?: string | null;
+    totalWaterMinutes?: number | null;
+    /** ¿Cumpliste lo que te propusiste? Mismo vocabulario que el resto del app. */
+    missionCompletion?: 'yes' | 'partial' | 'no' | null;
+    /** Qué tan metido estabas: 0 Distracted · 3 Locked in. */
+    focusRating?: number | null;
+    /** Flow 1-5 (aburrido → demasiado). */
+    flowChannel?: number | null;
+    /** Qué trabaja la próxima, en sus palabras. */
+    nextIntention?: string | null;
+  },
 ) {
   const studentId = await studentIdFromPortalToken(portalToken);
   if (!studentId) throw new Error('Not authorized');
   const admin = createAdminClient();
 
   const update: Record<string, any> = { completed: true };
-  if (notes) update.notes = notes;
-  if (typeof totalWaterMinutes === 'number' && totalWaterMinutes > 0) {
-    update.total_water_minutes = Math.round(totalWaterMinutes);
+  if (close?.notes) update.notes = close.notes;
+  if (typeof close?.totalWaterMinutes === 'number' && close.totalWaterMinutes > 0) {
+    update.total_water_minutes = Math.round(close.totalWaterMinutes);
+  }
+  if (close?.missionCompletion) {
+    if (!['yes', 'partial', 'no'].includes(close.missionCompletion)) throw new Error('Invalid outcome.');
+    update.mission_completion = close.missionCompletion;
+  }
+  if (typeof close?.focusRating === 'number') {
+    if (close.focusRating < 0 || close.focusRating > 3) throw new Error('Invalid focus.');
+    update.focus_rating = Math.round(close.focusRating);
+  }
+  if (typeof close?.flowChannel === 'number') {
+    if (close.flowChannel < 1 || close.flowChannel > 5) throw new Error('Invalid flow.');
+    update.flow_channel = Math.round(close.flowChannel);
+  }
+  // Dejarlo en blanco es una respuesta: borra lo que había. Con el guard
+  // viejo (typeof === 'string') un null no escribía nada y el alumno quedaba
+  // precargado para siempre con una meta que ya cerró.
+  if (close && 'nextIntention' in close) {
+    update.next_intention = (close.nextIntention ?? '').trim().slice(0, 200) || null;
   }
 
   const { error } = await admin
@@ -769,11 +802,36 @@ export async function completeSelfTrainingSession(
 
 // ─── Log a pure free-surf session (no mission/drill) ───
 
+// Lo que el alumno dejó anotado como "la próxima" en su última sesión libre.
+// Cierra el círculo: su próxima sesión abre ya con esa intención escrita.
+export async function getNextIntention(token: string): Promise<string | null> {
+  const studentId = await studentIdFromPortalToken(token);
+  if (!studentId) return null;
+  const admin = createAdminClient();
+  // La ÚLTIMA sesión suya que cerró, tenga o no texto: si la última vez no
+  // anotó nada, no hay precarga. Buscar "la última que tenga texto" revivía
+  // una meta vieja para siempre.
+  const { data } = await admin
+    .from('self_training_sessions')
+    .select('next_intention, created_at')
+    .eq('student_id', studentId)
+    .eq('kind', 'custom')
+    .eq('completed', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const t = ((data as any)?.next_intention ?? '').trim();
+  return t || null;
+}
+
 export async function logFreeSurf(
   token: string,
   minutes: number,
   dateISO?: string,
-  notes?: string
+  notes?: string,
+  /** Free surf es expresión: una intención elegida y una sola pregunta al
+   *  cerrarla — ¿la cumpliste? Nada de foco ni flow (Marcelo 2026-09-22). */
+  intent?: { intention?: string | null; missionCompletion?: 'yes' | 'partial' | 'no' | null },
 ) {
   const admin = createAdminClient();
 
@@ -798,6 +856,13 @@ export async function logFreeSurf(
     completed: true,
     drill_name: 'Free Surf',
   };
+  const intention = (intent?.intention ?? '').trim();
+  if (intention) insertData.intention_text = intention.slice(0, 200);
+  if (intent?.missionCompletion) {
+    if (!['yes', 'partial', 'no'].includes(intent.missionCompletion)) throw new Error('Invalid outcome.');
+    // Sin intención no hay nada que cumplir: el veredicto solo se guarda con ella.
+    if (intention) insertData.mission_completion = intent.missionCompletion;
+  }
   if (notes && notes.trim()) insertData.notes = notes.trim();
   if (dateISO) insertData.created_at = new Date(dateISO).toISOString();
 

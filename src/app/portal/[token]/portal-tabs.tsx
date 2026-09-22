@@ -1,6 +1,7 @@
 'use client';
 
 import { THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
+import { FOCUS_LABELS } from '@/components/portal/close-pickers';
 import { ExperienceSurveyForm } from '@/components/survey/ExperienceSurveyForm';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -2373,6 +2374,28 @@ function SessionsTab({ data, onDark = false }: { data: PortalData; onDark?: bool
                   </>
                 ) : isSelf ? (
                   <>
+                    {/* El cierre de su propia sesión, con las mismas palabras
+                        con que lo contestó (Marcelo 2026-09-22): antes el
+                        enfoque se guardaba dentro del texto de la nota y el
+                        resto no se guardaba, así que acá no había nada. */}
+                    {session.intention_text && (
+                      <DetailRow label="You planned" value={session.intention_text} />
+                    )}
+                    {session.mission_completion && (
+                      <DetailRow
+                        label="Did you meet it?"
+                        value={({ yes: 'I met it', partial: 'Partly', no: 'Not that day' } as Record<string, string>)[session.mission_completion] ?? session.mission_completion}
+                      />
+                    )}
+                    {session.focus_rating != null && (
+                      <DetailRow label="Focus" value={`${session.focus_rating}/3 · ${FOCUS_LABELS[session.focus_rating] ?? ''}`} />
+                    )}
+                    {session.flow_channel != null && (
+                      <DetailRow label="Flow" value={`${session.flow_channel}/5`} />
+                    )}
+                    {session.next_intention && (
+                      <DetailRow label="Next time" value={session.next_intention} />
+                    )}
                     {/* Venue analysis for self-training */}
                     {session.venue_type && (
                       <DetailRow label="Venue" value={session.venue_type} />

@@ -12,7 +12,8 @@
 import { useState } from 'react';
 import { markLessonComplete } from '@/lib/actions/course';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
-import { WaveBoard, COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
+import { COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
+import { WaveGuide } from './WaveGuide';
 import { CIRCLES, CIRCLES_INTRO, gameContext, type Circle } from '@/lib/sequence-pages/three-circles';
 import type { WaveBoardData } from '@/lib/sequence-pages/types';
 import type { PieceRow } from './SequencePage';
@@ -208,6 +209,21 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                 {feet.map((f) => <div key={f.pos}><dt>{f.label}</dt><dd>{f.energy.split('.')[0]}</dd></div>)}
               </dl>
             </Card>
+            {cur.response && (
+              <Card title="How the board answers · brake and accelerator" color={CIRCLE_COLOR.board}>
+                <p className="text-[14px] leading-[1.45] mb-3" style={{ color: MUTED }}>
+                  The positions above are not three names to memorise. The board itself has a brake and an accelerator, and your weight is what presses them.
+                </p>
+                <div className="space-y-3">
+                  {cur.response.map((r, j) => (
+                    <div key={j}>
+                      <p className="text-[15px] font-bold leading-snug" style={{ color: INK }}>{r.title}</p>
+                      <p className="text-[14px] leading-[1.45] mt-0.5" style={{ color: MUTED }}>{r.note}</p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            )}
             <Card title="The front foot · centre and rails" color={CIRCLE_COLOR.board}>
               <ul className="space-y-2 text-[14px] leading-[1.45]" style={{ color: INK }}>
                 {cur.frontFoot!.map((b, j) => <li key={j} className="flex gap-2"><span style={{ color: '#B8860B' }}>•</span><span>{b}</span></li>)}
@@ -247,7 +263,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
               })}
               <p className="mt-3 text-[15px] font-bold leading-snug" style={{ color: INK }}>{cur.formula}</p>
               <div className="mt-3 rounded-[5px] p-2" style={{ background: NAVY }}>
-                <WaveBoard data={WAVE_GAME_BOARD} title="Down, up, a maneuver at the top, down again — never to the flat" />
+                <WaveGuide data={WAVE_GAME_BOARD} title="Down, up, a maneuver at the top, down again — never to the flat" legendColor="rgba(247,249,250,.8)" />
               </div>
             </Card>
             <Card title="Understand the wave" color={CIRCLE_COLOR.wave}>
