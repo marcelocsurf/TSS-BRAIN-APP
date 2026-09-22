@@ -400,8 +400,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
     if (
       !confirm(
         'Finalize this session?\n\n' +
-          'TOMORROW · what each student will work on\n' + tomorrowLines + '\n\n' +
-          '• Each student sees this tonight; your plan for tomorrow already has it\n' +
+          'NEXT TRAINING SESSION · what each student will work on\n' + tomorrowLines + '\n\n' +
+          '• Each student sees this in their portal; your next plan already has it\n' +
           '• The session locks — no more edits\n\n' +
           'Continue?'
       )
@@ -1787,21 +1787,21 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             const missing = rows.filter((r) => !r.main).length;
             return (
               <div className="rounded-[8px] p-3.5" style={{ background: '#061C2B' }}>
-                <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00D2FF' }}>
-                  {nextDay ? `Tomorrow · day ${nextDay.day_number} · what each student will work on` : "What's next · what each student takes home"}
+                <p className="text-[11px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00D2FF' }}>
+                  {nextDay ? `Next training session · day ${nextDay.day_number} · what each student will work on` : "What's next · what each student takes home"}
                 </p>
                 <div className="mt-2 space-y-1.5">
                   {rows.map((r) => (
                     <div key={r.id} className="flex items-start gap-3">
-                      <span className="shrink-0 w-[38%] text-[13px] font-semibold truncate" style={{ color: '#F7F9FA' }}>{r.name}</span>
-                      <span className="min-w-0 flex-1 text-[13px] leading-snug" style={{ color: r.main ? '#F7F9FA' : '#FFD166' }}>
+                      <span className="shrink-0 w-[38%] text-[15px] font-semibold truncate" style={{ color: '#F7F9FA' }}>{r.name}</span>
+                      <span className="min-w-0 flex-1 text-[15px] leading-snug" style={{ color: r.main ? '#F7F9FA' : '#FFD166' }}>
                         {r.main || (isClosed ? 'not set' : 'tap a star, it fills in')}{r.note ? <span style={{ color: 'rgba(247,249,250,.6)' }}> — {r.note}</span> : null}
                       </span>
                     </div>
                   ))}
                 </div>
-                {!isClosed && missing > 0 && <p className="text-[11px] mt-2" style={{ color: '#FFD166' }}>{missing} without tomorrow yet. Rate above and it fills in; use Change to set it by hand.</p>}
-                {!isClosed && missing === 0 && <p className="text-[11px] mt-2" style={{ color: '#7DE3FF' }}>Finalize confirms these lines: the student sees them tonight and your plan for tomorrow already has them.</p>}
+                {!isClosed && missing > 0 && <p className="text-[13px] mt-2" style={{ color: '#FFD166' }}>{missing} without the next session yet. Rate above and it fills in; use Change to set it by hand.</p>}
+                {!isClosed && missing === 0 && <p className="text-[13px] mt-2" style={{ color: '#7DE3FF' }}>Finalize confirms these lines: the student sees them in their portal and your next plan already has them.</p>}
               </div>
             );
           })()}

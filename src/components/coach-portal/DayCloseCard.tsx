@@ -302,14 +302,14 @@ export function DayCloseCard({
   const changeCfg = changeSeq ? SEQUENCE_PAGES[changeSeq] ?? null : null;
 
   return (
-    <div className="bg-[#E9E2D2] rounded-[8px] border border-[#DCD7C6] p-3 space-y-2.5">
+    <div className="bg-[#E9E2D2] rounded-[8px] border border-[#DCD7C6] p-3.5 space-y-3">
       <div className="flex items-center gap-2 min-w-0">
         {avatar}
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-[#10263B] truncate">{student.display_name}</p>
-          <p className="text-[11px] text-[#55666E] capitalize">{student.belt_level?.replace(/_/g, ' ')}</p>
+          <p className="text-[18px] font-extrabold text-[#10263B] truncate leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>{student.display_name}</p>
+          <p className="text-[12px] text-[#55666E] capitalize mt-0.5">{student.belt_level?.replace(/_/g, ' ')}</p>
         </div>
-        <button type="button" onClick={() => setShowProfile((v) => !v)} aria-pressed={showProfile} className="shrink-0 w-9 h-9 rounded-full border border-[#DCD7C6] bg-white text-[#55666E] text-[14px]" title="Profile & bitácora">📋</button>
+        <button type="button" onClick={() => setShowProfile((v) => !v)} aria-pressed={showProfile} className="shrink-0 w-10 h-10 rounded-full border border-[#DCD7C6] bg-white text-[#55666E] text-[16px]" title="Profile & bitácora">📋</button>
       </div>
       {showProfile && profile}
 
@@ -319,11 +319,11 @@ export function DayCloseCard({
         const steps = stepsOf(s.cfg);
         const brokenId = broken[s.cfg.id] ?? null;
         return (
-          <div key={s.plannedCfg.id} className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] p-2.5">
+          <div key={s.plannedCfg.id} className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] p-3">
             {/* 1 · Vos planeaste (o: se trabajó otra cosa) */}
-            <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00A8CC' }}>{worked ? 'Worked instead' : 'You planned'}</p>
-            <p className="text-[15px] font-extrabold text-[#10263B] leading-tight mt-0.5">{seqTitle(s.cfg)}</p>
-            <p className="text-[12px] text-[#55666E] mt-0.5">
+            <p className="text-[11px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00A8CC' }}>{worked ? 'Worked instead' : 'You planned'}</p>
+            <p className="text-[19px] font-extrabold text-[#10263B] leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>{seqTitle(s.cfg)}</p>
+            <p className="text-[15px] text-[#10263B] mt-1 leading-snug">
               {worked ? `Planned: ${seqTag(s.plannedCfg)}` : s.focusMoments.length > 1 ? `Missions: ${s.focusMoments.map((id, i) => `${i + 1} ${stepTitleOf(s.cfg, id)}`).join(' · ')}` : s.focusTitle ? `Focus: ${s.focusTitle}` : 'The whole line, start to finish'}
             </p>
 
@@ -331,19 +331,19 @@ export function DayCloseCard({
             <div className="mt-2.5">
               <StarRating value={v} size="lg" variant="official" readOnly={isClosed} onChange={(n) => rate(s, n)} />
             </div>
-            <p className="text-[12px] text-[#55666E] mt-1">{v ? `${v}★ · ${STAR_LABEL[v]}` : 'Tap a star. 4★ = the sequence is theirs.'}</p>
+            <p className="text-[15px] mt-1.5 leading-snug" style={{ color: v ? '#10263B' : '#55666E' }}>{v ? `${v}★ · ${STAR_LABEL[v]}` : 'Tap a star. 4★ = the sequence is theirs.'}</p>
 
             {/* 3 · Solo con 1–3★: ¿dónde se rompió? Un toque, opcional. */}
             {v !== null && v <= 3 && (
               <div className="mt-2.5">
-                <p className="text-[10px] font-mono uppercase tracking-[0.14em] text-[#55666E]">Where did it break? · optional · tap the step</p>
+                <p className="text-[11px] font-mono uppercase tracking-[0.14em] text-[#55666E]">Where did it break? · optional · tap the step</p>
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {[...steps].sort((a, b) => { const ia = s.focusMoments.indexOf(a.id); const ib = s.focusMoments.indexOf(b.id); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib); }).map((st) => {
                     const i = steps.findIndex((x) => x.id === st.id);
                     const on = brokenId === st.id;
                     return (
                       <button key={st.id} type="button" aria-pressed={on} disabled={isClosed} onClick={() => pickBroken(s, st.id)}
-                        className="px-2.5 py-1.5 rounded-full text-[12px] font-semibold border disabled:opacity-70 text-left"
+                        className="px-3 py-2 min-h-[40px] rounded-full text-[13px] font-semibold border disabled:opacity-70 text-left"
                         style={on ? { background: '#E0413B', borderColor: '#E0413B', color: '#fff' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
                         {i + 1} · {st.title}
                       </button>
@@ -356,8 +356,8 @@ export function DayCloseCard({
             {/* Se trabajó otra cosa: la misma línea, otra secuencia. */}
             {!isClosed && (
               <details className="mt-2">
-                <summary className="text-[11px] text-[#55666E] cursor-pointer">{worked ? 'Back to what was planned' : 'Worked something else'}</summary>
-                <select value={worked ? s.cfg.id : ''} onChange={(e) => setWorked(s, e.target.value || null)} className="mt-1.5 w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-[12px] bg-white">
+                <summary className="text-[13px] text-[#55666E] cursor-pointer py-1">{worked ? 'Back to what was planned' : 'Worked something else'}</summary>
+                <select value={worked ? s.cfg.id : ''} onChange={(e) => setWorked(s, e.target.value || null)} className="mt-1.5 w-full px-2.5 py-2.5 border border-[#DCD7C6] rounded-lg text-[14px] bg-white">
                   <option value="">{seqTag(s.plannedCfg)} · as planned</option>
                   {pickable.filter((c) => c.id !== s.plannedCfg.id).map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.belt.replace('_belt', '')}</option>)}
                 </select>
@@ -370,13 +370,13 @@ export function DayCloseCard({
       {/* + otra secuencia que también trabajaron hoy (Marcelo 2026-09-21): un bloque más, con su estrella. */}
       {!isClosed && (
         <details className="px-1">
-          <summary className="text-[11px] text-[#55666E] cursor-pointer">+ another sequence they also worked today</summary>
+          <summary className="text-[13px] text-[#55666E] cursor-pointer py-1">+ another sequence they also worked today</summary>
           <select value="" onChange={(e) => {
               const c = SEQUENCE_PAGES[e.target.value]; if (!c) return;
               const nextOrder = Math.max(0, ...blocks.map((b) => b.order_index)) + 1;
               const games = (c as any).games as Record<string, string> | undefined;
               onCommit(nextOrder, { sequence_id: c.id, worked_sequence_id: null, step_id: c.stepIds[0], step_ids: c.stepIds, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${seqTag(c)}`, water_drill_id: games ? (games[c.stepIds[0]] ?? null) : null, notes_pre: 'Added at the close.' } as any);
-            }} className="mt-1.5 w-full px-2 py-1.5 border border-[#DCD7C6] rounded-lg text-[12px] bg-white">
+            }} className="mt-1.5 w-full px-2.5 py-2.5 border border-[#DCD7C6] rounded-lg text-[14px] bg-white">
             <option value="">— pick the sequence —</option>
             {pickable.filter((c) => !seqs.some((s) => s.cfg.id === c.id || s.plannedCfg.id === c.id)).map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.belt.replace('_belt', '')}</option>)}
           </select>
@@ -386,45 +386,45 @@ export function DayCloseCard({
       {/* Sin secuencias (clase suelta): el estado del día a mano. */}
       {seqs.length === 0 && (
         <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] p-2.5 space-y-1.5">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Did they meet today&apos;s objective?</p>
+          <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E]">Did they meet today&apos;s objective?</p>
           <StatusButtons value={gen?.day_objective_status ?? null} disabled={isClosed} onPick={(v) => onCommit(genOrder, { day_objective_status: v } as any)} />
         </div>
       )}
 
       {/* MAÑANA: la línea aparece sola. Confirmar es registrar; cambiar es un toque. */}
-      <div className="rounded-[5px] px-3 py-2.5" style={{ background: '#061C2B' }}>
-        <p className="text-[10px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00D2FF' }}>
-          {isLastDay ? "What's next · goes to the final evaluation" : `Tomorrow${tomorrow?.day_number ? ` · day ${tomorrow.day_number}` : ''} · they will work on`}
+      <div className="rounded-[5px] px-3.5 py-3" style={{ background: '#061C2B' }}>
+        <p className="text-[11px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00D2FF' }}>
+          {isLastDay ? "What's next · goes to the final evaluation" : `Next training session${tomorrow?.day_number ? ` · day ${tomorrow.day_number}` : ''} · they will work on`}
           {isClosed && !lineText ? ' · not set' : ''}
         </p>
         {lineText ? (
           <>
             {lineMoments.length > 1 && lineCfg ? (
               <>
-                <p className="text-[17px] font-extrabold mt-1 leading-tight" style={{ color: '#F7F9FA' }}>{seqTag(lineCfg)}</p>
+                <p className="text-[21px] font-extrabold mt-1.5 leading-tight" style={{ color: '#F7F9FA', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>{seqTag(lineCfg)}</p>
                 <ol className="mt-1 space-y-0.5">
                   {lineMoments.map((id, i) => (
-                    <li key={id} className="text-[13px] leading-snug" style={{ color: '#F7F9FA' }}><span className="font-mono text-[11px] mr-1.5" style={{ color: '#00D2FF' }}>M{i + 1}</span>{stepTitleOf(lineCfg, id)}</li>
+                    <li key={id} className="text-[15px] leading-snug" style={{ color: '#F7F9FA' }}><span className="font-mono text-[12px] mr-1.5" style={{ color: '#00D2FF' }}>M{i + 1}</span>{stepTitleOf(lineCfg, id)}</li>
                   ))}
                 </ol>
               </>
             ) : (
-              <p className="text-[17px] font-extrabold mt-1 leading-tight" style={{ color: '#F7F9FA' }}>{lineText}</p>
+              <p className="text-[21px] font-extrabold mt-1.5 leading-tight" style={{ color: '#F7F9FA', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>{lineText}</p>
             )}
-            {line && <p className="text-[11px] mt-1" style={{ color: '#7DE3FF' }}>{WHY[line.why]} · the student sees this tonight</p>}
+            {line && <p className="text-[13px] mt-1.5" style={{ color: '#7DE3FF' }}>{WHY[line.why]} · the student sees this in their portal</p>}
           </>
         ) : (
-          <p className="text-[13px] mt-1" style={{ color: 'rgba(247,249,250,.7)' }}>
+          <p className="text-[15px] mt-1.5" style={{ color: 'rgba(247,249,250,.7)' }}>
             {seqs.length === 0 ? 'Write it below, in your words.' : allRated ? 'Set it below.' : 'Tap a star above. The line fills in by itself.'}
           </p>
         )}
         {!isClosed && seqs.length > 0 && (
           <div className="flex gap-3 mt-1.5">
-            <button type="button" onClick={() => setChangeOpen((o) => !o)} aria-expanded={changeOpen} className="text-[11px] underline" style={{ color: '#7DE3FF' }}>
+            <button type="button" onClick={() => setChangeOpen((o) => !o)} aria-expanded={changeOpen} className="text-[13px] underline py-1" style={{ color: '#7DE3FF' }}>
               {changeOpen ? 'Close' : 'Change'}
             </button>
             {isManual && line && (
-              <button type="button" onClick={resetAuto} className="text-[11px] underline" style={{ color: 'rgba(247,249,250,.7)' }}>
+              <button type="button" onClick={resetAuto} className="text-[13px] underline py-1" style={{ color: 'rgba(247,249,250,.7)' }}>
                 Reset to automatic
               </button>
             )}
@@ -432,14 +432,14 @@ export function DayCloseCard({
         )}
         {changeOpen && !isClosed && (
           <div className="mt-1.5 space-y-1.5">
-            <select value={changeSeq} onChange={(e) => { setChangeSeq(e.target.value); if (e.target.value) setByHand(e.target.value, []); }} className="w-full px-2 py-1.5 rounded-[4px] text-[12px] bg-[#0E2A40] text-[#F7F9FA] border border-[#1E3A52]">
+            <select value={changeSeq} onChange={(e) => { setChangeSeq(e.target.value); if (e.target.value) setByHand(e.target.value, []); }} className="w-full px-2.5 py-2.5 rounded-[4px] text-[14px] bg-[#0E2A40] text-[#F7F9FA] border border-[#1E3A52]">
               <option value="">— pick a sequence —</option>
               {pickable.map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.belt.replace('_belt', '')}</option>)}
             </select>
             {changeCfg && (
               <div className="flex flex-wrap gap-1.5">
                 <button type="button" onClick={() => setByHand(changeCfg.id, [])} aria-pressed={line?.seqId === changeCfg.id && !line?.stepId}
-                  className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+                  className="px-3 py-2 min-h-[40px] rounded-full text-[13px] font-semibold border"
                   style={line?.seqId === changeCfg.id && !line?.stepId ? { background: '#00D2FF', borderColor: '#00D2FF', color: '#061C2B' } : { background: 'transparent', borderColor: '#1E3A52', color: '#F7F9FA' }}>
                   Whole line
                 </button>
@@ -449,13 +449,13 @@ export function DayCloseCard({
                   const on = pos >= 0;
                   return (
                     <button key={st.id} type="button" onClick={() => toggleMission(changeCfg.id, st.id)} aria-pressed={on}
-                      className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+                      className="px-3 py-2 min-h-[40px] rounded-full text-[13px] font-semibold border"
                       style={on ? { background: '#00D2FF', borderColor: '#00D2FF', color: '#061C2B' } : { background: 'transparent', borderColor: '#1E3A52', color: '#F7F9FA' }}>
                       {on && chosen.length > 1 ? `M${pos + 1} · ` : `${i + 1} · `}{st.title}
                     </button>
                   );
                 })}
-                <p className="basis-full text-[10px]" style={{ color: 'rgba(247,249,250,.6)' }}>Tap up to three parts, in order: they become tomorrow&apos;s missions.</p>
+                <p className="basis-full text-[12px]" style={{ color: 'rgba(247,249,250,.6)' }}>Tap up to three parts, in order: they become the missions of the next session.</p>
               </div>
             )}
           </div>
@@ -473,20 +473,20 @@ export function DayCloseCard({
             else onCommit(genOrder, { whats_next: [main, nn.trim()].filter(Boolean).join(NOTE_SEP) || null } as any);
           }}
           placeholder={seqs.length === 0 ? 'What to work on next' : 'Note for the student (optional)'}
-          className="mt-2 w-full px-2.5 py-1.5 rounded-[4px] text-[12px] bg-[#0E2A40] text-[#F7F9FA] placeholder:text-[#7C8C94] border border-[#1E3A52] disabled:opacity-60"
+          className="mt-2.5 w-full px-2.5 py-2.5 rounded-[4px] text-[14px] bg-[#0E2A40] text-[#F7F9FA] placeholder:text-[#7C8C94] border border-[#1E3A52] disabled:opacity-60"
         />
       </div>
 
       {/* FLOW · el termómetro del día (Marcelo 2026-09-21): una fila, opcional,
           por alumno. Viaja a la sesión del alumno como coach_flow. */}
       <div className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] px-2.5 py-2">
-        <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">Flow today · optional · was the demand right?</p>
+        <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">Flow today · optional · was the demand right?</p>
         <div className="grid grid-cols-5 gap-1">
           {FLOW.map((opt) => {
             const on = gen?.flow_channel === opt.n;
             return (
               <button key={opt.n} type="button" disabled={isClosed} aria-pressed={on} onClick={() => onCommit(genOrder, { flow_channel: on ? null : opt.n } as any)}
-                className="py-1.5 rounded-[5px] text-[10.5px] font-bold border disabled:opacity-70"
+                className="py-2.5 min-h-[40px] rounded-[5px] text-[12px] font-bold border disabled:opacity-70"
                 style={on ? { background: opt.color, borderColor: opt.color, color: '#fff' } : { background: '#fff', borderColor: '#DCD7C6', color: '#55666E' }}>
                 {opt.label}
               </button>
@@ -497,16 +497,16 @@ export function DayCloseCard({
 
       {/* Plegado: nota interna (no la ve el alumno). */}
       <details className="bg-[#F7F9FA] border border-[#DCD7C6] rounded-[5px] px-2.5 py-2">
-        <summary className="text-[12px] text-[#55666E] cursor-pointer">Internal note{gen?.notes_post ? ' · written' : ''}</summary>
+        <summary className="text-[13px] text-[#55666E] cursor-pointer py-1">Internal note{gen?.notes_post ? ' · written' : ''}</summary>
         <div className="mt-2">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-1">🔒 Not sent to the student</p>
+          <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E] mb-1.5">🔒 Not sent to the student</p>
           <textarea
             defaultValue={gen?.notes_post ?? ''}
             disabled={isClosed}
             onBlur={(e) => onCommit(genOrder, { notes_post: e.target.value })}
             rows={2}
             placeholder="e.g. Struggles on the skate, repeat on land"
-            className="w-full px-2.5 py-2 border border-[#DCD7C6] rounded-lg text-[12px] bg-white disabled:opacity-70"
+            className="w-full px-2.5 py-2.5 border border-[#DCD7C6] rounded-lg text-[14px] bg-white disabled:opacity-70"
           />
         </div>
       </details>
@@ -523,7 +523,7 @@ function StatusButtons({ value, disabled, onPick }: { value: string | null; disa
         { v: 'not_yet', label: 'Not yet', bg: '#FEE2E2', fg: '#991B1B' },
       ] as const).map((opt) => (
         <button key={opt.v} type="button" disabled={disabled} onClick={() => onPick(opt.v)}
-          className="py-1.5 rounded-lg text-[11px] font-bold disabled:opacity-70"
+          className="py-2.5 min-h-[40px] rounded-lg text-[13px] font-bold disabled:opacity-70"
           style={value === opt.v ? { background: opt.bg, color: opt.fg, boxShadow: 'inset 0 0 0 2px ' + opt.fg } : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }}>
           {opt.label}
         </button>
