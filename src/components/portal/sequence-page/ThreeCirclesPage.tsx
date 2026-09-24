@@ -74,6 +74,19 @@ function Game({ p, portal }: { p?: PieceRow; portal?: string }) {
   );
 }
 
+/** Una lámina del método (Marcelo 2026-09-24). Se toca y se abre en grande:
+ *  en el teléfono el detalle fino —la cadena cinética, las flechas del freno—
+ *  no se lee de otro modo. Todas miden 1672x941. */
+function Lamina({ src, alt }: { src: string; alt: string }) {
+  return (
+    <a href={src} target="_blank" rel="noopener noreferrer"
+       className="block mb-4 rounded-[10px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} width={1672} height={941} alt={alt} style={{ width: '100%', height: 'auto', display: 'block' }} />
+    </a>
+  );
+}
+
 function Card({ title, children, color, id }: { title?: string; children: React.ReactNode; color?: string; id?: string }) {
   return (
     <section id={id} className="tss-card" style={color ? { borderTop: `4px solid ${color}` } : undefined}>
@@ -167,6 +180,9 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
         {/* ── 1 · BODY: los cuatro movimientos ── */}
         {cur.moves && (
           <Card title="Think it · the four movements" color={CIRCLE_COLOR.body}>
+            {/* El mapa del círculo antes de abrir los movimientos uno por uno. */}
+            <Lamina src="/uploads/fotos/circle-1-basic-movements.webp"
+                    alt="Circle 1 · Basic Movements: the three circles overlap into flow — the four movements P·R·C·H, the feet on the board, and the dynamic of the wave — with the kinetic chain of the rotation: sight, neck and head, torso, hip, ankles." />
             {cur.moves.map((m, i) => (
               <Acc key={m.key} open={i === 0} lead={<Dot command={m.command} hold={m.hold} />} title={m.name}>
                 <p>{m.what}</p>
@@ -189,6 +205,8 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
         {cur.feet && (
           <>
             <Card color={CIRCLE_COLOR.board}>
+              <Lamina src="/uploads/fotos/circle-2-foot-position.webp"
+                      alt="Circle 2 · Foot Position on the Board: FP3 forward gives most speed and least maneuverability, FP2 neutral is ready for what comes next, FP1 at the tail is most maneuverable and least speed. The weight always stays on the front foot; the back foot only follows the rails." />
               <p className="tss-intro">Your back foot changes the line.<br />Your front foot controls how the rail responds.</p>
               <p className="text-[14px] leading-[1.45] mb-3" style={{ color: INK }}>{cur.intro}</p>
               <figure className="tss-board-figure">
@@ -211,6 +229,8 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
             </Card>
             {cur.response && (
               <Card title="How the board answers · brake and accelerator" color={CIRCLE_COLOR.board}>
+                <Lamina src="/uploads/fotos/circle-2-brake-accelerator.webp"
+                        alt="How the board answers · brake and accelerator. Press the back foot and the board brakes: the tail sinks and you slow down on purpose. Stay forward and the board runs. Every board accelerates most at its widest and thickest part, around the centre: it is a direction, not a spot. The closer your weight gets to it, the more speed." />
                 <p className="text-[17px] font-extrabold leading-tight mb-1.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: INK }}>
                   Press to brake. Stay forward to run.
                 </p>
@@ -228,6 +248,8 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
               </Card>
             )}
             <Card title="The front foot · centre and rails" color={CIRCLE_COLOR.board}>
+              <Lamina src="/uploads/fotos/circle-2-front-foot.webp"
+                      alt="The front foot · centre and rails. The front foot lands centred on the stringer: that is neutral, and you can press the same with the toes and with the heel. The closer the foot is to a rail, the more that rail sinks. FP1, FP2 and FP3 always describe the back foot. The rule that surprises people: Circle 1 cannot rescue Circle 2." />
               <ul className="space-y-2 text-[14px] leading-[1.45]" style={{ color: INK }}>
                 {cur.frontFoot!.map((b, j) => <li key={j} className="flex gap-2"><span style={{ color: '#B8860B' }}>•</span><span>{b}</span></li>)}
               </ul>
