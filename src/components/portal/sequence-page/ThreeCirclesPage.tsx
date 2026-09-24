@@ -266,6 +266,8 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
         {cur.reads && (
           <>
             <Card title="Think it" color={CIRCLE_COLOR.wave}>
+              <Lamina src="/uploads/fotos/circle-3-wave-dynamics.webp"
+                      alt="Circle 3 · Wave Dynamics: combine them at the right moment — when one energy is running out, add the other. The wave's energy times what your body generates is the line you can draw. On the wave face, go down and go up between the four zones: Z1 low by the flat, Z2 lower middle, Z3 upper middle, Z4 high. The energy lives by the pocket; down at the flat there is none, only resistance." />
               <p className="text-[14px] leading-[1.45] mb-3" style={{ color: INK }}>{cur.intro}</p>
               {cur.energy?.map((e, i) => {
                 const kind = /external/i.test(e.title) ? 'wave' : /internal/i.test(e.title) ? 'body' : /combine/i.test(e.title) ? 'timing' : null;
