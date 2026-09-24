@@ -205,7 +205,11 @@ export default async function PrintPlanPage({ params, searchParams }: {
                         <ul style={{ margin: '3px 0 0', padding: 0, listStyle: 'none' }}>
                           {l.missions.map((m, k) => (
                             <li key={k} style={{ fontSize: 13.5, lineHeight: 1.5, margin: 0 }}>
-                              <span style={{ ...MONO, fontSize: 10, color: MUTED, marginRight: 6 }}>Mission {k + 1}</span>{m}
+                              {/* Con un solo enfoque, "Mission 1" suena a que faltan
+                                  las otras. Ahí la palabra es la de Marcelo: Focus. */}
+                              <span style={{ ...MONO, fontSize: 10, color: MUTED, marginRight: 6 }}>
+                                {l.missions.length === 1 ? 'Focus' : `Mission ${k + 1}`}
+                              </span>{m}
                             </li>
                           ))}
                         </ul>
