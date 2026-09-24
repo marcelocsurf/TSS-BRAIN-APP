@@ -48,7 +48,7 @@ export function GiftClaim({ code, state }: { code: string; state: GiftState }) {
               <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>A gift for you</p>
               <p className="text-[24px] mt-1" style={{ ...F_D, color: PAPER }}>One Wave</p>
               <p className="text-[12px] mt-1 leading-snug" style={{ color: 'rgba(247,249,250,.65)' }}>
-                The book that opens The Surf Sequence method. By Marcelo Castellanos.
+                Train with intention, learn from every session, and keep the joy of surfing. By Marcelo Castellanos.
               </p>
             </div>
           </div>

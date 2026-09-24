@@ -13,7 +13,9 @@ import { validateBookGift } from '@/lib/actions/book-gift';
 // la resuelva sin depender de metadataBase.
 const APP_BASE = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
 const OG_TITLE = 'ONE WAVE · a gift for you';
-const OG_DESC = 'The book that opens The Surf Sequence method, by Marcelo Castellanos. Someone sent you a copy — open it in your own portal.';
+// La vista previa habla del LIBRO, no del método (Marcelo 2026-09-24). La
+// frase es la del propio forro: es la promesa que él ya escribió.
+const OG_DESC = 'A practical system to train with intention, learn from every session, and keep the joy of surfing. By Marcelo Castellanos — someone sent you a copy.';
 export const metadata: Metadata = {
   title: OG_TITLE,
   description: OG_DESC,
