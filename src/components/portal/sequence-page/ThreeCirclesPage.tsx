@@ -183,8 +183,10 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
             {/* El mapa del círculo antes de abrir los movimientos uno por uno. */}
             <Lamina src="/uploads/fotos/circle-1-basic-movements.webp"
                     alt="Circle 1 · Basic Movements: the three circles overlap into flow — the four movements P·R·C·H, the feet on the board, and the dynamic of the wave — with the kinetic chain of the rotation: sight, neck and head, torso, hip, ankles." />
-            {cur.moves.map((m, i) => (
-              <Acc key={m.key} open={i === 0} lead={<Dot command={m.command} hold={m.hold} />} title={m.name}>
+            {/* Todos cerrados (Marcelo 2026-09-24): arriba está la lámina con
+                todo; el alumno abre el movimiento que quiere. */}
+            {cur.moves.map((m) => (
+              <Acc key={m.key} lead={<Dot command={m.command} hold={m.hold} />} title={m.name}>
                 <p>{m.what}</p>
                 <ul className="mt-2 space-y-1.5">
                   {m.think.map((b, j) => <li key={j} className="flex gap-2 leading-snug"><span style={{ color: m.hold ? HOLD_COLOR : COMMAND_COLORS[m.command] }}>•</span><span>{b}</span></li>)}
@@ -261,9 +263,11 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
               </Acc>
             </Card>
             <Card title="Feel it · on land and on the skate" id="feel">
-              {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
-              {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={portal} />)}
-              <a href={`${portal}?tab=course&lesson=${cur.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
+              <Acc title="Open the drills">
+                {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
+                {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={portal} />)}
+                <a href={`${portal}?tab=course&lesson=${cur.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
+              </Acc>
             </Card>
           </>
         )}
@@ -302,14 +306,17 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
               </Acc>
             </Card>
             <Card title="Understand the wave" color={CIRCLE_COLOR.wave}>
-              {cur.reads.map((r) => <Acc key={r.word} title={r.word} open={r.word === 'Pocket'}>{r.note}</Acc>)}
+              {cur.reads.map((r) => <Acc key={r.word} title={r.word}>{r.note}</Acc>)}
               <a className="tss-primary" href="#feel">Next: Feel it<Icon name="arrow" /></a>
             </Card>
             <Card title="Feel it · from the beach" id="feel">
-              {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
+              <Acc title="Open the drills">
+                {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
+              </Acc>
             </Card>
             {cur.game && (
               <Card title="Play it · the game" color={CIRCLE_COLOR.wave}>
+                <Acc title="Open the game">
                 <h3 className="text-[26px] leading-[1.05] uppercase" style={{ fontWeight: 900, letterSpacing: '-0.02em', color: INK }}>{cur.game.name}</h3>
                 <p className="text-[15px] mt-2 leading-snug font-semibold" style={{ color: INK }}>{cur.game.image}</p>
                 <div className="tss-timing mt-3"><div><h3>The rule</h3><p style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 700, lineHeight: 1.35 }}>{cur.game.rule}</p></div></div>
@@ -317,6 +324,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                 {/* El juego general de los Tres Círculos (Marcelo 2026-09-17): pocket y espuma con todas las herramientas. */}
                 {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={portal} />)}
                 <a href={`${portal}?tab=course&lesson=${cur.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
+                </Acc>
               </Card>
             )}
           </>
@@ -324,6 +332,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
 
         {/* ── Dónde nacen los errores + cuál círculo falló ── */}
         <Card title="Where the errors are born" color="#FF6B6B">
+          <Acc title="Open the list">
           <p className="text-[14px] leading-[1.45]" style={{ color: INK }}>Most errors do not come from the bottom turn or the snap. They come from one of the three circles. Diagnose here before correcting the maneuver.</p>
           <div className="mt-2">
             {CIRCLES_INTRO.born.map((b) => (
@@ -333,13 +342,18 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
               </div>
             ))}
           </div>
+          </Acc>
         </Card>
         <Card title="Which circle failed?">
+          <Acc title="Open the check">
           <p className="text-[14px] leading-[1.45]" style={{ color: INK }}>You have this framework when, after a wave that did not work, you can say which circle failed — not just “it went badly”. Try it on your next three waves; answer with one word.</p>
           <div className="mt-2 space-y-1.5">
             {CIRCLES_INTRO.diagnose.map((d) => <p key={d.circle} className="text-[14px] leading-snug" style={{ color: INK }}><span className="font-bold" style={{ color: CIRCLE_COLOR[d.circle.toLowerCase() as Circle['key']] === CIRCLE_COLOR.body ? '#005F79' : d.circle.toLowerCase() === 'board' ? '#8A6D00' : '#6A3FB0' }}>{d.circle}</span> · {d.q}</p>)}
           </div>
           <p className="text-[13px] mt-3" style={{ color: MUTED }}>If you can name the circle, you already know what to train tomorrow.</p>
+          </Acc>
+          {/* El botón de marcar como leído NO se pliega: si se esconde, el
+              alumno no encuentra cómo completar la lección. */}
           <div className="mt-3"><MarkReadButton token={token} lessonId={lessonId} portal={portal} /></div>
         </Card>
       </div>
