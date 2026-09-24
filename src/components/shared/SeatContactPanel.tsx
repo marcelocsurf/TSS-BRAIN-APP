@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 /**
  * Ficha de contacto + trazabilidad de UNA reserva.
@@ -12,6 +12,66 @@ import { useState } from 'react';
  */
 
 const F_LABEL: React.CSSProperties = { fontFamily: 'var(--font-plex), monospace', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.16em' };
+
+/** Copiar al portapapeles (Kat, 2026-09-24): en el mostrador se pega el correo
+ *  en la reserva o en un mail, y seleccionarlo a mano en el teléfono es
+ *  peleado. Si el navegador no deja copiar, se dice — no se finge que sí. */
+function CopyButton({ value, label, selectRef }: { value: string; label: string; selectRef?: React.RefObject<HTMLElement> }) {
+  const [done, setDone] = useState<'ok' | 'fail' | null>(null);
+  const copy = async () => {
+    // Dos caminos a propósito. El moderno pide permiso y el navegador puede
+    // negarlo (pasó en la prueba); el viejo con textarea + execCommand no
+    // pide nada y anda en los teléfonos del mostrador. Se intenta el bueno y
+    // se cae al que siempre funciona, en vez de dejar a Kat con un botón que
+    // a veces no hace nada.
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(value);
+      ok = true;
+    } catch {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = value;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-1000px';
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, value.length); // iOS no selecciona con select() solo
+        ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch {
+        ok = false;
+      }
+    }
+    // Último recurso: si el navegador no deja copiar por ningún lado, se deja
+    // el correo SELECCIONADO en pantalla. Así Kat mantiene apretado y usa el
+    // "Copiar" del propio teléfono, que nunca falla. Mejor eso que un botón
+    // que dice "no se pudo" y la deja peor que antes.
+    if (!ok && selectRef?.current) {
+      try {
+        const sel = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(selectRef.current);
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      } catch { /* si ni eso, queda el texto a la vista para copiar a mano */ }
+    }
+    setDone(ok ? 'ok' : 'fail');
+    setTimeout(() => setDone(null), 2600);
+  };
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      title={`Copiar ${label}`}
+      aria-label={`Copiar ${label}`}
+      className="ml-1 align-middle inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold border border-gray-200 text-gray-500 hover:bg-gray-50 active:bg-gray-100"
+    >
+      {done === 'ok' ? '✓ Copiado' : done === 'fail' ? 'Mantené apretado' : 'Copiar'}
+    </button>
+  );
+}
 
 export interface SeatContact {
   participant_id: string;
@@ -43,6 +103,8 @@ export function SeatContactPanel({ seat, canEditRoom = true, disabled = false, o
     setTimeout(() => setMsg(null), 3000);
   };
 
+  const emailRef = useRef<HTMLSpanElement>(null);
+
   return (
     <div className="rounded-lg bg-white border border-gray-100 p-2.5 space-y-1.5">
       <p className="text-[8px] text-gray-400" style={F_LABEL}>Datos de contacto</p>
@@ -55,7 +117,16 @@ export function SeatContactPanel({ seat, canEditRoom = true, disabled = false, o
       ) : (
         <p className="text-[11px] text-gray-400">💬 Sin WhatsApp registrado</p>
       )}
-      <p className="text-[11px] text-gray-600">📧 {seat.email || <span className="text-gray-400">Sin correo</span>}</p>
+      <p className="text-[11px] text-gray-600 break-all">
+        📧 {seat.email ? (
+          <>
+            <span ref={emailRef}><a href={`mailto:${seat.email}`} className="underline decoration-dotted" style={{ color: '#0090B0' }}>{seat.email}</a></span>
+            <CopyButton value={seat.email} label="el correo" selectRef={emailRef} />
+          </>
+        ) : (
+          <span className="text-gray-400">Sin correo</span>
+        )}
+      </p>
 
       {canEditRoom && onSaveRoom ? (
         <div className="flex items-center gap-1.5 pt-1">
