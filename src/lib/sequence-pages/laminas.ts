@@ -29,9 +29,18 @@ const CATCH_WAVES: Lamina[] = [
   },
 ];
 
+const PICK_YOUR_LINE: Lamina[] = [
+  {
+    src: '/uploads/fotos/pick-your-line-cobra.webp',
+    caption: 'Cobra + pick line',
+    alt: 'Cobra + pick line — one of the most important moments in the sequence, because this is where you choose the line that starts the ride. Technically it is how you direct the board while still lying down: through the cobra you guide it right or left and move toward where you want to go, which buys you a calmer pop-up without feeling rushed. The four biomechanical cues: do the cobra; look where you want to go; use the oblique to sink the rail; start traveling in that direction.',
+  },
+];
+
 /** Por id de secuencia. Catch Waves y la #6 de Yellow son la misma secuencia
  *  con otro nombre según la cinta, así que comparten las láminas. */
 export const SEQUENCE_LAMINAS: Record<string, Lamina[]> = {
   'BB-CATCH': CATCH_WAVES,
   'YB-SEQ-6.0': CATCH_WAVES,
+  'BB-LINE': PICK_YOUR_LINE,
 };
