@@ -127,9 +127,12 @@ const WB_SEQUENCE_ICON: Record<string, LucideIcon> = {
 const WB_SEQUENCE_CUMULATIVE: Record<string, number> = {
   'WB-SEQ-1': 9,
   'WB-SEQ-2': 14,
-  'WB-SEQ-3': 20,
-  'WB-SEQ-4': 22,
-  'WB-SEQ-5': 25,
+  // Forward Momentum salió de la #3 el 2026-09-24 y pasó a ser herramienta,
+  // así que de acá en adelante cada secuencia acumula un paso menos. El 25
+  // sigue completo: los 24 de las secuencias más la herramienta.
+  'WB-SEQ-3': 19,
+  'WB-SEQ-4': 21,
+  'WB-SEQ-5': 24,
 };
 
 export function CourseTab({ data }: { data: CourseData }) {
@@ -284,6 +287,12 @@ export function CourseTab({ data }: { data: CourseData }) {
   // Forward Momentum (la misma lección de White) y Duck Dive. Viven una vez y
   // aparecen en Yellow y Blue apuntando a la misma lección.
   const toolsLessons = resolveSteps(['id:STP-019', 'id:YB-FND-03']);
+  // En White la herramienta es una sola (Marcelo 2026-09-24): Forward Momentum
+  // salió de la secuencia #3 porque a esta altura el alumno está aprendiendo a
+  // pararse y el foco tiene que estar ahí. El Duck Dive no entra: llega en
+  // Yellow. White no tiene bloque "Start Here", así que esto se dibuja aparte,
+  // después de las secuencias.
+  const whiteTools = activeCourse.key === 'white_belt' ? resolveSteps(['id:STP-019']) : [];
   type StartGroup = { id: string; name: string; order: number; lessons: LessonRow[] };
   let startGroups: StartGroup[] | null = startHereGroups;
   if (activeCourse.key === 'yellow_belt' && startHereGroups) {
@@ -317,7 +326,12 @@ export function CourseTab({ data }: { data: CourseData }) {
   // acordeón por secuencia con la habilidad que construye, que al abrirlo
   // despliega todos sus pasos, completos de principio a fin.
   const beltUsesBlocks = activeCourse.key === 'blue_belt' && isMappedToBlocks(beltLessons);
-  const beltSequences = groupByWbSequence(beltLessons).map((g) => ({
+  const beltSequences = groupByWbSequence(
+    // Un paso que ya no pertenece a ninguna secuencia (una herramienta) no
+    // arma grupo acá: groupByWbSequence lo juntaría en uno llamado
+    // "unassigned". Se dibuja en su propio bloque, más abajo.
+    beltLessons.filter((l) => l.wb_sequence_id),
+  ).map((g) => ({
         id: g.id,
         name: g.name,
         order: g.order,
@@ -669,6 +683,30 @@ export function CourseTab({ data }: { data: CourseData }) {
               onePageHref={sequencePageFor(group.id) ? `/portal/${data.portalToken}/seq/${group.id}` : null}
             />
           ))}
+        </div>
+      )}
+
+      {/* TOOLS — lo que no pertenece a ninguna secuencia (Marcelo 2026-09-24).
+          Forward Momentum se usa dentro de cualquier secuencia una vez que la
+          secuencia se sostiene, así que va después de ellas y no en medio. */}
+      {whiteTools.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <GroupHeader
+            theme={beltTheme}
+            eyebrow="Outside the sequences"
+            title="Tools"
+            subtitle="Techniques that belong to no single sequence. You carry them into every belt and use them when the wave asks for them."
+            videoUrl={null}
+          />
+          <SectionBlock
+            title="Tools · techniques you use at every belt"
+            subtitle="Learn it here, then use it inside any sequence once that sequence holds."
+            Icon={Rocket}
+            badge={null}
+            lessons={whiteTools}
+            onOpenLesson={(id) => setOpenLessonId(id)}
+            theme={beltTheme}
+          />
         </div>
       )}
 
