@@ -69,6 +69,20 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
             <div className="mt-3 rounded-[5px] p-2" style={{ background: NAVY }}><WaveGuide data={cur.board} title="One turn of the circle on the wave face" legendColor="rgba(247,249,250,.8)" /></div>
             <p className="text-[13.5px] mt-2 leading-relaxed" style={{ color: MUTED }}>{LOOP_INTRO.before}</p>
             <p className="text-[13.5px] mt-2 leading-relaxed rounded-xl px-3 py-2.5" style={{ background: PAPER, border: `1px solid ${BORDER}`, color: INK }}>{LOOP_INTRO.why}</p>
+
+            {/* Dónde encaja el círculo en el método entero (Marcelo 2026-09-24):
+                los ocho bloques, y el 08 es este. Se toca y se abre grande: en
+                el teléfono la letra de cada bloque no se lee de otro modo. */}
+            <figure className="m-0 mt-3">
+              <a href="/uploads/fotos/learning-blocks.webp" target="_blank" rel="noopener noreferrer"
+                 className="block rounded-[5px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/uploads/fotos/learning-blocks.webp" width={1672} height={941}
+                     alt="Learning Blocks — the eight blocks of the method. 01 preparation and positioning; 02 the wave entry; 03 pop-up and connect with the board; 04 power posture; 05 rotation and bottom turn, frontside and backside; 06 projection; 06 maneuvers; and 08 the infinite circle concept, which carries the sweet spot, chasing the wave, the paddling angle, cobra plus pick your line, and the pop-up with feet positioning."
+                     style={{ width: '100%', height: 'auto', display: 'block' }} />
+              </a>
+              <figcaption className="mt-1.5" style={{ ...F_M, color: MUTED }}>Where this sits · the eight blocks</figcaption>
+            </figure>
           </Card>
 
           <Card eyebrow="02 · The colour code · one colour per action" color={CYAN}>
