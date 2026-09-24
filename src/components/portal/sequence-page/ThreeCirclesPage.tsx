@@ -128,10 +128,13 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
   video?: { url: string; title: string } | null;
   lessonId: string;
 }) {
-  const [key, setKey] = useState<Circle['key']>('body');
+  // La portada es una pantalla propia (Marcelo 2026-09-24): antes vivía
+  // dentro del círculo 1 y se mezclaba con él. Ahora se entra desde ella.
+  const [key, setKey] = useState<Circle['key'] | 'intro'>('intro');
   const [pos, setPos] = useState<'P1' | 'P2' | 'P3'>('P2');
   const portal = `/portal/${token}`;
-  const cur = CIRCLES.find((c) => c.key === key)!;
+  const isIntro = key === 'intro';
+  const cur = CIRCLES.find((c) => c.key === key) ?? CIRCLES[0];
   const feet = cur.feet ?? [];
   const posRow = feet.find((f) => f.pos === pos) ?? feet[0];
 
@@ -143,8 +146,15 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
             <svg className="tss-logo" viewBox="180 183 960 269" role="img" aria-label="The Surf Sequence — Evolve through play"><image href="/tss/assets/tss-logo-original-white.png" width="1312" height="654" /></svg>
           </div>
           <a className="tss-back" href={`${portal}?tab=course`}><Icon name="back" />Course</a>
-          <h1>0{cur.n} / {cur.label}</h1>
-          <p className="tss-subtitle">{SUBTITLE[cur.key]}</p>
+          <h1>{isIntro ? 'The Three Circles of Power' : `0${cur.n} / ${cur.label}`}</h1>
+          <p className="tss-subtitle">{isIntro ? 'Body · board · wave. Where the three overlap, you get flow.' : SUBTITLE[cur.key]}</p>
+          {!isIntro && (
+            <button type="button" onClick={() => setKey('intro')}
+                    className="inline-flex items-center gap-1.5 text-[13px] font-bold mb-1"
+                    style={{ color: CYAN }}>
+              <span aria-hidden="true">←</span> The Three Circles
+            </button>
+          )}
           <nav className="tss-circle-nav" aria-label="Three Circles">
             {CIRCLES.map((c) => (
               <button key={c.key} type="button" style={{ '--circle-color': CIRCLE_COLOR[c.key] } as React.CSSProperties} data-active={key === c.key} aria-current={key === c.key ? 'page' : undefined} onClick={() => setKey(c.key)}>
@@ -154,8 +164,8 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
           </nav>
         </header>
 
-        {/* ── Qué son los tres círculos: el mismo texto de siempre, plegado ── */}
-        {key === 'body' && (
+        {/* ── La portada del sistema: pantalla propia ── */}
+        {isIntro && (
           <Card>
             {/* La portada del sistema (Marcelo 2026-09-24): el logo original,
                 qué significa, y de ahí se entra a cada círculo. El logo es un
@@ -194,17 +204,21 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                 </button>
               ))}
             </div>
-            <p className="tss-intro mt-4 mb-0">{cur.question}</p>
-            <p className="text-[14px] leading-[1.45] mt-1" style={{ color: INK }}>{cur.intro}</p>
           </Card>
         )}
 
         {/* ── 1 · BODY: los cuatro movimientos ── */}
-        {cur.moves && (
+        {!isIntro && cur.moves && (
           <Card title="Think it · the four movements" color={CIRCLE_COLOR.body}>
             {/* El mapa del círculo antes de abrir los movimientos uno por uno. */}
             <Lamina src="/uploads/fotos/circle-1-basic-movements.webp"
                     alt="Circle 1 · Basic Movements: the three circles overlap into flow — the four movements P·R·C·H, the feet on the board, and the dynamic of the wave — with the kinetic chain of the rotation: sight, neck and head, torso, hip, ankles." />
+            {/* La pregunta y la entrada del círculo vivían en la portada;
+                al separarla vuelven acá, plegadas como en los otros dos. */}
+            <Acc title="Read it in words">
+              <p className="tss-intro mb-0">{cur.question}</p>
+              <p className="text-[14px] leading-[1.45] mt-1" style={{ color: INK }}>{cur.intro}</p>
+            </Acc>
             {/* Todos cerrados (Marcelo 2026-09-24): arriba está la lámina con
                 todo; el alumno abre el movimiento que quiere. */}
             {cur.moves.map((m) => (
@@ -226,7 +240,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
         )}
 
         {/* ── 2 · BOARD: la tabla exacta + P1/P2/P3 ── */}
-        {cur.feet && (
+        {!isIntro && cur.feet && (
           <>
             <Card color={CIRCLE_COLOR.board}>
               <Lamina src="/uploads/fotos/circle-2-foot-position.webp"
@@ -295,7 +309,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
         )}
 
         {/* ── 3 · WAVE: las dos energías ── */}
-        {cur.reads && (
+        {!isIntro && cur.reads && (
           <>
             <Card title="Think it" color={CIRCLE_COLOR.wave}>
               <Lamina src="/uploads/fotos/circle-3-wave-dynamics.webp"
