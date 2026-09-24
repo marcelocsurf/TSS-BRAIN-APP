@@ -149,7 +149,10 @@ export function DayCloseCard({
   onRateSequence,
   tomorrow = null,
   campBelt = null,
+  token,
 }: {
+  /** Para el puente: del veredicto al material para enseñarlo. */
+  token: string;
   student: ServicePlanStudent;
   isClosed: boolean;
   isLastDay: boolean;
@@ -412,6 +415,14 @@ export function DayCloseCard({
               <p className="text-[21px] font-extrabold mt-1.5 leading-tight" style={{ color: '#F7F9FA', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>{lineText}</p>
             )}
             {line && <p className="text-[13px] mt-1.5" style={{ color: '#7DE3FF' }}>{WHY[line.why]} · the student sees this in their portal</p>}
+            {/* El puente (Marcelo 2026-09-24): del veredicto al material.
+                Lleva el momento que se rompió para abrir ahí. */}
+            {line?.seqId && (
+              <a href={`/coach-portal/${token}/teach/${line.seqId}${lineMoments[0] ? `?focus=${encodeURIComponent(lineMoments[0])}&from=${encodeURIComponent('the close')}` : ''}`}
+                className="inline-flex items-center gap-1.5 text-[13px] font-bold mt-2 no-underline" style={{ color: '#00D2FF' }}>
+                How to teach this →
+              </a>
+            )}
           </>
         ) : (
           <p className="text-[15px] mt-1.5" style={{ color: 'rgba(247,249,250,.7)' }}>

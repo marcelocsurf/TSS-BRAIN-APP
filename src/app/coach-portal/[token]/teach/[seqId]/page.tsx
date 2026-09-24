@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { sequencePageFor, SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { sequencePageFor, SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import { boardFlip } from '@/lib/stance';
 import { sequenceSide } from '@/lib/constants/learning-blocks';
 import { TeachKit, type TeachPiece, type TeachLayer } from '@/components/coach-portal/TeachKit';
@@ -26,8 +26,12 @@ function section(md: string | null | undefined, heading: string): string {
   return (m?.[1] ?? '').trim();
 }
 
-export default async function CoachTeachPage({ params }: { params: Promise<{ token: string; seqId: string }> }) {
+export default async function CoachTeachPage({ params, searchParams }: {
+  params: Promise<{ token: string; seqId: string }>;
+  searchParams?: Promise<{ focus?: string; from?: string }>;
+}) {
   const { token, seqId } = await params;
+  const sp = searchParams ? await searchParams : {};
   const cfg = sequencePageFor(seqId) ?? SEQUENCE_PAGES[seqId];
   if (!cfg || !UUID_RE.test(token)) notFound();
 
@@ -92,12 +96,18 @@ export default async function CoachTeachPage({ params }: { params: Promise<{ tok
   // que la ola va en su orientación canónica, igual que en la página del curso.
   const waveDirection: 'left' | 'right' = boardFlip(sequenceSide(cfg.id), false) ? 'left' : 'right';
 
+  // El puente: el coach llega desde un veredicto ("lo frenó la rotación") y
+  // el ?focus trae el id del momento. Se traduce al título con la misma
+  // fuente que usa el plan, para que diga exactamente lo que él ya leyó.
+  const focusTitle = sp.focus ? elementTitle(cfg, sp.focus, null) : null;
+  const focus = focusTitle ? { title: focusTitle, from: sp.from || undefined } : null;
+
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       {/* eslint-disable-next-line @next/next/no-css-tags */}
       <link rel="stylesheet" href="/tss/theme.css" />
       <TeachKit cfg={cfg} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null}
-        pieces={pieces} layers={layers} cue={cue} token={token} waveDirection={waveDirection} />
+        pieces={pieces} layers={layers} cue={cue} token={token} waveDirection={waveDirection} focus={focus} />
     </div>
   );
 }

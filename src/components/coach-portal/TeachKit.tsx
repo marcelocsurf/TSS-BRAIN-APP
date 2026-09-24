@@ -38,7 +38,7 @@ export interface TeachPiece {
 export interface TeachLayer { stepId: string; title: string; what: string; deliver: string; errors: string; validate: string }
 
 export function TeachKit({
-  cfg, video, pieces, layers, cue, token, waveDirection = 'right',
+  cfg, video, pieces, layers, cue, token, waveDirection = 'right', focus = null,
 }: {
   cfg: SequencePageConfig;
   video: { url: string; title: string } | null;
@@ -48,10 +48,28 @@ export function TeachKit({
   cue: string;
   token: string;
   waveDirection?: 'left' | 'right';
+  /** El puente (Marcelo 2026-09-24): el coach llegó desde un veredicto —
+   *  "lo frenó la rotación" — y esta pantalla tiene que abrirse en eso. */
+  focus?: { title: string; from?: string } | null;
 }) {
   const [present, setPresent] = useState(false);
 
   const words = cfg.think?.keyWords?.[0]?.words ?? [];
+  // El veredicto viene con el título del momento ("Rotation · lead with the
+  // oblique"); los detalles tienen el suyo ("1 · Rotation · lead with the
+  // oblique · get on the rail"). Se abre el que más palabras comparte: no
+  // hay ids que casen entre las dos listas y no quiero inventar un mapa.
+  const norm = (t: string) => new Set(String(t).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length > 3));
+  const focusKey = (() => {
+    if (!focus?.title) return null;
+    const want = norm(focus.title);
+    let best: { key: string; score: number } | null = null;
+    for (const d of (cfg.details ?? []) as any[]) {
+      const score = [...norm(d.title)].filter((w) => want.has(w)).length;
+      if (score >= 2 && (!best || score > best.score)) best = { key: d.key, score };
+    }
+    return best?.key ?? null;
+  })();
   const drills = pieces.filter((p) => p.type === 'drill');
   const missions = pieces.filter((p) => p.type === 'mission');
   const games = pieces.filter((p) => p.type === 'game');
@@ -88,6 +106,16 @@ export function TeachKit({
       </div>
 
       <div className="px-4 py-4 space-y-3">
+        {focus?.title && (
+          <div className="rounded-[8px] px-4 py-3" style={{ background: '#FFF4D6', border: '1px solid #E0A62B' }}>
+            <p className="text-[11px] m-0 mb-1" style={{ ...MONO, color: '#9A6A12' }}>You came here for{focus.from ? ` · ${focus.from}` : ''}</p>
+            <p className="text-[17px] font-extrabold leading-snug m-0" style={{ ...DISPLAY, color: INK }}>{focus.title}</p>
+            <p className="text-[12.5px] m-0 mt-1" style={{ color: '#7a5c00' }}>
+              {focusKey ? 'Open below: what it looks like when it breaks, and the sentence that fixes it.' : 'Everything for this sequence is below.'}
+            </p>
+          </div>
+        )}
+
         {/* 1 · QUÉ DIGO */}
         <Block n={1} title="Say it" hint="The words, in the order you say them.">
           {words.length > 0 && (
@@ -140,7 +168,7 @@ export function TeachKit({
         <Block n={4} title="Watch for" hint="What breaks it, and the one thing you say to fix it.">
           <div className="space-y-2">
             {(cfg.details ?? []).map((d: any) => (
-              <details key={d.key} className="rounded-[5px]" style={{ background: PAPER, border: `1px solid ${BORDER}` }}>
+              <details key={d.key} open={d.key === focusKey} className="rounded-[5px]" style={{ background: PAPER, border: d.key === focusKey ? '1.5px solid #E0A62B' : `1px solid ${BORDER}` }}>
                 <summary className="cursor-pointer list-none px-3 py-2.5 flex items-center justify-between gap-2">
                   <span className="text-[14px] font-bold" style={{ color: INK }}>{d.title}</span>
                   <ChevronDown size={16} style={{ color: MUTED }} />

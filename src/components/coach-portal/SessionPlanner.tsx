@@ -1613,6 +1613,12 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                           )}
                           {legacyFocus && <p className="text-[13px] mt-1" style={{ color: '#55666E' }}>Focus: {legacyFocus}</p>}
                           {differs && groupSeq && <p className="text-[13px] mt-1.5" style={{ color: '#9A6A12' }}>Stays here while the group works {seqLabel(groupSeq)}.</p>}
+                          {/* El puente (Marcelo 2026-09-24): de la misión al
+                              material para enseñarla, abierto en ese detalle. */}
+                          <a href={`/coach-portal/${token}/teach/${mySeq.id}${missionList.length ? `?focus=${encodeURIComponent(missionList[0])}&from=${encodeURIComponent("today's plan")}` : ''}`}
+                            className="inline-flex items-center gap-1.5 text-[13px] font-bold mt-2 no-underline" style={{ color: '#00789A' }}>
+                            How to teach it →
+                          </a>
                           </>)}
 
                           {/* Lo que además trabaja hoy */}
@@ -1768,6 +1774,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               {students.map((s) => (
                 <DayCloseCard
                   key={s.student_id}
+                  token={token}
                   student={s}
                   isClosed={isClosed}
                   isLastDay={isLastDay}
