@@ -19,8 +19,28 @@ import { WaveGuide, WAVE_KIT_SEQUENCE } from './WaveGuide';
 import { COMMAND_COLORS } from '@/lib/sequence-pages/wave-guide-svg';
 import { BoardMap } from './BoardMap';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
+import { SEQUENCE_LAMINAS } from '@/lib/sequence-pages/laminas';
 
 // Tokens del paquete (public/tss/tokens.css) + semánticos legibles sobre crema.
+/** Una lámina del método: el mapa de la secuencia de una sola mirada. Se
+ *  toca y se abre en grande (Marcelo 2026-09-24). Todas miden 1672x941. */
+function Lamina({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
+  return (
+    <figure className="m-0 mb-3">
+      <a href={src} target="_blank" rel="noopener noreferrer"
+         className="block rounded-[10px] overflow-hidden" style={{ border: '1px solid #DCD7C6' }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={src} width={1672} height={941} alt={alt} style={{ width: '100%', height: 'auto', display: 'block' }} />
+      </a>
+      {caption && (
+        <figcaption className="mt-1.5 text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#55666E' }}>
+          {caption}
+        </figcaption>
+      )}
+    </figure>
+  );
+}
+
 const NAVY = '#061C2B', INK = '#10263B', CREAM = '#E9E2D2', PAPER = '#F7F9FA', BORDER = '#DCD7C6', CYAN = '#00D2FF', WHITE = '#FFFFFF';
 const MUTED = '#55666E', ON_DARK = '#D9E4EA';
 const GREEN = '#0F8A5F', GOLD = '#B7791F', VIOLET = '#7C4DFF', RED = '#C62828';
@@ -161,8 +181,11 @@ export function SequencePage({
         {/* ── THINK ── */}
         {tab === 'think' && (
           <div className="mt-3">
+            {(SEQUENCE_LAMINAS[cfg.id] ?? []).map((l) => (
+              <Lamina key={l.src} src={l.src} alt={l.alt} caption={l.caption} />
+            ))}
             {cfg.prep && cfg.prep.length > 0 && (
-              <Card title="Before you start · every session" color={GOLD_BRIGHT}>
+              <Card title="Before you start · every session" color={GOLD_BRIGHT} collapsible defaultOpen={false}>
                 {cfg.prep.map((p, i) => (
                   <div key={p.lessonId} className="py-2" style={{ borderTop: i ? `1px solid ${BORDER}` : undefined }}>
                     <Go href={`${portal}?tab=${courseTab}&lesson=${p.lessonId}`}>{p.label}</Go>
@@ -171,7 +194,7 @@ export function SequencePage({
                 ))}
               </Card>
             )}
-            <Card title="01 · What it is" collapsible defaultOpen={true}>
+            <Card title="01 · What it is" collapsible defaultOpen={false}>
               <p className="tss-intro">{cfg.think.whatIs.headline}</p>
               {video && cfg.think.board && <div className="mb-2"><WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} kitSequence={WAVE_KIT_SEQUENCE[cfg.id]} /></div>}
               <Row k="The line">{cfg.think.whatIs.line}</Row>
@@ -263,20 +286,20 @@ export function SequencePage({
         )}
         {tab === 'feel' && (
           <div className="mt-3">
-            <Card title="Feel it · out of the water" color={VIOLET_BRIGHT}>
+            <Card title="Feel it · out of the water" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
               <p className="tss-intro">Connect the mechanics to your body before the wave asks for them.</p>
               <p className="text-[14px] m-0" style={{ color: INK }}>Three kinds of rehearsal, from stillness to movement. None of them is a test.</p>
             </Card>
             {/* La visualización de la LÍNEA COMPLETA; cada drill de abajo trae la
                 suya propia (Understand · Visualize · Simulate · The cue). El
                 rótulo lo dice para que no parezca repetido (Marcelo 2026-09-19). */}
-            <Card title="Visualize · the whole line" color={VIOLET_BRIGHT}>
+            <Card title="Visualize · the whole line" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
               <p className="text-[15px] m-0 leading-snug" style={{ color: INK }}>{cfg.feel.visualize}</p>
             </Card>
-            <Card title="Simulate · land, sand, pool or calm water" color={VIOLET_BRIGHT}>
+            <Card title="Simulate · land, sand, pool or calm water" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
               {cfg.feel.land.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
             </Card>
-            <Card title="Simulate · surf skate" color={VIOLET_BRIGHT}>
+            <Card title="Simulate · surf skate" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
               {cfg.feel.skate.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
             </Card>
             <p className="text-[13px] px-1 mt-3 mb-0" style={{ color: ON_DARK }}>Each drill closes with one question: ready to take it to the water?</p>
@@ -318,7 +341,7 @@ export function SequencePage({
                 );
               })()}
             </Card>
-            <Card title="Choose a focus · optional">
+            <Card title="Choose a focus · optional" collapsible defaultOpen={false}>
               <p className="text-[14px] mt-0 mb-2" style={{ color: INK }}>The mission is always the whole sequence. These are the steps your body runs; if one of them is breaking, pick it and it rides along as your word for the session. Pick nothing and just surf the line.</p>
               <div className="flex flex-wrap gap-2">
                 {cfg.details.map((d) => (
@@ -345,7 +368,7 @@ export function SequencePage({
               ))}
             </Card>
             <WhereYouAre progress={progress} portal={portal} />
-            <Card title="Competence · is it yours yet?" color={GREEN_BRIGHT}>
+            <Card title="Competence · is it yours yet?" color={GREEN_BRIGHT} collapsible defaultOpen={false}>
               <p className="text-[14px] m-0 leading-snug" style={{ color: INK }}>{cfg.do.competence}</p>
             </Card>
           </div>
@@ -354,7 +377,7 @@ export function SequencePage({
         {/* ── REVIEW ── */}
         {tab === 'review' && (
           <div className="mt-3">
-            <Card title="How you know you have it" color={GREEN_BRIGHT}>
+            <Card title="How you know you have it" color={GREEN_BRIGHT} collapsible defaultOpen={false}>
               <p className="text-[14px] mt-0 mb-2" style={{ color: INK }}>One topic per step of the sequence. Open only the one you want to check.</p>
               {cfg.details.map((d) => (
                 <details key={d.key} className="tss-accordion">
@@ -373,7 +396,7 @@ export function SequencePage({
               ))}
             </Card>
             {lessons[cfg.think.bodyFromLesson]?.mistakes && (
-              <Card title="Common mistakes" color="#FF6B6B">
+              <Card title="Common mistakes" color="#FF6B6B" collapsible defaultOpen={false}>
                 {[cfg.think.bodyFromLesson].map((id) => lessons[id]?.mistakes ? (
                   <details key={id} className="tss-accordion">
                     <summary><span className="flex-1">{shortLesson(lessons[id].title)}</span><Chevron /></summary>
@@ -383,7 +406,7 @@ export function SequencePage({
               </Card>
             )}
             <WhereYouAre progress={progress} portal={portal} />
-            <Card title="How it feels" color={VIOLET_BRIGHT}>
+            <Card title="How it feels" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
               <p className="text-[14px] m-0 leading-snug" style={{ color: INK }}>{cfg.review.howItFeels}</p>
             </Card>
             <Card title="After a session">
@@ -420,7 +443,7 @@ export function SequencePage({
 function WhereYouAre({ progress, portal }: { progress?: SequenceProgress | null; portal: string }) {
   if (!progress || !(progress.ratedSteps > 0 || progress.lastRun !== null)) return null;
   return (
-    <Card title="Where you are · from Let's Play" color={GOLD_BRIGHT}>
+    <Card title="Where you are · from Let's Play" color={GOLD_BRIGHT} collapsible defaultOpen={false}>
       <div className="flex flex-wrap gap-x-5 gap-y-1 text-[14px]" style={{ color: INK }}>
         {progress.minRating !== null && <span><b>{progress.minRating}★</b> the sequence is worth its weakest step</span>}
         {progress.side === 'both' && progress.sideRatings ? (
