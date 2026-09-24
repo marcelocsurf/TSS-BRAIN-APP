@@ -45,7 +45,24 @@ export default async function PrintPlanPage({ params, searchParams }: {
   if (!data) notFound();
 
   const admin = createAdminClient();
-  const { data: camp } = await admin.from('camp_instances').select('academy_id').eq('id', campId).maybeSingle();
+  const { data: camp } = await admin
+    .from('camp_instances')
+    .select('academy_id, coach_id, head_coach_id, head:head_coach_id(display_name), lead:coach_id(display_name)')
+    .eq('id', campId).maybeSingle();
+
+  // Quién va: el encargado y los que aceptaron (asistentes, filmer, foto).
+  const { data: staffRows } = await admin
+    .from('service_staff')
+    .select('role, status, coaches:coach_id(display_name), staff_members:staff_member_id(name)')
+    .eq('camp_instance_id', campId);
+  const one = (x: any) => (Array.isArray(x) ? x[0] : x);
+  const staff = (staffRows ?? []).map((r: any) => ({
+    role: String(r.role ?? 'assistant'),
+    name: one(r.coaches)?.display_name ?? one(r.staff_members)?.name ?? null,
+    pending: r.status !== 'accepted',
+  })).filter((r) => r.name);
+  const leadName = one((camp as any)?.head)?.display_name ?? one((camp as any)?.lead)?.display_name ?? null;
+  const roleLabel = (r: string) => (/photo|film/i.test(r) ? 'Filmer' : r === 'assistant' ? 'Assistant' : r.charAt(0).toUpperCase() + r.slice(1));
 
   // Espacios reservados ese día en la academia del camp.
   const date = data.selectedDay.session_date;
@@ -58,8 +75,28 @@ export default async function PrintPlanPage({ params, searchParams }: {
     : { data: [] as any[] };
 
   const p: any = data.plan;
-  const conditions = [p.venue_wave_size, p.venue_wind, p.venue_tide, p.venue_crowd, p.venue_hazards].filter(Boolean).join(' · ');
+  // Solo lo que el coach escribió: una línea por dato, nada inventado.
+  const conditions = ([
+    ['Waves', p.venue_wave_size], ['Wind', p.venue_wind], ['Tide', p.venue_tide],
+    ['Crowd', p.venue_crowd], ['Water', p.venue_water_temp], ['Sky', p.venue_sky],
+    ['Hazards', p.venue_hazards],
+  ] as [string, string | null][]).filter(([, v]) => !!v);
   const goLabel = p.venue_go_no_go === 'go' ? 'Go' : p.venue_go_no_go === 'modified' ? 'Modified' : p.venue_go_no_go === 'no_go' ? 'No-Go' : null;
+
+  // Qué llevar: el equipo que pide la plantilla para ESE día, sin repetir.
+  const dayTpl = data.templatePlan.find((d: any) => d.day_number === data.selectedDay.day_number);
+  const gear = Array.from(new Set(((dayTpl?.blocks ?? []) as any[]).map((b) => (b.equipment ?? '').trim()).filter(Boolean)));
+
+  // Un foco puede ser un elemento de la secuencia ("Rotation · the rail") o
+  // un paso suelto ("STP-024"). Para el segundo el título vive en la lección:
+  // sin esto la misión se perdía y la hoja decía "la línea completa".
+  const focusIds = Array.from(new Set(data.students.flatMap((st: any) =>
+    st.blocks.flatMap((b: any) => (Array.isArray(b.focus_moments) ? b.focus_moments : b.focus_step_id ? [b.focus_step_id] : [])),
+  ))) as string[];
+  const { data: focusLessons } = focusIds.length
+    ? await admin.from('lessons').select('id, title').in('id', focusIds)
+    : { data: [] as any[] };
+  const stepTitle = new Map((focusLessons ?? []).map((l: any) => [l.id as string, l.title as string]));
 
   const rows = data.students.map((st: any) => {
     const sorted = [...st.blocks].sort((a: any, b: any) => a.order_index - b.order_index);
@@ -77,7 +114,7 @@ export default async function PrintPlanPage({ params, searchParams }: {
       const cfg = w.cfg;
       const blk = st.blocks.find((b: any) => b.order_index === w.order);
       const ids: string[] = Array.isArray(blk?.focus_moments) ? blk.focus_moments : blk?.focus_step_id ? [blk.focus_step_id] : [];
-      const missions = ids.map((id) => elementTitle(cfg, id, null)).filter(Boolean) as string[];
+      const missions = ids.map((id) => elementTitle(cfg, id, stepTitle.get(id) ?? null)).filter(Boolean) as string[];
       return { seq: seqLabel(cfg), missions };
     });
     return { name: st.display_name, photo: st.photo_url as string | null, board, lines };
@@ -109,14 +146,36 @@ export default async function PrintPlanPage({ params, searchParams }: {
         </p>
 
         {/* Los hechos del día */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 10, margin: '16px 0 20px' }}>
-          <Fact k="Conditions" v={[goLabel, conditions].filter(Boolean).join(' · ') || 'Not called yet'} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 10, margin: '16px 0 14px' }}>
+          <Fact k="Where you surf" v={p.surf_venue || 'Not set'} />
+          <Fact k="Who is going" v={[leadName ? `${leadName} · in charge` : null, ...staff.map((r) => `${r.name} · ${roleLabel(r.role)}${r.pending ? ' (not confirmed)' : ''}`)].filter(Boolean).join('\n') || 'Only you'} />
           <Fact k="Transport" v={p.transport_needed ? `Leaves ${hhmm(p.transport_depart) ?? '—'} · back ${hhmm(p.transport_return) ?? '—'}${p.transport_status === 'cancelled' ? ' (cancelled)' : ''}` : p.transport_needed === false ? 'Not needed' : 'Not decided'} />
           <Fact k="Spaces booked" v={(bookings ?? []).length
-            ? (bookings ?? []).map((b: any) => `${(Array.isArray(b.academy_spaces) ? b.academy_spaces[0] : b.academy_spaces)?.name ?? 'Space'} ${hhmm(String(b.starts_at).slice(11, 16)) ?? ''}`.trim()).join(' · ')
+            ? (bookings ?? []).map((b: any) => `${(Array.isArray(b.academy_spaces) ? b.academy_spaces[0] : b.academy_spaces)?.name ?? 'Space'} ${hhmm(String(b.starts_at).slice(11, 16)) ?? ''}`.trim()).join('\n')
             : 'None'} />
+          <Fact k="Safety call" v={goLabel ?? 'Not called yet'} />
           <Fact k="Students" v={`${data.students.length}`} />
         </div>
+
+        {conditions.length > 0 && (
+          <div style={{ border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 11px', marginBottom: 12 }}>
+            <p style={{ ...MONO, fontSize: 10, color: MUTED, margin: '0 0 4px' }}>Conditions you wrote down</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
+              {conditions.map(([k, v]) => (
+                <span key={k} style={{ fontSize: 13.5 }}>
+                  <span style={{ ...MONO, fontSize: 10, color: MUTED, marginRight: 5 }}>{k}</span>{v}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {gear.length > 0 && (
+          <div style={{ border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 11px', marginBottom: 16 }}>
+            <p style={{ ...MONO, fontSize: 10, color: MUTED, margin: '0 0 4px' }}>Take this with you</p>
+            <p style={{ fontSize: 13.5, lineHeight: 1.45, margin: 0 }}>{gear.join(' · ')}</p>
+          </div>
+        )}
 
         {p.venue_analysis && (
           <p style={{ fontSize: 13.5, lineHeight: 1.45, background: SAND, borderRadius: 5, padding: '10px 12px', margin: '0 0 16px' }}>
@@ -138,19 +197,24 @@ export default async function PrintPlanPage({ params, searchParams }: {
                 <span style={{ fontSize: 12.5, color: MUTED }}>{r.board ?? 'no board'}</span>
               </div>
               {r.lines.length > 0 ? (
-                <ol style={{ margin: '8px 0 0', paddingLeft: 0, listStyle: 'none' }}>
+                <div style={{ margin: '8px 0 0' }}>
                   {r.lines.map((l, j) => (
-                    <li key={j} style={{ display: 'flex', gap: 8, padding: '4px 0' }}>
-                      <span style={{ ...MONO, fontSize: 10, color: MUTED, paddingTop: 3 }}>{j + 1}</span>
-                      <span>
-                        <span style={{ fontSize: 14, fontWeight: 700 }}>{l.seq}</span>
-                        <span style={{ fontSize: 13.5, color: MUTED, display: 'block' }}>
-                          {l.missions.length ? l.missions.map((m, k) => `${l.missions.length > 1 ? `${k + 1} ` : ''}${m}`).join(' · ') : 'The whole line, start to finish'}
-                        </span>
-                      </span>
-                    </li>
+                    <div key={j} style={{ padding: '5px 0', borderTop: j > 0 ? `1px solid #EDF0F2` : undefined }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, margin: 0 }}>{l.seq}</p>
+                      {l.missions.length ? (
+                        <ul style={{ margin: '3px 0 0', padding: 0, listStyle: 'none' }}>
+                          {l.missions.map((m, k) => (
+                            <li key={k} style={{ fontSize: 13.5, lineHeight: 1.5, margin: 0 }}>
+                              <span style={{ ...MONO, fontSize: 10, color: MUTED, marginRight: 6 }}>Mission {k + 1}</span>{m}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p style={{ fontSize: 13.5, color: MUTED, margin: '3px 0 0' }}>The whole line, start to finish</p>
+                      )}
+                    </div>
                   ))}
-                </ol>
+                </div>
               ) : (
                 <p style={{ fontSize: 13.5, color: MUTED, margin: '6px 0 0' }}>Nothing set for today yet.</p>
               )}
@@ -174,7 +238,7 @@ function Fact({ k, v }: { k: string; v: string }) {
   return (
     <div style={{ border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 11px' }}>
       <p style={{ ...MONO, fontSize: 10, color: MUTED, margin: 0 }}>{k}</p>
-      <p style={{ fontSize: 14, lineHeight: 1.35, margin: '3px 0 0' }}>{v}</p>
+      <p style={{ fontSize: 14, lineHeight: 1.35, margin: '3px 0 0', whiteSpace: 'pre-line' }}>{v}</p>
     </div>
   );
 }
