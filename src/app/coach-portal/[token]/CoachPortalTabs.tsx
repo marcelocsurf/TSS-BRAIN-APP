@@ -1177,18 +1177,22 @@ function CoursesTab({
     <div className="space-y-4 pb-4">
       {/* Secuencias como las ve el alumno + capa del coach (Marcelo 2026-09-17). */}
       <div className="rounded-lg p-4" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}>
-        <p className="text-[11px] uppercase tracking-[0.18em] mb-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>Sequences · as the student sees them</p>
-        <p className="text-[12.5px] mb-3" style={{ color: 'rgba(247,249,250,.75)' }}>The same page your students open, with your layer on top: how you teach it, correct it and validate it. Switch it off to show the clean page on the beach.</p>
+        <p className="text-[11px] uppercase tracking-[0.18em] mb-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>Teach it · everything for that class</p>
+        <p className="text-[12.5px] mb-3" style={{ color: 'rgba(247,249,250,.75)' }}>Tap one and you get what you say, what you show, what you put them to do and what you watch for. The student&rsquo;s own page is one tap further in.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {/* En orden de cinta y número: White 1–5 · Yellow 6–7 · Blue entrada (0) y 8–13. */}
-          {Object.values(SEQUENCE_PAGES).filter((c) => c.kind !== 'circle').sort((a, b) => {
+          {/* Los Tres Círculos entran acá también (Marcelo 2026-09-24: "el coach
+              los explica siempre y no los tenía"). Orden: círculos primero,
+              después White 1–5 · Yellow 6–7 · Blue entrada (0) y 8–13. */}
+          {Object.values(SEQUENCE_PAGES).sort((a, b) => {
+            const rank = (c: any) => (c.kind === 'circle' ? 0 : 1);
             const belt = (k: string) => ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'].indexOf(k);
-            return belt(a.belt) - belt(b.belt) || a.number - b.number || (a.eyebrow ?? '').localeCompare(b.eyebrow ?? '');
+            return rank(a) - rank(b) || belt(a.belt) - belt(b.belt) || a.number - b.number || (a.eyebrow ?? '').localeCompare(b.eyebrow ?? '');
           }).map((sq) => (
-            <a key={sq.id} href={`/coach-portal/${token}/seq/${sq.id}`} className="rounded-[5px] px-3 py-2.5 no-underline" style={{ background: '#061C2B', border: '1px solid rgba(247,249,250,.12)' }}>
-              <p className="text-[10px] uppercase tracking-wider m-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>{sq.eyebrow ?? `Sequence #${sq.number}`} · {sq.belt.replace('_belt', '')}</p>
-              <p className="text-[14px] font-bold m-0 mt-0.5" style={{ color: '#F7F9FA' }}>{sq.title} →</p>
-            </a>
+            <div key={sq.id} className="rounded-[5px] px-3 py-2.5" style={{ background: '#061C2B', border: '1px solid rgba(247,249,250,.12)' }}>
+              <p className="text-[10px] uppercase tracking-wider m-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>{sq.kind === 'circle' ? 'The Three Circles' : sq.eyebrow ?? `Sequence #${sq.number}`} · {sq.belt.replace('_belt', '')}</p>
+              <a href={`/coach-portal/${token}/teach/${sq.id}`} className="block text-[14px] font-bold m-0 mt-0.5 no-underline" style={{ color: '#F7F9FA' }}>{sq.title} →</a>
+              <a href={`/coach-portal/${token}/seq/${sq.id}`} className="inline-block text-[11.5px] mt-1 no-underline" style={{ color: 'rgba(247,249,250,.55)' }}>as the student sees it</a>
+            </div>
           ))}
         </div>
       </div>
