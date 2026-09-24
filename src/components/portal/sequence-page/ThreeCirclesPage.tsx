@@ -157,9 +157,19 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
         {/* ── Qué son los tres círculos: el mismo texto de siempre, plegado ── */}
         {key === 'body' && (
           <Card>
-            <Acc title={CIRCLES_INTRO.title}>
+            {/* La portada del sistema (Marcelo 2026-09-24): el logo original,
+                qué significa, y de ahí se entra a cada círculo. El logo es un
+                JPG con fondo blanco, así que va sobre su propio panel claro
+                para que el blanco se lea como parte del diseño. */}
+            <div className="rounded-[10px] mb-3 flex items-center justify-center py-6" style={{ background: '#FFFFFF', border: `1px solid ${BORDER}` }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/uploads/fotos/three-circles-of-power-logo.jpg" width={1808} height={2000}
+                   alt="3 Circles of Power · Surf System — three overlapping circles with a spiral where all three meet."
+                   style={{ width: 170, height: 'auto', display: 'block' }} />
+            </div>
+            <p className="tss-intro mb-3">{CIRCLES_INTRO.headline}</p>
+            <Acc title="What this system means">
               {video && <Video url={video.url} title={video.title} />}
-              <p className="font-bold">{CIRCLES_INTRO.headline}</p>
               <p className="mt-2">{CIRCLES_INTRO.what}</p>
               <p className="mt-2">{CIRCLES_INTRO.three}</p>
               <p className="mt-2" style={{ color: MUTED }}>{CIRCLES_INTRO.when}</p>
@@ -172,7 +182,19 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                 <span className="inline-flex items-center gap-1.5"><Dot command="rail" hold />Hold</span>
               </div>
             </Acc>
-            <p className="tss-intro mt-3 mb-0">{cur.question}</p>
+            <p className="mt-4 mb-2" style={{ ...MONO, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: MUTED }}>Enter a circle</p>
+            <div className="space-y-2">
+              {CIRCLES.map((c) => (
+                <button key={c.key} type="button" onClick={() => setKey(c.key)}
+                        className="flex items-center gap-3 w-full text-left rounded-[8px] px-3 py-3 min-h-[48px]"
+                        style={{ background: PAPER, border: `1px solid ${BORDER}` }}>
+                  <i className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: CIRCLE_COLOR[c.key] }} />
+                  <span className="text-[15px] font-bold" style={{ color: INK }}>{c.n} · {c.label}</span>
+                  <span className="ml-auto" style={{ color: MUTED }}><Icon name="arrow" /></span>
+                </button>
+              ))}
+            </div>
+            <p className="tss-intro mt-4 mb-0">{cur.question}</p>
             <p className="text-[14px] leading-[1.45] mt-1" style={{ color: INK }}>{cur.intro}</p>
           </Card>
         )}
