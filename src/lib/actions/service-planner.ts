@@ -11,7 +11,7 @@ import { BELT_RANK, canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { GRADUATION_RULES, waterRuleBlocker } from '@/lib/constants/graduation';
 import { sortByBlocks } from '@/lib/constants/learning-blocks';
 import { SHARED_PRE_COURSE_SECTIONS } from '@/lib/constants/courses';
-import { exigeCierreDeDias } from '@/lib/utils/camp-window';
+import { participantPresentOn, participantLastDay, exigeCierreDeDias } from '@/lib/utils/camp-window';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -462,7 +462,7 @@ export async function getServicePlan(
   const { data: participantsRaw } = await admin
     .from('camp_participants')
     .select(
-      'student_id, finalized_at, departed_on, students:student_id(' +
+      'student_id, finalized_at, departed_on, planned_departure, students:student_id(' +
         'id, first_name, last_name, belt_level, photo_url, age, date_of_birth, weight, height, ocean_level, ' +
         'nationality, level_quiz_score, level_quiz_v2, ' +
         'ocean_quiz_score, stance, goofy_or_regular, surf_experience_years, surf_frequency, swim_level, ' +
@@ -479,15 +479,15 @@ export async function getServicePlan(
     .eq('camp_instance_id', campInstanceId)
     .eq('enrollment_status', 'active');
 
-  // Alumnos ya Finished (short camp / salida anticipada): fuera del roster de
-  // los días POSTERIORES a su salida — caso Stanley 2026-08-22: cerró a dos
-  // el jueves y el planner se los seguía pidiendo evaluar cada día. Los días
-  // hasta su salida (incluida) quedan intactos para el historial.
-  const participants = (participantsRaw ?? []).filter((p: any) => {
-    if (!p.finalized_at) return true;
-    const cutoff = p.departed_on || new Date(Date.parse(p.finalized_at) - 6 * 3600000).toISOString().slice(0, 10);
-    return selectedDay.session_date <= cutoff;
-  });
+  // Camp corto o salida anticipada: fuera del roster de los días POSTERIORES
+  // a su último día — caso Stanley 2026-08-22: cerró a dos el jueves y el
+  // planner se los seguía pidiendo evaluar cada día. Los días hasta su salida
+  // (incluida) quedan intactos para el historial. La regla vive en una sola
+  // función, participantPresentOn(), que usan todas las pantallas de "quién
+  // está hoy" — si se escribe a mano en cada sitio, se separan.
+  const participants = (participantsRaw ?? []).filter((p: any) =>
+    participantPresentOn(p, selectedDay.session_date),
+  );
 
   const studentIds = (participants ?? []).map((p: any) => p.student_id);
 
@@ -974,7 +974,7 @@ export async function saveServicePlanHeader(
   // Resolve the camp_instance + ownership through the session.
   const { data: session } = await admin
     .from('camp_sessions')
-    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .select('id, camp_instance_id, session_date, camp_instances:camp_instance_id(coach_id, head_coach_id)')
     .eq('id', campSessionId)
     .single();
   if (!session) throw new Error('Session not found.');
@@ -1052,7 +1052,7 @@ export async function applyPlanHeaderToWeek(
 
   const { data: session } = await admin
     .from('camp_sessions')
-    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .select('id, camp_instance_id, session_date, camp_instances:camp_instance_id(coach_id, head_coach_id)')
     .eq('id', campSessionId)
     .single();
   if (!session) return { ok: false, error: 'Session not found.' };
@@ -1117,7 +1117,7 @@ export async function applyStudentBoardToWeek(
   }
 
   const { data: participant } = await admin
-    .from('camp_participants').select('id')
+    .from('camp_participants').select('id, planned_departure, departed_on, finalized_at')
     .eq('camp_instance_id', session.camp_instance_id).eq('student_id', studentId).maybeSingle();
   if (!participant) return { ok: false, error: 'Student not enrolled in this service.' };
 
@@ -1142,6 +1142,9 @@ export async function applyStudentBoardToWeek(
 
   for (const sess of sessions ?? []) {
     if (closedByS.get(sess.id)) continue; // never touch a closed day
+    // Camp corto: no se le asigna tabla en los días que ya no está. Si no,
+    // queda inventario reservado que otro servicio necesita ese día.
+    if (!participantPresentOn(participant as any, (sess as any).session_date)) continue;
 
     // Inventory-board double-booking guard, per date.
     let dayBoardId = board.board_id ?? null;
@@ -1435,7 +1438,7 @@ export async function deleteServicePlanBlock(
 
   const { data: session } = await admin
     .from('camp_sessions')
-    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .select('id, camp_instance_id, session_date, camp_instances:camp_instance_id(coach_id, head_coach_id)')
     .eq('id', campSessionId)
     .single();
   if (!session) throw new Error('Session not found.');
@@ -1487,7 +1490,7 @@ export async function applyTemplateDayToStudents(
 
   const { data: session } = await admin
     .from('camp_sessions')
-    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .select('id, camp_instance_id, session_date, camp_instances:camp_instance_id(coach_id, head_coach_id)')
     .eq('id', campSessionId)
     .single();
   if (!session) throw new Error('Session not found.');
@@ -1502,10 +1505,13 @@ export async function applyTemplateDayToStudents(
   // Active participants of the parent camp
   const { data: parts } = await admin
     .from('camp_participants')
-    .select('student_id')
+    .select('student_id, planned_departure, departed_on, finalized_at')
     .eq('camp_instance_id', session.camp_instance_id)
     .eq('enrollment_status', 'active');
-  const studentIds = (parts ?? []).map((p: any) => p.student_id);
+  // Camp corto: sembrar los bloques del día solo para quien está ESE día.
+  const studentIds = (parts ?? [])
+    .filter((p: any) => participantPresentOn(p, (session as any).session_date))
+    .map((p: any) => p.student_id);
   if (studentIds.length === 0) return;
 
   // Preserve per-student board assignments (e.g. "use this board all week",
@@ -2150,7 +2156,7 @@ export async function saveOfficialStepRatingFromPortal(
   // Verify ownership through the session
   const { data: session } = await admin
     .from('camp_sessions')
-    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .select('id, camp_instance_id, session_date, camp_instances:camp_instance_id(coach_id, head_coach_id)')
     .eq('id', campSessionId)
     .single();
   if (!session) throw new Error('Session not found.');
@@ -2205,7 +2211,7 @@ export async function rateSequenceFromPortal(
   if (!coach) return { ok: false, error: 'Coach not found.' };
   const { data: session } = await admin
     .from('camp_sessions')
-    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .select('id, camp_instance_id, session_date, camp_instances:camp_instance_id(coach_id, head_coach_id)')
     .eq('id', campSessionId)
     .single();
   if (!session) return { ok: false, error: 'Session not found.' };
@@ -2383,7 +2389,7 @@ export async function closeServicePlan(
   // results, feedback emails or survey invites.
   const { data: activeParts } = await admin
     .from('camp_participants')
-    .select('student_id, finalized_at, departed_on, enrollment_status')
+    .select('student_id, finalized_at, departed_on, planned_departure, enrollment_status')
     .eq('camp_instance_id', sessionAny.camp_instance_id);
   // Corte POR FECHA (mismo criterio que el roster de getServicePlan): el día
   // de salida (incluido) el alumno se evalúa y se guarda normal; solo los
@@ -2394,10 +2400,13 @@ export async function closeServicePlan(
     (activeParts ?? [])
       .filter((p: any) => {
         if (p.enrollment_status !== 'active') return true;
-        if (!p.finalized_at) return false;
+        const last = participantLastDay(p);
+        if (!last) return false;
+        // Sin fecha de sesión no se puede comparar: se mantiene el criterio
+        // conservador de antes y se salta a quien ya tiene salida marcada,
+        // en vez de pedir una evaluación que el cierre después tiraría.
         if (!closeDayDate) return true;
-        const cutoff = p.departed_on || new Date(Date.parse(p.finalized_at) - 6 * 3600000).toISOString().slice(0, 10);
-        return closeDayDate > cutoff;
+        return closeDayDate > last;
       })
       .map((p: any) => p.student_id),
   );
@@ -2951,7 +2960,7 @@ export async function saveStudentInternalNote(
 
   const { data: session } = await admin
     .from('camp_sessions')
-    .select('id, camp_instance_id, camp_instances:camp_instance_id(coach_id, head_coach_id)')
+    .select('id, camp_instance_id, session_date, camp_instances:camp_instance_id(coach_id, head_coach_id)')
     .eq('id', campSessionId)
     .single();
   const camp = Array.isArray((session as any)?.camp_instances)
@@ -3286,7 +3295,7 @@ export async function getWeekOverviewByToken(token: string, campInstanceId: stri
     const [{ data: sess }, { data: parts }, { data: boardsInv }, { data: spacesList }, { data: bookings }] = await Promise.all([
       admin.from('camp_sessions').select('id, day_number, session_date').eq('camp_instance_id', campInstanceId).order('day_number'),
       admin.from('camp_participants')
-        .select('student_id, enrollment_status, finalized_at, students:student_id(first_name, last_name)')
+        .select('student_id, enrollment_status, finalized_at, departed_on, planned_departure, students:student_id(first_name, last_name)')
         .eq('camp_instance_id', campInstanceId),
       admin.from('boards')
         .select('id, code, board_type, length_feet, length_inches, status')
@@ -3333,10 +3342,19 @@ export async function getWeekOverviewByToken(token: string, campInstanceId: stri
       }
     }
 
-    const activeParts = (parts ?? []).filter((p: any) => p.enrollment_status === 'active' && !p.finalized_at);
+    // BUG que esto corrige: el filtro era `!p.finalized_at`, ciego a la fecha,
+    // así que un alumno cerrado a mitad de semana desaparecía de TODOS los
+    // días — incluidos los que sí hizo, borrándole la grilla de tablas del
+    // lunes y el martes. Ahora quedan todos los inscritos de la semana y cada
+    // uno lleva su último día, para que la vista sepa hasta cuándo estuvo.
+    const activeParts = (parts ?? []).filter((p: any) => p.enrollment_status === 'active');
     const students = activeParts.map((p: any) => {
       const st = Array.isArray(p.students) ? p.students[0] : p.students;
-      return { student_id: p.student_id, display_name: [st?.first_name, st?.last_name].filter(Boolean).join(' ') || '—' };
+      return {
+        student_id: p.student_id,
+        display_name: [st?.first_name, st?.last_name].filter(Boolean).join(' ') || '—',
+        last_day: participantLastDay(p),
+      };
     });
 
     const days: WeekDayOverview[] = sessions.map((x: any) => {

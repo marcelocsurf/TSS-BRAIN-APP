@@ -5,7 +5,7 @@ import { isSidePair, resolveSidePair } from '@/lib/sequence-pages/side-pairs';
 
 import { createClient } from '@/lib/supabase/server';
 import { elSalvadorToday } from '@/lib/utils/tz';
-import { campEnrollmentClosed, campClosedNoticeES, campDayProgress } from '@/lib/utils/camp-window';
+import { participantPresentOn, campEnrollmentClosed, campClosedNoticeES, campDayProgress } from '@/lib/utils/camp-window';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { validateMandatoryFields } from '@/lib/validations/session-close';
@@ -147,10 +147,13 @@ export async function addCampDay(campInstanceId: string) {
 
   const { data: parts } = await supabase
     .from('camp_participants')
-    .select('student_id')
+    .select('student_id, planned_departure, departed_on, finalized_at')
     .eq('camp_instance_id', campInstanceId)
     .eq('enrollment_status', 'active');
+  // Camp corto: el día nuevo se siembra solo para quien sigue ahí. Al alargar
+  // el camp, quien contrató hasta el jueves no aparece el domingo.
   const blockRows = (parts ?? [])
+    .filter((p: any) => participantPresentOn(p, nextDate))
     .map((p: any) => p.student_id)
     .filter(Boolean)
     .map((studentId: string) => ({
@@ -1086,6 +1089,49 @@ export async function finalizeParticipant(
       finalized_at: new Date().toISOString(),
       departed_on: departedOn || elSalvadorToday(),
     })
+    .eq('id', participantId);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath(`/camps/${campId}`);
+  return { ok: true };
+}
+
+// ── Camp corto: hasta qué día contrató este campista ──────────────
+// Rick (2026-09-24): inscribir a alguien por 3 o 4 días de un camp de 6, y
+// poder alargarlo si se queda. A diferencia de finalizeParticipant —que
+// registra que YA se fue— esto es el PLAN, y se fija al inscribir o desde la
+// ficha. El coach lo ve desde el día 1 en vez de enterarse cuando falta.
+//
+// lastDay null = hace el camp completo (vuelve al caso normal).
+// El cupo y lo cobrado NO cambian: quien reserva 3 días ocupa su lugar y paga.
+export async function setParticipantLastDay(
+  participantId: string,
+  campId: string,
+  lastDay: string | null,
+): Promise<{ ok: boolean; error?: string }> {
+  const guard = await guardParticipantAcademy(participantId);
+  if (guard) return { ok: false, error: guard.error };
+  const admin = createAdminClient();
+
+  if (lastDay) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(lastDay)) return { ok: false, error: 'Fecha inválida.' };
+    // La salida tiene que caer dentro del camp: ni antes de empezar, ni
+    // después de terminar (para eso el camp ya tiene su propia fecha de fin).
+    const { data: camp } = await admin
+      .from('camp_instances')
+      .select('start_date, end_date')
+      .eq('id', campId)
+      .maybeSingle();
+    if (camp?.start_date && lastDay < camp.start_date) {
+      return { ok: false, error: `El camp empieza el ${camp.start_date}.` };
+    }
+    if (camp?.end_date && lastDay > camp.end_date) {
+      return { ok: false, error: `El camp termina el ${camp.end_date}.` };
+    }
+  }
+
+  const { error } = await admin
+    .from('camp_participants')
+    .update({ planned_departure: lastDay })
     .eq('id', participantId);
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/camps/${campId}`);

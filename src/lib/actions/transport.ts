@@ -1,5 +1,6 @@
 'use server';
 
+import { participantPresentOn } from '@/lib/utils/camp-window';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { revalidatePath } from 'next/cache';
@@ -38,7 +39,7 @@ export async function listWeekTransports(): Promise<TransportDay[]> {
   const campJoin =
     'camp_sessions:camp_session_id(id, session_date, day_number, ' +
     'camp_instances:camp_instance_id(id, camp_name, academy_id, head_coach_id, head_coach_status, ' +
-    'coach:coach_id(display_name), head_coach:head_coach_id(display_name), camp_participants(id, enrollment_status)))';
+    'coach:coach_id(display_name), head_coach:head_coach_id(display_name), camp_participants(id, enrollment_status, planned_departure, departed_on, finalized_at)))';
   const fullSelect =
     'id, class_start_time, surf_venue, transport_needed, transport_depart, transport_return, transport_status, transport_actual_depart, transport_actual_return, ' +
     campJoin;
@@ -72,7 +73,11 @@ export async function listWeekTransports(): Promise<TransportDay[]> {
       day_number: sess.day_number ?? null,
       camp_name: inst?.camp_name ?? null,
       coach_name: hc?.display_name ?? null,
-      students: (inst?.camp_participants ?? []).filter((x: any) => x.enrollment_status === 'active').length,
+      // Camp corto: quien ya se fue no viaja. El conteo es de pasajeros de
+      // ESE día, no del camp entero.
+      students: (inst?.camp_participants ?? []).filter(
+        (x: any) => x.enrollment_status === 'active' && participantPresentOn(x, sess.session_date),
+      ).length,
       class_start_time: (p as any).class_start_time ?? null,
       surf_venue: (p as any).surf_venue ?? null,
       transport_depart: (p as any).transport_depart ?? null,

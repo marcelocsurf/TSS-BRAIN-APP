@@ -1,3 +1,5 @@
+import { participantPresentOn } from '@/lib/utils/camp-window';
+
 // Regla INCLUIDO — fuente ÚNICA de verdad (antes duplicada y divergida en
 // seller.ts, public-classes.ts y ausente en camps.ts → coordinación cobraba
 // de más a huéspedes). Una CLASE (yoga, U.Natural, BJJ, ice bath, self
@@ -16,15 +18,18 @@ export async function campGuestIncludedIn(
   if (serviceKind !== 'class' || !studentId || !classStartDate) return null;
   const { data: campSeats } = await admin
     .from('camp_participants')
-    .select('camp_instances:camp_instance_id!inner(camp_name, start_date, end_date, status, camp_templates:template_id(service_kind))')
+    .select('planned_departure, departed_on, finalized_at, camp_instances:camp_instance_id!inner(camp_name, start_date, end_date, status, camp_templates:template_id(service_kind))')
     .eq('student_id', studentId)
     .eq('enrollment_status', 'active');
   for (const s of (campSeats as any[]) ?? []) {
     const inst = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
     if (!inst) continue;
     const kind = (Array.isArray(inst.camp_templates) ? inst.camp_templates[0] : inst.camp_templates)?.service_kind;
+    // Camp corto: la clase viene incluida mientras el alumno SIGA en el camp.
+    // El día después de irse ya se le cobra, como a cualquiera.
     if (kind === 'surf_camp' && inst.status !== 'cancelled'
-        && inst.start_date <= classStartDate && classStartDate <= inst.end_date) {
+        && inst.start_date <= classStartDate && classStartDate <= inst.end_date
+        && participantPresentOn(s, classStartDate)) {
       return (inst.camp_name ?? 'Surf Camp').split(' · ')[0];
     }
   }

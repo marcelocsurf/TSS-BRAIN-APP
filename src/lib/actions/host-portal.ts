@@ -7,7 +7,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { MEMBERSHIP_PLANS, isValidMembershipMonths } from '@/lib/constants/membership';
 import { elSalvadorToday } from '@/lib/utils/tz';
-import { campEnrollmentClosed } from '@/lib/utils/camp-window';
+import { participantPresentOn, campEnrollmentClosed } from '@/lib/utils/camp-window';
 import { ageFromDob } from '@/lib/utils/age';
 import { sendIntakeLinkEmail } from '@/lib/actions/email';
 import { getOpsByDay, dayProgramText } from '@/lib/ops/day-program';
@@ -341,7 +341,7 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
       camp_templates:template_id(template_name, service_kind, capacity_max, list_price_cents),
       coaches:coach_id(display_name),
       hc:head_coach_id(display_name),
-      camp_participants(id, enrollment_status, payment_status, room_number, notes, reserved_at, sold_by, seller:sold_by(display_name), students(id, first_name, last_name, waiver_signed, phone, email)),
+      camp_participants(id, enrollment_status, payment_status, room_number, notes, reserved_at, sold_by, planned_departure, departed_on, finalized_at, seller:sold_by(display_name), students(id, first_name, last_name, waiver_signed, phone, email)),
       camp_sessions(id, day_number, session_date, session_status)`)
     .eq('academy_id', who.academy_id)
     .lte('start_date', dateISO)
@@ -382,6 +382,11 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
     const hcRow = Array.isArray((i as any).hc) ? (i as any).hc[0] : (i as any).hc;
     const coach = hcRow ?? (Array.isArray(i.coaches) ? i.coaches[0] : i.coaches);
     const act = (i.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
+    // OJO: `act` gobierna el CUPO (enrolled) y no se filtra — quien reservó 3
+    // días sigue ocupando su lugar y lo pagó; si se filtrara, el mostrador
+    // revendería el asiento. `here` es la lista de NOMBRES de hoy, y esa sí
+    // deja fuera a quien ya se fue: Kat pasa lista de ahí.
+    const here = act.filter((p: any) => participantPresentOn(p, dateISO));
     const session = (i.camp_sessions ?? []).find((s: any) => s.session_date === dateISO) ?? null;
     const plan = planByCamp.get(i.id);
     return {
@@ -399,7 +404,7 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
       capacity: i.capacity_override ?? tpl?.capacity_max ?? 0,
       price_cents: tpl?.list_price_cents ?? null,
       enrolled: act.length,
-      students: act.map((p: any) => {
+      students: here.map((p: any) => {
         const st = Array.isArray(p.students) ? p.students[0] : p.students;
         const seller = Array.isArray(p.seller) ? p.seller[0] : p.seller;
         return {
@@ -527,7 +532,7 @@ export async function hostDayAlerts(token: string): Promise<HostDayAlerts | null
       .select(`session_date, session_status, camp_instances:camp_instance_id!inner(
         academy_id, camp_name, status, head_coach_id, head_coach_status,
         coaches:coach_id(display_name), hc:head_coach_id(display_name),
-        camp_participants(enrollment_status))`)
+        camp_participants(enrollment_status, planned_departure, departed_on, finalized_at))`)
       .gte('session_date', weekAgo).lt('session_date', today)
       .neq('session_status', 'completed'),
   ]);
@@ -547,7 +552,10 @@ export async function hostDayAlerts(token: string): Promise<HostDayAlerts | null
   for (const s of (past as any[]) ?? []) {
     const inst = Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances;
     if (!inst || inst.academy_id !== who.academy_id || inst.status === 'cancelled') continue;
-    const active = (inst.camp_participants ?? []).some((p: any) => p.enrollment_status === 'active');
+    // Un día sin nadie presente no es una clase "sin cerrar": no hubo clase.
+    const active = (inst.camp_participants ?? []).some(
+      (p: any) => p.enrollment_status === 'active' && participantPresentOn(p, s.session_date),
+    );
     if (!active) continue; // clases vacías que pasaron sin cierre = ruido
     const hcRow = Array.isArray(inst.hc) ? inst.hc[0] : inst.hc;
     const useHead = inst.head_coach_id && inst.head_coach_status === 'accepted';
@@ -832,14 +840,20 @@ export async function hostTransportBoard(token: string): Promise<TransportBoardR
   ));
   const [{ data: parts }, { data: staffRows }] = instIds.length
     ? await Promise.all([
-        admin.from('camp_participants').select('camp_instance_id, enrollment_status').in('camp_instance_id', instIds),
+        admin.from('camp_participants').select('camp_instance_id, enrollment_status, planned_departure, departed_on, finalized_at').in('camp_instance_id', instIds),
         admin.from('service_staff').select('camp_instance_id, status').in('camp_instance_id', instIds).eq('status', 'accepted'),
       ])
     : [{ data: [] as any[] }, { data: [] as any[] }];
-  const countByInst = new Map<string, number>();
+  // Se guardan los asientos, no un número: el tablero cubre 14 días y con un
+  // camp corto la cantidad de pasajeros cambia según el día. Contar una sola
+  // vez por servicio mandaba la van llena el jueves por alguien que se fue el
+  // martes.
+  const partsByInst = new Map<string, any[]>();
   for (const p of parts ?? []) {
     if (p.enrollment_status !== 'active') continue; // mismo criterio que transport.ts
-    countByInst.set(p.camp_instance_id, (countByInst.get(p.camp_instance_id) ?? 0) + 1);
+    const arr = partsByInst.get(p.camp_instance_id) ?? [];
+    arr.push(p);
+    partsByInst.set(p.camp_instance_id, arr);
   }
   // Staff aceptado (asistentes, camarógrafo…) por servicio — van en la van.
   const staffByInst = new Map<string, number>();
@@ -863,7 +877,8 @@ export async function hostTransportBoard(token: string): Promise<TransportBoardR
       // Coach efectivo (invariante #1): head coach solo si ACEPTÓ la
       // transferencia — igual que transport.ts y el resto del archivo.
       const useHead = inst?.head_coach_id && inst?.head_coach_status === 'accepted';
-      const nStudents = countByInst.get((s as any).camp_instance_id) ?? 0;
+      const nStudents = (partsByInst.get((s as any).camp_instance_id) ?? [])
+        .filter((x: any) => participantPresentOn(x, (s as any).session_date)).length;
       // Pasajeros = alumnos + coach efectivo (1) + staff aceptado.
       const nStaff = 1 + (staffByInst.get((s as any).camp_instance_id) ?? 0);
       return {

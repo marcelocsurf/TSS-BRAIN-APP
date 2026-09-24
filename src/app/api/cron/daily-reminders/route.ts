@@ -1,3 +1,4 @@
+import { participantPresentOn } from '@/lib/utils/camp-window';
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendTaskOverdueEmail, sendServiceReminderEmail } from '@/lib/actions/email';
@@ -322,7 +323,7 @@ async function handle(req: NextRequest) {
     if (await emailEnabled('student_day_reminder')) {
       const { data: tomorrowSessions } = await admin
         .from('camp_sessions')
-        .select('id, session_date, camp_instance_id, student_reminder_on, camp_instances:camp_instance_id!inner(camp_name, status, scheduled_time, academy_id, camp_participants(enrollment_status, students:student_id(email, first_name, portal_token)))')
+        .select('id, session_date, camp_instance_id, student_reminder_on, camp_instances:camp_instance_id!inner(camp_name, status, scheduled_time, academy_id, camp_participants(enrollment_status, planned_departure, departed_on, finalized_at, students:student_id(email, first_name, portal_token)))')
         .eq('session_date', tomorrow)
         .is('student_reminder_on', null);
       const sesIds = ((tomorrowSessions as any[]) ?? []).map((x) => x.id);
@@ -346,6 +347,8 @@ async function handle(req: NextRequest) {
         let sent = 0;
         for (const p of (inst.camp_participants ?? []) as any[]) {
           if (p.enrollment_status !== 'active') continue;
+          // Camp corto: no se le recuerda una clase de mañana a quien se fue.
+          if (!participantPresentOn(p, ses.session_date)) continue;
           const st = Array.isArray(p.students) ? p.students[0] : p.students;
           if (!st?.email || !st.portal_token) continue;
           const r = await sendStudentDayReminderEmail({

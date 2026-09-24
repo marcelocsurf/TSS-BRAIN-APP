@@ -13,6 +13,7 @@ import { CampScheduleManager } from '@/components/camp/CampScheduleManager';
 import { LeadStatusBadge } from '@/components/camp/LeadStatusBadge';
 import { EnrollmentPaymentControl } from '@/components/camp/EnrollmentPaymentControl';
 import { FinalizeParticipantControl } from '@/components/camp/FinalizeParticipantControl';
+import { ParticipantStayControl } from '@/components/camp/ParticipantStayControl';
 import { CancelCampButton } from '@/components/camp/CancelCampButton';
 import { ScheduledEvaluationsPanel } from '@/components/camp/ScheduledEvaluationsPanel';
 import { CampCompleteButton } from '@/components/camp/CampCompleteButton';
@@ -278,13 +279,24 @@ export default async function CampDetailPage({ params }: Props) {
                       email={p.students.email}
                     />
                   ) : (
-                    <FinalizeParticipantControl
-                      participantId={p.id}
-                      campId={id}
-                      studentName={`${p.students?.first_name ?? ''} ${p.students?.last_name ?? ''}`.trim()}
-                      finalizedAt={p.finalized_at ?? null}
-                      departedOn={p.departed_on ?? null}
-                    />
+                    <>
+                      <ParticipantStayControl
+                        participantId={p.id}
+                        campId={id}
+                        studentName={`${p.students?.first_name ?? ''} ${p.students?.last_name ?? ''}`.trim()}
+                        campStart={instance.start_date ?? null}
+                        campEnd={instance.end_date ?? null}
+                        plannedDeparture={p.planned_departure ?? null}
+                        finalizedAt={p.finalized_at ?? null}
+                      />
+                      <FinalizeParticipantControl
+                        participantId={p.id}
+                        campId={id}
+                        studentName={`${p.students?.first_name ?? ''} ${p.students?.last_name ?? ''}`.trim()}
+                        finalizedAt={p.finalized_at ?? null}
+                        departedOn={p.departed_on ?? null}
+                      />
+                    </>
                   )}
                 </div>
               );

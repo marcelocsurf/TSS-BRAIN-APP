@@ -2,6 +2,7 @@
 // Fuente única para el coordinador (Week Operations en el dashboard) y el
 // front desk (Kat, 2026-09-10: "poder descargar cómo van los camps y
 // servicios del siguiente día para enviar por WhatsApp, como el coordinador").
+import { participantPresentOn } from '@/lib/utils/camp-window';
 import { createAdminClient } from '@/lib/supabase/admin';
 
 export interface OpsRow {
@@ -52,7 +53,7 @@ export async function getOpsByDay(academyId: string, from: string, to: string): 
         head_coach:head_coach_id(display_name), head_coach_status, coaches:coach_id(display_name),
         camp_templates:template_id(template_name, service_kind),
         camp_sessions(id),
-        camp_participants(id, enrollment_status, room_number, students:student_id(languages, shirt_size)))`)
+        camp_participants(id, enrollment_status, room_number, planned_departure, departed_on, finalized_at, students:student_id(languages, shirt_size)))`)
     .eq('camp_instances.academy_id', academyId)
     .neq('camp_instances.status', 'cancelled')
     .gte('session_date', from)
@@ -150,7 +151,12 @@ export async function getOpsByDay(academyId: string, from: string, to: string): 
       : headName && hcStatus === 'pending'
         ? 'pending'
         : null;
-    const parts = (inst?.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
+    // Camp corto: quien ya se fue no pide talla de kit ni cuenta para el
+    // idioma del día. La lista se copia a WhatsApp, así que un nombre de más
+    // es alguien a quien se le prepara equipo que no va a usar.
+    const parts = (inst?.camp_participants ?? []).filter(
+      (p: any) => p.enrollment_status === 'active' && participantPresentOn(p, s.session_date),
+    );
     const plan = planByS.get(s.id) as any;
     const studs = parts.map((p: any) => (Array.isArray(p.students) ? p.students[0] : p.students));
     const langsFlat = studs.flatMap((st: any) =>

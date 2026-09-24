@@ -82,3 +82,56 @@ export const CIERRE_DE_DIAS_OBLIGATORIO_DESDE = '2026-08-28';
 export function exigeCierreDeDias(startDate: string | null | undefined): boolean {
   return !!startDate && startDate >= CIERRE_DE_DIAS_OBLIGATORIO_DESDE;
 }
+
+// ═══ Estadía del campista: camp corto y salida anticipada ═══
+// Pedido de Rick por Marcelo (2026-09-24): inscribir a alguien por 3 o 4 días
+// de un camp de 6, y poder alargarlo un día si decide quedarse.
+//
+// Dos fechas, y el orden importa:
+//   planned_departure — el último día CONTRATADO. Se fija al inscribir o desde
+//                       la ficha del camp. Alargar = moverla hacia adelante.
+//   departed_on       — el día que REALMENTE se fue, con finalized_at. Es un
+//                       hecho consumado, así que manda sobre el plan.
+// Null en las dos = hace el camp completo, que es el caso normal.
+//
+// NO hay fecha de llegada: hoy "camp corto" significa empieza el día 1 y
+// termina antes. Si algún día hace falta que alguien ENTRE a mitad de camp,
+// se agrega acá y los sitios que llaman a esta función no cambian.
+
+export interface ParticipantStay {
+  planned_departure?: string | null;
+  departed_on?: string | null;
+  finalized_at?: string | null;
+}
+
+/** El último día que el campista cuenta como presente, o null si hace el camp
+ *  completo. Si hay plan y hecho, gana el más temprano: nadie está después de
+ *  haberse ido, y nadie está después de lo que contrató. */
+export function participantLastDay(p: ParticipantStay): string | null {
+  const real =
+    p.departed_on ||
+    // Sin fecha explícita, el cierre anticipado marca el día: se resta la
+    // diferencia horaria para no correrlo al día siguiente.
+    (p.finalized_at ? new Date(Date.parse(p.finalized_at) - 6 * 3600000).toISOString().slice(0, 10) : null);
+  const days = [p.planned_departure, real].filter(Boolean) as string[];
+  return days.length ? days.sort()[0] : null;
+}
+
+/** ¿Está este campista el día que se está mostrando? `dayISO` es AAAA-MM-DD.
+ *  Los días hasta su salida — la incluida — quedan intactos: el historial de
+ *  lo que sí hizo no se toca. */
+export function participantPresentOn(p: ParticipantStay, dayISO: string | null | undefined): boolean {
+  if (!dayISO) return true;
+  const last = participantLastDay(p);
+  return !last || dayISO <= last;
+}
+
+/** Cuántos días contrató, contra la ventana del camp. Para la ficha: "3 de 6". */
+export function stayLength(p: ParticipantStay, campStart: string, campEnd: string): { days: number; total: number } | null {
+  const day = (iso: string) => Math.floor(Date.parse(`${iso}T00:00:00Z`) / 86400000);
+  const total = day(campEnd) - day(campStart) + 1;
+  if (total < 1) return null;
+  const last = participantLastDay(p);
+  const days = last && last < campEnd ? Math.max(1, day(last) - day(campStart) + 1) : total;
+  return { days, total };
+}

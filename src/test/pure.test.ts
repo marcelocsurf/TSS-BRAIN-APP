@@ -12,7 +12,7 @@ vi.mock('@/lib/utils/tz', () => ({
   elSalvadorDatePlus: (d: number) => '2026-09-05',
   toElSalvadorDate: (x: any) => x,
 }));
-import { campEnrollmentClosed, isMultiDay, campDayProgress } from '@/lib/utils/camp-window';
+import { campEnrollmentClosed, isMultiDay, campDayProgress, participantLastDay, participantPresentOn, stayLength } from '@/lib/utils/camp-window';
 
 describe('pickWeakestCriterion — el PRIMER eslabón que falla, en orden de tarjeta', () => {
   const c = (i: number, r: 'met' | 'partial' | 'not_met') => ({ criterion_index: i, criterion_text: `c${i}`, result: r });
@@ -162,5 +162,55 @@ describe('notes_pre — marca interna vs. nota del coach', () => {
     expect(carriedFromClose('Carried over from day 5.')?.day).toBe('5');
     expect(carriedFromClose('Added by the coach.')).toBeUndefined();
     expect(carriedFromClose('Buen pop up hoy')).toBeUndefined();
+  });
+});
+
+// ═══ Camp corto: quién está cada día ═══
+// Esta función la usan 19 pantallas (el plan del coach, el transporte, la
+// agenda del host, la programación diaria…). Si se equivoca, o el coach
+// evalúa a alguien que ya se fue, o le borra los días que sí hizo.
+describe('participantPresentOn — la estadía del campista', () => {
+  const camp = { start: '2026-10-05', end: '2026-10-10' }; // 6 días
+
+  it('sin fechas hace el camp completo: está el último día', () => {
+    expect(participantPresentOn({}, camp.end)).toBe(true);
+    expect(participantLastDay({})).toBeNull();
+  });
+
+  it('camp corto de 3 días: está el día 3 y ya no el día 4', () => {
+    const p = { planned_departure: '2026-10-07' };
+    expect(participantPresentOn(p, '2026-10-07')).toBe(true);
+    expect(participantPresentOn(p, '2026-10-08')).toBe(false);
+  });
+
+  it('el día de salida cuenta como presente: el historial de ese día no se pierde', () => {
+    expect(participantPresentOn({ departed_on: '2026-10-07' }, '2026-10-07')).toBe(true);
+  });
+
+  it('irse antes de lo contratado manda sobre el plan', () => {
+    const p = { planned_departure: '2026-10-08', departed_on: '2026-10-06' };
+    expect(participantLastDay(p)).toBe('2026-10-06');
+    expect(participantPresentOn(p, '2026-10-07')).toBe(false);
+  });
+
+  it('alargar un día: se mueve el plan y vuelve a estar', () => {
+    expect(participantPresentOn({ planned_departure: '2026-10-07' }, '2026-10-08')).toBe(false);
+    expect(participantPresentOn({ planned_departure: '2026-10-08' }, '2026-10-08')).toBe(true);
+  });
+
+  it('cierre anticipado sin fecha: el día del cierre cuenta, el siguiente no', () => {
+    const p = { finalized_at: '2026-10-07T20:00:00.000Z' }; // 14h en El Salvador
+    expect(participantPresentOn(p, '2026-10-07')).toBe(true);
+    expect(participantPresentOn(p, '2026-10-08')).toBe(false);
+  });
+
+  it('sin día que comparar no se filtra a nadie', () => {
+    expect(participantPresentOn({ planned_departure: '2026-10-07' }, null)).toBe(true);
+  });
+
+  it('cuenta los días contratados contra los del camp', () => {
+    expect(stayLength({}, camp.start, camp.end)).toEqual({ days: 6, total: 6 });
+    expect(stayLength({ planned_departure: '2026-10-07' }, camp.start, camp.end)).toEqual({ days: 3, total: 6 });
+    expect(stayLength({ planned_departure: '2026-10-05' }, camp.start, camp.end)).toEqual({ days: 1, total: 6 });
   });
 });

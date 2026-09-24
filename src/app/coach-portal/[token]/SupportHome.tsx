@@ -144,7 +144,13 @@ export function SupportHome({ coach, upcoming, schedule, spaceBookings = [], eme
                 <div className="space-y-2">
                   {d.items.map((s: any) => {
                     const dl = (s.day_logistics ?? []).find((x: any) => x.session_date === d.key);
-                    const details: StudentDetail[] = Array.isArray(s.student_details) ? s.student_details : [];
+                    // Camp corto: la agenda pinta el mismo servicio en cada
+                    // fecha, así que el kit y el conteo son de ESE día. Quien
+                    // ya se fue no aparece.
+                    const all: StudentDetail[] = Array.isArray(s.student_details) ? s.student_details : [];
+                    const details: StudentDetail[] = all.filter(
+                      (x: any) => !x?.last_day || d.key <= x.last_day,
+                    );
                     const time = dl?.class_start_time ? dl.class_start_time.slice(0, 5) : s.scheduled_time ? s.scheduled_time.slice(0, 5) : '—';
                     return (
                       <details key={`${d.key}-${s.id}`} className="rounded-[5px] overflow-hidden" style={{ background: PAPER, border: `1px solid ${BORDER}` }} open={d.label === 'Today'}>
@@ -169,7 +175,7 @@ export function SupportHome({ coach, upcoming, schedule, spaceBookings = [], eme
                             )}
                           </span>
                           <span className="shrink-0 inline-flex items-center gap-1 text-[12px] font-bold rounded-full px-2 py-0.5" style={{ background: 'rgba(0,210,255,.14)', color: DEEP }}>
-                            <Users size={12} /> {s.students}
+                            <Users size={12} /> {details.length || s.students}
                           </span>
                           <ChevronDown size={16} className="shrink-0" style={{ color: GREY }} />
                         </summary>

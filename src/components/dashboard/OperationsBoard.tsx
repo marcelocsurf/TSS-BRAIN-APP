@@ -1,3 +1,4 @@
+import { participantPresentOn } from '@/lib/utils/camp-window';
 import { createAdminClient } from '@/lib/supabase/admin';
 import Link from 'next/link';
 import { AlertTriangle, CalendarCheck2, Waves, UserX } from 'lucide-react';
@@ -45,7 +46,7 @@ async function getOps(academyId: string) {
 
   const { data: sess } = await admin
     .from('camp_sessions')
-    .select('id, session_date, day_number, camp_instance_id, camp_instances:camp_instance_id!inner(camp_name, scheduled_time, status, academy_id, head_coach:head_coach_id(display_name), coaches:coach_id(display_name), camp_templates:template_id(template_name, service_kind), camp_participants(id, enrollment_status, payment_status))')
+    .select('id, session_date, day_number, camp_instance_id, camp_instances:camp_instance_id!inner(camp_name, scheduled_time, status, academy_id, head_coach:head_coach_id(display_name), coaches:coach_id(display_name), camp_templates:template_id(template_name, service_kind), camp_participants(id, enrollment_status, payment_status, planned_departure, departed_on, finalized_at))')
     .eq('camp_instances.academy_id', academyId)
     .neq('camp_instances.status', 'cancelled')
     .gte('session_date', iso(monday))
@@ -71,7 +72,12 @@ async function getOps(academyId: string) {
     const tpl = Array.isArray(inst?.camp_templates) ? inst.camp_templates[0] : inst?.camp_templates;
     const head = Array.isArray(inst?.head_coach) ? inst.head_coach[0] : inst?.head_coach;
     const co = Array.isArray(inst?.coaches) ? inst.coaches[0] : inst?.coaches;
-    const parts = (inst?.camp_participants ?? []).filter((p: any) => p.enrollment_status === 'active');
+    // Camp corto: los días posteriores a su salida no lo cuentan. Si no, el
+    // ámbar de "cerrado sin feedback" (students - fbCount) queda encendido
+    // para siempre y ensucia la disciplina del coach.
+    const parts = (inst?.camp_participants ?? []).filter(
+      (p: any) => p.enrollment_status === 'active' && participantPresentOn(p, s.session_date),
+    );
     const plan = planByS.get(s.id) as any;
     return {
       id: s.id,

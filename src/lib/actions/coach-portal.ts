@@ -1,5 +1,6 @@
 'use server';
 
+import { participantPresentOn, participantLastDay } from '@/lib/utils/camp-window';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { anyMedicalNote } from '@/lib/constants/medical';
 import { elSalvadorToday } from '@/lib/utils/tz';
@@ -434,7 +435,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
           'id, camp_name, start_date, end_date, scheduled_time, status, ' +
             'camp_templates:template_id(template_name, service_kind), ' +
             'head_coach:head_coach_id(display_name), ' +
-            'camp_participants(id, enrollment_status, students:student_id(first_name, last_name, shirt_size, height, weight, languages, stance, goofy_or_regular, age, nationality, board_type, board_length_feet, board_length_inches, board_volume_liters, allergies)), ' +
+            'camp_participants(id, enrollment_status, planned_departure, departed_on, finalized_at, students:student_id(first_name, last_name, shirt_size, height, weight, languages, stance, goofy_or_regular, age, nationality, board_type, board_length_feet, board_length_inches, board_volume_liters, allergies)), ' +
             'service_staff(role, status, coaches:coach_id(display_name), staff_members:staff_member_id(name))'
         )
         .eq('academy_id', coach.academy_id)
@@ -479,15 +480,20 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
             .sort((a: string, b: string) => a.localeCompare(b)),
           // Lo que hace falta para el KIT (Marcelo 2026-09-15): talla, altura/peso,
           // idioma, stance, tabla, alergias — por alumno, sin truncar.
+          // Cada alumno lleva su último día: la agenda pinta el mismo servicio
+          // en cada fecha, así que sin esto el jueves se prepara kit y shots
+          // para alguien que se fue el martes (camp corto).
           student_details: (s.camp_participants ?? [])
             .filter((p: any) => p.enrollment_status === 'active')
             .map((p: any) => {
               const st = Array.isArray(p.students) ? p.students[0] : p.students;
+              const last_day = participantLastDay(p);
               if (!st) return null;
               const boardLen = st.board_length_feet ? `${st.board_length_feet}'${st.board_length_inches ? st.board_length_inches + '"' : ''}` : '';
               const board = [st.board_type, boardLen, st.board_volume_liters ? `${st.board_volume_liters}L` : ''].filter(Boolean).join(' · ');
               return {
                 name: `${st.first_name ?? ''} ${st.last_name ?? ''}`.trim(),
+                last_day,
                 shirt_size: st.shirt_size ?? null,
                 height: st.height ?? null,
                 weight: st.weight ?? null,
@@ -589,11 +595,14 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       (s: any) => s.start_date <= today && (s.end_date ?? s.start_date) >= today,
     );
     if (running) {
-      const [{ data: sess }, { count: totalDays }, { count: studentsCount }] = await Promise.all([
+      const [{ data: sess }, { count: totalDays }, { data: partRows }] = await Promise.all([
         admin.from('camp_sessions').select('id, day_number').eq('camp_instance_id', running.id).eq('session_date', today).maybeSingle(),
         admin.from('camp_sessions').select('*', { count: 'exact', head: true }).eq('camp_instance_id', running.id),
-        admin.from('camp_participants').select('*', { count: 'exact', head: true }).eq('camp_instance_id', running.id).eq('enrollment_status', 'active'),
+        admin.from('camp_participants').select('planned_departure, departed_on, finalized_at').eq('camp_instance_id', running.id).eq('enrollment_status', 'active'),
       ]);
+      // El conteo de la tarjeta es de HOY, no del camp entero: con un camp
+      // corto, el jueves ya no son los mismos que el lunes.
+      const studentsCount = (partRows ?? []).filter((x: any) => participantPresentOn(x, today)).length;
       let plan: any = null;
       if (sess) {
         const { data: pl } = await admin
