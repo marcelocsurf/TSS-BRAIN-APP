@@ -11,20 +11,24 @@ import { WaveGuide } from './WaveGuide';
 import { InfinityCircle } from './InfinityCircle';
 import { LOOP_INTRO, LOOP_SIDES, type LoopSide, type LoopStep } from '@/lib/sequence-pages/infinite-circle';
 
-const INK = '#061C2B', PANEL = '#0A2438', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', VIOLET = '#B388FF';
-const TEXT = 'rgba(247,249,250,.92)', MUTED = 'rgba(247,249,250,.62)';
+// Paleta v10.1 — la misma que ThreeCirclesPage (Marcelo 2026-09-24). Antes
+// esta pantalla tenía la suya, con paneles oscuros y dos colores —dorado y
+// violeta— que no están en el manual. El molde real es tarjeta de arena
+// sobre navy, con el texto en ink.
+const INK = '#10263B', NAVY = '#061C2B', PAPER = '#F7F9FA', BORDER = '#DCD7C6', CYAN = '#00D2FF';
+const TEXT = INK, MUTED = '#55666E';
 const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em', fontSize: 10 };
 
 function Dot({ command, hold, size = 10 }: { command: LoopStep['command']; hold?: boolean; size?: number }) {
   return (
-    <i className="inline-block rounded-full shrink-0" style={{ width: size, height: size, background: COMMAND_COLORS[command], boxShadow: hold ? `0 0 0 2.5px ${HOLD_COLOR}` : '0 0 0 2px rgba(255,255,255,.15)' }} />
+    <i className="inline-block rounded-full shrink-0" style={{ width: size, height: size, background: COMMAND_COLORS[command], boxShadow: hold ? `0 0 0 2.5px ${HOLD_COLOR}` : `0 0 0 2px ${BORDER}` }} />
   );
 }
 
-function Card({ eyebrow, color = CYAN, children }: { eyebrow: string; color?: string; children: React.ReactNode }) {
+function Card({ eyebrow, color, children }: { eyebrow: string; color?: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl p-4" style={{ background: PANEL }}>
-      <p className="mb-2" style={{ ...F_M, color }}>{eyebrow}</p>
+    <section className="tss-card" style={color ? { borderTop: `4px solid ${color}` } : undefined}>
+      <p className="mb-2" style={{ ...F_M, color: MUTED }}>{eyebrow}</p>
       {children}
     </section>
   );
@@ -41,15 +45,20 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
   const cur = LOOP_SIDES.find((s) => s.key === side)!;
 
   return (
-    <div className="seq-dark min-h-screen pb-24 text-[15px]" style={{ background: INK, color: PAPER }}>
-      <div className="max-w-lg md:max-w-2xl mx-auto px-4 pt-4">
-        <a href={`${portal}?tab=course`} className="inline-flex items-center gap-1.5 text-[12px]" style={{ color: CYAN }}><ArrowLeft size={14} /> Course</a>
-        <p className="mt-3" style={{ ...F_M, color: CYAN }}>Blue belt · the language of every sequence</p>
-        <h1 className="text-[26px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%' }}>{LOOP_INTRO.title}</h1>
-        <p className="text-[14px] mt-2" style={{ color: TEXT }}>{LOOP_INTRO.headline}</p>
+    <section className="tss">
+      <div className="tss-main">
+        <header>
+          <div className="tss-brand-row">
+            <svg className="tss-logo" viewBox="180 183 960 269" role="img" aria-label="The Surf Sequence — Evolve through play"><image href="/tss/assets/tss-logo-original-white.png" width="1312" height="654" /></svg>
+          </div>
+          <a className="tss-back" href={`${portal}?tab=course`}><ArrowLeft size={14} /> Course</a>
+          <p style={{ ...F_M, color: CYAN }}>Blue belt · the language of every sequence</p>
+          <h1>{LOOP_INTRO.title}</h1>
+          <p className="tss-subtitle">{LOOP_INTRO.headline}</p>
+        </header>
 
         {/* Arriba: el video si existe; si no, la imagen del círculo (Marcelo 2026-09-09). */}
-        <div className="rounded-2xl overflow-hidden mt-4" style={{ background: PANEL }}>
+        <div className="rounded-[5px] overflow-hidden mt-2" style={{ background: NAVY }}>
           {video ? <LoopVideo url={video.url} title={video.title} /> : <div className="p-2"><InfinityCircle side={side} /></div>}
         </div>
 
@@ -57,53 +66,53 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
           <Card eyebrow="01 · What it is">
             <p className="text-[14px] leading-relaxed" style={{ color: TEXT }}>{LOOP_INTRO.what}</p>
             {video && <div className="mt-3"><InfinityCircle side={side} /></div>}
-            <div className="mt-3"><WaveGuide data={cur.board} title="One turn of the circle on the wave face" legendColor="rgba(247,249,250,.8)" /></div>
+            <div className="mt-3 rounded-[5px] p-2" style={{ background: NAVY }}><WaveGuide data={cur.board} title="One turn of the circle on the wave face" legendColor="rgba(247,249,250,.8)" /></div>
             <p className="text-[13.5px] mt-2 leading-relaxed" style={{ color: MUTED }}>{LOOP_INTRO.before}</p>
-            <p className="text-[13.5px] mt-2 leading-relaxed rounded-xl px-3 py-2.5" style={{ background: 'rgba(0,210,255,.07)', color: PAPER }}>{LOOP_INTRO.why}</p>
+            <p className="text-[13.5px] mt-2 leading-relaxed rounded-xl px-3 py-2.5" style={{ background: PAPER, border: `1px solid ${BORDER}`, color: INK }}>{LOOP_INTRO.why}</p>
           </Card>
 
-          <Card eyebrow="02 · The colour code · one colour per action" color={GOLD}>
+          <Card eyebrow="02 · The colour code · one colour per action" color={CYAN}>
             <div className="space-y-2">
               {LOOP_INTRO.colours.map((c) => (
                 <div key={c.command} className="flex items-center gap-2.5">
                   <Dot command={c.command} size={12} />
-                  <span className="font-mono text-[13px] font-semibold" style={{ color: PAPER }}>{c.label}</span>
+                  <span className="font-mono text-[13px] font-semibold" style={{ color: INK }}>{c.label}</span>
                   <span className="text-[12.5px]" style={{ color: MUTED }}>· {c.note}</span>
                 </div>
               ))}
               <div className="flex items-center gap-2.5">
                 <i className="inline-block w-3 h-3 rounded-full shrink-0" style={{ background: 'transparent', boxShadow: `0 0 0 2.5px ${HOLD_COLOR}` }} />
-                <span className="font-mono text-[13px] font-semibold" style={{ color: PAPER }}>Hold</span>
+                <span className="font-mono text-[13px] font-semibold" style={{ color: INK }}>Hold</span>
                 <span className="text-[12.5px]" style={{ color: MUTED }}>· a light-blue ring on top: this position is kept</span>
               </div>
             </div>
             <p className="text-[12.5px] mt-3" style={{ color: MUTED }}>The same colours draw the line on the wave in every sequence page. When a word is breaking, you know its colour, and you know where on the wave it lives.</p>
           </Card>
 
-          <Card eyebrow="03 · You already have this · from the Three Circles of Power" color={VIOLET}>
+          <Card eyebrow="03 · You already have this · from the Three Circles of Power" color={CYAN}>
             <div className="space-y-2">
               {LOOP_INTRO.known.map((k) => (
-                <p key={k.word} className="text-[13.5px] leading-snug" style={{ color: TEXT }}><span className="font-semibold" style={{ color: PAPER }}>{k.word}</span> · {k.note}</p>
+                <p key={k.word} className="text-[13.5px] leading-snug" style={{ color: TEXT }}><span className="font-semibold" style={{ color: INK }}>{k.word}</span> · {k.note}</p>
               ))}
             </div>
             <a href={`${portal}?tab=course&lesson=${threeCirclesLessonId}`} className="inline-block mt-3 text-[13px] font-semibold" style={{ color: CYAN }}>Go back to the Three Circles →</a>
           </Card>
 
-          <Card eyebrow="04 · New in Blue · the words the circle adds" color={GOLD}>
+          <Card eyebrow="04 · New in Blue · the words the circle adds" color={CYAN}>
             <div className="space-y-2">
               {LOOP_INTRO.newWords.map((k) => (
-                <p key={k.word} className="text-[13.5px] leading-snug" style={{ color: TEXT }}><span className="font-semibold" style={{ color: PAPER }}>{k.word}</span> · {k.note}</p>
+                <p key={k.word} className="text-[13.5px] leading-snug" style={{ color: TEXT }}><span className="font-semibold" style={{ color: INK }}>{k.word}</span> · {k.note}</p>
               ))}
             </div>
           </Card>
 
           {/* ── Frontside / Backside ── */}
-          <div className="grid grid-cols-2 gap-1 rounded-2xl p-1.5 sticky top-2 z-10" style={{ background: PANEL }} role="tablist">
+          <div className="grid grid-cols-2 gap-1 rounded-[5px] p-1.5 sticky top-2 z-10" style={{ background: PAPER, border: `1px solid ${BORDER}` }} role="tablist">
             {LOOP_SIDES.map((s) => (
               <button key={s.key} type="button" role="tab" aria-selected={side === s.key} onClick={() => setSide(s.key)}
-                className="rounded-xl py-2 text-center" style={side === s.key ? { background: '#132840', boxShadow: `inset 0 0 0 1px ${CYAN}55` } : {}}>
-                <span className="block text-[14px] font-bold" style={{ color: side === s.key ? CYAN : PAPER }}>{s.label}</span>
-                <span className="block text-[10px]" style={{ color: MUTED }}>{s.sub}</span>
+                className="rounded-[5px] py-2 text-center" style={side === s.key ? { background: NAVY } : {}}>
+                <span className="block text-[14px] font-bold" style={{ color: side === s.key ? CYAN : INK }}>{s.label}</span>
+                <span className="block text-[10px]" style={{ color: side === s.key ? 'rgba(247,249,250,.65)' : MUTED }}>{s.sub}</span>
               </button>
             ))}
           </div>
@@ -111,7 +120,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
           <Card eyebrow={`05 · The ${cur.label.toLowerCase()} circle · step by step`}>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] mb-3">
               {cur.steps.map((st, i) => (
-                <span key={st.key} className="inline-flex items-center gap-1.5 font-semibold" style={{ color: PAPER }}>
+                <span key={st.key} className="inline-flex items-center gap-1.5 font-semibold" style={{ color: INK }}>
                   {i > 0 && <span style={{ color: MUTED }}>→</span>}
                   <Dot command={st.command} hold={st.hold} size={9} />
                   {st.name.replace(/ · .*$/, '')}
@@ -120,11 +129,11 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
             </div>
             <div>
               {cur.steps.map((st, i) => (
-                <details key={st.key} className="group" open={i === 0} style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
+                <details key={st.key} className="group" open={i === 0} style={{ borderTop: `1px solid ${BORDER}` }}>
                   <summary className="cursor-pointer list-none flex items-center gap-2.5 py-3">
                     <Dot command={st.command} hold={st.hold} />
-                    <span className="text-[15px] font-semibold flex-1" style={{ color: PAPER }}>{st.name}</span>
-                    <span className="text-[10px] font-mono rounded-full px-2 py-0.5" style={{ color: st.known === 'new' ? INK : MUTED, background: st.known === 'new' ? GOLD : 'rgba(255,255,255,.08)' }}>{st.known === 'new' ? 'new' : 'known'}</span>
+                    <span className="text-[15px] font-semibold flex-1" style={{ color: INK }}>{st.name}</span>
+                    <span className="text-[10px] font-mono rounded-full px-2 py-0.5" style={{ color: st.known === 'new' ? NAVY : MUTED, background: st.known === 'new' ? CYAN : PAPER, border: `1px solid ${BORDER}` }}>{st.known === 'new' ? 'new' : 'known'}</span>
                     <span className="transition-transform group-open:rotate-90" style={{ color: MUTED }}>›</span>
                   </summary>
                   <div className="pb-4 pl-5">
@@ -135,7 +144,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
                         <li key={j} className="flex gap-2 text-[13.5px] leading-snug" style={{ color: TEXT }}><span style={{ color: COMMAND_COLORS[st.command] }}>•</span><span>{b}</span></li>
                       ))}
                     </ul>
-                    <p className="mt-2 text-[12.5px]"><span style={{ color: MUTED }}>Key words · </span><span className="font-mono" style={{ color: PAPER }}>{st.keyWords.join(' · ')}</span></p>
+                    <p className="mt-2 text-[12.5px]"><span style={{ color: MUTED }}>Key words · </span><span className="font-mono" style={{ color: INK }}>{st.keyWords.join(' · ')}</span></p>
                     <a href={`${portal}?tab=course&lesson=${st.lessonId}`} className="inline-block mt-2 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {st.lessonLabel}</a>
                   </div>
                 </details>
@@ -143,10 +152,10 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
             </div>
           </Card>
 
-          <Card eyebrow="06 · When a wave breaks down · where to look" color={VIOLET}>
+          <Card eyebrow="06 · When a wave breaks down · where to look" color={CYAN}>
             <div className="space-y-2">
               {LOOP_INTRO.diagnose.map((d) => (
-                <p key={d.block} className="text-[13.5px] leading-snug" style={{ color: TEXT }}><span className="font-semibold" style={{ color: PAPER }}>{d.block}</span> · {d.q}</p>
+                <p key={d.block} className="text-[13.5px] leading-snug" style={{ color: TEXT }}><span className="font-semibold" style={{ color: INK }}>{d.block}</span> · {d.q}</p>
               ))}
             </div>
             <p className="text-[12.5px] mt-3" style={{ color: MUTED }}>Name the block, not the whole wave. That is what you will train tomorrow.</p>
@@ -163,7 +172,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
           ))}
         </p>
       </div>
-    </div>
+    </section>
   );
 }
 

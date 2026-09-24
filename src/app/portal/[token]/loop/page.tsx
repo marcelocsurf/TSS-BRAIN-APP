@@ -42,6 +42,11 @@ export default async function LoopPage({ params }: { params: Promise<{ token: st
 
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
+      {/* Faltaba (Marcelo 2026-09-24): la clase tss-v10 estaba pero la hoja
+          no, así que la pantalla caía en sus propios estilos oscuros en vez
+          del molde de arena de v10.1. Es la misma línea que carga /circles. */}
+      {/* eslint-disable-next-line @next/next/no-css-tags */}
+      <link rel="stylesheet" href="/tss/theme.css" />
       <InfiniteCirclePage
         token={token}
         video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null}
