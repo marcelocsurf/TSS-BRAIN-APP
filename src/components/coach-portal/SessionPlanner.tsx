@@ -38,6 +38,7 @@ import {
   NotebookPen,
   Target,
   ClipboardList,
+  Printer,
   Lock,
   Check,
   Pencil,
@@ -1729,6 +1730,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         <>
           <GeneralPlanSummary
             plan={plan}
+            printHref={`/coach-portal/${token}/plan/${data.camp.id}/print?day=${data.selectedDay.day_number}`}
             students={students.map((s) => {
               // objective_text is stored as "<block type> · <title>". The
               // water missions are the blocks whose type is "Water Mission";
@@ -1747,7 +1749,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 const l = workLabelOf(b, tb, s.belt_level, stpLabel);
                 if (l && !seen.has(l)) { seen.add(l); missions.push(l); }
               }
-              return { name: s.display_name, missions };
+              return { name: s.display_name, missions, photo: s.photo_url ?? null };
             })}
           />
 
@@ -2008,9 +2010,12 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
 function GeneralPlanSummary({
   plan,
   students,
+  printHref,
 }: {
   plan: ServicePlanData['plan'];
-  students: { name: string; missions: string[] }[];
+  students: { name: string; missions: string[]; photo: string | null }[];
+  /** Hoja imprimible del día (Marcelo 2026-09-24). */
+  printHref: string;
 }) {
   const hhmm = (t: string | null) => {
     if (!t) return null;
@@ -2035,6 +2040,11 @@ function GeneralPlanSummary({
 
   return (
     <Section icon={ClipboardList} title="Session Plan" subtitle="The plan you set for this class">
+      <a href={printHref} target="_blank" rel="noopener"
+        className="inline-flex items-center gap-2 min-h-[40px] px-3 mb-3 rounded-[5px] text-[13px] font-bold no-underline"
+        style={{ border: '1px solid #DCD7C6', background: '#fff', color: '#10263B' }}>
+        <Printer size={15} /> Print this plan · PDF
+      </a>
       <div className="space-y-2.5">
         {/* Class day — the real logistics at a glance (M137). */}
         {(classTime || plan.surf_venue || plan.transport_needed) && (
@@ -2096,7 +2106,12 @@ function GeneralPlanSummary({
             <div className="space-y-2.5">
               {students.map((s, i) => (
                 <div key={i} className="rounded-lg bg-white border border-[#DCD7C6] overflow-hidden">
-                  <p className="text-[17px] font-extrabold leading-tight px-3 pt-2.5 pb-2" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#10263B' }}>{s.name}</p>
+                  {/* La cara del alumno al lado del nombre (Marcelo 2026-09-24):
+                      el coach reconoce de un vistazo de quién es cada misión. */}
+                  <div className="flex items-center gap-2.5 px-3 pt-2.5 pb-2">
+                    <StudentAvatar url={s.photo} name={s.name} />
+                    <p className="text-[17px] font-extrabold leading-tight m-0" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#10263B' }}>{s.name}</p>
+                  </div>
                   {s.missions.length > 0 ? (
                     <ol>
                       {s.missions.map((m, j) => {

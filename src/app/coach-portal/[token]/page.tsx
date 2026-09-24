@@ -60,7 +60,10 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
     );
   }
 
-  const validTabs = ['home', 'courses', 'tools', 'services', 'rating'];
+  // Los nombres reales de las pestañas (CoachPortalTabs: Tab). Decía
+  // 'services', que ya no existe, y faltaban plan, spaces, sell e inventory:
+  // cualquier enlace a ?tab=plan caía en el Home sin decir nada.
+  const validTabs = ['home', 'courses', 'tools', 'plan', 'rating', 'sell', 'spaces', 'inventory'];
   const initialTab = tab && validTabs.includes(tab) ? (tab as any) : undefined;
 
   // M9 — academy branding fallback
