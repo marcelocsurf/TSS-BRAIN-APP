@@ -207,6 +207,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
             <Card color={CIRCLE_COLOR.board}>
               <Lamina src="/uploads/fotos/circle-2-foot-position.webp"
                       alt="Circle 2 · Foot Position on the Board: FP3 forward gives most speed and least maneuverability, FP2 neutral is ready for what comes next, FP1 at the tail is most maneuverable and least speed. The weight always stays on the front foot; the back foot only follows the rails." />
+              <Acc title="Read it in words">
               <p className="tss-intro">Your back foot changes the line.<br />Your front foot controls how the rail responds.</p>
               <p className="text-[14px] leading-[1.45] mb-3" style={{ color: INK }}>{cur.intro}</p>
               <figure className="tss-board-figure">
@@ -226,11 +227,13 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
               <dl className="tss-position-summary">
                 {feet.map((f) => <div key={f.pos}><dt>{f.label}</dt><dd>{f.energy.split('.')[0]}</dd></div>)}
               </dl>
+              </Acc>
             </Card>
             {cur.response && (
               <Card title="How the board answers · brake and accelerator" color={CIRCLE_COLOR.board}>
                 <Lamina src="/uploads/fotos/circle-2-brake-accelerator.webp"
                         alt="How the board answers · brake and accelerator. Press the back foot and the board brakes: the tail sinks and you slow down on purpose. Stay forward and the board runs. Every board accelerates most at its widest and thickest part, around the centre: it is a direction, not a spot. The closer your weight gets to it, the more speed." />
+                <Acc title="Read it in words">
                 <p className="text-[17px] font-extrabold leading-tight mb-1.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: INK }}>
                   Press to brake. Stay forward to run.
                 </p>
@@ -245,14 +248,17 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                     </div>
                   ))}
                 </div>
+                </Acc>
               </Card>
             )}
             <Card title="The front foot · centre and rails" color={CIRCLE_COLOR.board}>
               <Lamina src="/uploads/fotos/circle-2-front-foot.webp"
                       alt="The front foot · centre and rails. The front foot lands centred on the stringer: that is neutral, and you can press the same with the toes and with the heel. The closer the foot is to a rail, the more that rail sinks. FP1, FP2 and FP3 always describe the back foot. The rule that surprises people: Circle 1 cannot rescue Circle 2." />
-              <ul className="space-y-2 text-[14px] leading-[1.45]" style={{ color: INK }}>
-                {cur.frontFoot!.map((b, j) => <li key={j} className="flex gap-2"><span style={{ color: '#B8860B' }}>•</span><span>{b}</span></li>)}
-              </ul>
+              <Acc title="Read it in words">
+                <ul className="space-y-2 text-[14px] leading-[1.45]" style={{ color: INK }}>
+                  {cur.frontFoot!.map((b, j) => <li key={j} className="flex gap-2"><span style={{ color: '#B8860B' }}>•</span><span>{b}</span></li>)}
+                </ul>
+              </Acc>
             </Card>
             <Card title="Feel it · on land and on the skate" id="feel">
               {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
@@ -268,6 +274,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
             <Card title="Think it" color={CIRCLE_COLOR.wave}>
               <Lamina src="/uploads/fotos/circle-3-wave-dynamics.webp"
                       alt="Circle 3 · Wave Dynamics: combine them at the right moment — when one energy is running out, add the other. The wave's energy times what your body generates is the line you can draw. On the wave face, go down and go up between the four zones: Z1 low by the flat, Z2 lower middle, Z3 upper middle, Z4 high. The energy lives by the pocket; down at the flat there is none, only resistance." />
+              <Acc title="Read it in words">
               <p className="text-[14px] leading-[1.45] mb-3" style={{ color: INK }}>{cur.intro}</p>
               {cur.energy?.map((e, i) => {
                 const kind = /external/i.test(e.title) ? 'wave' : /internal/i.test(e.title) ? 'body' : /combine/i.test(e.title) ? 'timing' : null;
@@ -292,6 +299,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
               <div className="mt-3 rounded-[5px] p-2" style={{ background: NAVY }}>
                 <WaveGuide data={WAVE_GAME_BOARD} title="Down, up, a maneuver at the top, down again — never to the flat" legendColor="rgba(247,249,250,.8)" />
               </div>
+              </Acc>
             </Card>
             <Card title="Understand the wave" color={CIRCLE_COLOR.wave}>
               {cur.reads.map((r) => <Acc key={r.word} title={r.word} open={r.word === 'Pocket'}>{r.note}</Acc>)}
