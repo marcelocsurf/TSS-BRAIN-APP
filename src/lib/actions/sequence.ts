@@ -899,6 +899,13 @@ export async function getNextMove(
   stepTitle: string;
   stars: number | null;
   official: boolean;
+  /** Cuándo puso el coach esa estrella, y tu propia nota del paso — para
+   *  decir "3★ de tu coach, Sep 21 · vos lo ponés en 5★" (Marcelo 2026-09-25:
+   *  "me puse 5 estrellas y no cambia nada"). */
+  officialAt: string | null;
+  selfStars: number | null;
+  /** Sesiones propias sobre ese paso DESPUÉS de la estrella del coach. */
+  sessionsSince: number;
   /** 'held_back' = el paso que detuvo tu último run de la secuencia (Let's
    *  Play por secuencia); 'weakest' = el primero por debajo de la barra;
    *  'unrated' = el primero de la cadena que todavía no calificaste. */
@@ -1010,6 +1017,20 @@ export async function getNextMove(
     } catch {
       detail = null;
     }
+    const target = useHeld ? heldItem : firstNotAtBar;
+    const officialAt = target?.coach_rated_at ?? null;
+    let sessionsSince = 0;
+    if (target?.coach_rating != null) {
+      try {
+        const admin = createAdminClient();
+        let q = admin.from('self_training_sessions').select('id', { count: 'exact', head: true })
+          .eq('student_id', studentId).eq('status', 'done')
+          .or(`linked_step_id.eq.${stepId},and(training_mode.eq.sequence_run,linked_sequence_id.eq.${seq.id})`);
+        if (officialAt) q = q.gt('created_at', officialAt);
+        const { count } = await q;
+        sessionsSince = count ?? 0;
+      } catch { sessionsSince = 0; }
+    }
     return {
       sequenceId: seq.id,
       sequenceOrder: seq.order,
@@ -1018,6 +1039,9 @@ export async function getNextMove(
       stepTitle,
       stars: useHeld ? (heldItem?.coach_rating ?? heldItem?.rating ?? null) : eff(firstNotAtBar),
       official: useHeld ? heldItem?.coach_rating != null : firstNotAtBar.coach_rating != null,
+      officialAt,
+      selfStars: target?.rating ?? null,
+      sessionsSince,
       source: useHeld ? 'held_back' : pathSource,
       selfSequenceRating: seq.selfSequenceRating,
       detail,

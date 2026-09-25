@@ -241,6 +241,10 @@ interface PortalData {
     stepTitle: string;
     stars: number | null;
     official: boolean;
+    /** Estrella del coach: cuándo la puso, tu nota, y sesiones tuyas desde entonces. */
+    officialAt?: string | null;
+    selfStars?: number | null;
+    sessionsSince?: number;
     /** held_back = el paso que detuvo tu último run · weakest = el primero
      *  bajo la barra · unrated = el primero sin calificar. */
     source?: 'held_back' | 'weakest' | 'unrated';
@@ -510,8 +514,17 @@ function nextMoveRows(
         ? `Holding you back: ${nm.stepTitle}`
         : nm.source === 'unrated'
           ? `Start with: ${nm.stepTitle}`
-          : `Work on: ${nm.stepTitle}${nm.stars !== null ? ` · ${nm.stars}★` : ''}`,
-      detail: word ? `Your word: ${word}` : null,
+          : `Work on: ${nm.stepTitle}${nm.stars !== null ? ` · ${nm.stars}★${nm.official ? ` from your coach${nm.officialAt ? `, ${new Date(nm.officialAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' })}` : ''}` : ''}` : ''}`,
+      // La estrella oficial manda (Marcelo 2026-09-25: "me puse 5 y no cambia
+      // nada"): se dice quién la puso, qué hiciste desde entonces y qué sigue.
+      detail: [
+        nm.official && nm.source !== 'held_back'
+          ? ((nm.sessionsSince ?? 0) > 0
+              ? `You trained it ${nm.sessionsSince}× since${nm.selfStars != null ? ` and rate it ${nm.selfStars}★` : ''} — ask your coach to confirm it in the water.`
+              : 'Only your coach can move this star — train it, then ask them to confirm it in the water.')
+          : null,
+        word ? `Your word: ${word}` : null,
+      ].filter(Boolean).join(' · ') || null,
       // El consejo de lados NO va acá (Marcelo 2026-09-10: "no sé a qué se
       // refiere"): mezclaba otras secuencias en la fila del camino. Vive en
       // Let's Play → Where you are / Both sides.
