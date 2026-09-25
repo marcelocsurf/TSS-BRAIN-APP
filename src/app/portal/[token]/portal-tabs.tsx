@@ -950,21 +950,9 @@ export function PortalTabs({
                 (pedido de Marcelo 2026-08-25). Es el mismo lugar que ya usa
                 el coach en su pestaña Cursos. No dibuja nada si no hay. */}
             <StudentPresentations token={data.token} initial={data.homeBundle?.presentations} />
-            {/* Glossary — collapsible at the bottom of Course (moved out of the nav) */}
-            {data.hasAnyCourse && (
-            <details className="rounded-2xl overflow-hidden" style={{ background: '#0F1E33' }}>
-              <summary className="cursor-pointer list-none px-4 py-3 flex items-center justify-between">
-                <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
-                  <BookOpen size={16} strokeWidth={1.75} className="text-[var(--tss-cyan)]" />
-                  Glossary
-                </span>
-                <ChevronDown size={16} className="text-white/40" />
-              </summary>
-              <div className="px-3 pb-3 pt-1 border-t border-white/5">
-                <GlossaryTab />
-              </div>
-            </details>
-            )}
+            {/* El Glosario salió del pie del Course (Marcelo 2026-09-25: "quita el
+                glosario también"). Sigue existiendo como subpantalla ?tab=glossary
+                por si vuelve. */}
           </div>
         )}
         {activeTab === 'sequence' && (<>
