@@ -70,6 +70,10 @@ export interface SequencePageConfig {
   /** Agrupa pasos de stepIds que son UN paso con técnicas alternativas (p. ej.
    *  turtle roll / duck dive según la tabla). Si falta, cada id es un paso. */
   stepGroups?: { ids: string[]; title: string; note?: string }[];
+  /** Pasos que son de UN lado (p. ej. Turn backside / Turn frontside en White
+   *  #4): la página muestra un selector Backside · Frontside que filtra los
+   *  pasos y elige el video del lado (videos.ts). Los pasos sin lado quedan. */
+  sideOfStep?: Record<string, 'fs' | 'bs'>;
   /** Preparación de cada sesión, fuera de la secuencia (p. ej. Venue Analysis y Warm Up en White #1). */
   prep?: { lessonId: string; label: string; note?: string }[];
   think: {

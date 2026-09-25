@@ -193,6 +193,7 @@ export const WB_SEQ_4: SequencePageConfig = {
   number: 4,
   title: 'Directional Turns',
   stepIds: ['STP-021', 'STP-022'],
+  sideOfStep: { 'STP-021': 'bs', 'STP-022': 'fs' },
   think: {
     whatIs: {
       headline: 'Now standing, you start steering the board right and left — backside and frontside, built by the chain, not by drift — and you dismount.',

@@ -77,7 +77,7 @@ export interface SequenceProgress {
 }
 
 export function SequencePage({
-  video, cfg, lessons, pieces, token, canTrack, progress, initialTab = null, flip = false, coach = null }: {
+  video, videos = null, cfg, lessons, pieces, token, canTrack, progress, initialTab = null, flip = false, coach = null }: {
   cfg: SequencePageConfig;
   lessons: Record<string, LessonBits>;
   pieces: Record<string, PieceRow>;
@@ -85,6 +85,8 @@ export function SequencePage({
   canTrack: boolean;
   /** Video de la ejecución (Library → kind video, título que empieza con el id de la secuencia). */
   video?: { url: string; title: string } | null;
+  /** General + por lado (videos.ts). El selector Backside · Frontside elige. */
+  videos?: { general: { url: string; title: string } | null; bs: { url: string; title: string } | null; fs: { url: string; title: string } | null } | null;
   /** Lo que Let's Play sabe de esta secuencia para este alumno. */
   progress?: SequenceProgress | null;
   /** ?tab=feel desde Let's Play ("Rehearse it on land first"). */
@@ -97,6 +99,17 @@ export function SequencePage({
   coach?: { layers: CoachStepLayer[]; backHref: string } | null;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? 'think');
+  // Backside · Frontside (Marcelo 2026-09-25): un toque, y la página muestra
+  // los pasos y el video de ese lado. Se recuerda por secuencia.
+  const [side, setSideState] = useState<'bs' | 'fs' | null>(() => {
+    if (!cfg.sideOfStep) return null;
+    try { const v = typeof window !== 'undefined' ? window.localStorage.getItem(`tss:side:${cfg.id}`) : null; if (v === 'fs' || v === 'bs') return v; } catch {}
+    return 'bs';
+  });
+  const setSide = (v: 'bs' | 'fs') => { setSideState(v); try { window.localStorage.setItem(`tss:side:${cfg.id}`, v); } catch {} };
+  const sideOf = (stepId: string | null | undefined): 'fs' | 'bs' | null => (stepId && cfg.sideOfStep ? cfg.sideOfStep[stepId] ?? null : null);
+  const onSide = (stepId: string | null | undefined) => !side || !sideOf(stepId) || sideOf(stepId) === side;
+  const shownVideo = side && videos?.[side] ? videos[side] : video;
   const [coachOn, setCoachOn] = useState(true);
   const coachLayers = coach && coachOn ? coach.layers : [];
   // Foco opcional dentro de la misión (Marcelo 2026-09-09): la misión es
@@ -114,7 +127,8 @@ export function SequencePage({
   const stripStep = (t: string) => t.replace(/^\d+ · /, '').replace(/ · .*$/, '');
   const shortLesson = (t: string) => t.replace(/ Operationalized at Blue Belt/, '');
   // Pasos en orden: si la config agrupa técnicas alternativas (turtle/duck), un grupo = un paso.
-  const stepGroups: { ids: string[]; title: string; note?: string }[] = cfg.stepGroups ?? cfg.stepIds.map((id) => ({ ids: [id], title: shortLesson(lessons[id]?.title ?? id) }));
+  const stepGroupsAll: { ids: string[]; title: string; note?: string }[] = cfg.stepGroups ?? cfg.stepIds.map((id) => ({ ids: [id], title: shortLesson(lessons[id]?.title ?? id) }));
+  const stepGroups = stepGroupsAll.filter((g) => g.ids.some((id) => onSide(id)));
 
   return (
     <section className="tss" data-screen="sequence">
@@ -137,9 +151,21 @@ export function SequencePage({
           <p className="tss-subtitle">{cfg.think.whatIs.headline}</p>
         </header>
 
+        {/* Backside · Frontside: elegí el lado y la página te muestra sus pasos y su video. */}
+        {cfg.sideOfStep && side && (
+          <div className="mt-3 flex gap-1 p-1 rounded-full" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.35)' }}>
+            {(['bs', 'fs'] as const).map((v) => (
+              <button key={v} type="button" onClick={() => setSide(v)} aria-pressed={side === v}
+                className="flex-1 h-11 rounded-full text-[13px] font-black uppercase tracking-wide"
+                style={side === v ? { background: '#00D2FF', color: '#061C2B' } : { color: 'rgba(247,249,250,.78)' }}>
+                {v === 'bs' ? 'Backside' : 'Frontside'}
+              </button>
+            ))}
+          </div>
+        )}
         {/* Arriba de todo: la ejecución. El video cuando exista; si no, la línea sobre la ola. */}
         <Card className="mt-3">
-          {video ? <SequenceVideo url={video.url} title={video.title} /> : cfg.think.board ? (
+          {shownVideo ? <SequenceVideo url={shownVideo.url} title={shownVideo.title} /> : cfg.think.board ? (
             <WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} kitSequence={WAVE_KIT_SEQUENCE[cfg.id]} />
           ) : (
             <>
@@ -153,7 +179,7 @@ export function SequencePage({
           {/* Los pasos del cuerpo, con el color del comando (los mismos de Review). */}
           <h2 className="tss-section-title" style={{ marginTop: 26 }}>The steps that build it</h2>
           <ol className="m-0 p-0 list-none">
-            {cfg.details.map((d, i) => (
+            {cfg.details.filter((d) => onSide(d.deeper?.lessonId)).map((d, i) => (
               <li key={d.key} className="flex items-center gap-3 py-2.5" style={{ borderTop: `1px solid ${BORDER}` }}>
                 <Num n={i + 1} />
                 {d.command && <i className="inline-block w-3.5 h-3.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} />}

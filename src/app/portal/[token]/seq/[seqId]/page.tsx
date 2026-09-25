@@ -13,6 +13,7 @@ import { COURSES } from '@/lib/constants/courses';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { getStudentAccess } from '@/lib/portal/access';
 import { SequencePage, type LessonBits, type PieceRow } from '@/components/portal/sequence-page/SequencePage';
+import { pickSequenceVideos } from '@/lib/sequence-pages/videos';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -59,20 +60,21 @@ export default async function SequencePageRoute({ params, searchParams }: { para
     if (lock) return <CourseLockedScreen token={token} unlocksOn={lock.unlocksOn} campName={lock.campName} what={cfg.title} />;
   }
 
-  const [{ data: lessonRows }, { data: pieceRows }, access, { data: videoRow }, { data: seqRating }, { data: stepRatings }] = await Promise.all([
+  const [{ data: lessonRows }, { data: pieceRows }, access, { data: videoRows }, { data: seqRating }, { data: stepRatings }] = await Promise.all([
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),
     admin.from('drills_missions').select('id, type, title, description_md, key_words, time_estimate, reps_recommended').eq('active', true).in('step_id', cfg.stepIds),
     getStudentAccess((student as any).id),
     // Convención (2026-09-09): el video de la secuencia se sube en Library
     // (Admin → kind "video") con un título que empieza por el id, p. ej.
     // "BB-SEQ-08 · Frontside Pumping". No necesita grant: el curso ya gatea.
-    admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(6),
     // Lo que Let's Play sabe de esta secuencia (Marcelo 2026-09-09: "que se
     // comunique lo de los cursos con lo que sale en la secuencia").
     admin.from('student_sequence_ratings').select('current_rating, held_back_step_id, rating_fs, rating_bs').eq('student_id', (student as any).id).eq('sequence_id', cfg.id).maybeSingle(),
     admin.from('student_step_ratings').select('step_id, current_rating, coach_rating').eq('student_id', (student as any).id).in('step_id', cfg.stepIds),
   ]);
 
+  const videos = pickSequenceVideos(videoRows as any, cfg.id);
   const lessons: Record<string, LessonBits> = {};
   for (const l of lessonRows ?? []) {
     const bodyFull = section(l.description_md, 'How your body does it');
@@ -118,7 +120,7 @@ export default async function SequencePageRoute({ params, searchParams }: { para
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       {/* Línea aprobada (TSS_Design_Handoff): reglas limitadas a .tss; /tss/ es público en el middleware. */}
       <link rel="stylesheet" href="/tss/theme.css" />
-      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} progress={progress} initialTab={initialTab} flip={boardFlip(sequenceSide(cfg.id), isGoofy(student as any))} />
+      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={videos.general ?? videos.bs ?? videos.fs} videos={videos} progress={progress} initialTab={initialTab} flip={boardFlip(sequenceSide(cfg.id), isGoofy(student as any))} />
     </div>
   );
 }
