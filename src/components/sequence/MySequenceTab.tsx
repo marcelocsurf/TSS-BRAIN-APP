@@ -193,44 +193,22 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
     <div className="space-y-5">
       {/* Header — el MISMO lenguaje que Course (Marcelo 2026-09-11): eyebrow
           Plex, lockup oficial, barra con brillo cyan y el número grande. */}
-      <div className="px-2 pt-2 pb-4 text-white" style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}>
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: CYAN }}>Let&apos;s Play · {beltWord} Belt</span>
-        </div>
+      {/* Un solo título (fase 5, 2026-09-25): antes el eyebrow y el h1 decían
+          "Let's Play" dos veces y debajo iba una cuenta de validaciones que
+          repetía lo que ya muestran el mapa y el Home. */}
+      <div className="px-2 pt-2 pb-3 text-white" style={{ borderBottom: '1px solid rgba(247,249,250,.10)' }}>
+        <span className="text-[10.5px]" style={{ ...F_M, letterSpacing: '0.18em', color: CYAN }}>{beltWord} Belt</span>
         <h1 className="mt-1 text-[26px]" style={{ ...F_D, fontWeight: 900, lineHeight: 1.06, color: PAPER }}>Let&apos;s Play</h1>
-        {/* El % general (promedio de todos los pasos de todas las cintas) salió:
-            contradecía "la secuencia vale lo que vale su paso más flojo"
-            (auditoría 2026-09-15). Lo que cuenta está en "Your sequences". */}
-        <div className="mt-3">
-          <p className="text-[12px] text-white/80">
-            {/* La validación OFICIAL del coach manda; el auto-rating complementa. */}
-            {data.coachRatedSteps > 0 ? (
-              <>
-                <span style={{ color: '#00D2FF' }}>★ {data.coachRatedSteps} of {data.totalSteps} validated by your coach</span>
-                {data.selfRatedSteps > 0 && <> · {data.selfRatedSteps} self-rated</>}
-              </>
-            ) : (
-              <>{data.ratedSteps} of {data.totalSteps} steps self-rated</>
-            )}
-          </p>
-        </div>
       </div>
 
       {/* HOW IT WORKS — arriba y en tres frases (auditoría 2026-09-15: llegaba
           después del mapa y con jerga). Misma regla de siempre, dicha simple. */}
-      <div className="rounded-lg p-4" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
-        <p className="text-[23px] mb-1.5" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>How it works</p>
-        <ol className="m-0 pl-0 list-none space-y-1">
-          {(onTrainSequence
-            ? ['Pick a sequence and save your plan.', 'Go surf.', 'Come back and give it a star.']
-            : ['Pick the sequence you are working on.', 'Tap a step and run its mission.', 'Rate yourself honestly.']
-          ).map((t, i) => (
-            <li key={t} className="flex items-baseline gap-2.5 text-[15px] font-semibold" style={{ color: '#10263B' }}>
-              <span className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[12px] font-black" style={{ background: '#061C2B', color: '#00D2FF' }}>{i + 1}</span>{t}
-            </li>
-          ))}
-        </ol>
-        <p className="text-[13px] mt-2.5 leading-snug" style={{ color: '#10263B' }}>A sequence is yours when every step is at 4★. Drills are rehearsal: do them in the course, no need to log them. Your coach confirms in the water.</p>
+      <div className="rounded-lg px-4 py-3" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
+        <p className="text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: '#55666E' }}>How it works</p>
+        <p className="text-[15px] font-semibold mt-1 leading-snug" style={{ color: '#10263B' }}>
+          {onTrainSequence ? 'Pick a sequence, save your plan, surf, come back and give it a star.' : 'Pick the sequence you are working on, run a step\u2019s mission, rate yourself honestly.'}
+        </p>
+        <p className="text-[13px] mt-1 leading-snug" style={{ color: '#10263B' }}>A sequence is yours at 4★ on every step — your coach confirms it in the water. Drills are rehearsal, no need to log them.</p>
       </div>
 
       {/* YOUR PATH (Marcelo 2026-09-17): el orden de Yellow y Blue en la ola.
@@ -245,7 +223,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         const stages: { n: number; title: string; status: string; done: boolean; href?: string | null; hint: string }[] = [
           { n: 1, title: 'Venue analysis', status: venueDone == null ? 'theory' : venueDone ? 'read' : 'not read yet', done: venueDone === true, href: `/portal/${portalToken}?tab=course`, hint: 'Read the spot before you paddle out. It is in your Pre-Course.' },
           { n: 2, title: 'Getting to the wave', status: entries.length ? `${entriesOwned} of ${entries.length} yours` : '—', done: entries.length > 0 && entriesOwned === entries.length, href: null, hint: 'Paddle out, catch, angle. The sequences below the games.' },
-          { n: 3, title: 'The Three Circles', status: circles.length ? `${circlesDone} of ${circles.length} games at 4★` : '—', done: circles.length > 0 && circlesDone === circles.length, href: null, hint: 'Board · Body · Wave. The six games, in the water.' },
+          { n: 3, title: 'The Three Circles', status: circles.length ? `${circlesDone} of ${circles.length} games at 4★` : '—', done: circles.length > 0 && circlesDone === circles.length, href: null, hint: 'Play the six games below.' },
           { n: 4, title: `${beltWord} sequences`, status: levelSeqs.length ? `${owned} of ${levelSeqs.length} yours` : '—', done: levelSeqs.length > 0 && owned === levelSeqs.length, href: null, hint: 'One sequence at a time, both sides.' },
         ];
         const here = stages.find((st) => !st.done) ?? null;
@@ -282,7 +260,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           <div className="rounded-lg p-4" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
             <p className="text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: '#55666E' }}>The Three Circles · your first requirement on the wave</p>
             <p className="text-[23px] mt-1" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>{done === circles.length ? 'All six games at 4★' : played === 0 ? 'Six games · start here' : `${done} of ${circles.length} games at 4★`}</p>
-            <p className="text-[13px] mt-1 leading-snug" style={{ color: '#10263B' }}>Board · Body · Wave. Play each game in the water, then give it a star. Before any sequence, this is the base.</p>
+            <p className="text-[13px] mt-1 leading-snug" style={{ color: '#10263B' }}>Board · Body · Wave. Play each game in the water, then give it a star.</p>
             <div className="mt-3 space-y-1.5">
               {circles.map((g, i) => (
                 <div key={g.id} className="flex items-center gap-2.5 rounded-[5px] px-3 py-2" style={{ background: PAPER, border: '1px solid #DCD7C6' }}>
@@ -601,6 +579,13 @@ function BlockSection({
   // entreno con ese foco en vez de abrir su ficha.
   const [picking, setPicking] = useState(false);
   const canTrain = asSequence && !!blockId && !!onTrain;
+  // Por dónde empezar (fase 5): el paso que frenó tu último run manda; si no,
+  // el primero bajo la barra. Un solo paso en el banner, en "Start with" y en
+  // la fila resaltada — antes el banner y la fila de arriba nombraban dos.
+  const startId = heldBackStepId ?? (state !== 'owned' ? weakestStepId : null);
+  const startTitle = heldBackStepId ? heldBackTitle : weakestTitle;
+  const startItem = startId ? items.find((i) => i.step_id === startId) ?? null : null;
+  const startStars = startItem ? effectiveStars(startItem) : null;
   // La nota que cuenta es la EFECTIVA: la del coach si existe, si no la
   // auto-evaluación. Contando solo el auto-rating, un alumno con toda su
   // secuencia validada por el coach leía "0/6 rated".
@@ -674,10 +659,7 @@ function BlockSection({
       </summary>
       {asSequence && pageHref && (
         <a href={pageHref} className="flex items-center justify-between px-4 py-2.5 border-b border-[#DCD7C6] text-[12px]" style={{ background: '#E9E2D2' }}>
-          <span>
-            <span className="block font-semibold" style={{ color: INK }}>What this sequence is · open it in the course</span>
-            <span className="block text-[12px] text-[#55666E]">Think it · Feel it · Do it · Review — the steps, the drills and the indicators you are rated on.</span>
-          </span>
+          <span className="font-semibold" style={{ color: INK }}>Open the sequence page <span className="font-normal text-[#55666E]">· Think it · Feel it · Do it · Review</span></span>
           <span className="font-bold" style={{ color: '#00A8CC' }}>→</span>
         </a>
       )}
@@ -714,8 +696,8 @@ function BlockSection({
               {/* Primero el paso que la detuvo en tu último run; si no, el
                   que está por debajo de la barra. */}
               {(() => {
-                const sid = heldBackStepId ?? (state !== 'owned' ? weakestStepId : null);
-                const title = heldBackStepId ? heldBackTitle : weakestTitle;
+                const sid = startId;
+                const title = startTitle;
                 if (!sid || !title) return null;
                 return (
                   <button
@@ -735,10 +717,12 @@ function BlockSection({
 
       {/* La dirección: por dónde empezar. Sin esto la secuencia dice cómo va
           pero no qué hacer. */}
-      {asSequence && weakestStepId && state !== 'owned' && !picking && (
+      {asSequence && startId && startTitle && state !== 'owned' && !picking && (
         <button
           type="button"
-          onClick={() => onOpenStep(weakestStepId)}
+          // Misma acción que "Work on one step → Start with X" (fase 5): antes
+          // el banner abría el paso suelto y el botón arrancaba el entreno.
+          onClick={() => { if (canTrain) onTrain!({ sequenceId: blockId!, mode: 'step_focus', focusStepId: startId }); else onOpenStep(startId); }}
           className="w-full text-left px-4 py-2.5 border-b border-[#DCD7C6]"
           style={{ background: 'rgba(255,209,102,.28)' }}
         >
@@ -746,11 +730,13 @@ function BlockSection({
             Start here
           </span>
           <span className="block text-[12.5px] text-[#10263B] leading-snug">
-            <b>{weakestTitle}</b> is holding this sequence back
-            {minRating !== null && ` — ${minRating}★`}
+            {/* Sin número: la fila de abajo ya muestra las estrellas de ESE paso
+                (antes el banner ponía el mínimo de la secuencia, que podía ser
+                de otro paso). */}
+            <b>{startTitle}</b>{heldBackStepId ? ' held your last run back' : startStars == null ? ' — not rated yet' : ' is holding this sequence back'}
             {/* La estrella oficial manda sobre la tuya: se dice quién y cuándo
                 (Marcelo 2026-09-25: "las estrellas no se movían"). */}
-            {weakestIsOfficial && ` · your coach's star${weakestCoachRatedAt ? `, ${new Date(weakestCoachRatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' })}` : ''} · only they can move it`}
+            {!heldBackStepId && weakestIsOfficial && ` · your coach's star${weakestCoachRatedAt ? `, ${new Date(weakestCoachRatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' })}` : ''} · only they can move it`}
           </span>
         </button>
       )}
@@ -761,7 +747,7 @@ function BlockSection({
             key={item.step_id}
             item={item}
             moments={moments[item.step_id]}
-            highlight={asSequence && item.step_id === weakestStepId && state !== 'owned'}
+            highlight={asSequence && item.step_id === startId && state !== 'owned'}
             picking={picking}
             onOpen={() => {
               if (picking && canTrain) {

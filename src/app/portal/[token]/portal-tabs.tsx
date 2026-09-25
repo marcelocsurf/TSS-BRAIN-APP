@@ -470,8 +470,8 @@ function nextMoveRows(
   const circlesNext = (data as any).circlesNext as PortalData['circlesNext'];
   if (circlesNext) {
     rows.push({
-      key: 'circles', label: 'The path', title: 'The Three Circles', accent: BRAND.colors.cyan,
-      reason: `Your first requirement on the wave · ${circlesNext.done} of ${circlesNext.total} games at 4★ · next: ${circlesNext.title}`,
+      key: 'circles', label: 'First on the wave', title: 'The Three Circles', accent: BRAND.colors.cyan,
+      reason: `${circlesNext.done} of ${circlesNext.total} games at 4★ · next: ${circlesNext.title}`,
       action: 'Play it →',
       onClick: () => { if (onTrainSequence) onTrainSequence({ sequenceId: THREE_CIRCLES_SEQUENCE_ID, mode: 'step_focus', focusStepId: circlesNext.gameId }); },
       pageHref: `/portal/${data.token}/circles`,
@@ -675,11 +675,6 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
             </div>
           </div>
         ))}
-        {fullRows.length > 0 && (
-          <p className="px-4 py-3 text-[12.5px] leading-snug" style={{ color: T_MUTED, borderTop: `1px solid ${T_BORDER}` }}>
-            The order: 1 your coach · 2 your list · 3 the path — the first sequence of your belt that is not yours, and inside it the first step of the chain not yet at 4★. A default, not an order: the map below is yours to train as you choose.
-          </p>
-        )}
       </div>
     </div>
   );
