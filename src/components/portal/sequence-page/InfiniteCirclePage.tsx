@@ -9,6 +9,7 @@ import { MarkReadButton } from './ThreeCirclesPage';
 import { COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
 import { WaveGuide } from './WaveGuide';
 import { InfinityCircle } from './InfinityCircle';
+import { ZoomImage } from '@/components/shared/ImageLightbox';
 import { LOOP_INTRO, LOOP_SIDES, type LoopSide, type LoopStep } from '@/lib/sequence-pages/infinite-circle';
 
 // Paleta v10.1 — la misma que ThreeCirclesPage (Marcelo 2026-09-24). Antes
@@ -22,6 +23,23 @@ const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono,
 function Dot({ command, hold, size = 10 }: { command: LoopStep['command']; hold?: boolean; size?: number }) {
   return (
     <i className="inline-block rounded-full shrink-0" style={{ width: size, height: size, background: COMMAND_COLORS[command], boxShadow: hold ? `0 0 0 2.5px ${HOLD_COLOR}` : `0 0 0 2px ${BORDER}` }} />
+  );
+}
+
+/** Frontside · Backside en dos fichas chicas sobre fondo navy: comparte el
+ *  estado del selector grande de abajo, así la ola del 01 se puede cambiar
+ *  sin bajar hasta el 05. */
+function SideChips({ side, onChange }: { side: LoopSide['key']; onChange: (s: LoopSide['key']) => void }) {
+  return (
+    <div className="flex gap-1.5 mb-2" role="tablist" aria-label="Side">
+      {LOOP_SIDES.map((s) => (
+        <button key={s.key} type="button" role="tab" aria-selected={side === s.key} onClick={() => onChange(s.key)}
+          className="rounded-full px-3 py-1 text-[12px] font-bold"
+          style={side === s.key ? { background: CYAN, color: NAVY } : { background: 'rgba(247,249,250,.10)', color: 'rgba(247,249,250,.8)' }}>
+          {s.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -64,9 +82,28 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
 
         <div className="space-y-3 mt-4">
           <Card eyebrow="01 · What it is">
+            {/* El bucle en una línea de colores ANTES del párrafo (Marcelo 2026-09-25,
+                "mejorar esta parte"): las cinco palabras con su color —el mismo que
+                dibuja la ola— y la vuelta a la postura. */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-[13px] mb-3">
+              {LOOP_INTRO.colours.map((c, i) => (
+                <span key={c.command} className="inline-flex items-center gap-1.5 font-semibold" style={{ color: INK }}>
+                  {i > 0 && <span style={{ color: MUTED }}>→</span>}
+                  <Dot command={c.command} hold={c.command === 'rail'} size={10} />
+                  {c.label}
+                </span>
+              ))}
+              <span className="inline-flex items-center gap-1.5 font-semibold" style={{ color: MUTED }}>→ ↺ Posture, again</span>
+            </div>
             <p className="text-[14px] leading-relaxed" style={{ color: TEXT }}>{LOOP_INTRO.what}</p>
             {video && <div className="mt-3"><InfinityCircle side={side} /></div>}
-            <div className="mt-3 rounded-[5px] p-2" style={{ background: NAVY }}><WaveGuide data={cur.board} title="One turn of the circle on the wave face" legendColor="rgba(247,249,250,.8)" /></div>
+            {/* La ola nueva del TSS_Wave_Kit (la misma lámina de las secuencias Blue)
+                con el recorrido del snap, que es la vuelta completa del círculo:
+                postura → riel sostenido → proyección → maniobra → cierre → postura. */}
+            <div className="mt-3 rounded-[5px] p-2" style={{ background: NAVY }}>
+              <SideChips side={side} onChange={setSide} />
+              <WaveGuide data={cur.board} title={`One turn of the circle on the wave face · ${cur.label.toLowerCase()}`} kitSequence={side === 'fs' ? 'frontside-snap' : 'backside-snap'} legendColor="rgba(247,249,250,.8)" />
+            </div>
             <p className="text-[13.5px] mt-2 leading-relaxed" style={{ color: MUTED }}>{LOOP_INTRO.before}</p>
             <p className="text-[13.5px] mt-2 leading-relaxed rounded-xl px-3 py-2.5" style={{ background: PAPER, border: `1px solid ${BORDER}`, color: INK }}>{LOOP_INTRO.why}</p>
 
@@ -74,13 +111,9 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
                 los ocho bloques, y el 08 es este. Se toca y se abre grande: en
                 el teléfono la letra de cada bloque no se lee de otro modo. */}
             <figure className="m-0 mt-3">
-              <a href="/uploads/fotos/learning-blocks.webp" target="_blank" rel="noopener noreferrer"
-                 className="block rounded-[5px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/uploads/fotos/learning-blocks.webp" width={1672} height={941}
-                     alt="Learning Blocks — the eight blocks of the method. 01 preparation and positioning; 02 the wave entry; 03 pop-up and connect with the board; 04 power posture; 05 rotation and bottom turn, frontside and backside; 06 projection; 06 maneuvers; and 08 the infinite circle concept, which carries the sweet spot, chasing the wave, the paddling angle, cobra plus pick your line, and the pop-up with feet positioning."
-                     style={{ width: '100%', height: 'auto', display: 'block' }} />
-              </a>
+              <ZoomImage src="/uploads/fotos/learning-blocks.webp" width={1672} height={941}
+                alt="Learning Blocks — the eight blocks of the method. 01 preparation and positioning; 02 the wave entry; 03 pop-up and connect with the board; 04 power posture; 05 rotation and bottom turn, frontside and backside; 06 projection; 06 maneuvers; and 08 the infinite circle concept, which carries the sweet spot, chasing the wave, the paddling angle, cobra plus pick your line, and the pop-up with feet positioning."
+                className="rounded-[5px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }} />
               <figcaption className="mt-1.5" style={{ ...F_M, color: MUTED }}>Where this sits · the eight blocks</figcaption>
             </figure>
           </Card>
