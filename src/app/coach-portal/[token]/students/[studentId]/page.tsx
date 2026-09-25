@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   ArrowLeft, AlertTriangle, ShieldCheck, Heart, Phone, User, Waves,
-  Target, Activity, Clock, BookOpen,
+  Target, Activity, Clock, BookOpen, Star,
   type LucideIcon,
 } from 'lucide-react';
 import { anyMedicalNote } from '@/lib/constants/medical';
@@ -172,6 +172,27 @@ export default async function CoachStudentDetailPage({ params }: Props) {
           <KV label="Name" value={s.emergency_contact_name} />
           <KV label="Phone" value={s.emergency_contact_phone} />
         </Section>
+
+        {/* LISTO PARA CONFIRMAR (Marcelo 2026-09-25): el alumno se fue del camp
+            y siguió solo. Lo que dejaste bajo 4★ y él ya trabaja y se pone 4★+
+            es lo primero que evaluás cuando lo ves de nuevo. */}
+        {s.ready_to_confirm.length > 0 && (
+          <Section title="Ready for you to confirm" Icon={Star} accent="amber">
+            <p className="text-[11px] text-[#55666E] pb-1">They rate these 4★+ and trained them since your star. Yours counts until you confirm it in the water.</p>
+            <ul className="m-0 p-0 list-none space-y-1">
+              {s.ready_to_confirm.map((r) => (
+                <li key={r.step_id} className="text-[13px] text-[#10263B] leading-snug">
+                  {r.sequence_label ? <span className="text-[#55666E]">{r.sequence_label} · </span> : null}
+                  <span className="font-semibold">{r.step_title}</span>
+                  <span className="block text-[12px] text-[#55666E]">
+                    student {r.self_stars}★ · your {r.coach_stars}★{r.coach_rated_at ? ` (${new Date(r.coach_rated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' })})` : ''} · trained {r.sessions_since}× since{r.last_session_at ? `, last ${new Date(r.last_session_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' })}` : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Section>
+        )}
+
 
         {/* Identity */}
         <Section title="Identity" Icon={User}>

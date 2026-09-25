@@ -17,6 +17,7 @@ import { waterRuleBlocker } from '@/lib/constants/graduation';
 import { anyMedicalNote } from '@/lib/constants/medical';
 import { buildStudentActivity, type StudentActivitySummary } from '@/lib/activity/build';
 import { getCoachFocus, type CoachFocus } from '@/lib/activity/coach-focus';
+import { readyToConfirmForStudent, type ReadyStep } from '@/lib/activity/ready-to-confirm';
 
 export type CoachStudentSummary = {
   id: string;
@@ -227,6 +228,9 @@ export type CoachStudentDetail = {
   activity: StudentActivitySummary | null;
   /** La tarea vigente del coach con su estado: pendiente o trabajada (fecha). */
   coach_focus: CoachFocus | null;
+  /** Pasos que el coach dejó bajo 4★, el alumno se pone 4★+ y ya entrenó desde
+   *  entonces: lo primero que evaluar cuando lo vuelve a ver (2026-09-25). */
+  ready_to_confirm: ReadyStep[];
   /** Tarjeta de regreso (Marcelo 2026-09-17): cuánto pasó, qué le dijiste,
    *  qué hizo en el medio. null si no vuelve (sin historial o sesión reciente). */
   returning: {
@@ -280,6 +284,7 @@ export async function getCoachStudentDetail(
     buildStudentActivity(admin, studentId, { limit: 20, lang: 'en', surveys: false }).catch((e) => { console.error('[coach-students] activity failed', e); return null; }),
   ]);
   const coachFocus = await getCoachFocus(admin, studentId).catch((e) => { console.error('[coach-students] focus failed', e); return null; });
+  const readyToConfirm = await readyToConfirmForStudent(admin, studentId).catch((e) => { console.error('[coach-students] ready failed', e); return [] as ReadyStep[]; });
   // Última sesión calculada: las estrellas que el coach puso en la última
   // fecha en que calificó (misma tanda = mismo día), agrupadas por secuencia.
   const { data: lastRated } = await admin
@@ -342,6 +347,7 @@ export async function getCoachStudentDetail(
     ...(data as unknown as CoachStudentDetail),
     activity,
     coach_focus: coachFocus,
+    ready_to_confirm: readyToConfirm,
     returning,
     self_assessed: (assessed ?? []).map((r: any) => ({ step_id: r.step_id, title: title.get(r.step_id) ?? r.step_id, rating: r.current_rating, at: r.assessed_at ?? null })),
     own_tasks: (tasks ?? []).map((t: any) => ({ step_title: title.get(t.step_id) ?? t.step_id, detail: t.detail ?? null, sequence_id: t.sequence_id })),

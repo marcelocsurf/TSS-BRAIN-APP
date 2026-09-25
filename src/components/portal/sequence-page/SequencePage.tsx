@@ -73,7 +73,7 @@ export interface SequenceProgress {
   minRating: number | null;
   weakestId: string | null;
   weakestTitle: string | null;
-  steps: { id: string; title: string; rating: number | null }[];
+  steps: { id: string; title: string; rating: number | null; selfRating?: number | null; coachRating?: number | null }[];
 }
 
 export function SequencePage({
@@ -480,13 +480,18 @@ function WhereYouAre({ progress, portal }: { progress?: SequenceProgress | null;
       <div className="mt-2 flex flex-wrap gap-1.5">
         {progress.steps.map((st) => (
           <span key={st.id} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: st.rating === null ? MUTED : st.rating >= 4 ? GREEN : GOLD }}>
-            {st.title.replace(/ Operationalized at Blue Belt/, '')} {st.rating === null ? '·' : `${st.rating}★`}
+            {st.title.replace(/ Operationalized at Blue Belt/, '')} {st.rating === null ? '·' : `${st.rating}★`}{st.selfRating != null && st.coachRating != null && st.selfRating !== st.coachRating ? ` · you ${st.selfRating}★` : ''}
           </span>
         ))}
       </div>
       {(progress.heldBackTitle || progress.weakestTitle) && (
         <Callout label="Work on">
-          {progress.heldBackTitle ? `${progress.heldBackTitle} held your last run back.` : `${progress.weakestTitle} is the earliest step below 4★.`} Pick it as your focus above and train it.
+          {(() => {
+            const w = progress.steps.find((st) => st.id === progress.weakestId);
+            const readyish = !progress.heldBackTitle && w && w.coachRating != null && w.coachRating < 4 && (w.selfRating ?? 0) >= 4;
+            if (readyish) return `${progress.weakestTitle} is below 4★ from your coach — you rate it ${w!.selfRating}★. Run it again and ask your coach to confirm it.`;
+            return `${progress.heldBackTitle ? `${progress.heldBackTitle} held your last run back.` : `${progress.weakestTitle} is the earliest step below 4★.`} Pick it as your focus above and train it.`;
+          })()}
         </Callout>
       )}
       <Go href={`${portal}?tab=sequence`} small>See all your sequences in Let&apos;s Play</Go>

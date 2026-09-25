@@ -11,6 +11,7 @@ import {
   BLUE_COURSE_PRELUDE,
   stepKey,
   SEQUENCE_PASS_STARS, sequenceSide, type SequenceSide, SEQUENCE_ROLE, sequencePrefix } from '@/lib/constants/learning-blocks';
+import { sessionsSinceByStep, isReadyToConfirm, selfStarsThatCount, sequencesOfStep } from '@/lib/activity/ready-to-confirm';
 import { sideBalance } from '@/lib/sequence-sides';
 import { effectiveStars, starsFromCriteria } from '@/lib/stars';
 
@@ -60,6 +61,10 @@ export type SequenceItem = {
   // M4: Official rating from coach (gold). Null when not yet evaluated.
   coach_rating?: number | null;
   coach_rated_at?: string | null;
+  /** Sesiones propias sobre el paso DESPUÉS de la nota del coach, y si con
+   *  eso ya está "listo para que tu coach lo confirme" (ready-to-confirm.ts). */
+  sessions_since?: number;
+  ready_to_confirm?: boolean;
   /** executed = nota de una sesión en el agua · assessed = autoevaluación por
    *  indicadores, sin ola (vale máx. 3★ para el camino; nunca hace propia la secuencia). */
   self_source?: 'executed' | 'assessed';
@@ -103,6 +108,10 @@ export type SequenceData = {
     weakestIsOfficial: boolean;
     /** Cuándo la puso el coach (para decir "your coach · Sep 21"). */
     weakestCoachRatedAt?: string | null;
+    /** Tu nota más baja de la cadena (la del coach es minRating): "coach 3★ · you 5★". */
+    selfMinRating: number | null;
+    /** Pasos que ya trabajaste y te ponés en 4★+ mientras el coach los dejó bajo. */
+    readySteps: { step_id: string; title: string }[];
     /** Let's Play por secuencia: la nota del alumno para la CADENA (aparte
      *  de los pasos) y el paso que la detuvo la última vez. */
     selfSequenceRating: number | null;
@@ -204,6 +213,20 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
   const ratingMap = new Map<string, any>();
   (ratings || []).forEach((r: any) => ratingMap.set(r.step_id, r));
 
+  // "Listo para que tu coach lo confirme" (Marcelo 2026-09-25): el coach lo
+  // dejó bajo la barra, vos te ponés 4★+, y lo entrenaste después de su nota.
+  const readyMap = await sessionsSinceByStep(
+    admin,
+    studentId,
+    (ratings || [])
+      .filter((r: any) => r.coach_rating != null && r.coach_rating < SEQUENCE_PASS_STARS && (selfStarsThatCount(r.current_rating, r.self_source) ?? 0) >= SEQUENCE_PASS_STARS)
+      .map((r: any) => ({ step_id: r.step_id, sequence_ids: sequencesOfStep(r.step_id, lessonMap.get(r.step_id)?.wb_sequence_id ?? null), since: r.coach_rated_at ?? null })),
+  );
+  const readyOf = (stepId: string, r: any) => {
+    const n = readyMap.get(stepId)?.count ?? 0;
+    return { sessions_since: n, ready_to_confirm: isReadyToConfirm(r?.current_rating ?? null, r?.coach_rating ?? null, n, r?.self_source ?? null) };
+  };
+
   const lastPracticedMap = new Map<string, string>();
   (sessions || []).forEach((s: any) => {
     if (!lastPracticedMap.has(s.linked_step_id)) {
@@ -239,6 +262,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
       coach_rated_at: rating?.coach_rated_at ?? null,
             self_source: rating?.self_source === 'assessed' ? 'assessed' : 'executed',
       last_practiced: lastPracticedMap.get(stepId) || null,
+      ...readyOf(stepId, rating),
     };
   });
 
@@ -362,6 +386,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
             coach_rated_at: rating?.coach_rated_at ?? null,
             self_source: rating?.self_source === 'assessed' ? 'assessed' : 'executed',
             last_practiced: lastPracticedMap.get(id) || null,
+            ...readyOf(id, rating),
           };
         })
         .filter((i): i is SequenceItem => Boolean(i));
@@ -393,6 +418,11 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
               : 'working';
       const sr = seqRatingMap.get(seqId);
       const heldBack = sr?.held_back_step_id ? seqItems.find((i) => i.step_id === sr.held_back_step_id) ?? null : null;
+      // Tu nota del MISMO paso que fija el mínimo (y solo si ese mínimo es del
+      // coach): "coach 3★ · you 5★" habla de un paso, no de dos.
+      const minItem = withRating.length ? withRating.reduce((a, b) => (b.v < a.v ? b : a)).i : null;
+      const selfMinRating = minItem?.coach_rating != null ? selfStarsThatCount(minItem.rating, minItem.self_source) : null;
+      const readySteps = seqItems.filter((i) => i.ready_to_confirm).map((i) => ({ step_id: i.step_id, title: i.step_title }));
       return {
         id: seqId,
         // 17 Elements va justo antes de la #8, después de Getting to the wave (como en el curso).
@@ -407,6 +437,8 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
         weakestTitle: weakest?.step_title ?? null,
         weakestIsOfficial: weakest?.coach_rating != null,
         weakestCoachRatedAt: weakest?.coach_rated_at ?? null,
+        selfMinRating,
+        readySteps,
         selfSequenceRating: sr?.current_rating ?? null,
         heldBackStepId: heldBack?.step_id ?? null,
         heldBackTitle: heldBack?.step_title ?? null,
@@ -840,7 +872,7 @@ export async function getSequenceScores(
   preloaded?: SequenceData
 ): Promise<{
   belt: string;
-  rows: { id: string; order: number; name: string; label: string; state: 'owned' | 'working' | 'partial' | 'unrated'; minRating: number | null; side: 'fs' | 'bs' | 'both' | null; aside: boolean }[];
+  rows: { id: string; order: number; name: string; label: string; state: 'owned' | 'working' | 'partial' | 'unrated'; minRating: number | null; selfMinRating: number | null; readyCount: number; side: 'fs' | 'bs' | 'both' | null; aside: boolean }[];
 } | null> {
   try {
     const studentId = await studentIdFromPortalToken(portalToken);
@@ -856,6 +888,7 @@ export async function getSequenceScores(
           id: s.id, order: s.order, name: s.name,
           label: pre?.startsWith('#') ? `${pre} ${s.name}` : s.name,
           state: s.state, minRating: s.minRating,
+          selfMinRating: s.selfMinRating ?? null, readyCount: s.readySteps?.length ?? 0,
           side: (s.side as 'fs' | 'bs' | 'both' | null) ?? null,
           aside: !!SEQUENCE_ROLE[s.id],
         };
@@ -937,17 +970,25 @@ export async function getNextMove(
     // entrada (Getting to the wave), Foundation y Closing no lo frenan
     // (Marcelo 2026-09-10): solo se sugieren cuando todo lo numerado ya es tuyo.
     const isAside = (s: (typeof pool)[number]) => !!SEQUENCE_ROLE[s.id];
-    const seq = pool.find((s) => s.state !== 'owned' && !isAside(s)) ?? pool.find((s) => s.state !== 'owned');
-    if (!seq) return null;
     const eff = (i: SequenceItem) => effectiveStars(i);
-    const firstNotAtBar = seq.items.find((i) => { const v = eff(i); return v == null || v < SEQUENCE_PASS_STARS; }) ?? null;
-    if (!firstNotAtBar) return null;
+    // Un paso que ya trabajaste después de la nota del coach y te ponés en 4★+
+    // está "listo para confirmar": la sugerencia lo salta (Marcelo 2026-09-25)
+    // y, si toda la secuencia está así, pasa a la siguiente.
+    const gapOf = (s: (typeof pool)[number]) =>
+      s.items.find((i) => { if (i.ready_to_confirm) return false; const v = eff(i); return v == null || v < SEQUENCE_PASS_STARS; }) ?? null;
+    const candidates = [...pool.filter((s) => s.state !== 'owned' && !isAside(s)), ...pool.filter((s) => s.state !== 'owned' && isAside(s))];
+    let seq: (typeof pool)[number] | null = null;
+    let firstNotAtBar: SequenceItem | null = null;
+    for (const s of candidates) { const g = gapOf(s); if (g) { seq = s; firstNotAtBar = g; break; } }
+    if (!seq || !firstNotAtBar) return null;
     // El paso que VOS marcaste como el que detuvo tu último run manda sobre el
     // camino: es más reciente y es tuyo.
-    const useHeld = !!seq.heldBackStepId && !!seq.heldBackTitle;
+    const heldCand = seq.heldBackStepId ? seq.items.find((i) => i.step_id === seq.heldBackStepId) ?? null : null;
+    // Un paso ya "listo para confirmar" no vuelve a ser el freno.
+    const useHeld = !!heldCand && !!seq.heldBackTitle && !heldCand.ready_to_confirm;
     const stepId = useHeld ? seq.heldBackStepId! : firstNotAtBar.step_id;
     const stepTitle = useHeld ? seq.heldBackTitle! : firstNotAtBar.step_title;
-    const heldItem = useHeld ? seq.items.find((i) => i.step_id === stepId) ?? null : null;
+    const heldItem = useHeld ? heldCand : null;
     const pathSource: 'weakest' | 'unrated' = eff(firstNotAtBar) == null ? 'unrated' : 'weakest';
     let detail: { text: string; result: 'partial' | 'not_met'; drillTitle: string | null; date: string } | null = null;
     try {
@@ -1019,18 +1060,8 @@ export async function getNextMove(
     }
     const target = useHeld ? heldItem : firstNotAtBar;
     const officialAt = target?.coach_rated_at ?? null;
-    let sessionsSince = 0;
-    if (target?.coach_rating != null) {
-      try {
-        const admin = createAdminClient();
-        let q = admin.from('self_training_sessions').select('id', { count: 'exact', head: true })
-          .eq('student_id', studentId).eq('status', 'done')
-          .or(`linked_step_id.eq.${stepId},and(training_mode.eq.sequence_run,linked_sequence_id.eq.${seq.id})`);
-        if (officialAt) q = q.gt('created_at', officialAt);
-        const { count } = await q;
-        sessionsSince = count ?? 0;
-      } catch { sessionsSince = 0; }
-    }
+    // La misma cuenta que usa "listo para confirmar" (readyMap), no otra consulta.
+    const sessionsSince = target?.sessions_since ?? 0;
     return {
       sequenceId: seq.id,
       sequenceOrder: seq.order,
@@ -1040,7 +1071,7 @@ export async function getNextMove(
       stars: useHeld ? (heldItem?.coach_rating ?? heldItem?.rating ?? null) : eff(firstNotAtBar),
       official: useHeld ? heldItem?.coach_rating != null : firstNotAtBar.coach_rating != null,
       officialAt,
-      selfStars: target?.rating ?? null,
+      selfStars: selfStarsThatCount(target?.rating ?? null, target?.self_source ?? null),
       sessionsSince,
       source: useHeld ? 'held_back' : pathSource,
       selfSequenceRating: seq.selfSequenceRating,

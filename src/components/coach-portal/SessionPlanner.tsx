@@ -2515,6 +2515,9 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
               medical
             </span>
           )}
+          {(student.readyToConfirm?.length ?? 0) > 0 && (
+            <span className="ml-1 text-[10px] text-amber-700">· {student.readyToConfirm.length} to confirm</span>
+          )}
         </span>
         <ChevronDown
           size={14}
@@ -2545,6 +2548,16 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
           )}
 
           {/* Self-assessment vs coach rating */}
+          {(student.readyToConfirm?.length ?? 0) > 0 && (
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-wider text-amber-700 mb-0.5">Ready for you to confirm</p>
+              {student.readyToConfirm.map((r) => (
+                <p key={r.step_id} className="text-[11px] text-[#10263B] leading-snug">
+                  {r.sequence_label ? `${r.sequence_label} · ` : ''}<b>{r.step_title}</b> · your {r.coach_stars}★ · student {r.self_stars}★ · trained {r.sessions_since}× since your star
+                </p>
+              ))}
+            </div>
+          )}
           {hasRatings && (
             <div>
               <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mb-0.5 inline-flex items-center gap-1">

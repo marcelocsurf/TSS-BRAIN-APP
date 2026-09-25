@@ -96,9 +96,13 @@ export default async function SequencePageRoute({ params, searchParams }: { para
   // Progreso: estrella por paso (la del coach manda), el paso más flojo en
   // el orden de la cadena, y la nota del último run de la secuencia.
   const ratingByStep = new Map<string, number>();
+  const selfByStep = new Map<string, number>();
+  const coachByStep = new Map<string, number>();
   for (const r of stepRatings ?? []) {
     const v = (r as any).coach_rating ?? (r as any).current_rating;
     if (v != null) ratingByStep.set((r as any).step_id, Number(v));
+    if ((r as any).current_rating != null) selfByStep.set((r as any).step_id, Number((r as any).current_rating));
+    if ((r as any).coach_rating != null) coachByStep.set((r as any).step_id, Number((r as any).coach_rating));
   }
   const rated = cfg.stepIds.filter((id) => ratingByStep.has(id));
   const weakestId = cfg.stepIds.find((id) => ratingByStep.has(id) && ratingByStep.get(id)! < 4) ?? null;
@@ -113,7 +117,7 @@ export default async function SequencePageRoute({ params, searchParams }: { para
     minRating: rated.length ? Math.min(...rated.map((id) => ratingByStep.get(id)!)) : null,
     weakestId,
     weakestTitle: weakestId ? (lessons[weakestId]?.title ?? null) : null,
-    steps: cfg.stepIds.map((id) => ({ id, title: lessons[id]?.title ?? id, rating: ratingByStep.get(id) ?? null })),
+    steps: cfg.stepIds.map((id) => ({ id, title: lessons[id]?.title ?? id, rating: ratingByStep.get(id) ?? null, selfRating: selfByStep.get(id) ?? null, coachRating: coachByStep.get(id) ?? null })),
   };
 
   return (

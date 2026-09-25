@@ -520,7 +520,7 @@ function nextMoveRows(
       detail: [
         nm.official && nm.source !== 'held_back'
           ? ((nm.sessionsSince ?? 0) > 0
-              ? `You trained it ${nm.sessionsSince}× since${nm.selfStars != null ? ` and rate it ${nm.selfStars}★` : ''} — ask your coach to confirm it in the water.`
+              ? `You trained it ${nm.sessionsSince}× since${nm.selfStars != null ? ` and rate it ${nm.selfStars}★` : ''} — at 4★ it's ready for your coach to confirm.`
               : 'Only your coach can move this star — train it, then ask them to confirm it in the water.')
           : null,
         word ? `Your word: ${word}` : null,
@@ -1428,11 +1428,12 @@ function HomeTab({
             return (
               <div>
                 <h1 className="text-[36px] mb-1" style={{ ...H_BIG, color: '#F7F9FA' }}>Your sequences</h1>
-                <p className="text-[14px] mb-3" style={{ color: '#D9E4EA' }}>{beltWord} Belt · {owned} of {rowsToShow.length} are yours. Tap one to train it.</p>
+                <p className="text-[14px] mb-3" style={{ color: '#D9E4EA' }}>{beltWord} Belt · {owned} of {rowsToShow.length} are yours{(() => { const ready = rowsToShow.reduce((n, r) => n + (r.readyCount ?? 0), 0); return ready > 0 ? ` · ${ready} step${ready === 1 ? '' : 's'} ready for your coach to confirm` : ''; })()}. Tap one to train it.</p>
                 <div className="rounded-lg overflow-hidden" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
                   {rowsToShow.map((r, idx) => {
                     const ownedRow = r.state === 'owned';
-                    const value = ownedRow ? '✓ yours' : r.state === 'unrated' ? 'not yet' : r.state === 'partial' ? (r.minRating != null ? `${r.minRating}★ · in progress` : 'in progress') : `${r.minRating ?? '—'}★`;
+                    const both = !ownedRow && r.selfMinRating != null && r.selfMinRating !== r.minRating;
+                    const value = ownedRow ? '✓ yours' : r.state === 'unrated' ? 'not yet' : r.state === 'partial' ? (r.minRating != null ? `${r.minRating}★ · in progress` : 'in progress') : both ? `coach ${r.minRating ?? '—'}★ · you ${r.selfMinRating}★` : `${r.minRating ?? '—'}★`;
                     return (
                       <button key={r.id} type="button"
                         onClick={() => { if (onTrainSequence) onTrainSequence({ sequenceId: r.id, mode: 'sequence_run' }); else onGoTo('sequence'); }}

@@ -309,19 +309,21 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
             {(() => {
               const pairedIds = new Set<string>();
               for (const pr of sides.pairs) { if (pr.fs) pairedIds.add(pr.fs.id); if (pr.bs) pairedIds.add(pr.bs.id); }
-              type Cell = { id: string; label: string; value: number | null; owned: boolean };
+              type Cell = { id: string; label: string; value: number | null; owned: boolean; self?: number | null; ready?: number };
               const rows: { key: string; title: string; sub: string | null; cells: Cell[]; gap: number | null }[] = [];
               for (const sq of levelSeqs) {
                 if (pairedIds.has(sq.id)) continue;
                 const pre = sequencePrefix(sq.id, sq.order);
                 rows.push({ key: sq.id, title: `${pre?.startsWith('#') ? `${pre} ` : ''}${sq.name}`, sub: null, gap: null,
-                  cells: [{ id: sq.id, label: sq.side === 'fs' || sq.side === 'bs' ? SIDE_SHORT[sq.side] : '', value: sq.minRating, owned: sq.state === 'owned' }] });
+                  cells: [{ id: sq.id, label: sq.side === 'fs' || sq.side === 'bs' ? SIDE_SHORT[sq.side] : '', value: sq.minRating, owned: sq.state === 'owned', self: sq.selfMinRating ?? null, ready: sq.readySteps?.length ?? 0 }] });
               }
               for (const pr of sides.pairs) {
                 const ownedOf = (id: string | undefined) => !!id && levelSeqs.find((x) => x.id === id)?.state === 'owned';
                 const cells: Cell[] = [];
-                if (pr.fs) cells.push({ id: pr.fs.id, label: `FS${pr.both ? '' : ` · ${pr.fs.label.split(' ')[0]}`}`, value: pr.fs.value, owned: pr.both ? (pr.fs.value ?? 0) >= 4 : ownedOf(pr.fs.id) });
-                if (pr.bs) cells.push({ id: pr.bs.id, label: `BS${pr.both ? '' : ` · ${pr.bs.label.split(' ')[0]}`}`, value: pr.bs.value, owned: pr.both ? (pr.bs.value ?? 0) >= 4 : ownedOf(pr.bs.id) });
+                const selfOf = (id: string | undefined) => (id ? levelSeqs.find((x) => x.id === id)?.selfMinRating ?? null : null);
+                const readyOfSeq = (id: string | undefined) => (id ? levelSeqs.find((x) => x.id === id)?.readySteps?.length ?? 0 : 0);
+                if (pr.fs) cells.push({ id: pr.fs.id, label: `FS${pr.both ? '' : ` · ${pr.fs.label.split(' ')[0]}`}`, value: pr.fs.value, owned: pr.both ? (pr.fs.value ?? 0) >= 4 : ownedOf(pr.fs.id), self: pr.both ? null : selfOf(pr.fs.id), ready: readyOfSeq(pr.fs.id) });
+                if (pr.bs) cells.push({ id: pr.bs.id, label: `BS${pr.both ? '' : ` · ${pr.bs.label.split(' ')[0]}`}`, value: pr.bs.value, owned: pr.both ? (pr.bs.value ?? 0) >= 4 : ownedOf(pr.bs.id), self: pr.both ? null : selfOf(pr.bs.id), ready: readyOfSeq(pr.bs.id) });
                 rows.push({ key: `pair:${pr.move}`, title: pr.move, sub: pr.both ? 'one sequence · both sides' : 'two sequences · one per side', cells, gap: pr.gap });
               }
               // Orden del curso: por el número de la primera secuencia de la fila.
@@ -340,6 +342,10 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                         <>
                           {c.label && <span className="block text-[10px]" style={{ ...F_M, letterSpacing: '0.08em', color: c.owned ? '#F7F9FA' : '#55666E' }}>{c.label}</span>}
                           <span className="block text-[14px] font-black leading-tight" style={{ color: c.owned ? '#F7F9FA' : '#10263B' }}>{c.owned ? '✓' : c.value == null ? 'not yet' : `${c.value}★`}</span>
+                          {/* Las dos notas (Marcelo 2026-09-25): la del coach manda, la tuya te dice dónde sentís que ya estás. */}
+                          {!c.owned && c.self != null && c.self !== c.value && (
+                            <span className="block text-[10px] leading-tight" style={{ color: (c.ready ?? 0) > 0 ? '#0A7C5D' : '#55666E' }}>you {c.self}★{(c.ready ?? 0) > 0 ? ' · ready' : ''}</span>
+                          )}
                         </>
                       );
                       const style = { background: c.owned ? '#0A7C5D' : '#fff', border: `1px solid ${c.owned ? '#0A7C5D' : '#DCD7C6'}`, minWidth: 64 };
@@ -353,6 +359,14 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               ));
             })()}
           </div>
+          {(() => {
+            const readyTotal = levelSeqs.reduce((n, s) => n + (s.readySteps?.length ?? 0), 0);
+            return readyTotal > 0 ? (
+              <p className="text-[12.5px] mt-2.5 leading-snug font-semibold" style={{ color: '#0A7C5D' }}>
+                {readyTotal} step{readyTotal === 1 ? '' : 's'} ready for your coach to confirm. Their star still counts — ask next time you surf together.
+              </p>
+            ) : null;
+          })()}
           {/* Por lado: una línea es tuya cuando es tuya de los dos lados. */}
           {(sides.fs != null || sides.bs != null) && (
             <div className="mt-3 pt-2.5 flex flex-wrap items-baseline gap-x-4 gap-y-1" style={{ borderTop: '1px solid rgba(6,28,43,.12)' }}>
@@ -436,6 +450,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               weakestTitle={seq.weakestTitle}
               weakestIsOfficial={seq.weakestIsOfficial}
               weakestCoachRatedAt={seq.weakestCoachRatedAt ?? null}
+              selfMinRating={seq.selfMinRating ?? null}
+              readyCount={seq.readySteps?.length ?? 0}
               selfSequenceRating={seq.selfSequenceRating}
               heldBackStepId={seq.heldBackStepId}
               heldBackTitle={seq.heldBackTitle}
@@ -478,6 +494,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                 weakestTitle={seq.weakestTitle}
                 weakestIsOfficial={seq.weakestIsOfficial}
                 weakestCoachRatedAt={seq.weakestCoachRatedAt ?? null}
+                selfMinRating={seq.selfMinRating ?? null}
+                readyCount={seq.readySteps?.length ?? 0}
                 selfSequenceRating={seq.selfSequenceRating}
                 heldBackStepId={seq.heldBackStepId}
                 heldBackTitle={seq.heldBackTitle}
@@ -531,6 +549,8 @@ function BlockSection({
   weakestTitle = null,
   weakestIsOfficial = false,
   weakestCoachRatedAt = null,
+  selfMinRating = null,
+  readyCount = 0,
   selfSequenceRating = null,
   heldBackStepId = null,
   heldBackTitle = null,
@@ -560,6 +580,9 @@ function BlockSection({
   weakestTitle?: string | null;
   weakestIsOfficial?: boolean;
   weakestCoachRatedAt?: string | null;
+  /** Tu nota más baja de la cadena y cuántos pasos están listos para el coach. */
+  selfMinRating?: number | null;
+  readyCount?: number;
   /** La nota del alumno para la cadena y el paso que la detuvo (Let's Play). */
   selfSequenceRating?: number | null;
   heldBackStepId?: string | null;
@@ -633,9 +656,11 @@ function BlockSection({
             <div className="text-[12px] font-semibold" style={{ color: CYAN }}>✓ Owned</div>
           ) : asSequence && minRating !== null ? (
             <>
-              <div className="text-[15px] font-semibold" style={{ color: PAPER }}>{minRating}★</div>
-              <div className="text-[10.5px]" style={{ color: 'rgba(247,249,250,.45)' }}>
-                {state === 'partial' ? `${ratedCount}/${items.length} rated` : 'weakest step'}
+              <div className="text-[15px] font-semibold" style={{ color: PAPER }}>
+                {selfMinRating != null && selfMinRating !== minRating ? `coach ${minRating}★ · you ${selfMinRating}★` : `${minRating}★`}
+              </div>
+              <div className="text-[10.5px]" style={{ color: readyCount > 0 ? '#06D6A0' : 'rgba(247,249,250,.45)' }}>
+                {readyCount > 0 ? `${readyCount} ready for your coach` : state === 'partial' ? `${ratedCount}/${items.length} rated` : 'weakest step'}
               </div>
             </>
           ) : avgRating !== null ? (
@@ -829,6 +854,7 @@ function StepRow({
               {item.rating !== null && item.rating !== item.coach_rating && (
                 <div className="text-[12px] text-[#55666E]">self: {item.rating}/5</div>
               )}
+              {item.ready_to_confirm && <div className="text-[11px] font-semibold" style={{ color: '#0A7C5D' }}>ready for your coach</div>}
             </>
           ) : (
             <>

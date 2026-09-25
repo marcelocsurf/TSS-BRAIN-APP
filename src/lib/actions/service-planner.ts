@@ -14,6 +14,7 @@ import { SHARED_PRE_COURSE_SECTIONS } from '@/lib/constants/courses';
 import { participantPresentOn, participantLastDay, exigeCierreDeDias } from '@/lib/utils/camp-window';
 import { isVisibleSelfSession, selfSessionDetail, resolveStepTitles } from '@/lib/activity/build';
 import { stampNextFocus } from '@/lib/activity/coach-focus';
+import { readyToConfirmForStudent, type ReadyStep } from '@/lib/activity/ready-to-confirm';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -340,6 +341,8 @@ export interface ServicePlanStudent {
   profile: StudentProfileSnapshot;
   recentSessions: RecentSessionEntry[];
   stepRatings: StepRatingSummary;
+  /** Pasos listos para que el coach los confirme (ready-to-confirm.ts). */
+  readyToConfirm: ReadyStep[];
   // M45 — all blocks for the SELECTED day, sorted by order_index. A day
   // can have multiple blocks (multi-mission day, multi-STP focus, etc).
   blocks: ServicePlanBlock[];
@@ -571,6 +574,12 @@ export async function getServicePlan(
       recentByStudent[sid] = recentByStudent[sid].slice(0, 10);
     }
   }
+  // Listo para confirmar, por alumno (2026-09-25): lo primero que evaluar hoy.
+  const readyByStudent: Record<string, ReadyStep[]> = {};
+  if (studentIds.length > 0) {
+    const entries = await Promise.all(studentIds.map(async (sid) => [sid, await readyToConfirmForStudent(admin, sid).catch(() => [] as ReadyStep[])] as const));
+    for (const [sid, list] of entries) readyByStudent[sid] = list;
+  }
 
   // STP self-rating summary per student (+ official coach ratings)
   // and a per-(student, step) coach_rating map so the eval UI can
@@ -619,6 +628,7 @@ export async function getServicePlan(
       belt_level: s?.belt_level ?? null,
       photo_url: s?.photo_url ?? null,
       recentSessions: recentByStudent[p.student_id] ?? [],
+      readyToConfirm: readyByStudent[p.student_id] ?? [],
       stepRatings: {
         selfRatedCount: rr.self.length,
         avgSelfRating: avgOf(rr.self),
