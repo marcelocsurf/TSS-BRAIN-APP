@@ -17,7 +17,14 @@ const KIND_META: Record<string, { icon: string; label: string; color: string }> 
   coach: { icon: '🏄', label: 'Sesión con coach', color: '#007A9E' },
   mission: { icon: '🎯', label: 'Misión por su cuenta', color: '#6B4FA8' },
   free_surf: { icon: '🌊', label: 'Free surf', color: '#177A54' },
+  // 2026-09-25: lo que un coach esperaría ver y no estaba.
+  lesson: { icon: '📘', label: 'Lección del curso', color: '#B8862B' },
+  water_level: { icon: '🛟', label: 'Nivel de agua', color: '#007A9E' },
+  belt: { icon: '🥋', label: 'Cinta', color: '#B8862B' },
+  final_eval: { icon: '⭐', label: 'Evaluación final del camp', color: '#B8862B' },
+  survey: { icon: '💬', label: 'Encuesta del alumno', color: '#55666E' },
 };
+const FALLBACK_META = { icon: '•', label: 'Evento', color: '#55666E' };
 
 export function StudentActivitySummary({ studentId, beltLabel, seqStep }: {
   studentId: string;
@@ -30,10 +37,11 @@ export function StudentActivitySummary({ studentId, beltLabel, seqStep }: {
   const [failed, setFailed] = useState(false);
   const [showAll, setShowAll] = useState(false);
 
-  const load = useCallback(() => {
+  // Se cargan los últimos 40; si hay más, "Cargar todo" trae el resto.
+  const load = useCallback((limit?: number) => {
     setFailed(false);
-    setD(null);
-    getStudentActivitySummary(studentId)
+    if (!limit) setD(null);
+    getStudentActivitySummary(studentId, limit ? { limit } : {})
       .then((r) => { if (r.ok && r.data) setD(r.data); else setFailed(true); })
       .catch(() => setFailed(true));
   }, [studentId]);
@@ -44,7 +52,7 @@ export function StudentActivitySummary({ studentId, beltLabel, seqStep }: {
     return (
       <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 flex items-center justify-between gap-3" style={{ borderLeft: '4px solid #E4B33F' }}>
         <p className="text-xs text-[#55666E]">No se pudo cargar la actividad del portal del alumno.</p>
-        <button type="button" onClick={load} className="text-xs font-semibold shrink-0" style={{ color: '#007A9E' }}>
+        <button type="button" onClick={() => load()} className="text-xs font-semibold shrink-0" style={{ color: '#007A9E' }}>
           Reintentar
         </button>
       </div>
@@ -64,7 +72,7 @@ export function StudentActivitySummary({ studentId, beltLabel, seqStep }: {
     <div className="rounded-lg bg-[#F7F9FA] border border-[#DCD7C6] p-4 space-y-3" style={{ borderLeft: '4px solid #00A8CC' }}>
       <div className="flex items-center justify-between gap-2">
         <p className="text-[10px] font-mono uppercase tracking-wider font-bold" style={{ color: '#007A9E' }}>
-          Actividad del alumno · lo que registra en su portal
+          Bitácora · todo lo que pasó con este alumno
         </p>
         {d.week_practices > 0 && (
           <span
@@ -96,32 +104,39 @@ export function StudentActivitySummary({ studentId, beltLabel, seqStep }: {
       {/* Línea de tiempo unificada */}
       <div>
         <p className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">
-          Últimas sesiones · {d.counts.coach_sessions} con coach · {d.counts.self_missions} misiones · {d.counts.free_surfs} free surf
+          Bitácora · {d.counts.coach_sessions} con coach · {d.counts.self_missions} misiones · {d.counts.free_surfs} free surf · {d.counts.lessons} lecciones
         </p>
         <div className="mt-1.5 space-y-1">
           {items.map((t, i) => {
-            const meta = KIND_META[t.kind];
+            const meta = KIND_META[t.kind] ?? FALLBACK_META;
             return (
-              <div key={i} className="flex items-center gap-2 rounded-lg px-2.5 py-1.5" style={{ background: '#F8FAFC' }}>
+              <div key={i} className="flex items-start gap-2 rounded-lg px-2.5 py-1.5" style={{ background: '#F8FAFC' }}>
                 <span className="text-[13px] shrink-0" title={meta.label} aria-label={meta.label}>{meta.icon}</span>
-                <p className="text-[12px] flex-1 truncate" style={{ color: '#0C2231' }}>
+                {/* Sin truncate: el detalle (qué frenó la cadena, qué trabajar) es lo que el coordinador viene a leer. */}
+                <p className="text-[12px] flex-1 min-w-0 break-words leading-snug" style={{ color: '#0C2231' }}>
                   <b>{t.title}</b>
-                  {t.detail && <span className="text-[#55666E]"> · {t.detail}</span>}
                   {!t.completed && t.kind !== 'coach' && <span className="text-amber-700"> · sin completar</span>}
+                  {t.detail && <span className="block text-[11px] text-[#55666E]">{t.detail}</span>}
                 </p>
-                <p className="text-[10px] shrink-0 font-mono" style={{ color: meta.color }}>
+                <p className="text-[10px] shrink-0 font-mono pt-0.5" style={{ color: meta.color }}>
                   {t.minutes > 0 ? `${t.minutes}m · ` : ''}{fmtDate(t.date)}
                 </p>
               </div>
             );
           })}
           {d.timeline.length === 0 && (
-            <p className="text-[11px] text-[#55666E]">Todavía no registra actividad en su portal.</p>
+            <p className="text-[11px] text-[#55666E]">Todavía no hay nada en la bitácora.</p>
           )}
         </div>
-        {d.timeline.length > 5 && (
-          <button type="button" onClick={() => setShowAll(!showAll)} className="text-[11px] font-semibold mt-1.5" style={{ color: '#007A9E' }}>
-            {showAll ? 'Ver menos' : `Ver ${d.timeline.length - 5} más`}
+        {/* Un solo botón: 5 → todo. Si hay más de los 40 cargados, los trae. */}
+        {d.total_events > 5 && (
+          <button
+            type="button"
+            onClick={() => { if (!showAll && d.total_events > d.timeline.length) load(d.total_events); setShowAll(!showAll); }}
+            className="text-[11px] font-semibold mt-1.5"
+            style={{ color: '#007A9E' }}
+          >
+            {showAll ? 'Ver menos' : `Ver todo (${d.total_events})`}
           </button>
         )}
       </div>

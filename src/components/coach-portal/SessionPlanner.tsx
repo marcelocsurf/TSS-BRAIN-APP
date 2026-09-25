@@ -2638,6 +2638,11 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
                           {' '}· {rs.type === 'coach' ? 'with coach' : 'self'}
                           {rs.status ? ` · ${rs.status}` : ''}
                         </span>
+                        {/* Lo que el alumno registró de esa sesión — misma
+                            línea que la bitácora de la ficha. */}
+                        {rs.detail && (
+                          <span className="block text-[#55666E]">{rs.detail}</span>
+                        )}
                         {/* 🎯 Hilo de progresión: el "next focus" que dejó el
                             coach de ESA sesión — plan the day from here. */}
                         {rs.whats_next && (

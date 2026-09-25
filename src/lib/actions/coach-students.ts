@@ -15,6 +15,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import { waterRuleBlocker } from '@/lib/constants/graduation';
 import { anyMedicalNote } from '@/lib/constants/medical';
+import { buildStudentActivity, type StudentActivitySummary } from '@/lib/activity/build';
 
 export type CoachStudentSummary = {
   id: string;
@@ -218,6 +219,11 @@ export type CoachStudentDetail = {
   last_session_work: { sequence_id: string; sequence_name: string; rated: number; total: number; complete: boolean; weakest: { step_id: string; title: string; rating: number } | null }[];
   last_session_by: string | null;
   next_focus_label: string | null;
+  /** LA BITÁCORA (2026-09-25): la misma línea de tiempo que ve el coordinador
+   *  en la ficha del dashboard — sesiones con coach, misiones, free surf,
+   *  lecciones, nivel de agua, cinta, evaluación final, encuesta. Una sola
+   *  regla (src/lib/activity/build.ts). null si falló la carga. */
+  activity: StudentActivitySummary | null;
   /** Tarjeta de regreso (Marcelo 2026-09-17): cuánto pasó, qué le dijiste,
    *  qué hizo en el medio. null si no vuelve (sin historial o sesión reciente). */
   returning: {
@@ -262,10 +268,13 @@ export async function getCoachStudentDetail(
 
   // Lo que el alumno dice de sí mismo — para que el coach llegue sabiendo
   // qué cree el alumno y qué se propuso (Marcelo 2026-09-10).
-  const [{ data: assessed }, { data: tasks }, { data: open }] = await Promise.all([
+  const [{ data: assessed }, { data: tasks }, { data: open }, activity] = await Promise.all([
     admin.from('student_step_ratings').select('step_id, current_rating, assessed_at').eq('student_id', studentId).eq('self_source', 'assessed').is('coach_rating', null).not('current_rating', 'is', null),
     admin.from('student_tasks').select('step_id, detail, sequence_id').eq('student_id', studentId).eq('status', 'open').order('created_at'),
     admin.from('self_training_sessions').select('drill_name, planned_at').eq('student_id', studentId).eq('status', 'planned').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    // La bitácora entera, ya pasado el gate por token de arriba. El portal
+    // habla inglés. Si falla no tira la ficha: el coach ve null y sigue.
+    buildStudentActivity(admin, studentId, { limit: 20, lang: 'en', surveys: false }).catch((e) => { console.error('[coach-students] activity failed', e); return null; }),
   ]);
   // Última sesión calculada: las estrellas que el coach puso en la última
   // fecha en que calificó (misma tanda = mismo día), agrupadas por secuencia.
@@ -327,6 +336,7 @@ export async function getCoachStudentDetail(
   }
   return {
     ...(data as unknown as CoachStudentDetail),
+    activity,
     returning,
     self_assessed: (assessed ?? []).map((r: any) => ({ step_id: r.step_id, title: title.get(r.step_id) ?? r.step_id, rating: r.current_rating, at: r.assessed_at ?? null })),
     own_tasks: (tasks ?? []).map((t: any) => ({ step_title: title.get(t.step_id) ?? t.step_id, detail: t.detail ?? null, sequence_id: t.sequence_id })),

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   ArrowLeft, AlertTriangle, ShieldCheck, Heart, Phone, User, Waves,
-  Target, Activity, Clock,
+  Target, Activity, Clock, BookOpen,
   type LucideIcon,
 } from 'lucide-react';
 import { anyMedicalNote } from '@/lib/constants/medical';
@@ -283,6 +283,41 @@ export default async function CoachStudentDetailPage({ params }: Props) {
           <KV label="In the portal" value={(s as any).portal_last_seen_at ? `${new Date((s as any).portal_last_seen_at).toLocaleDateString()} · ${(s as any).portal_last_screen ?? ''} · ${(s as any).portal_visit_count ?? 0} visits` : 'never opened it'} />
         </Section>
 
+        {/* LA BITÁCORA (2026-09-25): la misma línea de tiempo que ve el
+            coordinador en la ficha — sesiones con coach y lo que dejaron,
+            misiones y runs por su cuenta con qué las frenó, lecciones, nivel
+            de agua, cinta, evaluación final, encuesta. Una sola fuente. */}
+        {s.activity && (
+          <Section title="Logbook" Icon={BookOpen}>
+            <p className="text-[11px] text-[#55666E] pb-1">
+              {s.activity.counts.coach_sessions} sessions with a coach · {s.activity.counts.self_missions} on their own · {s.activity.counts.free_surfs} free surf · {s.activity.counts.lessons} lessons
+            </p>
+            {s.activity.timeline.length === 0 ? (
+              <p className="text-[12px] text-[#55666E] py-1">Nothing logged yet.</p>
+            ) : (
+              <ul className="m-0 p-0 list-none divide-y divide-[#DCD7C6]/60">
+                {s.activity.timeline.map((t, i) => (
+                  <li key={i} className="py-1.5 flex items-start gap-2 text-[13px]">
+                    <span className="shrink-0 text-[11px] font-mono text-[#55666E] w-14 pt-0.5" style={{ fontFamily: 'var(--font-mono)' }}>
+                      {new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                    <span className="flex-1 min-w-0 text-[#10263B] leading-snug">
+                      {LOG_KIND[t.kind] ? <span className="text-[10px] font-mono uppercase tracking-wider text-[#55666E] mr-1.5">{LOG_KIND[t.kind]}</span> : null}
+                      <span className="font-semibold">{t.title}</span>
+                      {t.minutes > 0 && <span className="text-[#55666E]"> · {t.minutes} min</span>}
+                      {!t.completed && t.kind !== 'coach' && <span className="text-amber-700"> · not finished</span>}
+                      {t.detail && <span className="block text-[12px] text-[#55666E]">{t.detail}</span>}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {s.activity.total_events > s.activity.timeline.length && (
+              <p className="text-[11px] text-[#55666E] pt-1">Showing the last {s.activity.timeline.length} of {s.activity.total_events}.</p>
+            )}
+          </Section>
+        )}
+
         {/* Lo que el alumno dice de sí mismo (2026-09-10): llegás sabiendo
             qué cree que tiene y qué se propuso. La autoevaluación no es
             ejecución — vos la confirmás en el agua. */}
@@ -317,6 +352,12 @@ export default async function CoachStudentDetailPage({ params }: Props) {
     </div>
   );
 }
+
+// Etiqueta solo donde el título no lo dice solo: una sesión puede ser con
+// coach, por su cuenta o free surf; "Water level: …" y "Belt: …" ya se explican.
+const LOG_KIND: Record<string, string> = {
+  coach: 'with coach', mission: 'on their own', free_surf: 'free surf', lesson: 'course',
+};
 
 function Section({
   title,

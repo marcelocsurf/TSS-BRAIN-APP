@@ -12,6 +12,7 @@ import { GRADUATION_RULES, waterRuleBlocker } from '@/lib/constants/graduation';
 import { sortByBlocks } from '@/lib/constants/learning-blocks';
 import { SHARED_PRE_COURSE_SECTIONS } from '@/lib/constants/courses';
 import { participantPresentOn, participantLastDay, exigeCierreDeDias } from '@/lib/utils/camp-window';
+import { isVisibleSelfSession, selfSessionDetail, resolveStepTitles } from '@/lib/activity/build';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -272,6 +273,9 @@ export interface RecentSessionEntry {
    *  dejó el coach de ESA sesión — el próximo coach ve el hilo completo, no
    *  solo el último valor. */
   whats_next?: string | null;
+  /** La misma línea que la bitácora de la ficha (2026-09-25): secuencia ★,
+   *  qué la frenó, misión lograda o no, foco/flow que reportó, venue. */
+  detail?: string | null;
 }
 
 // Summary of the student's STP self-ratings (and any official coach
@@ -515,10 +519,14 @@ export async function getServicePlan(
         .select('student_id, created_at, status, mission, coach_feedback, whats_next, standalone_sessions(mission)')
         .in('student_id', studentIds)
         .order('created_at', { ascending: false }),
+      // Misma regla que la bitácora de la ficha (src/lib/activity/build.ts):
+      // solo sesiones cerradas (status done) y sin los puentes de horas del
+      // check-in HP. Antes entraban planes descartados y 600 filas HP.
       admin
         .from('self_training_sessions')
-        .select('student_id, created_at, session_date, drill_name, intention_text, completed')
+        .select('*')
         .in('student_id', studentIds)
+        .eq('status', 'done')
         .order('created_at', { ascending: false }),
     ]);
     for (const r of coachSessRes.data ?? []) {
@@ -539,12 +547,19 @@ export async function getServicePlan(
         whats_next: (r as any).whats_next ?? null,
       });
     }
-    for (const r of selfSessRes.data ?? []) {
+    // Nombres de los pasos que frenaron una cadena (una sola consulta).
+    const heldIds = new Set<string>();
+    for (const r of (selfSessRes.data ?? []) as any[]) for (const m of (r.step_marks ?? []) as any[]) if (m?.held_back && m?.step_id) heldIds.add(m.step_id);
+    const heldTitle = await resolveStepTitles(admin, heldIds);
+    for (const r of (selfSessRes.data ?? []) as any[]) {
+      if (!isVisibleSelfSession(r)) continue;
       (recentByStudent[r.student_id] ??= []).push({
         date: r.session_date || r.created_at,
         type: 'self',
-        label: r.drill_name || r.intention_text || 'Self-training',
-        status: r.completed ? 'completed' : 'incomplete',
+        label: r.kind === 'free_surf' ? 'Free surf' : (r.drill_name || r.intention_text || 'Self-training'),
+        // El detalle ya dice si la misión se logró; el status solo avisa si quedó a medias.
+        status: r.completed ? null : 'not finished',
+        detail: selfSessionDetail(r, heldTitle, 'en'),
       });
     }
     for (const sid of Object.keys(recentByStudent)) {

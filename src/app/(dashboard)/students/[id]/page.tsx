@@ -692,8 +692,11 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         </div>
       )}
 
-      {/* --- 6. SESSION HISTORY (collapsible) --- */}
-      <CollapsibleSection title={`Session History (${allSessions.length})`} defaultOpen={true}>
+      {/* --- 6. SESSION HISTORY (collapsible) ---
+          Plegada desde 2026-09-25: la bitácora de arriba ya es la historia
+          (misma fuente para ficha, portal del coach y planner). Esta lista
+          queda para abrir/editar cada sesión del coach. */}
+      <CollapsibleSection title={`Session History (${allSessions.length})`} defaultOpen={false}>
         <SessionHistoryPanel sessions={allSessions.slice(0, 5)} />
         {allSessions.length > 5 && (
           <Link href={`/students/${student.id}/history`} className="block mt-2 text-sm font-semibold text-[var(--tss-navy)] underline">
