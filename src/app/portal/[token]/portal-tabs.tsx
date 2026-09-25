@@ -3140,45 +3140,37 @@ function FeedbackTab({
 
   return (
     <div className="space-y-5">
-      {/* Camp experience survey (Opción A) — one per camp, about the overall
-          experience: facilities, equipment, transport, communication, value. */}
-      {data.pendingExperience && (
-        <div className="space-y-2">
-          <div className="bg-cyan-50 rounded-2xl p-4 shadow-sm">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-cyan-900">
-                  Your camp experience{data.pendingExperience.campName ? ` · ${data.pendingExperience.campName}` : ''}
-                </p>
-                <p className="text-[12px] text-cyan-700 mt-0.5">
-                  1 minute — facilities, equipment, transport & value
-                </p>
-              </div>
-              <button
-                onClick={() => setExpOpen(!expOpen)}
-                className="text-xs font-medium text-cyan-700 underline"
-              >
-                {expOpen ? 'Hide' : 'Give Feedback'}
-              </button>
+      {/* Dos áreas (Marcelo 2026-09-25): 1 · Método y coach · 2 · Experiencia.
+          Con el logo de la academia al lado del nuestro cuando el alumno es de
+          una academia (Puro Surf). */}
+      {(pendingSurveys.length > 0 || data.pendingExperience) && (() => {
+        const academy = (data as any).academyBranding as { name: string | null; logo_url: string | null } | null;
+        return (
+          <div className="rounded-2xl p-4" style={{ background: '#061C2B' }}>
+            <div className="flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-7 object-contain" />
+              {academy?.logo_url && (
+                <>
+                  <span className="text-white/40 text-lg">×</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={academy.logo_url} alt={academy.name ?? ''} className="h-8 object-contain rounded-sm bg-white/95 px-1.5 py-0.5" />
+                </>
+              )}
             </div>
+            <p className="text-white text-[15px] font-bold mt-3 leading-snug">We&apos;d like your opinion in two areas</p>
+            <p className="text-[13px] mt-1.5 leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}><b style={{ color: '#00D2FF' }}>1 · Method &amp; coach</b> — the sessions, what you learned, your coach.</p>
+            <p className="text-[13px] mt-1 leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}><b style={{ color: '#00D2FF' }}>2 · Experience</b> — facilities, equipment, transport and value{academy?.name ? ` at ${academy.name}` : ''}.</p>
           </div>
-          {expOpen && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <ExperienceSurveyForm
-                token={data.pendingExperience.token}
-                onDone={() => setTimeout(() => router.refresh(), 2500)}
-              />
-            </div>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       {/* Pending Surveys */}
       {pendingSurveys.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold" style={{ color: onDark ? '#dbe8f1' : 'var(--tss-navy)' }}>
-              Pending Feedback
+              1 · Method &amp; coach
             </h2>
             <span className="text-[12px] px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full font-bold">
               {pendingSurveys.length}
@@ -3235,6 +3227,40 @@ function FeedbackTab({
         </div>
       )}
 
+      {/* Camp experience survey (Opción A) — one per camp, about the overall
+          experience: facilities, equipment, transport, communication, value. */}
+      {data.pendingExperience && (
+        <div className="space-y-2">
+          <div className="bg-cyan-50 rounded-2xl p-4 shadow-sm">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-[11px] font-mono uppercase tracking-wider text-cyan-700">2 · Experience</p>
+                <p className="text-sm font-medium text-cyan-900">
+                  Your camp experience{data.pendingExperience.campName ? ` · ${data.pendingExperience.campName}` : ''}
+                </p>
+                <p className="text-[12px] text-cyan-700 mt-0.5">
+                  1 minute — facilities, equipment, transport & value
+                </p>
+              </div>
+              <button
+                onClick={() => setExpOpen(!expOpen)}
+                className="text-xs font-medium text-cyan-700 underline"
+              >
+                {expOpen ? 'Hide' : 'Give Feedback'}
+              </button>
+            </div>
+          </div>
+          {expOpen && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+              <ExperienceSurveyForm
+                token={data.pendingExperience.token}
+                onDone={() => setTimeout(() => router.refresh(), 2500)}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Past Feedback */}
       <div className="space-y-3">
         <h2 className="text-sm font-semibold" style={{ color: onDark ? '#dbe8f1' : 'var(--tss-navy)' }}>
@@ -3286,11 +3312,15 @@ function FeedbackTab({
                       {coachFeedback}
                     </p>
                   </div>
-                ) : (
-                  <p className="text-[12px] text-gray-400 italic">
-                    Your coach didn&apos;t leave written feedback for this session.
-                  </p>
-                )}
+                ) : ssr?.whats_next ? (
+                  // Sin resumen escrito, lo que SÍ dejó el coach para vos: el próximo foco.
+                  <div className="rounded-xl bg-[var(--tss-navy)]/[0.03] border-l-4 border-[var(--tss-cyan)] px-3 py-2.5">
+                    <p className="text-[12px] font-mono uppercase tracking-wider text-gray-400 mb-1">
+                      Next focus · from your coach
+                    </p>
+                    <p className="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{ssr.whats_next}</p>
+                  </div>
+                ) : null}
 
                 {/* Homework stays student-facing; "what's next" is internal (M135). */}
                 {ssr?.homework && (

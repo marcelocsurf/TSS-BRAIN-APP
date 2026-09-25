@@ -24,6 +24,8 @@ export interface FeedbackTokenView {
   coachFeedback: string | null;
   homework: string | null;
   whatsNext: string | null;
+  /** La academia del alumno (Puro Surf): logo al lado del nuestro. */
+  academy: { name: string | null; logoUrl: string | null } | null;
   /** Whether the student has already submitted a survey for this session. */
   alreadySubmitted: boolean;
 }
@@ -44,7 +46,7 @@ export async function getFeedbackByToken(
       `id, student_id, created_at, standalone_session_id, achieved, status, mission, coach_feedback,
        homework, whats_next,
        coach:coaches(display_name),
-       student:students(first_name),
+       student:students(first_name, academy_id),
        camp_session:camp_sessions!camp_session_id(session_date, camp_instances:camp_instance_id(camp_name, camp_templates:template_id(service_kind)))`,
     )
     .eq('feedback_token', token)
@@ -67,6 +69,13 @@ export async function getFeedbackByToken(
   // Sesiones cascade (standalone) son de surf por naturaleza.
   const serviceName = inst?.camp_name ?? ((row as any).standalone_session_id ? 'Surf' : null);
   const serviceKind = tpl?.service_kind ?? null;
+
+  // La academia del alumno, para el co-brand de la página.
+  let academy: { name: string | null; logoUrl: string | null } | null = null;
+  if (student?.academy_id) {
+    const { data: ac } = await admin.from('academies').select('name, logo_url').eq('id', student.academy_id).maybeSingle();
+    if (ac) academy = { name: (ac as any).name ?? null, logoUrl: (ac as any).logo_url ?? null };
+  }
 
   // Has the student already submitted? One survey per session result.
   const { data: existing } = await admin
@@ -91,6 +100,7 @@ export async function getFeedbackByToken(
     coachFeedback: (!row.camp_session || serviceKind === 'class' || serviceKind === 'trip') ? (row.coach_feedback ?? null) : null,
     homework: row.homework ?? null,
     whatsNext: row.whats_next ?? null,
+    academy,
     alreadySubmitted: !!existing,
   };
 }

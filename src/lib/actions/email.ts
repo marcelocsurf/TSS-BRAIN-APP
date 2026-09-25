@@ -104,6 +104,9 @@ interface CoachSurveyEmailData {
   coachName: string;
   /** What they attended, e.g. "Surf Camp Beginner (White Belt)" or "Discover Surfing". */
   serviceName: string;
+  /** Academia del alumno (Puro Surf): nombre y logo para el co-brand. */
+  academyName?: string | null;
+  academyLogoUrl?: string | null;
   /** student_session_results.id — deep-links the survey. */
   sessionResultId?: string;
   feedbackToken?: string;
@@ -126,9 +129,12 @@ export async function sendCoachSurveyEmail(data: CoachSurveyEmailData): Promise<
       Congratulations on finishing <strong>${escapeHtmlBasic(data.serviceName)}</strong> with
       <strong>${escapeHtmlBasic(data.coachName)}</strong>! 🌊
     </p>
-    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0;">
-      We'd love to hear how it went. It takes about 30 seconds and helps your coach and the whole team keep getting better.
-    </p>${INSTALL_APP_HTML}`;
+    ${data.academyLogoUrl ? `<p style="margin:0 0 14px;"><img src="${escapeHtmlBasic(data.academyLogoUrl)}" alt="${escapeHtmlBasic(data.academyName ?? '')}" height="36" style="height:36px;max-width:160px;object-fit:contain;" /></p>` : ''}
+    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 10px;">
+      We'd like your opinion in two areas — about a minute in total:
+    </p>
+    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 4px;"><strong>1 · Method &amp; coach</strong> — the sessions, what you learned, your coach.</p>
+    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0;"><strong>2 · Experience</strong> — facilities, equipment, transport and value${data.academyName ? ` at ${escapeHtmlBasic(data.academyName)}` : ''}.</p>${INSTALL_APP_HTML}`;
 
   try {
     await sendEmail({

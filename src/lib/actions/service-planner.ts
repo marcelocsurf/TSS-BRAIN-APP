@@ -2002,7 +2002,7 @@ export async function closeCampFinal(
   if (!isTestCamp) try {
     const { data: campRow } = await admin
       .from('camp_instances')
-      .select('camp_name')
+      .select('camp_name, academy_id, academies:academy_id(name, logo_url)')
       .eq('id', campInstanceId)
       .single();
     const { data: parts } = await admin
@@ -2042,6 +2042,8 @@ export async function closeCampFinal(
           portalToken: stu.portal_token,
           coachName: (coach as any).display_name || 'Coach',
           serviceName: campRow?.camp_name || 'your surf camp',
+          academyName: ((campRow as any)?.academies?.name as string | undefined) ?? null,
+          academyLogoUrl: ((campRow as any)?.academies?.logo_url as string | undefined) ?? null,
           sessionResultId: res?.id,
           feedbackToken: res?.feedback_token ?? undefined,
           studentHasCourseAccess: hasCourseAccess,

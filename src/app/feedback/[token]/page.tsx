@@ -44,6 +44,15 @@ export default async function FeedbackPage({ params }: Props) {
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="bg-[var(--tss-navy)] rounded-t-2xl px-5 py-5 text-center">
+          {data.academy?.logoUrl && (
+            <div className="flex items-center justify-center gap-3 mb-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-7 object-contain" />
+              <span className="text-white/40 text-lg">×</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={data.academy.logoUrl} alt={data.academy.name ?? ''} className="h-8 object-contain rounded-sm bg-white/95 px-1.5 py-0.5" />
+            </div>
+          )}
           <h1 className="text-white text-lg font-bold leading-tight"
               style={{ fontFamily: 'var(--font-heading)' }}>
             {BRAND.name}
@@ -81,8 +90,10 @@ export default async function FeedbackPage({ params }: Props) {
                 </p>
                 <p className="text-sm text-gray-700 mt-2">
                   Thanks for your session with <strong>{data.coachName}</strong> on{' '}
-                  <strong>{sessionDate}</strong>. Your feedback helps us improve.
+                  <strong>{sessionDate}</strong>. We&apos;d like your opinion in two areas:
                 </p>
+                <p className="text-sm text-gray-700 mt-1.5"><strong>1 · Method &amp; coach</strong> — the session, what you learned, your coach.</p>
+                <p className="text-sm text-gray-700 mt-0.5"><strong>2 · Experience</strong> — facilities, equipment, transport and value{data.academy?.name ? ` at ${data.academy.name}` : ''}.</p>
               </div>
 
               {/* Session recap card */}
@@ -94,6 +105,15 @@ export default async function FeedbackPage({ params }: Props) {
                       Coach Feedback
                     </p>
                     <p className="text-[13px] text-gray-700 mt-0.5">{data.coachFeedback}</p>
+                  </div>
+                )}
+                {data.whatsNext && (
+                  <div>
+                    <p className="text-[9px] uppercase tracking-wider text-[var(--tss-cyan)] font-semibold"
+                       style={{ fontFamily: 'DM Mono, monospace' }}>
+                      Next focus · from your coach
+                    </p>
+                    <p className="text-[13px] text-gray-700 mt-0.5">{data.whatsNext}</p>
                   </div>
                 )}
                 {data.homework && (
