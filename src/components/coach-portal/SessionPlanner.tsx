@@ -1594,6 +1594,33 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                             {fromClose ? `From the close of day ${closeDay ?? '—'}` : 'From the template'}
                           </p>
                           <p className="text-[18px] font-extrabold leading-tight mt-0.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#061C2B' }}>{st.display_name}</p>
+                          {/* ÚLTIMO DÍA (Marcelo 2026-09-25): el coach pide la encuesta en
+                              persona — WhatsApp con el link del alumno, o copiar. */}
+                          {data.isLastDay && st.survey && (
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px]">
+                              <span className="font-mono uppercase tracking-wider" style={{ color: st.survey.done ? '#0A7C5D' : '#B45309' }}>
+                                Survey · {st.survey.done ? 'answered ✓' : 'pending'}
+                              </span>
+                              {!st.survey.done && st.survey.phone && (
+                                <a
+                                  href={`https://wa.me/${String(st.survey.phone).replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hi ${(st.display_name || '').split(' ')[0]}! Thanks for surfing with us 🤙 Two minutes for your opinion — method & coach, and the experience: ${st.survey.url}`)}`}
+                                  target="_blank" rel="noopener noreferrer"
+                                  className="inline-flex items-center h-8 px-3 rounded-full font-bold"
+                                  style={{ background: '#25D366', color: '#fff' }}
+                                >
+                                  💬 Send survey by WhatsApp
+                                </a>
+                              )}
+                              {!st.survey.done && (
+                                <button type="button"
+                                  onClick={() => { const u = st.survey!.url; navigator.clipboard?.writeText(u).catch(() => {}); alert(`Survey link copied:\n${u}`); }}
+                                  className="inline-flex items-center h-8 px-3 rounded-full font-semibold border"
+                                  style={{ borderColor: '#DCD7C6', color: '#10263B', background: '#F7F9FA' }}>
+                                  Copy link
+                                </button>
+                              )}
+                            </div>
+                          )}
 
                           {/* LA MISIÓN DE HOY */}
                           {!mySeq ? (

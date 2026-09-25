@@ -1,7 +1,7 @@
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { getRatingsByCoach } from '@/lib/actions/reports-ratings';
+import { getRatingsByCoach, getSurveyResponseByCamp } from '@/lib/actions/reports-ratings';
 import { ReportControls } from '@/components/reports/ReportControls';
 import { StatCard, Th, Td, ReportCard } from '@/components/reports/primitives';
 import { Star, Users, ArrowLeft } from 'lucide-react';
@@ -21,6 +21,7 @@ export default async function RatingsReportPage({
 
   const sp = await searchParams;
   const data = await getRatingsByCoach({ from: sp.from, to: sp.to, academyId: sp.academy });
+  const byCamp = await getSurveyResponseByCamp({ from: sp.from, to: sp.to, academyId: sp.academy });
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-5">
@@ -84,6 +85,54 @@ export default async function RatingsReportPage({
                 </tbody>
               </table>
             </div>
+          </ReportCard>
+
+          {/* Respuesta por camp (Marcelo 2026-09-25): invitados / respondieron / % — para Rick, semana a semana. */}
+          <ReportCard title="Respuesta a la encuesta por camp" icon={Users}>
+            {!byCamp.ok ? (
+              <p className="text-sm text-rose-600">{byCamp.error}</p>
+            ) : byCamp.rows.length === 0 ? (
+              <p className="text-sm text-[#55666E]">Sin camps terminados en el período.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-[#F7F9FA]">
+                    <tr>
+                      <Th>Camp</Th>
+                      <Th>Terminó</Th>
+                      <Th align="right">Alumnos</Th>
+                      <Th align="right">Invitados</Th>
+                      <Th align="right">Coach</Th>
+                      <Th align="right">Experiencia</Th>
+                      <Th align="right">%</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {byCamp.rows.map((r) => (
+                      <tr key={r.campId} className="border-t border-[#EEF2F6]">
+                        <Td>{r.campName}</Td>
+                        <Td>{r.endDate}</Td>
+                        <Td align="right">{r.students}</Td>
+                        <Td align="right">{r.invited}</Td>
+                        <Td align="right">{r.answered}</Td>
+                        <Td align="right">{r.experience}</Td>
+                        <Td align="right">{r.pct == null ? '—' : `${r.pct}%`}</Td>
+                      </tr>
+                    ))}
+                    <tr className="border-t-2 border-[#DCD7C6] font-semibold">
+                      <Td>Total</Td>
+                      <Td>{' '}</Td>
+                      <Td align="right">{byCamp.totals.students}</Td>
+                      <Td align="right">{byCamp.totals.invited}</Td>
+                      <Td align="right">{byCamp.totals.answered}</Td>
+                      <Td align="right">{byCamp.totals.experience}</Td>
+                      <Td align="right">{byCamp.totals.pct == null ? '—' : `${byCamp.totals.pct}%`}</Td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p className="text-[11px] text-[#55666E] mt-2">Invitados = alumnos con correo o con la encuesta habilitada. Coach = respondieron la encuesta del coach. Experiencia = enviaron la de experiencia.</p>
+              </div>
+            )}
           </ReportCard>
 
           <p className="text-[11px] text-[#55666E]">

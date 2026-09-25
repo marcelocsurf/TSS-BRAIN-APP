@@ -61,6 +61,8 @@ export interface ServicePlanData {
   // a day picker. `selectedDay` is the day currently loaded in `plan` and
   // `students[].block` below.
   daySummaries: ServiceDaySummary[];
+  /** El día elegido es el último del servicio (o el único). */
+  isLastDay: boolean;
   selectedDay: ServiceDaySummary;
   plan: {
     venue_analysis: string | null;
@@ -343,6 +345,9 @@ export interface ServicePlanStudent {
   stepRatings: StepRatingSummary;
   /** Pasos listos para que el coach los confirme (ready-to-confirm.ts). */
   readyToConfirm: ReadyStep[];
+  /** La encuesta del día elegido (Marcelo 2026-09-25, "que el coach la pida en
+   *  persona el último día"): link público + si ya respondió + teléfono. */
+  survey: { url: string; done: boolean; phone: string | null } | null;
   // M45 — all blocks for the SELECTED day, sorted by order_index. A day
   // can have multiple blocks (multi-mission day, multi-STP focus, etc).
   blocks: ServicePlanBlock[];
@@ -485,7 +490,7 @@ export async function getServicePlan(
         'primary_goal, personal_goal, goal_short_term, goal_mid_term, goal_long_term, ' +
         'fears_phobias, biggest_barrier, injuries, allergies, medical_notes, risk_notes, media_release_consent, ' +
         'last_session_date, last_session_mission, last_session_status, last_homework, ' +
-        'current_focus_area, next_recommended_focus, next_focus_sequence_id, next_focus_step_id, coach_notes_general, learning_profile_primary, intake_completed_at, portal_token' +
+        'current_focus_area, next_recommended_focus, next_focus_sequence_id, next_focus_step_id, coach_notes_general, learning_profile_primary, intake_completed_at, portal_token, phone' +
       ')'
     )
     .eq('camp_instance_id', campInstanceId)
@@ -617,6 +622,30 @@ export async function getServicePlan(
     return a >= 0 && a < 120 ? a : null;
   };
 
+  // La encuesta del día elegido por alumno: el token del resultado de ESE día
+  // (existe desde que el coach cierra al alumno) y si ya la respondió.
+  const studById: Record<string, any> = Object.fromEntries((participants ?? []).map((p: any) => [p.student_id, Array.isArray(p.students) ? p.students[0] : p.students]));
+  const surveyByStudent: Record<string, { url: string; done: boolean; phone: string | null }> = {};
+  if (studentIds.length > 0 && selectedDay?.camp_session_id) {
+    const { data: dayResults } = await admin
+      .from('student_session_results')
+      .select('id, student_id, feedback_token')
+      .eq('camp_session_id', selectedDay.camp_session_id)
+      .in('student_id', studentIds)
+      .not('feedback_token', 'is', null);
+    const ids = (dayResults ?? []).map((r: any) => r.id);
+    const answered = new Set<string>();
+    if (ids.length) {
+      const { data: resp } = await admin.from('survey_responses').select('session_result_id').in('session_result_id', ids);
+      for (const r of resp ?? []) answered.add((r as any).session_result_id);
+    }
+    const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
+    for (const r of (dayResults ?? []) as any[]) {
+      const s = studById[r.student_id];
+      if (!surveyByStudent[r.student_id]) surveyByStudent[r.student_id] = { url: `${base}/feedback/${r.feedback_token}`, done: answered.has(r.id), phone: s?.phone ?? null };
+    }
+  }
+
   const students: ServicePlanStudent[] = (participants ?? []).map((p: any) => {
     const s = Array.isArray(p.students) ? p.students[0] : p.students;
     const studentBlocks = blocksByStudent.get(p.student_id) ?? [];
@@ -629,6 +658,7 @@ export async function getServicePlan(
       photo_url: s?.photo_url ?? null,
       recentSessions: recentByStudent[p.student_id] ?? [],
       readyToConfirm: readyByStudent[p.student_id] ?? [],
+      survey: surveyByStudent[p.student_id] ?? null,
       stepRatings: {
         selfRatedCount: rr.self.length,
         avgSelfRating: avgOf(rr.self),
@@ -869,6 +899,7 @@ export async function getServicePlan(
   }
 
   return {
+    isLastDay: daySummaries.length > 0 && selectedDay.day_number >= Math.max(...daySummaries.map((d) => d.day_number)),
     camp: {
       id: camp.id,
       camp_name: camp.camp_name,
@@ -2035,6 +2066,11 @@ export async function closeCampFinal(
         if (!stu?.email) continue;
         const res = latestByStudent.get(p.student_id);
         if (res?.email_sent) continue; // already invited (idempotent re-close)
+        if (res?.id) {
+          // Ya respondió (p. ej. el coach le mandó el link por WhatsApp el último día): no se insiste.
+          const { data: already } = await admin.from('survey_responses').select('id').eq('session_result_id', res.id).maybeSingle();
+          if (already) continue;
+        }
         const hasCourseAccess = !!stu.course_access_white || !!stu.course_access_yellow;
         // El valor del correo: lo que el coach dejó para trabajar (recién escrito en el cierre).
         let nextFocusLabel: string | null = null;

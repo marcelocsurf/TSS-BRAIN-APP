@@ -18,12 +18,10 @@ export const PLAN_TOPICS: PlanTopic[] = [
   { id: 'loop', title: 'The Infinite Circle', belts: [], href: '/loop' },
   // Pre-Course (todas las cintas): la teoría que un camp enseña en la arena.
   { id: 'lesson:PC-PRE-01', title: 'Safety Rules', belts: [], href: '?tab=course' },
-  { id: 'lesson:SAFE-OSE-02', title: 'Before Entering the Water', belts: [], href: '?tab=course' },
   { id: 'lesson:PC-PRE-02', title: 'Etiquette Rules', belts: [], href: '?tab=course' },
   { id: 'lesson:ONB-06', title: 'Venue Analysis', belts: [], href: '?tab=course' },
   { id: 'lesson:PC-WARMUP', title: 'Warm Up', belts: [], href: '?tab=course' },
-  { id: 'lesson:PC-PRE-04', title: 'Stages of the Wave (1-4)', belts: [], href: '?tab=course' },
-  { id: 'lesson:PC-PRE-03', title: 'Wave Parts and Types', belts: [], href: '?tab=course' },
+  { id: 'lesson:PC-PRE-04', title: 'Reading the Wave', belts: [], href: '?tab=course' },
   { id: 'lesson:PC-PRE-09', title: 'Currents, Wind & Bottom', belts: [], href: '?tab=course' },
   { id: 'lesson:PC-PRE-05', title: 'What to Do If You Lose the Board', belts: [], href: '?tab=course' },
   { id: 'lesson:PC-PRE-10', title: 'Ocean & Physical Readiness', belts: [], href: '?tab=course' },
