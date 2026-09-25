@@ -259,6 +259,10 @@ export interface StudentProfileSnapshot {
   level_quiz_score: number | null;
   /** true = el score es del quiz V2 (/100); false/undefined = v1 (/70). */
   level_quiz_is_v2?: boolean;
+  /** Del quiz V2 (Marcelo 2026-09-25): la tabla que dijo usar y las dos
+   *  cosas que eligió trabajar, en orden de prioridad (índices de V2_NEEDS). */
+  level_quiz_board?: string | null;
+  level_quiz_needs?: number[] | null;
   intake_completed_at?: string | null;
   intake_url?: string | null;
 }
@@ -668,6 +672,8 @@ export async function getServicePlan(
         nationality: s?.nationality ?? null,
         level_quiz_score: s?.level_quiz_score ?? null,
         level_quiz_is_v2: s?.level_quiz_v2 != null,
+        level_quiz_board: (s?.level_quiz_v2 as any)?.board ?? null,
+        level_quiz_needs: Array.isArray((s?.level_quiz_v2 as any)?.needs) ? (s.level_quiz_v2 as any).needs : null,
         intake_completed_at: s?.intake_completed_at ?? null,
         intake_url: s?.portal_token ? `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com'}/intake/${s.portal_token}` : null,
       },

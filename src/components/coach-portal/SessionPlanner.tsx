@@ -77,6 +77,7 @@ import { usesBeltEvaluation } from '@/lib/constants/service-kinds';
 import { exigeCierreDeDias } from '@/lib/utils/camp-window';
 import { sequenceLabel } from '@/lib/constants/learning-blocks';
 import { displayDate } from '@/lib/utils/tz';
+import { V2_BOARD_LABEL, V2_NEEDS } from '@/lib/quiz/surf-level-v2-scenes';
 
 // ────────────────────────────────────────────────────────────────────
 // SessionPlanner — coach's session-planning UI. Two phases driven by
@@ -2459,6 +2460,10 @@ function StudentProfilePanel({ student, onSaveNote }: { student: ServicePlanStud
     profile.learning_profile_primary &&
       `learns: ${profile.learning_profile_primary}`,
     profile.level_quiz_score != null && `level quiz: ${profile.level_quiz_score}/${profile.level_quiz_is_v2 ? 100 : 70}`,
+    // Lo que dijo en el quiz (Marcelo 2026-09-25): su tabla y sus dos
+    // prioridades, en el orden que las eligió.
+    profile.level_quiz_board && `quiz board: ${V2_BOARD_LABEL[profile.level_quiz_board] ?? profile.level_quiz_board}`,
+    (profile.level_quiz_needs?.length ?? 0) > 0 && `wants: ${profile.level_quiz_needs!.map((n, i) => `${i + 1}. ${V2_NEEDS[n] ?? n}`).join(' · ')}`,
   ].filter(Boolean) as string[];
 
   // Self-assessment summary — ★ the student gave themselves on STPs,

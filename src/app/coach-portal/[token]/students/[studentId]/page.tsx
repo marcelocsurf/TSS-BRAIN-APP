@@ -11,6 +11,7 @@ import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { BeltConfirm } from '@/components/coach-portal/BeltConfirm';
 import { OceanConfirm } from '@/components/coach-portal/OceanConfirm';
 import { levelForScore, LEVELS, isSelfSufficient } from '@/lib/quiz/surf-level';
+import { V2_BOARD_LABEL, V2_NEEDS } from '@/lib/quiz/surf-level-v2-scenes';
 
 export const dynamic = 'force-dynamic';
 
@@ -216,8 +217,15 @@ export default async function CoachStudentDetailPage({ params }: Props) {
               <div className="mb-3 space-y-1">
                 <p className="text-[11px] text-[#55666E] font-mono">
                   THE OCEAN {s.level_quiz_v2.mar}/50 · THE WAVE {s.level_quiz_v2.ola}/50
-                  {s.level_quiz_v2.board ? ` · ${s.level_quiz_v2.board.toUpperCase()}` : ''}
+                  {s.level_quiz_v2.board ? ` · ${(V2_BOARD_LABEL[s.level_quiz_v2.board] ?? s.level_quiz_v2.board).toUpperCase()}` : ''}
                 </p>
+                {/* Las dos cosas que eligió trabajar, en orden (Marcelo 2026-09-25). */}
+                {((s.level_quiz_v2 as any).needs?.length ?? 0) > 0 && (
+                  <p className="text-[12px] text-[#10263B]">
+                    <span className="font-semibold">Wants to work on:</span>{' '}
+                    {((s.level_quiz_v2 as any).needs as number[]).map((n, i) => `${i + 1}. ${V2_NEEDS[n] ?? n}`).join(' · ')}
+                  </p>
+                )}
                 {s.level_quiz_v2.capped_by && (s.level_quiz_v2.capped_gaps?.length ?? 0) > 0 && (
                   <p className="text-[11px] font-semibold text-amber-700">
                     What held it: {s.level_quiz_v2.capped_gaps.join(' · ')} — start day 1 there.
