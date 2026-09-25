@@ -18,7 +18,9 @@ interface Props {
 }
 
 export function FeedbackForm({ token, serviceKind, serviceName, experience }: Props) {
-  const QUESTIONS = surveyForService(serviceKind, serviceName).questions;
+  const SET = surveyForService(serviceKind, serviceName);
+  const QUESTIONS = SET.questions;
+  const METHOD = SET.method ?? [];
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [comment, setComment] = useState('');
   const [submitting, startTransition] = useTransition();
@@ -39,6 +41,8 @@ export function FeedbackForm({ token, serviceKind, serviceName, experience }: Pr
         q3_homework_clarity: ratings.q3_homework_clarity,
         q4_session_value: ratings.q4_session_value,
         academy_rating: ratings.academy_rating,
+        method_clarity: ratings.method_clarity,
+        method_next: ratings.method_next,
         open_comment: comment,
       });
       if (!res.ok) {
@@ -99,6 +103,19 @@ export function FeedbackForm({ token, serviceKind, serviceName, experience }: Pr
           onChange={(v) => setRatings((prev) => ({ ...prev, [q.col]: v }))}
         />
       ))}
+      {METHOD.length > 0 && (
+        <div className="pt-2 space-y-4" style={{ borderTop: '1px solid #DCD7C6' }}>
+          <p className="text-[11px] font-mono uppercase tracking-wider" style={{ color: '#00A8CC' }}>The method</p>
+          {METHOD.map((q) => (
+            <StarRating
+              key={q.col}
+              label={q.label}
+              value={ratings[q.col] ?? 0}
+              onChange={(v) => setRatings((prev) => ({ ...prev, [q.col]: v }))}
+            />
+          ))}
+        </div>
+      )}
 
       <div>
         <label

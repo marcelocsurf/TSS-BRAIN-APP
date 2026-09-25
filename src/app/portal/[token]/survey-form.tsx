@@ -23,6 +23,7 @@ export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props 
   const surveySet = surveyForService(serviceKind, serviceName);
   const labels = surveySet.questions.map((q) => q.label);
   const showFlow = surveySet.flow;
+  const methodQs = surveySet.method ?? [];
   const header = key === 'surf' ? 'Rate Your Coach' : key === 'trip' ? 'Rate Your Trip' : 'Rate Your Class';
   const sub = 'A few quick questions about your experience.';
   const router = useRouter();
@@ -37,6 +38,8 @@ export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props 
     safety_rating: 0,
     improvement_value: 0,
     recommend_rating: 0,
+    method_clarity: 0,
+    method_next: 0,
     flow_channel: 0,
     open_comment: '',
   });
@@ -51,6 +54,7 @@ export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props 
       form.safety_rating === 0 ||
       form.improvement_value === 0 ||
       form.recommend_rating === 0 ||
+      (methodQs.length > 0 && (form.method_clarity === 0 || form.method_next === 0)) ||
       (showFlow && form.flow_channel === 0)
     ) {
       setError('Please answer all the questions before submitting.');
@@ -67,6 +71,8 @@ export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props 
         safety_rating: form.safety_rating,
         improvement_value: form.improvement_value,
         recommend_rating: form.recommend_rating,
+        method_clarity: methodQs.length ? form.method_clarity : null,
+        method_next: methodQs.length ? form.method_next : null,
         flow_channel: showFlow ? form.flow_channel : null,
         open_comment: form.open_comment.trim() || '',
       });
@@ -165,6 +171,21 @@ export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props 
           value={form.recommend_rating}
           onChange={v => set('recommend_rating', v)}
         />
+
+        {/* EL MÉTODO (Marcelo 2026-09-25): el área 1 es método Y coach. */}
+        {methodQs.length > 0 && (
+          <div className="pt-2 space-y-5" style={{ borderTop: '1px solid #DCD7C6' }}>
+            <p className="text-[11px] font-mono uppercase tracking-wider" style={{ color: '#00A8CC' }}>The method</p>
+            {methodQs.map((q) => (
+              <StarQuestion
+                key={q.col}
+                label={q.label}
+                value={(form as any)[q.col] ?? 0}
+                onChange={v => set(q.col, v)}
+              />
+            ))}
+          </div>
+        )}
 
         {/* M47 — Flow channel (solo surf): misma escala 1-5 que llena el coach;
             comparar ambas revela desajustes (el coach creyó óptimo, el alumno

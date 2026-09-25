@@ -69,7 +69,7 @@ const STR = {
     water_min: 'min de agua', intention: 'intención', outcome: 'resultado', mission_w: 'misión', sequence: 'secuencia', held: 'freno', work: 'trabajar',
     focus: 'foco', flow: 'flow', waves: 'olas', tide: 'marea', wind: 'viento', with: 'con', quiz: 'quiz',
     water_level: 'Nivel de agua', before: 'antes', from: 'antes', by: 'por', final_eval: 'Evaluación final', approved: 'aprobada', not_approved: 'en progreso',
-    improve: 'a mejorar', homework: 'tarea', survey: 'Encuesta del alumno', coach: 'coach', session: 'sesión', belt: 'Cinta',
+    improve: 'a mejorar', homework: 'tarea', survey: 'Encuesta del alumno', coach: 'coach', session: 'sesión', method: 'método', belt: 'Cinta',
     done: { yes: 'lograda', partial: 'parcial', no: 'no lograda' } as Record<string, string>,
     auto: { yes: 'drill: listo para la misión', almost: 'drill: casi listo', not_yet: 'drill: sigue practicando' } as Record<string, string>,
     level: { beginner: 'principiante', supervised: 'supervisado', semi_autonomous: 'semi-autónomo', autonomous: 'autónomo', advanced: 'avanzado' } as Record<string, string>,
@@ -82,7 +82,7 @@ const STR = {
     water_min: 'min in the water', intention: 'intention', outcome: 'outcome', mission_w: 'mission', sequence: 'sequence', held: 'held back by', work: 'work on',
     focus: 'focus', flow: 'flow', waves: 'waves', tide: 'tide', wind: 'wind', with: 'with', quiz: 'quiz',
     water_level: 'Water level', before: 'was', from: 'from', by: 'by', final_eval: 'Final evaluation', approved: 'approved', not_approved: 'in progress',
-    improve: 'to improve', homework: 'homework', survey: 'Student survey', coach: 'coach', session: 'session', belt: 'Belt',
+    improve: 'to improve', homework: 'homework', survey: 'Student survey', coach: 'coach', session: 'session', method: 'method', belt: 'Belt',
     // Mismas palabras que el cierre del coach: Achieved · Partial · Not yet.
     done: { yes: 'achieved', partial: 'partial', no: 'not yet' } as Record<string, string>,
     auto: { yes: 'drill: ready for the mission', almost: 'drill: almost ready', not_yet: 'drill: keep practicing' } as Record<string, string>,
@@ -210,7 +210,7 @@ export async function buildStudentActivity(
       .order('created_at', { ascending: false }),
     withSurveys
       ? admin.from('survey_responses')
-          .select('submitted_at, coach_rating, flow_channel, session_quality, open_comment')
+          .select('submitted_at, coach_rating, flow_channel, session_quality, method_clarity, method_next, open_comment')
           .eq('student_id', studentId)
           .order('submitted_at', { ascending: false })
       : Promise.resolve({ data: [] as any[], error: null }),
@@ -327,6 +327,7 @@ export async function buildStudentActivity(
       detail: [
         r.coach_rating != null ? `${t.coach} ${r.coach_rating}★` : null,
         r.session_quality != null ? `${t.session} ${r.session_quality}★` : null,
+        r.method_clarity != null ? `${t.method} ${r.method_clarity}★` : null,
         r.flow_channel != null ? `${t.flow}: ${t.flow_words[Number(r.flow_channel)] ?? r.flow_channel}` : null,
         r.open_comment ? `"${String(r.open_comment).trim().slice(0, 120)}${String(r.open_comment).trim().length > 120 ? '…' : ''}"` : null,
       ].filter(Boolean).join(' · ') || null,

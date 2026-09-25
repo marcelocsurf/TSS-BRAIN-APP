@@ -22,6 +22,9 @@ interface SurveyInput {
   safety_rating: number;     // 3. Felt safe & looked after in the water
   improvement_value: number; // 4. Learned / progressed
   recommend_rating: number;  // 5. Would take another class with this coach
+  /** El método (00218): ¿tuvo sentido? · ¿sabés qué trabajar después? Solo surf. */
+  method_clarity?: number | null;
+  method_next?: number | null;
   // M47 — student-reported Csíkszentmihályi flow channel (1=bored,
   // 3=optimal, 5=frustrated). Used to compare against the coach's
   // own per-block flow_channel evaluation.
@@ -81,6 +84,8 @@ export async function submitSurvey(input: SurveyInput) {
       q4_session_value: input.improvement_value,    // 4. Learned / progressed
       session_quality: input.improvement_value,     // 4. (mirror)
       academy_rating: input.recommend_rating,       // 5. Would take another class (repurposed)
+      method_clarity: input.method_clarity || null, // El método: ¿tuvo sentido?
+      method_next: input.method_next || null,       // El método: ¿sabés qué sigue?
       flow_channel: input.flow_channel || null,     // 6. How the class felt (solo surf)
       open_comment: input.open_comment || null,     // 7. Open comment
     });

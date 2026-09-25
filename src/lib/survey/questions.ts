@@ -13,7 +13,9 @@ export type SurveyCol =
   | 'q1_clarity'
   | 'q3_homework_clarity'
   | 'q4_session_value'
-  | 'academy_rating';
+  | 'academy_rating'
+  | 'method_clarity'
+  | 'method_next';
 
 export interface SurveyQuestion { col: SurveyCol; label: string }
 
@@ -22,11 +24,18 @@ export type SurveyKey = 'surf' | 'yoga' | 'icebath' | 'skate' | 'jiujitsu' | 'un
 export interface SurveySet {
   questions: SurveyQuestion[]; // en orden; incluye coach_rating
   flow: boolean;               // mostrar el selector de "flow channel" (solo surf)
+  /** EL MÉTODO (Marcelo 2026-09-25): el área 1 es "método y coach", y la encuesta
+   *  no preguntaba nada del método. Solo surf; columnas propias (00218). */
+  method?: SurveyQuestion[];
 }
 
 export const SURVEY_SETS: Record<SurveyKey, SurveySet> = {
   surf: {
     flow: true,
+    method: [
+      { col: 'method_clarity', label: 'Did the method make sense — the sequence, the steps, the stars?' },
+      { col: 'method_next', label: 'Do you know exactly what to work on next?' },
+    ],
     questions: [
       { col: 'coach_rating', label: 'How would you rate your coach today?' },
       { col: 'q1_clarity', label: 'Were the instructions and explanations clear and easy to follow?' },

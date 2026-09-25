@@ -119,6 +119,8 @@ export async function submitFeedbackByToken(
     q4_session_value?: number;      // learned / progressed
     q2_feedback?: number;
     academy_rating?: number;        // repurposed → would take another class
+    method_clarity?: number;        // el método: ¿tuvo sentido? (00218)
+    method_next?: number;           // el método: ¿sabés qué sigue?
     flow_channel?: number;          // how the class felt
     open_comment?: string;
   },
@@ -164,6 +166,8 @@ export async function submitFeedbackByToken(
     q4_session_value: clamp(input.q4_session_value),
     session_quality: clamp(input.q4_session_value),
     academy_rating: clamp(input.academy_rating),             // recommend
+    method_clarity: clamp(input.method_clarity),
+    method_next: clamp(input.method_next),
     flow_channel: clamp(input.flow_channel),
     open_comment: input.open_comment?.trim() || null,
   });
