@@ -44,19 +44,20 @@ export default async function FeedbackPage({ params }: Props) {
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="bg-[var(--tss-navy)] rounded-t-2xl px-5 py-5 text-center">
-          {data.academy?.logoUrl && (
-            <div className="flex items-center justify-center gap-3 mb-3">
+          {data.academy?.logoUrl ? (
+            <div className="flex items-center justify-center gap-6 mb-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-7 object-contain" />
-              <span className="text-white/40 text-lg">×</span>
+              <img src={data.academy.logoUrl} alt={data.academy.name ?? ''} className="h-14 w-auto object-contain" />
+              <span className="h-10 w-px bg-white/25" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={data.academy.logoUrl} alt={data.academy.name ?? ''} className="h-8 object-contain rounded-sm bg-white/95 px-1.5 py-0.5" />
+              <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-14 w-auto object-contain" />
             </div>
+          ) : (
+            <h1 className="text-white text-lg font-bold leading-tight"
+                style={{ fontFamily: 'var(--font-heading)' }}>
+              {BRAND.name}
+            </h1>
           )}
-          <h1 className="text-white text-lg font-bold leading-tight"
-              style={{ fontFamily: 'var(--font-heading)' }}>
-            {BRAND.name}
-          </h1>
           <p className="text-[var(--tss-cyan)] text-[11px] mt-1"
              style={{ fontFamily: 'DM Mono, monospace' }}>
             {BRAND.tagline}
@@ -90,10 +91,11 @@ export default async function FeedbackPage({ params }: Props) {
                 </p>
                 <p className="text-sm text-gray-700 mt-2">
                   Thanks for your session with <strong>{data.coachName}</strong> on{' '}
-                  <strong>{sessionDate}</strong>. We&apos;d like your opinion in two areas:
+                  <strong>{sessionDate}</strong>.
                 </p>
-                <p className="text-sm text-gray-700 mt-1.5"><strong>1 · Method &amp; coach</strong> — the session, what you learned, your coach.</p>
-                <p className="text-sm text-gray-700 mt-0.5"><strong>2 · Experience</strong> — facilities, equipment, transport and value{data.academy?.name ? ` at ${data.academy.name}` : ''}.</p>
+                <p className="mt-3 text-[20px] font-black uppercase leading-tight text-[var(--tss-navy)]" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>We&apos;d like your opinion in two areas</p>
+                <p className="text-[16px] text-gray-800 mt-2 leading-snug"><strong>1 · Method &amp; coach</strong> — the session, what you learned, your coach.</p>
+                <p className="text-[16px] text-gray-800 mt-1 leading-snug"><strong>2 · Experience</strong> — facilities, equipment, transport and value{data.academy?.name ? ` at ${data.academy.name}` : ''}.</p>
               </div>
 
               {/* Session recap card */}

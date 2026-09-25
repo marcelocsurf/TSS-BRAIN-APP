@@ -88,6 +88,7 @@ type Block =
   | { type: 'blockquote'; content: string }
   | { type: 'callout'; variant: string; content: string }
   | { type: 'hr' }
+  | { type: 'image'; src: string; alt: string }
   | { type: 'code'; content: string }
   | { type: 'table'; rows: string[][] };
 
@@ -122,6 +123,15 @@ function parseMarkdown(md: string): Block[] {
       }
       blocks.push({ type: 'code', content: codeLines.join('\n') });
       i++; // skip closing ```
+      continue;
+    }
+
+    // Imagen sola en su línea: ![alt](src). Las láminas del método viven en
+    // /uploads/fotos (Marcelo 2026-09-25: la lámina de las señales en Safety Rules).
+    const img = line.trim().match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/);
+    if (img) {
+      blocks.push({ type: 'image', alt: img[1], src: img[2] });
+      i++;
       continue;
     }
 
@@ -393,6 +403,16 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
         </div>
       );
     }
+    case 'image':
+      return (
+        <figure key={idx} className="my-4 mx-0">
+          <a href={block.src} target="_blank" rel="noreferrer" className="block">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={block.src} alt={block.alt} className="w-full h-auto rounded-lg border border-[#DCD7C6]" loading="lazy" />
+          </a>
+          {block.alt && <figcaption className="text-[12px] text-[#55666E] mt-1.5">{block.alt} · tap to open</figcaption>}
+        </figure>
+      );
     case 'hr':
       return <hr key={idx} className="my-4 border-[#DCD7C6]" />;
     case 'code':

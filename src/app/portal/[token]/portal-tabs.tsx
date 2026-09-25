@@ -3145,22 +3145,38 @@ function FeedbackTab({
           una academia (Puro Surf). */}
       {(pendingSurveys.length > 0 || data.pendingExperience) && (() => {
         const academy = (data as any).academyBranding as { name: string | null; logo_url: string | null } | null;
+        // v10.1 (Marcelo 2026-09-25): los dos logos del mismo tamaño sobre ink,
+        // el texto grande en Archivo sobre sand, los números en Plex.
         return (
-          <div className="rounded-2xl p-4" style={{ background: '#061C2B' }}>
-            <div className="flex items-center gap-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-7 object-contain" />
+          <div className="rounded-lg overflow-hidden" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
+            <div className="flex items-center justify-center gap-6 px-5 py-5" style={{ background: '#061C2B' }}>
               {academy?.logo_url && (
                 <>
-                  <span className="text-white/40 text-lg">×</span>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={academy.logo_url} alt={academy.name ?? ''} className="h-8 object-contain rounded-sm bg-white/95 px-1.5 py-0.5" />
+                  <img src={academy.logo_url} alt={academy.name ?? ''} className="h-14 w-auto object-contain" />
+                  <span className="h-10 w-px" style={{ background: 'rgba(247,249,250,.25)' }} />
                 </>
               )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/tss-logo-white.png?v=2" alt="The Surf Sequence" className="h-14 w-auto object-contain" />
             </div>
-            <p className="text-white text-[15px] font-bold mt-3 leading-snug">We&apos;d like your opinion in two areas</p>
-            <p className="text-[13px] mt-1.5 leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}><b style={{ color: '#00D2FF' }}>1 · Method &amp; coach</b> — the sessions, what you learned, your coach.</p>
-            <p className="text-[13px] mt-1 leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}><b style={{ color: '#00D2FF' }}>2 · Experience</b> — facilities, equipment, transport and value{academy?.name ? ` at ${academy.name}` : ''}.</p>
+            <div className="px-5 py-5">
+              <h2 className="m-0 text-[24px]" style={{ ...H_BIG, color: '#10263B' }}>We&apos;d like your opinion in two areas</h2>
+              <div className="mt-4 space-y-3">
+                {[
+                  { n: '1', t: 'Method & coach', d: 'the sessions, what you learned, your coach.' },
+                  { n: '2', t: 'Experience', d: `facilities, equipment, transport and value${academy?.name ? ` at ${academy.name}` : ''}.` },
+                ].map((r) => (
+                  <div key={r.n} className="flex items-start gap-3">
+                    <span className="shrink-0 w-8 h-8 rounded-full inline-flex items-center justify-center text-[14px] font-black" style={{ background: '#061C2B', color: '#00D2FF', fontFamily: 'var(--font-plex), DM Mono, monospace' }}>{r.n}</span>
+                    <p className="m-0 text-[17px] leading-snug" style={{ color: '#10263B' }}>
+                      <span className="font-extrabold" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>{r.t}</span>
+                      <span> — {r.d}</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         );
       })()}
@@ -3169,10 +3185,10 @@ function FeedbackTab({
       {pendingSurveys.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold" style={{ color: onDark ? '#dbe8f1' : 'var(--tss-navy)' }}>
+            <h2 className="m-0 text-[20px]" style={{ ...H_BIG, color: '#F7F9FA' }}>
               1 · Method &amp; coach
             </h2>
-            <span className="text-[12px] px-1.5 py-0.5 bg-red-100 text-red-600 rounded-full font-bold">
+            <span className="text-[12px] px-2 py-0.5 rounded-full font-bold" style={{ background: '#FF6B6B', color: '#fff' }}>
               {pendingSurveys.length}
             </span>
           </div>
@@ -3234,7 +3250,7 @@ function FeedbackTab({
           <div className="bg-cyan-50 rounded-2xl p-4 shadow-sm">
             <div className="flex justify-between items-start">
               <div>
-                <p className="text-[11px] font-mono uppercase tracking-wider text-cyan-700">2 · Experience</p>
+                <p className="m-0 mb-1 text-[18px]" style={{ ...H_BIG, color: '#10263B' }}>2 · Experience</p>
                 <p className="text-sm font-medium text-cyan-900">
                   Your camp experience{data.pendingExperience.campName ? ` · ${data.pendingExperience.campName}` : ''}
                 </p>
