@@ -13,7 +13,7 @@ import { THREE_CIRCLES_SEQUENCE_ID, gameContext } from '@/lib/sequence-pages/thr
 import { SEQUENCE_ROLE, SIDE_SHORT, SIDE_WORD, type SequenceSide } from '@/lib/constants/learning-blocks';
 import { sideBalance } from '@/lib/sequence-sides';
 import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
-import { effectiveStars } from '@/lib/stars';
+import { effectiveStars, selfStarsThatCount } from '@/lib/stars';
 import { getTasks, closeTask, type StudentTask } from '@/lib/actions/lets-play';
 import { MAX_OPEN_TASKS } from '@/lib/stars';
 import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
@@ -845,14 +845,21 @@ function StepRow({
 
         <div className="flex-shrink-0 flex flex-col items-end gap-0.5">
           {item.coach_rating != null ? (
-            // M4: Coach official rating overrides self-rating visually (gold)
+            // Las DOS estrellas a la vista (Marcelo 2026-09-25): la del coach en
+            // cyan (oficial, la que cuenta) y la tuya en ámbar debajo.
             <>
               <StarRating value={item.coach_rating} size="sm" readOnly variant="official" />
               <div className="text-[12px] text-[var(--tss-cyan,#00D2FF)] font-bold uppercase tracking-wider">
-                Official {item.coach_rating}/5
+                Coach {item.coach_rating}/5
               </div>
-              {item.rating !== null && item.rating !== item.coach_rating && (
-                <div className="text-[12px] text-[#55666E]">self: {item.rating}/5</div>
+              {item.rating !== null && (
+                <>
+                  <StarRating value={selfStarsThatCount(item.rating, item.self_source)} size="sm" readOnly />
+                  <div className="text-[12px] text-[#55666E] text-right">
+                    You {selfStarsThatCount(item.rating, item.self_source)}/5
+                    {item.self_source === 'assessed' && ' · self-assessed'}
+                  </div>
+                </>
               )}
               {item.ready_to_confirm && <div className="text-[11px] font-semibold" style={{ color: '#0A7C5D' }}>ready for your coach</div>}
             </>
@@ -863,7 +870,7 @@ function StepRow({
               <StarRating value={effectiveStars(item)} size="sm" readOnly />
               {item.rating !== null && (
                 <div className="text-[12px] text-[#55666E] text-right">
-                  {effectiveStars(item)}/5
+                  You {effectiveStars(item)}/5
                   {item.self_source === 'assessed' && (item.rating > (effectiveStars(item) ?? 0)
                     ? <span className="block">mapped {item.rating}/5 · counts as 3★ until you surf it</span>
                     : ' · self-assessed')}

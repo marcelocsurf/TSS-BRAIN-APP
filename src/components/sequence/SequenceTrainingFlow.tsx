@@ -26,7 +26,7 @@ import { getWeeklyPracticeCount, getLastPracticeHint, type CriterionResult } fro
 import { Target, Check, CircleDot, X, Flame, Dumbbell, Waves, Play, Clock, Repeat, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { MAX_OPEN_TASKS } from '@/lib/stars';
 import { VenueScoutLauncher, type VenueCheckResult } from '@/components/venue-scout/VenueScoutLauncher';
-import { sequenceLabel, SIDE_WORD } from '@/lib/constants/learning-blocks';
+import { sequenceLabel, SIDE_WORD, SEQUENCE_PASS_STARS } from '@/lib/constants/learning-blocks';
 import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
 import { MomentChips } from './MySequenceTab';
 import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
@@ -193,6 +193,11 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   const [execStars, setExecStars] = useState<number | null>(null);
   // "Go deeper": niveles cerrados por defecto.
   const [deeper, setDeeper] = useState(false);
+  // Run bajo la barra (Marcelo 2026-09-25): la pregunta "¿qué se rompió?" se
+  // abre sola. A 4★+ queda cerrada: el run cuenta para cada paso.
+  useEffect(() => {
+    if (seqStars != null && seqStars < SEQUENCE_PASS_STARS) setDeeper(true);
+  }, [seqStars]);
   const [deepStep, setDeepStep] = useState<Record<string, boolean>>({});
   const [noteOpen, setNoteOpen] = useState(false);
   const [focusRating, setFocusRating] = useState<number | null>(null);
@@ -202,7 +207,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   const [flow, setFlow] = useState<number | null>(null);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
-  const [result, setResult] = useState<{ nextFocus: NextFocus; sequenceRating: number | null } | null>(null);
+  const [result, setResult] = useState<{ nextFocus: NextFocus; sequenceRating: number | null; stepsCounted: number } | null>(null);
   // Al cerrar: "¿qué trabajás la próxima?" — una tarea, o ninguna (Marcelo 2026-09-10).
   const [taskState, setTaskState] = useState<{ saved: string | null; error: string | null; picking: boolean; saving: boolean }>({ saved: null, error: null, picking: false, saving: false });
   const [weekCount, setWeekCount] = useState<number | null>(null);
@@ -695,7 +700,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         });
         if (!res.ok) { setErrorMsg(res.error); setSaving(false); return; }
         try { sessionStorage.removeItem(draftKey); } catch { /* nada */ }
-        setResult({ nextFocus: res.nextFocus, sequenceRating: res.sequenceRating });
+        setResult({ nextFocus: res.nextFocus, sequenceRating: res.sequenceRating, stepsCounted: res.stepsCounted ?? 0 });
         getWeeklyPracticeCount(portalToken).then(setWeekCount).catch(() => {});
         setPhase('done');
       } catch {
@@ -729,12 +734,21 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
               <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
               <p className="text-[12.5px] text-[#55666E] mt-1">Three taps: your star for the whole sequence, your focus, how it felt.</p>
               <div className="mt-2"><StarRating value={seqStars} onChange={setSeqStars} size="lg" showLabel /></div>
+              {seqStars != null && (
+                <p className="text-[12.5px] mt-2 rounded-[5px] px-3 py-2" style={seqStars >= SEQUENCE_PASS_STARS ? { background: 'rgba(6,214,160,.12)', color: INK } : { background: 'rgba(255,209,102,.28)', color: INK }}>
+                  {seqStars >= SEQUENCE_PASS_STARS
+                    ? <>The whole line held. <b>{seqStars}★ counts for every step</b> of this sequence you don't mark below. Your coach's star, where there is one, still rules.</>
+                    : <>Below the bar. <b>What broke?</b> Tap the step or the moment of the line below — or save as is and check the steps in Let's Play.</>}
+                </p>
+              )}
             </div>
 
             <FocusPicker value={focusRating} onChange={setFocusRating} />
             <FlowPicker flow={flow} onChange={setFlow} />
 
-            <DeeperToggle open={deeper} onToggle={() => setDeeper((d) => !d)} label="Check each step of this sequence" hint="Tap the moment of the line where it broke, or the step itself — the earliest one in the chain becomes your next focus. Open a step to check its details." />
+            <DeeperToggle open={deeper} onToggle={() => setDeeper((d) => !d)}
+              label={seqStars != null && seqStars < SEQUENCE_PASS_STARS ? 'What broke? Tap the step' : 'Something held it back? Mark the step'}
+              hint="Tap the moment of the line where it broke, or the step itself — the earliest one in the chain becomes your next focus. Open a step to check its details." />
             {deeper && (
             <div>
               <div className="space-y-1.5">
@@ -854,7 +868,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         <button type="button" disabled={!canSave} onClick={handleSave}
           className="w-full h-12 rounded-[5px] text-[14px] font-bold disabled:opacity-40 active:scale-[0.99]"
           style={{ background: canSave ? CYAN : '#DCD7C6', color: INK, ...F_D }}>
-          {saving ? 'Saving…' : online ? 'Save & update Let&apos;s Play' : 'Save (waiting for signal)'}
+          {saving ? 'Saving…' : online ? 'Save & update Let’s Play' : 'Save (waiting for signal)'}
         </button>
         {!canSave && !saving && (
           <p className="text-[12px] text-[#55666E] text-center -mt-2">
@@ -896,6 +910,12 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                 <div className="flex justify-between text-xs gap-3">
                   <span className="text-[#55666E] shrink-0">Held it back</span>
                   <span className="font-bold text-right" style={{ color: INK }}>{heldTitles.join(' · ')}</span>
+                </div>
+              )}
+              {(result?.stepsCounted ?? 0) > 0 && (
+                <div className="flex justify-between text-xs gap-3">
+                  <span className="text-[#55666E] shrink-0">Counted for</span>
+                  <span className="font-bold text-right" style={{ color: INK }}>{result!.stepsCounted} step{result!.stepsCounted === 1 ? '' : 's'} · {seqStars}★ each</span>
                 </div>
               )}
             </>

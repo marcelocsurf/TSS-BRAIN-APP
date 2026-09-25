@@ -298,7 +298,7 @@ function cleanCriteria(
 export async function saveSequenceSession(
   portalToken: string,
   input: SaveSequenceSessionInput
-): Promise<{ ok: true; sessionId: string; nextFocus: NextFocus; sequenceRating: number | null } | { ok: false; error: string }> {
+): Promise<{ ok: true; sessionId: string; nextFocus: NextFocus; sequenceRating: number | null; /** Pasos que tomaron la estrella del run (run a 4★+). */ stepsCounted: number } | { ok: false; error: string }> {
   try {
     const studentId = await studentIdFromPortalToken(portalToken);
     if (!studentId) return { ok: false, error: 'Not authenticated.' };
@@ -498,9 +498,36 @@ export async function saveSequenceSession(
       if (seqErr) { console.error('[lets-play] sequence rating failed', seqErr); return rollback('Could not save your sequence rating.'); }
     }
 
-    // ── Las estrellas de paso SOLO se mueven con detalle explícito ──
+    // ── Las estrellas de paso ──
+    // Run a 4★+ (Marcelo 2026-09-25: "que le cuente para cada paso"): la
+    // estrella del run vale para cada paso de la cadena que NO marcaste como
+    // freno. Llena o sube; nunca baja un paso que ya ejecutaste más alto, y
+    // pisa una autoevaluación sin ola (esto fue en el agua). Run bajo la
+    // barra: solo los pasos marcados, con la estrella que les pusiste. Foco:
+    // ese paso. La del coach no se toca: sigue mandando (efectiva) y el paso
+    // queda "listo para confirmar" si corresponde.
     const stepUpserts: { step_id: string; rating: number }[] = [];
-    if (!isVirtual && isRun) for (const m of stepMarks ?? []) if (isRating(m.rating)) stepUpserts.push({ step_id: m.step_id, rating: m.rating as number });
+    let stepsCounted = 0;
+    if (!isVirtual && isRun) {
+      const marked = new Set((stepMarks ?? []).map((m) => m.step_id));
+      for (const m of stepMarks ?? []) if (isRating(m.rating)) stepUpserts.push({ step_id: m.step_id, rating: m.rating as number });
+      if (runPassed) {
+        const { data: cur } = await admin
+          .from('student_step_ratings')
+          .select('step_id, current_rating, self_source')
+          .eq('student_id', studentId)
+          .in('step_id', order);
+        const curMap = new Map(((cur ?? []) as any[]).map((r) => [r.step_id as string, r]));
+        for (const id of order) {
+          if (marked.has(id)) continue;
+          const c = curMap.get(id);
+          const higherExecuted = !!c && c.self_source !== 'assessed' && isRating(c.current_rating) && (c.current_rating as number) > (seqRating as number);
+          if (higherExecuted) continue;
+          stepUpserts.push({ step_id: id, rating: seqRating as number });
+          stepsCounted += 1;
+        }
+      }
+    }
     if (!isVirtual && !isRun && focus && execution) stepUpserts.push({ step_id: focus.step_id, rating: execution });
     for (const u of stepUpserts) {
       const { error: stepErr } = await admin.from('student_step_ratings').upsert({
@@ -520,7 +547,7 @@ export async function saveSequenceSession(
       }
     }
 
-    return { ok: true, sessionId: session.id, nextFocus, sequenceRating: seqRating };
+    return { ok: true, sessionId: session.id, nextFocus, sequenceRating: seqRating, stepsCounted };
   } catch (e) {
     console.error('[lets-play] saveSequenceSession failed', e);
     return { ok: false, error: 'Could not save the session.' };

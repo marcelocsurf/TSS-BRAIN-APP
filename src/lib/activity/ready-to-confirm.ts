@@ -2,7 +2,8 @@ import 'server-only';
 
 import type { createAdminClient } from '@/lib/supabase/admin';
 import { SEQUENCE_PASS_STARS } from '@/lib/constants/learning-blocks';
-import { ASSESSED_CAP } from '@/lib/stars';
+import { selfStarsThatCount } from '@/lib/stars';
+export { selfStarsThatCount };
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 
 // ─── "LISTO PARA QUE TU COACH LO CONFIRME" · una sola regla ───
@@ -29,13 +30,6 @@ export interface ReadyStep {
   coach_rated_at: string | null;
   sessions_since: number;
   last_session_at: string | null;
-}
-
-/** La nota propia que vale: una AUTOEVALUACIÓN sin ola nunca pasa de 3★
- *  (stars.ts ASSESSED_CAP) — solo la ejecutada puede llegar a 4★. */
-export function selfStarsThatCount(selfStars: number | null | undefined, selfSource?: string | null): number | null {
-  if (selfStars == null) return null;
-  return selfSource === 'assessed' ? Math.min(selfStars, ASSESSED_CAP) : selfStars;
 }
 
 export function isReadyToConfirm(

@@ -12,6 +12,13 @@ export function effectiveStars(i: { coach_rating?: number | null; rating?: numbe
   return i.self_source === 'assessed' ? Math.min(i.rating, ASSESSED_CAP) : i.rating;
 }
 
+/** La nota propia que vale: una AUTOEVALUACIÓN sin ola nunca pasa de 3★
+ *  (ASSESSED_CAP) — solo la ejecutada puede llegar a 4★. */
+export function selfStarsThatCount(selfStars: number | null | undefined, selfSource?: string | null): number | null {
+  if (selfStars == null) return null;
+  return selfSource === 'assessed' ? Math.min(selfStars, ASSESSED_CAP) : selfStars;
+}
+
 /** La estrella que sale de marcar indicadores: todos 4★ · alguno a medias 3★ · alguno no 2★. */
 export function starsFromCriteria(results: ('met' | 'partial' | 'not_met')[]): number {
   if (!results.length) return 2;
