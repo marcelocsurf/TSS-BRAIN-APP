@@ -29,10 +29,6 @@ export const PLAN_TOPICS: PlanTopic[] = [
   { id: 'lesson:ONB-01', title: 'Goofy or Regular', belts: [], href: '?tab=course' },
   { id: 'lesson:BB-VALUES-01', title: 'Your Belt Values So Far', belts: ['blue'], href: '?tab=course' },
   { id: 'lesson:BB-ONB-01', title: 'Conscious Commitment', belts: ['blue'], href: '?tab=course' },
-  { id: 'lesson:BB-FOUND-01', title: 'Blue Belt Foundation Sequence (17 elements)', belts: ['blue'], href: '?tab=course' },
-  { id: 'lesson:BB-CONCEPTS-01', title: 'The Four Blue Belt Concepts', belts: ['blue'], href: '?tab=course' },
-  { id: 'lesson:BB-MOD-INT', title: 'The Complete Blue Belt Ride', belts: ['blue'], href: '?tab=course' },
-  { id: 'lesson:BB-EXIT-01', title: 'Path to Purple · Self-Evaluation', belts: ['blue'], href: '?tab=course' },
 ];
 
 export function topicsForBelt(belt: string | null | undefined): PlanTopic[] {
