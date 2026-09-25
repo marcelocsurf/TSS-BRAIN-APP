@@ -62,7 +62,7 @@ export default async function SequencePageRoute({ params, searchParams }: { para
 
   const [{ data: lessonRows }, { data: pieceRows }, access, { data: videoRows }, { data: seqRating }, { data: stepRatings }] = await Promise.all([
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),
-    admin.from('drills_missions').select('id, type, title, description_md, key_words, time_estimate, reps_recommended').eq('active', true).in('step_id', cfg.stepIds),
+    admin.from('drills_missions').select('id, type, title, description_md, key_words, time_estimate, reps_recommended').eq('active', true).eq('student_visible', true).in('step_id', cfg.stepIds),
     getStudentAccess((student as any).id),
     // Convención (2026-09-09): el video de la secuencia se sube en Library
     // (Admin → kind "video") con un título que empieza por el id, p. ej.

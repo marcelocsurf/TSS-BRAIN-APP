@@ -5,6 +5,9 @@ import { BRAND } from '@/lib/constants/brand';
 import { FeedbackForm } from './FeedbackForm';
 import { ExperienceSurveyForm } from '@/components/survey/ExperienceSurveyForm';
 
+// Página por link personal: no se indexa (auditoría de lanzamiento 2026-09-25).
+export const metadata = { robots: { index: false, follow: false } };
+
 // Standalone feedback page for Lead students who don't have a course.
 // Token-gated, no portal nav, no other tabs. Once submitted, shows a
 // thank-you. Safe to share via email — only the survey lives here.

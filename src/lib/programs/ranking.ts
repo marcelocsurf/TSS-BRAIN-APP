@@ -65,12 +65,14 @@ export async function computeWeekRanking(
   // Roster: alumnos con asignación ACTIVA — una fila por ALUMNO.
   const { data: asg, error: aErr } = await admin
     .from('program_assignments')
-    .select('student_id, students(first_name, last_name)')
+    .select('student_id, students(first_name, last_name, is_test)')
     .eq('status', 'active');
   if (aErr) throw aErr;
   if (!asg || asg.length === 0) return [];
   const roster = new Map<string, string>();
   for (const a of asg as any[]) {
+    // Las personas de prueba (Androide) no compiten con atletas reales.
+    if (a.students?.is_test) continue;
     if (!roster.has(a.student_id)) {
       roster.set(a.student_id, `${a.students?.first_name ?? ''} ${a.students?.last_name ?? ''}`.trim() || '—');
     }

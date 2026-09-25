@@ -3,6 +3,9 @@ import { getExperienceByToken } from '@/lib/actions/experience-survey';
 import { BRAND } from '@/lib/constants/brand';
 import { ExperienceSurveyForm } from '@/components/survey/ExperienceSurveyForm';
 
+// Página por link personal: no se indexa (auditoría de lanzamiento 2026-09-25).
+export const metadata = { robots: { index: false, follow: false } };
+
 // Página standalone de la encuesta de EXPERIENCIA del camp. Token-gated,
 // sin nav — segura para compartir por WhatsApp/correo. Espejo de /feedback.
 

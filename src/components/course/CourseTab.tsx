@@ -162,13 +162,13 @@ export function CourseTab({ data }: { data: CourseData }) {
     return (
       <div className="text-center py-16 px-6">
         <Lock className="mx-auto mb-4 text-[var(--tss-cyan)]" size={56} strokeWidth={1.5} />
-        <h2 className="text-xl font-bold mb-2">Course Access Required</h2>
+        <h2 className="text-xl font-bold mb-2">Your course opens with a camp</h2>
         <p className="text-gray-600 mb-6">
-          The Surf Sequence White Belt Masterclass is a paid course. Reach out to your coach to get access.
+          The belt course comes with every surf camp and with the course itself. Ask the front desk at your academy, or take the level quiz to see where you would start.
         </p>
-        <p className="text-sm text-gray-400">
-          Once you have an access code, your coach will activate the course on your account.
-        </p>
+        <a href="/quiz" className="inline-flex items-center justify-center h-11 px-5 rounded-[5px] text-[14px] font-extrabold uppercase tracking-wide no-underline" style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
+          Find my level →
+        </a>
       </div>
     );
   }
@@ -401,10 +401,19 @@ export function CourseTab({ data }: { data: CourseData }) {
   const whiteTheme = BELT_THEMES.white;
   const beltTheme = BELT_THEMES[beltLevelForCourse(activeCourse.key)];
 
-  const overallPercent =
-    data.totalLessons > 0
-      ? Math.round((data.totalCompleted / data.totalLessons) * 100)
-      : 0;
+  // El progreso es el del CURSO ACTIVO (auditoría 2026-09-25): antes contaba
+  // las 186 lecciones de la base, incluidas las 90 del coach y las apagadas,
+  // así que un principiante veía "0 de 186" y nunca el "Course complete".
+  const courseLessonList = Array.from(
+    new Map(
+      [...preCourseLessons, ...sharedOnboardingLessons, ...onboardingLessons, ...beltLessons]
+        .filter((l) => l.status_v1 !== 'PROPOSED')
+        .map((l) => [l.id, l] as const),
+    ).values(),
+  );
+  const courseTotal = courseLessonList.length;
+  const courseDone = courseLessonList.filter((l) => l.completed).length;
+  const overallPercent = courseTotal > 0 ? Math.round((courseDone / courseTotal) * 100) : 0;
 
   return (
     <div className="space-y-5">
@@ -428,7 +437,7 @@ export function CourseTab({ data }: { data: CourseData }) {
         <div className="mt-4 rounded-[8px] p-3" style={{ border: '1px solid rgba(0,210,255,.45)', background: 'rgba(0,210,255,.05)' }}>
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.045em', color: '#00D2FF' }}>Course progress</span>
-            <span className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#D6E1E7' }}>{data.totalCompleted} of {data.totalLessons} lessons</span>
+            <span className="text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#D6E1E7' }}>{courseDone} of {courseTotal} lessons</span>
           </div>
           <div className="flex items-center gap-3 mt-2">
             <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ background: 'rgba(214,225,231,.18)' }}>
@@ -739,7 +748,7 @@ export function CourseTab({ data }: { data: CourseData }) {
       </div>
 
       {/* Footer */}
-      {data.totalCompleted === data.totalLessons && data.totalLessons > 0 && (
+      {courseDone === courseTotal && courseTotal > 0 && (
         <div className="rounded-xl p-5 text-center" style={{ background: '#F7F9FA', border: '1.5px solid #00D2FF' }}>
           <Trophy className="mx-auto mb-2 text-[var(--tss-cyan)]" size={36} strokeWidth={1.75} />
           <h3 className="font-bold text-lg text-[var(--tss-navy)] mb-1">{beltLabelShort} Course Complete!</h3>

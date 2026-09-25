@@ -6,6 +6,9 @@ import { notFound } from 'next/navigation';
 import { IntakeForm } from './intake-form';
 import { createAdminClient } from '@/lib/supabase/admin';
 
+// Página por link personal: no se indexa (auditoría de lanzamiento 2026-09-25).
+export const metadata = { robots: { index: false, follow: false } };
+
 const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo' });
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
 

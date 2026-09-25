@@ -28,6 +28,9 @@ import { getMyProgram, getMySeason, getMyAppointments, getMyAthleteScores, getMy
 import { getMyCompetitions } from '@/lib/actions/competitions';
 import { getMyStudentResources } from '@/lib/actions/coach-resources';
 
+// Página por link personal: no se indexa (auditoría de lanzamiento 2026-09-25).
+export const metadata = { robots: { index: false, follow: false } };
+
 // Always fetch fresh data — no caching of student portal
 
 // Brand Manual v10 typefaces — Archivo (wdth axis → Expanded display) +

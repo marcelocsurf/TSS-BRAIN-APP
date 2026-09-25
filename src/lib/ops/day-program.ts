@@ -55,6 +55,7 @@ export async function getOpsByDay(academyId: string, from: string, to: string): 
         camp_sessions(id),
         camp_participants(id, enrollment_status, room_number, planned_departure, departed_on, finalized_at, students:student_id(languages, shirt_size)))`)
     .eq('camp_instances.academy_id', academyId)
+    .eq('camp_instances.is_test', false)
     .neq('camp_instances.status', 'cancelled')
     .gte('session_date', from)
     .lte('session_date', to)

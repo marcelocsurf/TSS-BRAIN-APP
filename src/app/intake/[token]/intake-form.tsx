@@ -381,10 +381,20 @@ export function IntakeForm({ token, student, extendedRequired = false, singleDay
           <p className="text-sm text-gray-500">
             Your coach will have everything they need to prepare your sessions.
           </p>
+          {/* El link del portal ES este mismo token (auditoría 2026-09-25: el
+              intake terminaba sin decirle al cliente dónde entrar). */}
+          <a href={`/portal/${token}`}
+             className="inline-flex w-full items-center justify-center h-12 rounded-[5px] text-[15px] font-extrabold uppercase tracking-wide no-underline"
+             style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
+            Open my portal →
+          </a>
+          <p className="text-[12px] text-gray-500">
+            Save this page or the message that brought you here — it is your personal link. Lost it? Get it again at <b>app.thesurfsequence.com/my-portal</b>.
+          </p>
         </div>
         <PinSetupCard portalToken={token} hasPin={false} />
         <p className="text-[11px] text-gray-400 text-center">
-          You can close this page. See you in the water.
+          See you in the water.
         </p>
       </div>
     );

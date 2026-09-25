@@ -47,7 +47,7 @@ export function PinSetupCard({
         <div>
           <p className="text-sm font-semibold text-[var(--tss-navy)]">PIN saved</p>
           <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">
-            Next time, open the app and enter your PIN to come straight back in.
+            Next time, open app.thesurfsequence.com and enter your PIN to come straight back in.
           </p>
         </div>
       </div>

@@ -2082,7 +2082,7 @@ export async function closeCampFinal(
           }
           nextFocusNote = noteAfterLabel(stu.next_recommended_focus ?? null, nextFocusLabel);
         } catch { /* sin foco no se rompe el correo */ }
-        await sendCoachSurveyEmail({
+        const surveyMail = await sendCoachSurveyEmail({
           nextFocusLabel,
           nextFocusNote,
           studentName: stu.first_name,
@@ -2096,8 +2096,12 @@ export async function closeCampFinal(
           feedbackToken: res?.feedback_token ?? undefined,
           studentHasCourseAccess: hasCourseAccess,
         });
-        if (res?.id) {
+        // Solo cuenta como invitado si el correo SALIÓ (auditoría 2026-09-25:
+        // antes se marcaba enviado aunque Resend fallara o el switch estuviera apagado).
+        if (res?.id && surveyMail.success) {
           await admin.from('student_session_results').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', res.id);
+        } else if (res?.id) {
+          console.error('[closeCampFinal] survey email not sent', { studentId: p.student_id, error: surveyMail.error });
         }
       }
     }
@@ -2190,7 +2194,7 @@ export async function finalizeStudentEarlyByToken(
       .maybeSingle();
     if (stu?.email && res?.id && !res.email_sent) {
       const { sendCoachSurveyEmail } = await import('@/lib/actions/email');
-      await sendCoachSurveyEmail({
+      const surveyMail = await sendCoachSurveyEmail({
         studentName: (stu as any).first_name,
         studentEmail: (stu as any).email,
         portalToken: (stu as any).portal_token,
@@ -2200,8 +2204,12 @@ export async function finalizeStudentEarlyByToken(
         feedbackToken: res.feedback_token ?? undefined,
         studentHasCourseAccess: !!(stu as any).course_access_white || !!(stu as any).course_access_yellow,
       });
-      await admin.from('student_session_results').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', res.id);
-      surveyEmailSent = true;
+      if (surveyMail.success) {
+        await admin.from('student_session_results').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', res.id);
+        surveyEmailSent = true;
+      } else {
+        console.error('[finalizeStudentEarly] survey email not sent', surveyMail.error);
+      }
     }
   } catch {
     /* best-effort: el alumno YA quedó Finished; encuesta/correo no traban */
@@ -2937,7 +2945,7 @@ export async function closeServicePlan(
         const hasCourseAccess =
           !!(stud as any).course_access_white ||
           !!(stud as any).course_access_yellow;
-        await sendCoachSurveyEmail({
+        const surveyMail = await sendCoachSurveyEmail({
           studentName: stud.first_name,
           studentEmail: stud.email,
           portalToken: stud.portal_token,
@@ -2947,10 +2955,14 @@ export async function closeServicePlan(
           feedbackToken: (result as any).feedback_token ?? undefined,
           studentHasCourseAccess: hasCourseAccess,
         });
-        await admin
-          .from('student_session_results')
-          .update({ email_sent: true, email_sent_at: new Date().toISOString() })
-          .eq('id', result.id);
+        if (surveyMail.success) {
+          await admin
+            .from('student_session_results')
+            .update({ email_sent: true, email_sent_at: new Date().toISOString() })
+            .eq('id', result.id);
+        } else {
+          console.error('[closeServicePlan] survey email not sent', surveyMail.error);
+        }
       } catch {
         /* non-blocking */
       }

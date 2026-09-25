@@ -33,6 +33,7 @@ export async function getFrontDeskData(token: string) {
     .from('camp_instances')
     .select('id, camp_name, start_date, scheduled_time, capacity_override, head_coach_id, head_coach_status, camp_templates:template_id!inner(template_name, service_kind, capacity_max, list_price_cents), coaches:coach_id(display_name), hc:head_coach_id(display_name), camp_participants(id, enrollment_status, payment_status, payment_method, amount_cents, sale_type, discount_reason, room_number, notes, reserved_at, sold_by, seller:sold_by(display_name), students(id, first_name, last_name, waiver_signed, phone, email))')
     .eq('academy_id', who.academy_id)
+    .eq('is_test', false)
     .in('camp_templates.service_kind', ['class', 'trip', 'surf_lesson', 'surf_camp'])
     // Visible mientras el servicio NO haya terminado: un camp de 6 días en
     // curso (día 2, 3…) debe seguir en el mostrador para cobrar/transferir.
@@ -187,6 +188,7 @@ export async function getTransferTargets(token: string, participantId: string) {
     .from('camp_instances')
     .select('id, camp_name, start_date, end_date, scheduled_time, capacity_override, camp_templates:template_id(template_name, service_kind, capacity_max, list_price_cents), camp_participants(enrollment_status, student_id)')
     .eq('academy_id', who.academy_id)
+    .eq('is_test', false)
     .gte('end_date', today)
     .neq('status', 'cancelled')
     .neq('id', cur.id)

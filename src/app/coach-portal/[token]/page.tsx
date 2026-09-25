@@ -9,6 +9,9 @@ import { LogoutButton } from '@/components/shared/LogoutButton';
 import { getActiveStudentOrCoachImpersonation } from '@/lib/actions/impersonate';
 import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 
+// Página por link personal: no se indexa (auditoría de lanzamiento 2026-09-25).
+export const metadata = { robots: { index: false, follow: false } };
+
 // Brand Manual v10 typefaces — Archivo (variable, wdth axis for Expanded
 // display) + IBM Plex Mono for labels/data. Scoped to the coach portal.
 const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-archivo' });

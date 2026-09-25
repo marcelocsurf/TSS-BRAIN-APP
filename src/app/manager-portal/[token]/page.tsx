@@ -3,6 +3,9 @@ import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { Lock, Users, GraduationCap, Flag, AlertTriangle, CalendarDays, Package, ClipboardList } from 'lucide-react';
 import { SalesPanel } from './SalesPanel';
 
+// Página por link personal: no se indexa (auditoría de lanzamiento 2026-09-25).
+export const metadata = { robots: { index: false, follow: false } };
+
 // MANAGER PORTAL (M144) — read-only executive view of ONE academy.
 // Token-gated like the coach/student portals; Brand v10 look.
 

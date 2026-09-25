@@ -39,7 +39,7 @@ export default async function CirclesPage({ params }: { params: Promise<{ token:
 
   const drillIds = CIRCLES.flatMap((c) => [...(c.feel ?? []), ...(c.play ?? []), ...(c.moves ?? []).flatMap((m) => [...m.feel, ...(m.play ?? [])])]);
   const [{ data: pieceRows }, access, { data: videoRow }] = await Promise.all([
-    admin.from('drills_missions').select('id, type, title, description_md, key_words, time_estimate, reps_recommended').eq('active', true).in('id', drillIds),
+    admin.from('drills_missions').select('id, type, title, description_md, key_words, time_estimate, reps_recommended').eq('active', true).eq('student_visible', true).in('id', drillIds),
     getStudentAccess(student.id),
     admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', 'YB-CIRCLES%').order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ]);

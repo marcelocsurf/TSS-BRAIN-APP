@@ -4,6 +4,9 @@ import { Lock } from 'lucide-react';
 import { DeskBoard } from './DeskBoard';
 import { getRecentBookings } from '@/lib/actions/front-desk';
 
+// Página por link personal: no se indexa (auditoría de lanzamiento 2026-09-25).
+export const metadata = { robots: { index: false, follow: false } };
+
 // FRONT DESK (M147) — token-gated screen for reception: today's classes,
 // who owes what, and one-tap settle (cash / card / transfer / room charge).
 

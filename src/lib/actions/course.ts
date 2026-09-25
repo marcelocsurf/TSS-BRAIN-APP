@@ -88,11 +88,14 @@ export async function getCourseCatalog(portalToken: string) {
 
   const isOwner = COURSE_OWNER_IDS.has(studentId);
 
-  // Get all lessons
+  // Todas las lecciones del ALUMNO: las 90 del coach (coach_*) no viajan al
+  // navegador del estudiante (auditoría 2026-09-25: 1.3 MB por pantalla y el
+  // material del coach legible en view-source).
   const { data: lessons } = await admin
     .from('lessons')
     .select('*')
     .eq('active', true)
+    .not('course_section', 'like', 'coach_%')
     .order('display_order', { ascending: true });
 
   // Get student progress for all lessons
@@ -178,6 +181,7 @@ export async function getLessonDetail(lessonId: string, portalToken: string) {
     .select('*')
     .eq('id', lessonId)
     .eq('active', true)
+    .not('course_section', 'like', 'coach_%')
     .single();
 
   if (lessonErr || !lesson) return null;
@@ -493,16 +497,17 @@ export async function saveLessonForm(
 
   if (error) return { ok: false, error: error.message };
 
-  // If this is PC-002 Set Goal, also update student's personal_goal field
-  if (lessonId === 'PC-002' && formData?.goal) {
+  // El dato manda, no el id de la lección (auditoría 2026-09-25: el formulario
+  // activo es ONB-01 Goofy or Regular y el código solo miraba PC-004, así que
+  // el stance nunca llegaba a la ficha).
+  if (formData?.goal) {
     await admin
       .from('students')
       .update({ personal_goal: formData.goal })
       .eq('id', studentId);
   }
 
-  // If this is PC-004 Goofy or Regular, save to student profile
-  if (lessonId === 'PC-004' && formData?.stance) {
+  if (formData?.stance === 'goofy' || formData?.stance === 'regular') {
     await admin
       .from('students')
       .update({ goofy_or_regular: formData.stance })

@@ -129,6 +129,7 @@ export async function hostAttentionList(token: string): Promise<HostStudentRow[]
     .from('camp_participants')
     .select('student_id, camp_instances:camp_instance_id!inner(academy_id, start_date, end_date)')
     .eq('camp_instances.academy_id', who.academy_id)
+    .eq('camp_instances.is_test', false)
     .gte('camp_instances.start_date', today)
     .lte('camp_instances.start_date', horizon)
     .eq('enrollment_status', 'active');
@@ -344,6 +345,7 @@ export async function hostDayOperation(token: string, dateISO: string): Promise<
       camp_participants(id, enrollment_status, payment_status, room_number, notes, reserved_at, sold_by, planned_departure, departed_on, finalized_at, seller:sold_by(display_name), students(id, first_name, last_name, waiver_signed, phone, email)),
       camp_sessions(id, day_number, session_date, session_status)`)
     .eq('academy_id', who.academy_id)
+    .eq('is_test', false)
     .lte('start_date', dateISO)
     .gte('end_date', dateISO)
     .neq('status', 'cancelled');
@@ -526,6 +528,7 @@ export async function hostDayAlerts(token: string): Promise<HostDayAlerts | null
         camp_templates:template_id(template_name, capacity_max),
         camp_participants(enrollment_status)`)
       .eq('academy_id', who.academy_id)
+      .eq('is_test', false)
       .lte('start_date', today).gte('end_date', today)
       .neq('status', 'cancelled'),
     admin.from('camp_sessions')
@@ -816,6 +819,7 @@ export async function hostTransportBoard(token: string): Promise<TransportBoardR
     .gte('session_date', today)
     .lte('session_date', end)
     .eq('camp_instances.academy_id', who.academy_id)
+    .eq('camp_instances.is_test', false)
     .order('session_date');
   if (sessErr) return null;
   const sessions = (sess ?? []).filter((s: any) => {
@@ -1018,6 +1022,7 @@ export async function hostAvailability(token: string): Promise<AvailabilityRow[]
     .gte('session_date', today)
     .lte('session_date', end)
     .eq('camp_instances.academy_id', who.academy_id)
+    .eq('camp_instances.is_test', false)
     .order('session_date');
   if (error) return null;
 

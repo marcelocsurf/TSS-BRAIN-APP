@@ -146,10 +146,10 @@ function StudentPanel() {
           autoComplete="off"
           inputMode={looksLikeCode ? 'text' : 'numeric'}
           className="w-full px-4 py-2.5 border border-[var(--tss-gray-200)] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] focus:border-transparent"
-          placeholder="TSS-XXXX-XXXX or your PIN"
+          placeholder="Access code or your PIN"
         />
         <p className="text-[11px] text-gray-500 mt-1.5">
-          First time? Use the code your coach sent you. Already have a PIN? Type it and add your email below.
+          Camp students: use the personal link we sent you, or <a href="/my-portal" className="underline font-semibold" style={{ color: '#00A8CC' }}>email me my portal link</a>. Have a PIN? Type it and add your email below.
         </p>
       </div>
       {looksLikePin && (
