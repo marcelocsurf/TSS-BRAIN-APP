@@ -17,6 +17,7 @@ import {
   type BeltMaterial,
 } from '@/lib/constants/student-materials';
 import { SurveyForm } from './survey-form';
+import { SurveySectionHead } from '@/components/survey/SurveyUi';
 import { PROMOTION_COPY, LIGHT_BELTS } from '@/lib/constants/promotion-copy';
 import { toElSalvadorDate } from '@/lib/utils/tz';
 import { CourseTab } from '@/components/course/CourseTab';
@@ -3169,101 +3170,60 @@ function FeedbackTab({
         );
       })()}
 
-      {/* Pending Surveys */}
+      {/* 1 · Method & coach — una tarjeta por encuesta pendiente (v10.1, Marcelo
+          2026-09-25: "más legible, que no se vea hecho con IA"). Con una sola
+          pendiente el formulario va abierto; el kit vive en SurveyUi. */}
       {pendingSurveys.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h2 className="m-0 text-[20px]" style={{ ...H_BIG, color: '#F7F9FA' }}>
-              1 · Method &amp; coach
-            </h2>
-            <span className="text-[12px] px-2 py-0.5 rounded-full font-bold" style={{ background: '#FF6B6B', color: '#fff' }}>
-              {pendingSurveys.length}
-            </span>
-          </div>
-          {pendingSurveys.map((result: any) => (
-            <div key={result.id} className="space-y-2">
-              <div className="bg-amber-50 rounded-2xl p-4 shadow-sm">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="text-sm font-medium text-amber-900">
-                      {result.standalone_sessions?.mission || 'Session'}
-                    </p>
-                    <p className="text-[12px] text-amber-700 mt-0.5">
-                      {surveyDateLabel(
-                        (Array.isArray(result.camp_sessions) ? result.camp_sessions[0] : result.camp_sessions)?.session_date,
-                        result.created_at,
-                      )}
-                      {result.coaches?.display_name &&
-                        ` - Coach: ${result.coaches.display_name}`}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() =>
-                      setExpandedSurveyId(
-                        expandedSurveyId === result.id ? null : result.id
-                      )
-                    }
-                    className="text-xs font-medium text-amber-700 underline"
-                  >
-                    {expandedSurveyId === result.id ? 'Hide' : 'Give Feedback'}
-                  </button>
-                </div>
-              </div>
-              {expandedSurveyId === result.id && (
-                <SurveyForm
-                  resultId={result.id}
-                  token={token}
-                  serviceKind={(() => {
-                    const ci: any = Array.isArray(result.camp_sessions) ? result.camp_sessions[0] : result.camp_sessions;
-                    const inst = ci ? (Array.isArray(ci.camp_instances) ? ci.camp_instances[0] : ci.camp_instances) : null;
-                    const tpl = inst ? (Array.isArray(inst.camp_templates) ? inst.camp_templates[0] : inst.camp_templates) : null;
-                    return tpl?.service_kind ?? (result.standalone_sessions ? 'surf_lesson' : null);
-                  })()}
-                  serviceName={(() => {
-                    const ci: any = Array.isArray(result.camp_sessions) ? result.camp_sessions[0] : result.camp_sessions;
-                    const inst = ci ? (Array.isArray(ci.camp_instances) ? ci.camp_instances[0] : ci.camp_instances) : null;
-                    return inst?.camp_name ?? null;
-                  })()}
+          {pendingSurveys.map((result: any, idx: number) => {
+            const ci: any = Array.isArray(result.camp_sessions) ? result.camp_sessions[0] : result.camp_sessions;
+            const inst = ci ? (Array.isArray(ci.camp_instances) ? ci.camp_instances[0] : ci.camp_instances) : null;
+            const tpl = inst ? (Array.isArray(inst.camp_templates) ? inst.camp_templates[0] : inst.camp_templates) : null;
+            const serviceKind = tpl?.service_kind ?? (result.standalone_sessions ? 'surf_lesson' : null);
+            const serviceName = inst?.camp_name ?? null;
+            const open = expandedSurveyId === result.id || (pendingSurveys.length === 1 && idx === 0);
+            const when = surveyDateLabel(ci?.session_date, result.created_at);
+            const coach = result.coaches?.display_name ? `Coach ${result.coaches.display_name}` : null;
+            const answerBtn = (
+              <button type="button" onClick={() => setExpandedSurveyId(result.id)} className="shrink-0 h-10 px-4 rounded-[5px] text-[13px]" style={{ ...H_BIG, fontWeight: 800, letterSpacing: '0.02em', background: '#00D2FF', color: '#061C2B' }}>Answer →</button>
+            );
+            return (
+              <section key={result.id} className="rounded-lg overflow-hidden" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
+                <SurveySectionHead
+                  kicker="1 · Method & coach"
+                  title={result.standalone_sessions?.mission || serviceName || 'Your sessions'}
+                  sub={[when, coach].filter(Boolean).join(' · ')}
+                  right={open
+                    ? (pendingSurveys.length > 1 ? <button type="button" onClick={() => setExpandedSurveyId(null)} className="shrink-0 text-[13px] font-semibold underline" style={{ color: '#55666E' }}>Hide</button> : null)
+                    : answerBtn}
                 />
-              )}
-            </div>
-          ))}
+                {open && <SurveyForm resultId={result.id} token={token} serviceKind={serviceKind} serviceName={serviceName} />}
+              </section>
+            );
+          })}
         </div>
       )}
 
-      {/* Camp experience survey (Opción A) — one per camp, about the overall
-          experience: facilities, equipment, transport, communication, value. */}
-      {data.pendingExperience && (
-        <div className="space-y-2">
-          <div className="bg-cyan-50 rounded-2xl p-4 shadow-sm">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="m-0 mb-1 text-[18px]" style={{ ...H_BIG, color: '#10263B' }}>2 · Experience</p>
-                <p className="text-sm font-medium text-cyan-900">
-                  Your camp experience{data.pendingExperience.campName ? ` · ${data.pendingExperience.campName}` : ''}
-                </p>
-                <p className="text-[12px] text-cyan-700 mt-0.5">
-                  1 minute — facilities, equipment, transport & value
-                </p>
+      {/* 2 · Experience — una por camp: instalaciones, equipo, transporte,
+          comunicación, value. Abierta de una si no queda nada del área 1. */}
+      {data.pendingExperience && (() => {
+        const openExp = expOpen || pendingSurveys.length === 0;
+        return (
+          <section className="rounded-lg overflow-hidden" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
+            <SurveySectionHead
+              kicker="2 · Experience"
+              title={data.pendingExperience.campName || 'Your camp experience'}
+              sub="One minute — facilities, equipment, transport & value"
+              right={openExp ? null : <button type="button" onClick={() => setExpOpen(true)} className="shrink-0 h-10 px-4 rounded-[5px] text-[13px]" style={{ ...H_BIG, fontWeight: 800, letterSpacing: '0.02em', background: '#00D2FF', color: '#061C2B' }}>Answer →</button>}
+            />
+            {openExp && (
+              <div className="px-5 py-5">
+                <ExperienceSurveyForm token={data.pendingExperience.token} onDone={() => setTimeout(() => router.refresh(), 2500)} />
               </div>
-              <button
-                onClick={() => setExpOpen(!expOpen)}
-                className="text-xs font-medium text-cyan-700 underline"
-              >
-                {expOpen ? 'Hide' : 'Give Feedback'}
-              </button>
-            </div>
-          </div>
-          {expOpen && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
-              <ExperienceSurveyForm
-                token={data.pendingExperience.token}
-                onDone={() => setTimeout(() => router.refresh(), 2500)}
-              />
-            </div>
-          )}
-        </div>
-      )}
+            )}
+          </section>
+        );
+      })()}
 
       {/* Past Feedback */}
       <div className="space-y-3">

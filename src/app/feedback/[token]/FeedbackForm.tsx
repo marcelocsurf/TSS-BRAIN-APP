@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { submitFeedbackByToken } from '@/lib/actions/feedback-token';
 import { surveyForService } from '@/lib/survey/questions';
 import { ExperienceSurveyForm } from '@/components/survey/ExperienceSurveyForm';
+import { StarScale, SurveyDivider, SurveyDone, SurveyError, SurveyField, SurveySubmit, SV, SV_ARCHIVO, SV_PLEX } from '@/components/survey/SurveyUi';
 
 // Survey form. Renders client-side so the user gets immediate validation +
 // a thank-you state after submit. Las preguntas se eligen SEGÚN EL SERVICIO
@@ -59,132 +60,45 @@ export function FeedbackForm({ token, serviceKind, serviceName, experience }: Pr
     if (experience) {
       return (
         <div className="space-y-4 pt-2">
-          <div className="rounded-xl bg-emerald-50 px-3 py-2 flex items-center gap-2">
-            <span className="text-emerald-600 text-base">{'✓'}</span>
-            <p className="text-xs text-emerald-800">Session feedback sent — thank you!</p>
+          <div className="rounded-[5px] px-3 py-2.5 flex items-center gap-2.5" style={{ background: SV.sand, border: `1px solid ${SV.border}` }}>
+            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full text-[14px] font-black shrink-0" style={{ background: SV.ink, color: SV.cyan }}>✓</span>
+            <p className="m-0 text-[15px]" style={{ color: SV.inkText }}>Method &amp; coach sent — thank you.</p>
           </div>
           <div>
-            <p className="text-[11px] uppercase tracking-wider text-gray-500 font-semibold"
-               style={{ fontFamily: 'DM Mono, monospace' }}>
-              Step 2 of 2
-            </p>
-            <p className="text-sm text-gray-700 mt-1">
-              One more minute: how was the <strong>overall experience</strong>
-              {experience.campName ? <> of {experience.campName}</> : null}?
-            </p>
+            <p className="m-0" style={{ ...SV_PLEX, color: SV.muted }}>2 · Experience</p>
+            <h3 className="m-0 mt-1 text-[22px]" style={{ ...SV_ARCHIVO, color: SV.inkText }}>{experience.campName || 'Your camp experience'}</h3>
+            <p className="m-0 mt-1 text-[15px] leading-snug" style={{ color: SV.muted }}>One more minute: facilities, equipment, transport and value.</p>
           </div>
           <ExperienceSurveyForm token={experience.token} />
         </div>
       );
     }
-    return (
-      <div className="text-center py-6">
-        <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-3">
-          <span className="text-2xl text-emerald-600">{'✓'}</span>
-        </div>
-        <h2 className="text-base font-bold text-[var(--tss-navy)]"
-            style={{ fontFamily: 'var(--font-heading)' }}>
-          Thanks!
-        </h2>
-        <p className="text-sm text-gray-500 mt-2 leading-snug">
-          Your feedback was sent. See you in the water.
-        </p>
-      </div>
-    );
+    return <SurveyDone title="Thank you" lines={[<>Your feedback was sent. See you in the water.</>]} />;
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {QUESTIONS.map((q) => (
-        <StarRating
-          key={q.col}
-          label={q.label}
-          value={ratings[q.col] ?? 0}
-          onChange={(v) => setRatings((prev) => ({ ...prev, [q.col]: v }))}
-        />
+        <StarScale key={q.col} label={q.label} value={ratings[q.col] ?? 0} onChange={(v) => setRatings((prev) => ({ ...prev, [q.col]: v }))} />
       ))}
       {METHOD.length > 0 && (
-        <div className="pt-2 space-y-4" style={{ borderTop: '1px solid #DCD7C6' }}>
-          <p className="text-[11px] font-mono uppercase tracking-wider" style={{ color: '#00A8CC' }}>The method</p>
+        <>
+          <SurveyDivider label="The method" />
           {METHOD.map((q) => (
-            <StarRating
-              key={q.col}
-              label={q.label}
-              value={ratings[q.col] ?? 0}
-              onChange={(v) => setRatings((prev) => ({ ...prev, [q.col]: v }))}
-            />
+            <StarScale key={q.col} label={q.label} value={ratings[q.col] ?? 0} onChange={(v) => setRatings((prev) => ({ ...prev, [q.col]: v }))} />
           ))}
-        </div>
+        </>
       )}
 
-      <div>
-        <label
-          className="block text-[11px] uppercase tracking-wider text-gray-500 mb-1.5 font-semibold"
-          style={{ fontFamily: 'DM Mono, monospace' }}
-        >
-          Anything else? (optional)
-        </label>
-        <textarea
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          rows={3}
-          maxLength={500}
-          placeholder="Comments for your coach or the academy…"
-          className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[var(--tss-cyan)] resize-none"
-        />
-      </div>
+      <SurveyField label="Anything else? (optional)" value={comment} onChange={setComment} placeholder="Comments for your coach or the academy…" />
 
-      {error && (
-        <p className="text-xs text-[var(--tss-danger,#DC2626)] bg-red-50 px-3 py-2 rounded">
-          {error}
-        </p>
-      )}
+      {error && <SurveyError>{error}</SurveyError>}
 
-      <button
-        type="submit"
-        disabled={submitting}
-        className="w-full py-3 bg-[var(--tss-navy)] text-white rounded-xl text-sm font-semibold hover:brightness-110 disabled:opacity-50 transition-all"
-      >
-        {submitting ? 'Sending…' : 'Submit feedback'}
-      </button>
+      <SurveySubmit loading={submitting} label="Send my feedback" />
 
-      <p className="text-[10px] text-gray-400 text-center leading-snug">
-        Takes 30 seconds. Your responses are anonymous to the coach
-        and only the academy sees the rollup.
+      <p className="m-0 text-[12.5px] text-center leading-snug" style={{ color: SV.muted }}>
+        Two minutes. Your coach never sees who said what — only the academy does.
       </p>
     </form>
-  );
-}
-
-function StarRating({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div>
-      <p className="text-sm text-gray-700 mb-2">{label}</p>
-      <div className="flex gap-2">
-        {[1, 2, 3, 4, 5].map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => onChange(n)}
-            className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg transition-colors ${
-              n <= value
-                ? 'bg-[var(--tss-cyan,#5AC3E7)] text-white'
-                : 'bg-gray-100 text-gray-300 hover:bg-gray-200'
-            }`}
-            aria-label={`Rate ${n}`}
-          >
-            {'★'}
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }

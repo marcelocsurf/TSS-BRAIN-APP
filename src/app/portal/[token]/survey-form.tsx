@@ -3,29 +3,25 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { submitSurvey } from '@/lib/actions/survey';
-import { BRAND } from '@/lib/constants/brand';
-import { surveyForService, resolveSurveyKey } from '@/lib/survey/questions';
-import { ThumbsUp, Lock, MessageSquare } from 'lucide-react';
+import { surveyForService } from '@/lib/survey/questions';
+import { ChoiceScale, StarScale, SurveyDivider, SurveyDone, SurveyError, SurveyField, SurveySubmit, SV } from '@/components/survey/SurveyUi';
 
 interface Props {
   resultId: string;
   token: string;
 }
 
-// Coach/service rating survey sent at the end of the class. Las preguntas se
-// eligen SEGÚN EL SERVICIO desde la fuente única (src/lib/survey/questions.ts) —
-// la misma que usa el form standalone /feedback, así no divergen. El slot 5 es
-// la pregunta de instalaciones/lugar donde tiene sentido; el "flow channel"
-// solo se muestra en surf. La server action sigue backfilleando las columnas
-// legacy sin migración.
+// La encuesta del portal (área 1 · Method & coach). Las preguntas se eligen
+// SEGÚN EL SERVICIO desde la fuente única (src/lib/survey/questions.ts) — la
+// misma que usa el form standalone /feedback, así no divergen. El "flow
+// channel" solo se muestra en surf. La cabecera (título, fecha, coach) la pone
+// la tarjeta que la contiene (FeedbackTab); acá van solo las preguntas.
+// Diseño v10.1 compartido en src/components/survey/SurveyUi.tsx (2026-09-25).
 export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props & { serviceKind?: string | null; serviceName?: string | null }) {
-  const key = resolveSurveyKey(serviceKind, serviceName);
   const surveySet = surveyForService(serviceKind, serviceName);
   const labels = surveySet.questions.map((q) => q.label);
   const showFlow = surveySet.flow;
   const methodQs = surveySet.method ?? [];
-  const header = key === 'surf' ? 'Rate Your Coach' : key === 'trip' ? 'Rate Your Trip' : 'Rate Your Class';
-  const sub = 'A few quick questions about your experience.';
   const router = useRouter();
   const [submitted, setSubmitted] = useState(false);
   const [justUnlocked, setJustUnlocked] = useState(false);
@@ -43,8 +39,10 @@ export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props 
     flow_channel: 0,
     open_comment: '',
   });
+  // Las cinco preguntas del servicio, en orden, sobre las columnas fijas.
+  const COLS = ['coach_rating', 'feedback_clarity', 'safety_rating', 'improvement_value', 'recommend_rating'] as const;
 
-  const set = (field: string, value: any) => setForm(f => ({ ...f, [field]: value }));
+  const set = (field: string, value: any) => setForm((f) => ({ ...f, [field]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +55,7 @@ export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props 
       (methodQs.length > 0 && (form.method_clarity === 0 || form.method_next === 0)) ||
       (showFlow && form.flow_channel === 0)
     ) {
-      setError('Please answer all the questions before submitting.');
+      setError('Please answer every question before sending.');
       return;
     }
     setLoading(true);
@@ -83,230 +81,67 @@ export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props 
       // keeps this client component's "submitted" state intact.
       router.refresh();
     } catch (err: any) {
-      setError(err.message || 'Failed to submit survey');
+      setError(err.message || 'Could not send your feedback. Try again.');
       setLoading(false);
     }
   };
 
   if (submitted) {
     return (
-      <div className="space-y-3">
-        <div className="bg-green-50 rounded-xl p-6 text-center">
-          <ThumbsUp size={24} strokeWidth={1.75} className="mx-auto mb-2 text-green-600" />
-          <p className="text-sm font-semibold text-green-700">Thanks for rating your coach!</p>
-          <p className="text-xs text-green-600 mt-1">
-            Your honest feedback becomes part of their record.
-          </p>
-        </div>
-        {/* The real reward: the coach's written feedback for this session
-            is now unlocked. */}
-        <div
-          className="rounded-xl p-5 text-center border-2"
-          style={{ background: '#ECFDF5', borderColor: '#10B981' }}
-        >
-          <MessageSquare size={26} strokeWidth={1.75} className="mx-auto mb-1 text-emerald-700" />
-          <p className="text-sm font-bold text-emerald-900">
-            Your session feedback is unlocked
-          </p>
-          <p className="text-xs text-emerald-700 mt-1 leading-relaxed">
-            Open the <strong>Sessions</strong> tab to read what your coach wrote
-            for you — feedback and what&apos;s next.
-          </p>
-        </div>
-        {justUnlocked && (
-          <div
-            className="rounded-xl p-4 text-center border"
-            style={{ background: '#FEF3C7', borderColor: BRAND.colors.gold }}
-          >
-            <Lock size={20} strokeWidth={1.75} className="mx-auto mb-1 text-amber-700" />
-            <p className="text-xs font-semibold text-amber-900">
-              Bonus: the <strong>My Coach</strong> tab is now open
-            </p>
-            <p className="text-[11px] text-amber-700 mt-0.5 leading-relaxed">
-              See your coach&apos;s rating, certifications, and your history together.
-            </p>
-          </div>
-        )}
+      <div className="px-5 py-5">
+        <SurveyDone
+          title="Thank you"
+          lines={[
+            <>Your honest feedback becomes part of your coach&apos;s record.</>,
+            <>Your session feedback is now open: go to <b>Sessions</b> to read what your coach wrote and what comes next.</>,
+            ...(justUnlocked ? [<>The <b>My Coach</b> tab is open too — rating, certifications and your history together.</>] : []),
+          ]}
+        />
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-      <div className="px-4 py-4 text-center" style={{ background: BRAND.colors.navy }}>
-        <h3 className="text-sm font-bold text-white">{header}</h3>
-        <p className="text-xs mt-0.5" style={{ color: BRAND.colors.gold }}>
-          {sub}
-        </p>
-      </div>
+    <form onSubmit={handleSubmit} className="px-5 py-5 space-y-6">
+      {labels.map((label, i) => (
+        <StarScale key={COLS[i]} label={label} value={form[COLS[i]]} onChange={(v) => set(COLS[i], v)} />
+      ))}
 
-      <div className="p-4 space-y-5">
+      {/* EL MÉTODO (Marcelo 2026-09-25): el área 1 es método Y coach. */}
+      {methodQs.length > 0 && (
+        <>
+          <SurveyDivider label="The method" />
+          {methodQs.map((q) => (
+            <StarScale key={q.col} label={q.label} value={(form as any)[q.col] ?? 0} onChange={(v) => set(q.col, v)} />
+          ))}
+        </>
+      )}
 
-        <StarQuestion
-          label={labels[0]}
-          value={form.coach_rating}
-          onChange={v => set('coach_rating', v)}
+      {/* Canal de flow (solo surf): la misma escala 1–5 que llena el coach;
+          comparar ambas revela desajustes. Las palabras son las de Let's Play. */}
+      {showFlow && (
+        <ChoiceScale
+          label="How did the sessions feel?"
+          value={form.flow_channel}
+          onChange={(v) => set('flow_channel', v)}
+          options={[{ n: 1, label: 'Bored' }, { n: 2, label: 'Easy' }, { n: 3, label: 'Flow' }, { n: 4, label: 'Hard' }, { n: 5, label: 'Too much' }]}
+          hint="Flow lives between boredom and frustration. Honest answers help your coach set the next session to your level."
         />
+      )}
 
-        <StarQuestion
-          label={labels[1]}
-          value={form.feedback_clarity}
-          onChange={v => set('feedback_clarity', v)}
-        />
+      <SurveyField
+        label="Anything else? (optional)"
+        value={form.open_comment}
+        onChange={(v) => set('open_comment', v)}
+        placeholder="What worked? What could be better?"
+      />
 
-        <StarQuestion
-          label={labels[2]}
-          value={form.safety_rating}
-          onChange={v => set('safety_rating', v)}
-        />
+      {error && <SurveyError>{error}</SurveyError>}
 
-        <StarQuestion
-          label={labels[3]}
-          value={form.improvement_value}
-          onChange={v => set('improvement_value', v)}
-        />
-
-        <StarQuestion
-          label={labels[4]}
-          value={form.recommend_rating}
-          onChange={v => set('recommend_rating', v)}
-        />
-
-        {/* EL MÉTODO (Marcelo 2026-09-25): el área 1 es método Y coach. */}
-        {methodQs.length > 0 && (
-          <div className="pt-2 space-y-5" style={{ borderTop: '1px solid #DCD7C6' }}>
-            <p className="text-[11px] font-mono uppercase tracking-wider" style={{ color: '#00A8CC' }}>The method</p>
-            {methodQs.map((q) => (
-              <StarQuestion
-                key={q.col}
-                label={q.label}
-                value={(form as any)[q.col] ?? 0}
-                onChange={v => set(q.col, v)}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* M47 — Flow channel (solo surf): misma escala 1-5 que llena el coach;
-            comparar ambas revela desajustes (el coach creyó óptimo, el alumno
-            frustrado → la próxima clase con menos exigencia). */}
-        {showFlow && (
-          <FlowChannelQuestion
-            label="How did the class feel?"
-            value={form.flow_channel}
-            onChange={v => set('flow_channel', v)}
-          />
-        )}
-
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Comments <span className="text-gray-400 font-normal">(optional)</span>
-          </label>
-          <textarea
-            value={form.open_comment}
-            onChange={e => set('open_comment', e.target.value)}
-            rows={3}
-            placeholder="What worked? What could be better?"
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-none focus:outline-none focus:ring-1 focus:ring-gray-300"
-          />
-        </div>
-
-        {error && <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{error}</p>}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 text-white text-sm font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
-          style={{ background: BRAND.colors.navy }}
-        >
-          {loading ? 'Submitting...' : 'Submit Rating'}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function StarQuestion({ label, value, onChange }: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div>
-      <label className="block text-xs font-medium text-gray-700 mb-2 leading-relaxed">{label}</label>
-      <div className="flex gap-2">
-        {[1, 2, 3, 4, 5].map(n => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => onChange(n)}
-            aria-label={`${n} star${n === 1 ? '' : 's'}`}
-            className={`flex-1 h-10 rounded-lg border text-lg transition-all ${
-              n <= value
-                ? 'border-transparent'
-                : 'border-gray-200 text-gray-300 hover:border-gray-400'
-            }`}
-            style={
-              n <= value
-                ? { background: BRAND.colors.gold, color: '#fff' }
-                : {}
-            }
-          >
-            {n <= value ? '★' : '☆'}
-          </button>
-        ))}
-      </div>
-      <div className="flex justify-between mt-1">
-        <span className="text-[10px] text-gray-300">Poor</span>
-        <span className="text-[10px] text-gray-300">Excellent</span>
-      </div>
-    </div>
-  );
-}
-
-// M47 — Csíkszentmihályi flow channel self-report. 1 = boring/too easy,
-// 3 = optimal/flow, 5 = frustrating/too hard. Center is the goal.
-function FlowChannelQuestion({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  const options = [
-    { n: 1, color: '#3B82F6', label: 'Bored' },
-    { n: 2, color: '#06B6D4', label: 'Easy' },
-    { n: 3, color: '#10B981', label: 'Optimal' },
-    { n: 4, color: '#F59E0B', label: 'Hard' },
-    { n: 5, color: '#EF4444', label: 'Frustrating' },
-  ];
-  return (
-    <div>
-      <label className="block text-xs font-medium text-gray-700 mb-2 leading-relaxed">
-        {label}
-      </label>
-      <div className="grid grid-cols-5 gap-1">
-        {options.map((opt) => (
-          <button
-            key={opt.n}
-            type="button"
-            onClick={() => onChange(opt.n)}
-            className="py-2 rounded-lg text-[10px] font-bold transition-all"
-            style={
-              value === opt.n
-                ? { background: opt.color, color: 'white' }
-                : { background: 'white', color: '#9CA3AF', border: '1px solid #E5E7EB' }
-            }
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-      <p className="text-[10px] text-gray-400 mt-1 italic text-center">
-        Honest answers help your coach dial the next class to your level.
+      <SurveySubmit loading={loading} label="Send my feedback" />
+      <p className="m-0 text-[12.5px] text-center leading-snug" style={{ color: SV.muted }}>
+        Two minutes. Your coach never sees who said what — only the academy does.
       </p>
-    </div>
+    </form>
   );
 }
