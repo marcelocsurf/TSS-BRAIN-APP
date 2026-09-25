@@ -234,7 +234,7 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
                   {detail.sessions.slice(0, 3).map((r: any, i: number) => (
                     <div key={i} className="mb-1">
                       <p className="text-[11px] text-[#55666E] leading-snug">
-                        {(r.created_at ?? '').slice(0, 10)} — {r.coach_feedback || r.status || 'sesión registrada'}
+                        {(r.created_at ?? '').slice(0, 10)} — {r.coach_feedback || r.internal_notes || r.status || 'sesión registrada'}
                       </p>
                       {/* El seguimiento es lo que el equipo necesita ver: qué
                           debe trabajar el alumno la próxima (pedido 2026-08-09). */}

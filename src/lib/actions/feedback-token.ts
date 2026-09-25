@@ -85,7 +85,10 @@ export async function getFeedbackByToken(
     serviceName,
     mission: (row as any).mission ?? null,
     status: row.status ?? null,
-    coachFeedback: row.coach_feedback ?? null,
+    // En camps el coach_feedback del cierre era la nota "🔒 Not sent to the
+    // student" (hasta 2026-09-25): no se muestra. En clase/trip y en sesiones
+    // sueltas sí es para el alumno.
+    coachFeedback: (!row.camp_session || serviceKind === 'class' || serviceKind === 'trip') ? (row.coach_feedback ?? null) : null,
     homework: row.homework ?? null,
     whatsNext: row.whats_next ?? null,
     alreadySubmitted: !!existing,

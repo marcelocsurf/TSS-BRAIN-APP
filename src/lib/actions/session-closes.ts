@@ -42,7 +42,7 @@ export async function getRecentCloses(days = 7): Promise<SessionClose[]> {
   const { data, error } = await admin
     .from('student_session_results')
     .select(
-      'id, status, coach_feedback, whats_next, created_at, camp_session_id, ' +
+      'id, status, coach_feedback, internal_notes, whats_next, created_at, camp_session_id, ' +
         'students:student_id!inner(first_name, last_name, academy_id), ' +
         'coaches:coach_id(display_name), ' +
         'camp_sessions:camp_session_id(session_date, day_number, camp_instances:camp_instance_id(camp_name))'
@@ -78,7 +78,8 @@ export async function getRecentCloses(days = 7): Promise<SessionClose[]> {
     g.students.push({
       name: `${stu?.first_name ?? ''} ${stu?.last_name ?? ''}`.trim() || 'Alumno',
       status: (r as any).status ?? null,
-      feedback: (r as any).coach_feedback ?? null,
+      // Feedback al alumno o, si no hay, la nota interna del cierre (staff).
+      feedback: (r as any).coach_feedback || (r as any).internal_notes || null,
       whats_next: (r as any).whats_next ?? null,
     });
   }

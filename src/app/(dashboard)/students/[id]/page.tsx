@@ -145,7 +145,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       .from('student_session_results')
       .select(`
         id, status, focus_rating, mission,
-        coach_feedback, homework, whats_next, created_at, coach_id,
+        coach_feedback, internal_notes, homework, whats_next, created_at, coach_id,
         standalone_sessions(mission, training_venue, session_date, pilar, duration_minutes),
         coaches:coach_id(display_name)
       `)
@@ -246,7 +246,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     mission: r.standalone_sessions?.mission || r.mission || 'Camp session',
     pilar: r.standalone_sessions?.pilar || null,
     status: r.status,
-    coachFeedback: r.coach_feedback || null,
+    // Staff: si el cierre dejó solo la nota interna (camp, desde 2026-09-25), se ve acá.
+    coachFeedback: r.coach_feedback || r.internal_notes || null,
     homework: r.homework || null,
     whatsNext: r.whats_next || null,
     duration: r.standalone_sessions?.duration_minutes || null,

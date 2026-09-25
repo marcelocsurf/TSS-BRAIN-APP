@@ -17,13 +17,34 @@ import { THREE_CIRCLES_SEQUENCE_ID, THREE_CIRCLES_GAME_TITLES, gameContext } fro
 
 // ─── Get comprehensive student data for the portal ───
 
+// Lo que el portal del alumno necesita de su ficha. Nada más sale al cliente.
+const PORTAL_STUDENT_COLUMNS =
+  'id, academy_id, first_name, last_name, nickname, photo_url, ' +
+  'belt_level, belt_provisional, belt_promoted_at, belt_promoted_from, ocean_level, ocean_level_provisional, ' +
+  'hp_access, active_course_key, course_access_white, course_access_yellow, course_access_blue, course_access_purple, course_access_brown, course_access_black, ' +
+  'level_quiz_completed_at, level_quiz_score, terms_accepted_at, terms_version, stance, goofy_or_regular, ' +
+  'intake_completed_at, intake_tier, waiver_signed, lifecycle_status, student_type, is_test, ' +
+  'current_sequence_number, current_step_order, last_session_date, created_at, coach_id, pending_courses, ' +
+  'pre_course_completed_at, white_belt_completed_at, blue_belt_completed_at, learning_profile_primary, learning_profile_secondary';
+// Lo que el alumno ve de cada sesión con coach.
+const PORTAL_SESSION_RESULT_COLUMNS =
+  'id, student_id, camp_session_id, standalone_session_id, cascade_session_id, multi_block_session_id, ' +
+  'status, focus_rating, frustration_rating, achieved, whats_next, homework, completion_state, survey_unlocked, ' +
+  'student_visible_summary, video_link, coach_id, duration_minutes, created_at, mission, coach_focus, coach_flow';
+
 export async function getStudentPortalData(token: string) {
   const admin = createAdminClient();
 
   // 1. Get student by portal token
+  // Columnas EXPLÍCITAS (fase 4, 2026-09-25): antes iba '*' y la fila entera
+  // —notas del coach, risk_notes, hashes, IP de consentimiento— viajaba al
+  // navegador del alumno aunque la pantalla no la mostrara. Si una pantalla
+  // nueva necesita otra columna, se agrega acá a propósito.
   const { data: student, error: studentErr } = await admin
     .from('students')
-    .select('*')
+    // El tipo sigue siendo la fila de students (el código de abajo se escribió
+    // contra ella); en runtime solo llegan las columnas de la lista.
+    .select(PORTAL_STUDENT_COLUMNS as '*')
     .eq('portal_token', token)
     .single();
 
@@ -45,11 +66,13 @@ export async function getStudentPortalData(token: string) {
     admin.from('student_session_results')
       // camp_sessions.session_date = el día real de la clase (la fecha del
       // cierre no es la fecha de la sesión — prueba E2E 2026-09-18).
-      .select('*, standalone_sessions(*), coaches:coach_id(display_name), camp_sessions:camp_session_id(session_date, day_number)')
+      // Sin coach_feedback, internal_notes, incidentes ni tokens: son del
+      // coach y del sistema, no del alumno (M135 + fase 4).
+      .select(`${PORTAL_SESSION_RESULT_COLUMNS}, standalone_sessions(mission, duration_minutes, session_date, ocean_conditions, training_venue, pilar), coaches:coach_id(display_name), camp_sessions:camp_session_id(session_date, day_number)` as '*, standalone_sessions(mission, duration_minutes, session_date, ocean_conditions, training_venue, pilar), coaches:coach_id(display_name), camp_sessions:camp_session_id(session_date, day_number)')
       .eq('student_id', student.id)
       .order('created_at', { ascending: false }),
     admin.from('cascade_sessions')
-      .select('*, coaches:coach_id(display_name)')
+      .select('id, student_id, coach_id, status, focus_rating, frustration_rating, homework_cues, homework_text, pilar_id_snapshot, achieved, created_at, session_date, mission, training_venue, ocean_conditions, total_duration, warm_up, mental_hack, drill_id, coaches:coach_id(display_name)')
       .eq('student_id', student.id)
       .eq('completion_state', 'closed')
       .order('session_date', { ascending: false }),
@@ -98,7 +121,7 @@ export async function getStudentPortalData(token: string) {
       status: cs.status,
       focus_rating: cs.focus_rating,
       frustration_rating: cs.frustration_rating,
-      coach_feedback: [cs.coach_feedback_quick, cs.coach_feedback_text].filter(Boolean).join(' — ') || null,
+      // Sin coach_feedback: es del coach (M135), el alumno ve student_visible_summary.
       homework: [cs.homework_cues?.join(', '), cs.homework_text].filter(Boolean).join(' — ') || null,
       whats_next: cs.pilar_id_snapshot || null,
       achieved: cs.achieved,
@@ -893,7 +916,7 @@ export async function getPendingSurveys(portalToken: string) {
   // Get all session results that have survey_unlocked=true
   const { data: results } = await admin
     .from('student_session_results')
-    .select('id, created_at, status, coach_feedback, standalone_sessions(*), coaches:coach_id(display_name), camp_sessions:camp_session_id(session_date, camp_instances:camp_instance_id(camp_name, camp_templates:template_id(service_kind)))')
+    .select('id, created_at, status, standalone_sessions(mission), coaches:coach_id(display_name), camp_sessions:camp_session_id(session_date, camp_instances:camp_instance_id(camp_name, camp_templates:template_id(service_kind)))')
     .eq('student_id', studentId)
     .eq('survey_unlocked', true)
     .order('created_at', { ascending: false });
@@ -921,7 +944,7 @@ export async function getSubmittedSurveys(portalToken: string) {
 
   const { data: surveys } = await admin
     .from('survey_responses')
-    .select('*, student_session_results(created_at, status, coach_feedback, student_visible_summary, homework, whats_next, coaches:coach_id(display_name), standalone_sessions(mission), camp_sessions:camp_session_id(session_date, camp_instances:camp_instance_id(camp_name, camp_templates:template_id(service_kind))))')
+    .select('*, student_session_results(created_at, status, student_visible_summary, homework, whats_next, coaches:coach_id(display_name), standalone_sessions(mission), camp_sessions:camp_session_id(session_date, camp_instances:camp_instance_id(camp_name, camp_templates:template_id(service_kind))))')
     .eq('student_id', studentId)
     .order('submitted_at', { ascending: false });
 

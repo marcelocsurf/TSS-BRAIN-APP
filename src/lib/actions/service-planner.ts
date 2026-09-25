@@ -521,7 +521,7 @@ export async function getServicePlan(
     const [coachSessRes, selfSessRes] = await Promise.all([
       admin
         .from('student_session_results')
-        .select('student_id, created_at, status, mission, coach_feedback, whats_next, standalone_sessions(mission)')
+        .select('student_id, created_at, status, mission, coach_feedback, internal_notes, whats_next, standalone_sessions(mission)')
         .in('student_id', studentIds)
         .order('created_at', { ascending: false }),
       // Misma regla que la bitácora de la ficha (src/lib/activity/build.ts):
@@ -541,9 +541,8 @@ export async function getServicePlan(
       // Camp/service sessions have no standalone_sessions row, so fall back
       // to a snippet of the coach's written feedback so the coach sees what
       // the last in-person class actually covered (not a generic label).
-      const fbSnippet = r.coach_feedback
-        ? r.coach_feedback.replace(/\s+/g, ' ').trim().slice(0, 60)
-        : null;
+      const fbText = (r as any).internal_notes || r.coach_feedback;
+      const fbSnippet = fbText ? String(fbText).replace(/\s+/g, ' ').trim().slice(0, 60) : null;
       (recentByStudent[r.student_id] ??= []).push({
         date: r.created_at,
         type: 'coach',
@@ -2438,10 +2437,14 @@ export async function closeServicePlan(
   // Synthesize one block per active participant so every student still gets
   // a session result (bitácora + survey). The coach's single general note
   // becomes everyone's feedback.
+  // Clase/trip: la nota general del coach es PARA el alumno (así lo promete
+  // la pantalla). Camp: la nota del cierre es "🔒 Not sent to the student".
+  let noteIsForStudents = false;
   {
     const tplLight = Array.isArray(camp.camp_templates) ? camp.camp_templates[0] : camp.camp_templates;
     const kindLight = tplLight?.service_kind ?? null;
     if (kindLight === 'class' || kindLight === 'trip') {
+      noteIsForStudents = true;
       const activeIds = (activeParts ?? [])
         .filter((p: any) => !departed.has(p.student_id))
         .map((p: any) => p.student_id);
@@ -2680,7 +2683,9 @@ export async function closeServicePlan(
   //   - status: worst across blocks (not_yet > partial > achieved)
   //   - mission: first block's objective/drill/mission for the label
   //   - duration_minutes: session-level (credited once per student)
-  //   - coach_feedback: block 0's notes_post (lifted to session level)
+  //   - internal_notes: block 0's notes_post — la nota "🔒 Not sent to the
+  //     student" del cierre. Hasta 2026-09-25 caía en coach_feedback y en el
+  //     correo del día (apagado): ahora es interna de verdad.
   const blocksByStudent2: Record<string, any[]> = {};
   for (const b of allBlocks) {
     (blocksByStudent2[b.student_id] ??= []).push(b);
@@ -2764,7 +2769,8 @@ export async function closeServicePlan(
         coach_id: coach.id,
         status,
         mission: missionTitle,
-        coach_feedback: firstBlock.notes_post ?? null,
+        coach_feedback: noteIsForStudents ? (firstBlock.notes_post ?? null) : null,
+        internal_notes: noteIsForStudents ? null : (firstBlock.notes_post ?? null),
         achieved: achievedText,
         whats_next: firstBlock.whats_next ?? null,
         // Lo que el coach vio (2026-09-19): enfoque 0–3 y flow 1–5 viajan a la
@@ -2833,7 +2839,8 @@ export async function closeServicePlan(
           sessionDate: (sessionAny as any)?.session_date ?? new Date().toISOString().slice(0, 10),
           mission: missionTitle,
           status,
-          coachFeedback: firstBlock.notes_post ?? '',
+          // La nota interna del camp nunca viaja; la general de clase/trip sí.
+          coachFeedback: noteIsForStudents ? (firstBlock.notes_post ?? '') : '',
           homework: '',
           whatsNext: firstBlock.whats_next ?? '',
           beltLevel: stud.belt_level,

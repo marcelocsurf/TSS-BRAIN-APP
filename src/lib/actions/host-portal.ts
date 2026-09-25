@@ -174,7 +174,7 @@ export async function hostStudentDetail(token: string, studentId: string) {
       .gte('camp_instances.start_date', today)
       .order('camp_instances(start_date)').limit(3),
     admin.from('student_session_results')
-      .select('id, created_at, status, coach_feedback, whats_next, feedback_token')
+      .select('id, created_at, status, coach_feedback, internal_notes, whats_next, feedback_token')
       .eq('student_id', studentId)
       .order('created_at', { ascending: false }).limit(5),
     admin.from('session_incidents')
