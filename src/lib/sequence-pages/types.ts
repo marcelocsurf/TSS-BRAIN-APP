@@ -74,6 +74,11 @@ export interface SequencePageConfig {
    *  #4): la página muestra un selector Backside · Frontside que filtra los
    *  pasos y elige el video del lado (videos.ts). Los pasos sin lado quedan. */
   sideOfStep?: Record<string, 'fs' | 'bs'>;
+  /** La cadena del cuerpo dentro del paso (Marcelo 2026-09-25, Directional
+   *  Turns: "los pasos son postura, look, oblique, hip and rail, the board
+   *  changes direction"). Se lista debajo de "The steps that build it";
+   *  noteBySide cambia la palabra según el lado elegido (heels · toes). */
+  chain?: { title: string; note?: string; noteBySide?: { bs: string; fs: string }; command?: Command }[];
   /** Preparación de cada sesión, fuera de la secuencia (p. ej. Venue Analysis y Warm Up en White #1). */
   prep?: { lessonId: string; label: string; note?: string }[];
   think: {

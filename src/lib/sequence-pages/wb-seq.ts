@@ -194,6 +194,13 @@ export const WB_SEQ_4: SequencePageConfig = {
   title: 'Directional Turns',
   stepIds: ['STP-021', 'STP-022'],
   sideOfStep: { 'STP-021': 'bs', 'STP-022': 'fs' },
+  chain: [
+    { title: 'Posture', note: 'the base the turn starts from and returns to', command: 'posture' },
+    { title: 'Look', note: 'where you want to go — eyes first, always' },
+    { title: 'Oblique', note: 'the rotation travels: eyes → head → shoulders → hips', command: 'rail' },
+    { title: 'Hip and rail', noteBySide: { bs: 'the heels press and the backside rail engages', fs: 'the toes press and the frontside rail engages — posture connected, no buckling' }, command: 'rail' },
+    { title: 'The board changes direction', note: 'not drifts — back to posture' },
+  ],
   think: {
     whatIs: {
       headline: 'Now standing, you start steering the board right and left — backside and frontside, built by the chain, not by drift — and you dismount.',

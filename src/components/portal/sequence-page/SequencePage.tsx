@@ -212,6 +212,24 @@ export function SequencePage({
               </li>
             ))}
           </ol>
+          {/* La cadena del cuerpo dentro del paso (p. ej. la rotación del turn):
+              postura → look → oblique → hip & rail → la tabla cambia de dirección. */}
+          {cfg.chain && cfg.chain.length > 0 && (
+            <div className="mt-3 rounded-[5px] px-3 py-2.5" style={{ background: 'rgba(6,28,43,.06)', border: `1px solid ${BORDER}` }}>
+              <p className="text-[11px] font-mono uppercase tracking-wider m-0 mb-1.5" style={{ color: MUTED }}>How your body does it{side ? ` · ${side === 'bs' ? 'backside' : 'frontside'}` : ''}</p>
+              <ol className="m-0 p-0 list-none">
+                {cfg.chain.map((c, i) => (
+                  <li key={c.title} className="flex items-start gap-2.5 py-1.5">
+                    <span className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-black" style={{ background: NAVY, color: '#00D2FF' }}>{i + 1}</span>
+                    {c.command && <i className="inline-block w-3 h-3 rounded-full shrink-0 mt-1.5" style={{ background: COMMAND_COLORS[c.command] }} />}
+                    <span className="text-[14px] leading-snug" style={{ color: INK }}>
+                      <b>{c.title}</b>{(c.noteBySide ? (side ? c.noteBySide[side] : `${c.noteBySide.bs} · ${c.noteBySide.fs}`) : c.note) ? <span> — {c.noteBySide ? (side ? c.noteBySide[side] : `${c.noteBySide.bs} · ${c.noteBySide.fs}`) : c.note}</span> : null}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
         </Card>
 
         {/* Pestañas */}
