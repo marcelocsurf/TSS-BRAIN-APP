@@ -107,6 +107,10 @@ interface CoachSurveyEmailData {
   /** Academia del alumno (Puro Surf): nombre y logo para el co-brand. */
   academyName?: string | null;
   academyLogoUrl?: string | null;
+  /** Lo que el coach dejó para trabajar: la etiqueta ("#8 Frontside Pumping · Rail
+   *  Change") y su nota. Es el valor del correo; sin esto va una línea del portal. */
+  nextFocusLabel?: string | null;
+  nextFocusNote?: string | null;
   /** student_session_results.id — deep-links the survey. */
   sessionResultId?: string;
   feedbackToken?: string;
@@ -129,19 +133,27 @@ export async function sendCoachSurveyEmail(data: CoachSurveyEmailData): Promise<
       Congratulations on finishing <strong>${escapeHtmlBasic(data.serviceName)}</strong> with
       <strong>${escapeHtmlBasic(data.coachName)}</strong>! 🌊
     </p>
-    ${data.academyLogoUrl ? `<p style="margin:0 0 14px;"><img src="${escapeHtmlBasic(data.academyLogoUrl)}" alt="${escapeHtmlBasic(data.academyName ?? '')}" height="36" style="height:36px;max-width:160px;object-fit:contain;" /></p>` : ''}
     <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 10px;">
       We'd like your opinion in two areas — about a minute in total:
     </p>
     <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 4px;"><strong>1 · Method &amp; coach</strong> — the sessions, what you learned, your coach.</p>
-    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0;"><strong>2 · Experience</strong> — facilities, equipment, transport and value${data.academyName ? ` at ${escapeHtmlBasic(data.academyName)}` : ''}.</p>${INSTALL_APP_HTML}`;
+    <p style="font-size:14px;color:#374151;line-height:1.6;margin:0 0 18px;"><strong>2 · Experience</strong> — facilities, equipment, transport and value${data.academyName ? ` at ${escapeHtmlBasic(data.academyName)}` : ''}.</p>
+    ${data.nextFocusLabel || data.nextFocusNote
+      ? emCard(`${emLabel('Your next focus · from your coach')}<p style="margin:0;font-size:16px;font-weight:700;color:${EM.inkText};line-height:1.3;">${escapeHtmlBasic(data.nextFocusLabel ?? data.nextFocusNote ?? '')}</p>${data.nextFocusLabel && data.nextFocusNote ? `<p style="margin:6px 0 0;font-size:13px;color:${EM.inkText};line-height:1.5;">${escapeHtmlBasic(data.nextFocusNote)}</p>` : ''}<p style="margin:8px 0 0;font-size:12px;color:${EM.tide};line-height:1.5;">It is waiting on your Home — train it once on your own and it clears itself.</p>`)
+      : emCard(`${emLabel('Your portal')}<p style="margin:0;font-size:13px;color:${EM.inkText};line-height:1.6;">Your sessions, your stars and your next moves live in your portal — the same link as this survey.</p>`)}`;
 
   try {
     await sendEmail({
       from: process.env.RESEND_FROM_EMAIL || 'The Surf Sequence <onboarding@resend.dev>',
       to: data.studentEmail,
       subject: `How was your experience with ${data.coachName}?`,
-      html: assignmentEmailShell('Rate your coach & experience ★', body, { url: feedbackUrl, label: 'Rate my coach ★' }),
+      html: assignmentEmailShell(
+        'Rate your coach & experience ★',
+        body,
+        { url: feedbackUrl, label: 'Rate my coach ★' },
+        data.academyLogoUrl ? { name: data.academyName ?? '', logoUrl: data.academyLogoUrl } : undefined,
+        { academyFirst: true },
+      ),
     });
     return { success: true };
   } catch (err: any) {
@@ -176,7 +188,10 @@ function escapeHtmlBasic(s: string): string {
 
 // Brand Manual v10: header ink con el logo, etiqueta mono espaciada en cyan,
 // CTA como píldora cyan con texto ink. Una sola shell viste TODOS los correos.
-function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: string; label: string }, academy?: { name: string; logoUrl: string }): string {
+function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: string; label: string }, academy?: { name: string; logoUrl: string }, opts?: { academyFirst?: boolean }): string {
+  // Cliente de una academia (Puro Surf): su logo manda en la cabecera oscura y
+  // The Surf Sequence va debajo, chico (Marcelo 2026-09-25).
+  const academyFirst = !!(academy && opts?.academyFirst);
   // v10.1 (2026-09-18): papel #F7F9FA, cabecera ink con el logo y el tagline en
   // mono cyan, cuerpo blanco con título display en mayúsculas, tarjetas sand,
   // CTA cyan con texto ink, esquinas 8px. Todo inline por los clientes de correo.
@@ -184,11 +199,14 @@ function assignmentEmailShell(title: string, bodyHtml: string, cta?: { url: stri
 <body style="margin:0;padding:0;background:${EM.paper};font-family:${EM.body};">
   <div style="max-width:560px;margin:0 auto;padding:24px 16px;">
     <div style="background:${EM.ink};border-radius:8px 8px 0 0;padding:30px 24px 24px;text-align:center;">
-      ${EMAIL_LOGO}
-      <p style="margin:12px 0 0;color:${EM.cyan};font-size:10px;font-family:${EM.mono};text-transform:uppercase;letter-spacing:3px;">${BRAND.tagline}</p>
+      ${academyFirst
+        ? `<img src="${academy!.logoUrl}" alt="${escapeHtmlBasic(academy!.name)}" height="64" style="height:64px;max-width:260px;object-fit:contain;display:inline-block;" />
+      <p style="margin:14px 0 0;color:${EM.cyan};font-size:10px;font-family:${EM.mono};text-transform:uppercase;letter-spacing:3px;">with ${BRAND.name} · ${BRAND.tagline}</p>`
+        : `${EMAIL_LOGO}
+      <p style="margin:12px 0 0;color:${EM.cyan};font-size:10px;font-family:${EM.mono};text-transform:uppercase;letter-spacing:3px;">${BRAND.tagline}</p>`}
     </div>
     <div style="height:3px;background:${EM.cyan};"></div>
-    ${academy ? `<div style="background:#FFFFFF;padding:12px 24px;border:1px solid ${EM.border};border-top:none;border-bottom:none;text-align:center;"><img src="${academy.logoUrl}" alt="${escapeHtmlBasic(academy.name)}" style="height:34px;max-width:60%;object-fit:contain;" /></div>` : ''}
+    ${academy && !academyFirst ? `<div style="background:#FFFFFF;padding:12px 24px;border:1px solid ${EM.border};border-top:none;border-bottom:none;text-align:center;"><img src="${academy.logoUrl}" alt="${escapeHtmlBasic(academy.name)}" style="height:34px;max-width:60%;object-fit:contain;" /></div>` : ''}
     <div style="background:#FFFFFF;padding:26px 24px 24px;border-radius:0 0 8px 8px;border:1px solid ${EM.border};border-top:none;">
       <h1 style="margin:0 0 16px;font-family:${EM.display};font-size:24px;line-height:1.05;font-weight:900;color:${EM.inkText};text-transform:uppercase;letter-spacing:-0.02em;">${title}</h1>
       ${bodyHtml}

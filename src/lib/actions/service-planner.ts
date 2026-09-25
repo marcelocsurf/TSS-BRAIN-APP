@@ -13,7 +13,7 @@ import { sortByBlocks } from '@/lib/constants/learning-blocks';
 import { SHARED_PRE_COURSE_SECTIONS } from '@/lib/constants/courses';
 import { participantPresentOn, participantLastDay, exigeCierreDeDias } from '@/lib/utils/camp-window';
 import { isVisibleSelfSession, selfSessionDetail, resolveStepTitles } from '@/lib/activity/build';
-import { stampNextFocus } from '@/lib/activity/coach-focus';
+import { stampNextFocus, focusLabels, noteAfterLabel } from '@/lib/activity/coach-focus';
 import { readyToConfirmForStudent, type ReadyStep } from '@/lib/activity/ready-to-confirm';
 
 // ─── Types ─────────────────────────────────────────────────────────
@@ -2007,7 +2007,7 @@ export async function closeCampFinal(
       .single();
     const { data: parts } = await admin
       .from('camp_participants')
-      .select('student_id, enrollment_status, students:student_id(id, first_name, email, portal_token, belt_level, course_access_white, course_access_yellow)')
+      .select('student_id, enrollment_status, students:student_id(id, first_name, email, portal_token, belt_level, course_access_white, course_access_yellow, next_recommended_focus, next_focus_sequence_id, next_focus_step_id)')
       .eq('camp_instance_id', campInstanceId);
     const active = (parts ?? []).filter((p: any) => p.enrollment_status !== 'removed' && p.enrollment_status !== 'cancelled');
     if (active.length > 0) {
@@ -2036,7 +2036,19 @@ export async function closeCampFinal(
         const res = latestByStudent.get(p.student_id);
         if (res?.email_sent) continue; // already invited (idempotent re-close)
         const hasCourseAccess = !!stu.course_access_white || !!stu.course_access_yellow;
+        // El valor del correo: lo que el coach dejó para trabajar (recién escrito en el cierre).
+        let nextFocusLabel: string | null = null;
+        let nextFocusNote: string | null = null;
+        try {
+          if (stu.next_focus_sequence_id || stu.next_focus_step_id) {
+            const fl = await focusLabels(admin, stu.next_focus_sequence_id ?? null, stu.next_focus_step_id ?? null);
+            nextFocusLabel = [fl.sequence_label, fl.step_label].filter(Boolean).join(' · ') || null;
+          }
+          nextFocusNote = noteAfterLabel(stu.next_recommended_focus ?? null, nextFocusLabel);
+        } catch { /* sin foco no se rompe el correo */ }
         await sendCoachSurveyEmail({
+          nextFocusLabel,
+          nextFocusNote,
           studentName: stu.first_name,
           studentEmail: stu.email,
           portalToken: stu.portal_token,
