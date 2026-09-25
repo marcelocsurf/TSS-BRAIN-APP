@@ -13,6 +13,7 @@
 // Historial que no se pisa (como water_tests): cada marca queda; vale la última.
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { stampNextFocus } from '@/lib/activity/coach-focus';
 import { revalidatePath } from 'next/cache';
 import { pickWeakestCriterion, type CriterionEvaluationItem, type CriterionResultValue } from '@/lib/utils/criteria';
 
@@ -210,14 +211,22 @@ export async function saveCoachCriterionEvals(input: {
   let nextFocus: string | null = null;
   if (weak && weak.result !== 'met') {
     nextFocus = weak.criterion_text;
-    await admin.from('students').update({ next_recommended_focus: nextFocus }).eq('id', input.studentId);
+    // El criterio es de ESTE paso: viaja con su paso y su secuencia, y con
+    // fecha, para que al alumno se le apague cuando lo trabaje (00217).
+    const { data: ls } = await admin.from('lessons').select('wb_sequence_id').eq('id', input.stepId).maybeSingle();
+    await admin.from('students').update({
+      next_recommended_focus: nextFocus,
+      next_focus_sequence_id: (ls as any)?.wb_sequence_id ?? null,
+      next_focus_step_id: input.stepId,
+      ...stampNextFocus(coach.id),
+    }).eq('id', input.studentId);
   } else {
     // Todo logrado: se limpia SOLO si el foco vigente era un criterio de esta
     // tarjeta. Un foco escrito a mano por otro coach no se toca.
     const { data: st } = await admin.from('students').select('next_recommended_focus').eq('id', input.studentId).maybeSingle();
     const current = (st as any)?.next_recommended_focus as string | null | undefined;
     if (current && list.includes(current)) {
-      await admin.from('students').update({ next_recommended_focus: null }).eq('id', input.studentId);
+      await admin.from('students').update({ next_recommended_focus: null, next_focus_sequence_id: null, next_focus_step_id: null, next_focus_set_at: null, next_focus_set_by: null }).eq('id', input.studentId);
     }
   }
 

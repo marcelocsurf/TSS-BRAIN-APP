@@ -108,14 +108,24 @@ async function allowedBeltFor(studentId: string, requested: string): Promise<str
   return BELT_ORDER[req < 0 ? max : Math.min(req, max)];
 }
 
-async function loadSequence(portalToken: string, sequenceId: string, belt: string) {
+async function loadSequence(portalToken: string, sequenceId: string, belt: string, studentId?: string) {
   // The Three Circles: secuencia virtual de juegos (Marcelo 2026-09-17).
   if (sequenceId === THREE_CIRCLES_SEQUENCE_ID) {
     const seq = await threeCirclesSequence(portalToken);
     return { data: null as any, seq };
   }
-  const data = await getMySequence(portalToken, belt);
-  const seq = data.sequences.find((s) => s.id === sequenceId) ?? null;
+  let data = await getMySequence(portalToken, belt);
+  let seq = data.sequences.find((s) => s.id === sequenceId) ?? null;
+  // La secuencia pedida es de una cinta más alta que la pestaña abierta (la
+  // tarea del coach o tu lista pueden apuntar a otra cinta): se vuelve a
+  // cargar hasta la cinta máxima permitida antes de decir "no disponible".
+  if (!seq && studentId) {
+    const maxBelt = await allowedBeltFor(studentId, 'black');
+    if (maxBelt !== belt) {
+      data = await getMySequence(portalToken, maxBelt);
+      seq = data.sequences.find((s) => s.id === sequenceId) ?? null;
+    }
+  }
   return { data, seq };
 }
 
@@ -128,7 +138,7 @@ export async function getSequenceTraining(
     const studentId = await studentIdFromPortalToken(portalToken);
     if (!studentId) return { ok: false, error: 'Not authenticated.' };
     const safeBelt = await allowedBeltFor(studentId, belt);
-    const { seq } = await loadSequence(portalToken, sequenceId, safeBelt);
+    const { seq } = await loadSequence(portalToken, sequenceId, safeBelt, studentId);
     if (!seq) return { ok: false, error: 'Sequence not available yet.' };
 
     const admin = createAdminClient();
@@ -301,7 +311,7 @@ export async function saveSequenceSession(
     if (!input.safety_check) return { ok: false, error: 'Answer the safety check first.' };
 
     const safeBelt = await allowedBeltFor(studentId, input.belt);
-    const { seq } = await loadSequence(portalToken, input.sequenceId, safeBelt);
+    const { seq } = await loadSequence(portalToken, input.sequenceId, safeBelt, studentId);
     if (!seq) return { ok: false, error: 'Sequence not available yet.' };
     const byId = new Map(seq.items.map((i) => [i.step_id, i]));
     const order = seq.items.map((i) => i.step_id);
@@ -578,7 +588,7 @@ export async function planSequenceSession(
     if (wantsReps && !inRange(reps, 1, 500)) return { ok: false, error: 'Pick a number of runs or waves.' };
 
     const safeBelt = await allowedBeltFor(studentId, input.belt);
-    const { seq } = await loadSequence(portalToken, input.sequenceId, safeBelt);
+    const { seq } = await loadSequence(portalToken, input.sequenceId, safeBelt, studentId);
     if (!seq) return { ok: false, error: 'Sequence not available yet.' };
     const isRun = input.mode === 'sequence_run';
     const focus = !isRun ? seq.items.find((i) => i.step_id === input.focusStepId) ?? null : null;
@@ -762,7 +772,7 @@ export async function addTask(
     const studentId = await studentIdFromPortalToken(portalToken);
     if (!studentId) return { ok: false, error: 'Not authenticated.' };
     const safeBelt = await allowedBeltFor(studentId, input.belt);
-    const { seq } = await loadSequence(portalToken, input.sequenceId, safeBelt);
+    const { seq } = await loadSequence(portalToken, input.sequenceId, safeBelt, studentId);
     if (!seq) return { ok: false, error: 'Sequence not available yet.' };
     const step = seq.items.find((i) => i.step_id === input.stepId);
     if (!step) return { ok: false, error: 'Step not in this sequence.' };

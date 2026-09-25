@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { participantPresentOn, campEnrollmentClosed, campClosedNoticeES, campDayProgress } from '@/lib/utils/camp-window';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { stampNextFocus } from '@/lib/activity/coach-focus';
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { validateMandatoryFields } from '@/lib/validations/session-close';
 import { revalidatePath } from 'next/cache';
@@ -1304,7 +1305,12 @@ export async function closeCampSessionResult(input: {
         last_session_pilar: input.pilar,
         last_session_status: input.status,
         last_homework: input.homework,
+        // Texto nuevo sin secuencia elegida: los ids del foco anterior se van
+        // con él (regla 00217: los ids valen solo para su texto).
         next_recommended_focus: input.whats_next,
+        next_focus_sequence_id: null,
+        next_focus_step_id: null,
+        ...stampNextFocus(coach?.id ?? null),
       })
       .eq('id', input.student_id);
     if (profErr) console.error('[closeCampSessionResult] profile update failed', profErr);

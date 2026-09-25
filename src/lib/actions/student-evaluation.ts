@@ -1,6 +1,7 @@
 'use server';
 
 import { createAdminClient } from '@/lib/supabase/admin';
+import { stampNextFocus } from '@/lib/activity/coach-focus';
 import { revalidatePath } from 'next/cache';
 
 /**
@@ -53,7 +54,7 @@ export async function closeStudentEvaluation(input: {
   // El foco también viaja al portal del alumno, como al cerrar un camp.
   await admin
     .from('students')
-    .update({ next_recommended_focus: focus, next_focus_sequence_id: input.nextFocusSequenceId || null, next_focus_step_id: input.nextFocusStepId || null })
+    .update({ next_recommended_focus: focus, next_focus_sequence_id: input.nextFocusSequenceId || null, next_focus_step_id: input.nextFocusStepId || null, ...stampNextFocus(input.coachId) })
     .eq('id', input.studentId);
 
   revalidatePath(`/students/${input.studentId}`);

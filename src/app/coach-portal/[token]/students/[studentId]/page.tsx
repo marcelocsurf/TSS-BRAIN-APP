@@ -279,7 +279,20 @@ export default async function CoachStudentDetailPage({ params }: Props) {
           )}
           <KV label="Status" value={s.last_session_status} />
           <KV label="Homework left" value={s.last_homework} />
-          <KV label="Next focus" value={s.next_focus_label ? `${s.next_focus_label}${s.next_recommended_focus ? ` — ${s.next_recommended_focus}` : ''}` : s.next_recommended_focus} />
+          <KV label="Next focus" value={s.next_focus_label ? `${s.next_focus_label}${s.coach_focus?.note ? ` — ${s.coach_focus.note}` : ''}` : s.next_recommended_focus} />
+          {/* ¿La trabajó? (2026-09-25): una sesión propia sobre ese paso o
+              secuencia después de que la dejaste. Si es solo texto, no se
+              puede saber — lo apaga tu próximo foco. */}
+          {s.coach_focus && (
+            <KV
+              label="Worked it?"
+              value={s.coach_focus.text_only
+                ? 'Text only — pick a sequence next time and it tracks itself'
+                : s.coach_focus.worked_at
+                  ? `Yes · on their own, ${new Date(s.coach_focus.worked_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' })}${s.coach_focus.set_by_name ? ` · left by ${s.coach_focus.set_by_name}` : ''}`
+                  : `Not yet${s.coach_focus.set_at ? ` · left ${new Date(s.coach_focus.set_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' })}` : ''}${s.coach_focus.set_by_name ? ` by ${s.coach_focus.set_by_name}` : ''} · first in their Let's Play`}
+            />
+          )}
           <KV label="In the portal" value={(s as any).portal_last_seen_at ? `${new Date((s as any).portal_last_seen_at).toLocaleDateString()} · ${(s as any).portal_last_screen ?? ''} · ${(s as any).portal_visit_count ?? 0} visits` : 'never opened it'} />
         </Section>
 

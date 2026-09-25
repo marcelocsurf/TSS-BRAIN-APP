@@ -6,6 +6,7 @@
 // estrellas oficiales, acta, next focus, nivel de océano y cinta (con la
 // certificación del coach y la regla del agua). Sin camp, sin encuesta.
 import { createAdminClient } from '@/lib/supabase/admin';
+import { stampNextFocus } from '@/lib/activity/coach-focus';
 import { getCurrentCoach } from '@/lib/actions/auth';
 import { BELT_RANK, canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { waterRuleBlocker } from '@/lib/constants/graduation';
@@ -54,7 +55,7 @@ export async function closeStandaloneEvaluation(
   if (actaErr) return { ok: false, error: actaErr.message };
 
   // 3. Next focus → lo ve el alumno y el próximo coach
-  await admin.from('students').update({ next_recommended_focus: result.next_focus!.trim(), next_focus_sequence_id: result.next_focus_sequence_id || null, next_focus_step_id: result.next_focus_step_id || null }).eq('id', studentId);
+  await admin.from('students').update({ next_recommended_focus: result.next_focus!.trim(), next_focus_sequence_id: result.next_focus_sequence_id || null, next_focus_step_id: result.next_focus_step_id || null, ...stampNextFocus((coach as any).id) }).eq('id', studentId);
 
   // 4. Nivel de océano (autonomía) — mismo camino que el cierre del camp
   const { data: stu } = await admin.from('students').select('first_name, belt_level, ocean_level, ocean_level_provisional').eq('id', studentId).single();

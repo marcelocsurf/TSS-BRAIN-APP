@@ -226,9 +226,9 @@ interface PortalData {
   membership?: { active: boolean; ends_at: string | null; pending_request: boolean };
   /** La primera secuencia sin lograr y el paso que la frena. */
   /** ¿Sigue pendiente lo que el coach dejó para trabajar? */
-  coachFocusState?: { flagged: number; pending: number; clearedByStudent: boolean };
+  /** La tarea que dejó el coach, solo mientras esté pendiente (coach-focus.ts). */
+  coachFocus?: { text: string | null; note: string | null; sequence_id: string | null; step_id: string | null; label: string | null; set_at: string | null; set_by_name: string | null; text_only: boolean } | null;
   /** Foco ELEGIBLE del coach: secuencia (+ paso) que el Home abre en Let's Play. */
-  coachFocusPick?: { sequenceId: string; stepId: string | null; label: string; note: string | null } | null;
   /** The Lineup: el canal de la comunidad (null si falló la carga). */
   lineup?: import('@/lib/actions/community').LineupData | null;
   /** Tus puntajes por secuencia (2026-09-21): qué vale cada una de tu cinta. */
@@ -432,10 +432,39 @@ function nextMoveRows(
   onTrainSequence?: (args: TrainSequenceArgs) => void,
   onOpenStep?: (stepId: string) => void,
 ): { rows: NextMoveRow[]; coachCleared: boolean } {
-  // 'From your coach' salió de acá (Marcelo 2026-09-21): el alumno ve sus
-  // puntajes en el Home y decide; el plan del coach vive en Next class.
   const coachCleared = false;
   const rows: NextMoveRow[] = [];
+  // LA TAREA DEL COACH (Marcelo 2026-09-25): "le aparece, y si la trabaja una
+  // vez deja de aparecer como aviso". Primera de la lista mientras esté
+  // pendiente; el servidor ya la quitó si registró una sesión sobre ella.
+  const cf = data.coachFocus ?? null;
+  if (cf && (cf.label || cf.text)) {
+    const when = cf.set_at ? new Date(cf.set_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' }) : null;
+    const who = cf.set_by_name ? `${cf.set_by_name} left it` : 'Your coach left it';
+    if (cf.label) {
+      rows.push({
+        key: 'coach', label: 'From your coach', accent: '#00D2FF',
+        title: cf.label,
+        reason: `${who}${when ? ` · ${when}` : ''} · train it once and it clears`,
+        // Solo la nota del coach, no la etiqueta otra vez (coach-focus.ts).
+        detail: cf.note,
+        action: 'Train it →',
+        onClick: cf.sequence_id
+          ? () => { if (onTrainSequence) onTrainSequence({ sequenceId: cf.sequence_id!, mode: 'step_focus', focusStepId: cf.step_id, intention: cf.note }); else if (cf.step_id) onOpenStep?.(cf.step_id); }
+          : () => onOpenStep?.(cf.step_id!),
+        pageHref: cf.sequence_id ? seqPageHref(data, cf.sequence_id) : null,
+      });
+    } else {
+      // Solo texto (sin secuencia): una nota para tener en mente, no un botón.
+      rows.push({
+        key: 'coach', label: 'From your coach', accent: '#00D2FF',
+        title: 'A note from your coach',
+        reason: `${who}${when ? ` · ${when}` : ''} · a note, not a step — keep it in mind in your next session; it stays until your coach leaves the next one`,
+        detail: cf.text,
+        action: null,
+      });
+    }
+  }
   // LOS TRES CÍRCULOS (Marcelo 2026-09-17): primer requisito en la ola para
   // Yellow y Blue. Compuerta suave: va antes del camino, no lo bloquea.
   const circlesNext = (data as any).circlesNext as PortalData['circlesNext'];
@@ -618,7 +647,7 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
       <h2 className="text-[26px] mb-2.5" style={{ ...H_BIG, color: '#F8F5EC' }}>Your next moves</h2>
       <div className="rounded-lg overflow-hidden" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
         <div className="px-4 pt-3.5 pb-1">
-          <p className="text-[14px]" style={{ color: T_INK }}>{fullRows.length > 1 ? 'In this order. Tap one to train it.' : 'Tap it to train it.'}</p>
+          <p className="text-[14px]" style={{ color: T_INK }}>{!fullRows.some((r) => r.onClick) ? 'Read it, then pick a sequence below.' : fullRows.length > 1 ? 'In this order. Tap one to train it.' : 'Tap it to train it.'}</p>
         </div>
         {fullRows.map((r, idx) => (
           <div key={r.key} className="px-4 py-3.5" style={{ borderTop: `1px solid ${T_BORDER}` }}>
@@ -1241,15 +1270,6 @@ function HomeTab({
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, [inboxOpen]);
-  // Lo último que el coach le dejó para trabajar. Puede venir de una
-  // evaluación suelta desde su ficha o del cierre de un camp.
-  const coachFocus: string | null =
-    (data as any).standaloneEvaluation?.focus ||
-    (student as any).next_recommended_focus ||
-    null;
-  // La sugerencia del coach se apaga sola cuando el alumno entrena esos pasos
-  // y los lleva a 4 por su cuenta.
-  const coachFocusDone = !!(data as any).coachFocusState?.clearedByStudent;
   // Nivel de agua CONFIRMADO por un coach. El provisional (el del quiz de
   // ingreso) no se muestra: es lo que el alumno dice de sí mismo.
   const oceanKey = (student as any).ocean_level as OceanLevel | null;
@@ -1352,6 +1372,41 @@ function HomeTab({
           </button>
         )}
       </div>
+
+          {/* LA TAREA DEL COACH (Marcelo 2026-09-25): "le aparece, y si la
+              trabaja una vez deja de aparecer". Arriba de tus secuencias
+              mientras esté pendiente; el servidor la quita cuando registra
+              una sesión sobre ella. Misma fila que abre Let's Play. */}
+          {data.canTrack !== false && !data.courseLocked && data.coachFocus && (data.coachFocus.label || data.coachFocus.text) && (() => {
+            const cf = data.coachFocus!;
+            const when = cf.set_at ? new Date(cf.set_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' }) : null;
+            const who = cf.set_by_name ? `${cf.set_by_name} left it` : 'Your coach left it';
+            const train = cf.sequence_id
+              ? () => { if (onTrainSequence) onTrainSequence({ sequenceId: cf.sequence_id!, mode: 'step_focus', focusStepId: cf.step_id, intention: cf.note }); else onGoTo('sequence'); }
+              : cf.step_id ? () => onOpenStep?.(cf.step_id!) : null;
+            return (
+              <div className="rounded-lg p-4" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
+                <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>From your coach</p>
+                <p className="text-[22px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: T_INK }}>{cf.label ?? 'A note from your coach'}</p>
+                <p className="text-[15px] mt-1 leading-snug" style={{ color: T_INK }}>
+                  {who}{when ? ` · ${when}` : ''}{cf.label ? ' · train it once and it clears' : ' · keep it in mind in your next session'}
+                </p>
+                {(cf.label ? cf.note : cf.text) && <p className="text-[14px] mt-1 leading-snug font-semibold" style={{ color: T_INK, fontStyle: 'italic' }}>{cf.label ? cf.note : cf.text}</p>}
+                {train && (
+                  <button type="button" onClick={train}
+                    className="w-full mt-3 min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase"
+                    style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.035em', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
+                    Train it <ArrowRight size={18} />
+                  </button>
+                )}
+                {cf.sequence_id && seqPageHref(data, cf.sequence_id) && (
+                  <a href={seqPageHref(data, cf.sequence_id)!} className="flex items-center justify-center gap-1.5 mt-2.5 text-[15px] font-bold" style={{ color: T_INK }}>
+                    Open the sequence page <ArrowRight size={15} />
+                  </a>
+                )}
+              </div>
+            );
+          })()}
 
           {/* TUS SECUENCIAS (Marcelo 2026-09-21): qué vale cada secuencia de tu
               cinta, y vos decidís qué entrenar. Reemplaza "Your next move"

@@ -58,7 +58,7 @@ export function AthleteGuide({ onClose, hpAccess = false }: { onClose: () => voi
         </p>
 
         <Sec Icon={Home} title="Home — your dashboard">
-          <Li k="Work on this">The one thing to train right now. If your coach left you a focus, it lives here until you master it — take that skill to 4 stars in your own practice and the card clears itself. No coach note? Your next move from the Sequence shows instead, with a line from One Wave to set your mind.</Li>
+          <Li k="Work on this">The one thing to train right now. If your coach left you a task, it shows here and first in Let&apos;s Play — train it once and it clears itself; your coach sees the date you did it. No coach task? Your next move from the Sequence shows instead, with a line from One Wave to set your mind.</Li>
           <Li k="Your belt card">Tap it to open <strong style={{ color: '#eaf4fa' }}>What it takes</strong> — the full, honest list for your next belt: every skill, where you stand on each one, and what&apos;s still open. The belt selector shows the belt you hold; the guide shows the road out of it.</Li>
           <Li k="In the water">The row under your belt opens <strong style={{ color: '#eaf4fa' }}>Your water level</strong> — where you can paddle out on your own. It&apos;s safety, not technique, so it lives apart from your belt: no stars, you pass it or you don&apos;t, and your coach confirms each level in the water.</Li>
           <Li k="Hours ring">Every minute you spend in the water — sessions with your coach and sessions you log yourself. Watch it grow.</Li>
@@ -76,7 +76,7 @@ export function AthleteGuide({ onClose, hpAccess = false }: { onClose: () => voi
         </Sec>
 
         <Sec Icon={Waves} title="Let's Play — train &amp; log your sessions">
-          <Li k="My Sequence">The exact skills you&apos;re working on, straight from your coach&apos;s evaluations. Tap a drill to practice it — and rate yourself honestly: your own stars are what clear the focus your coach left you.</Li>
+          <Li k="My Sequence">The exact skills you&apos;re working on, straight from your coach&apos;s evaluations. Tap a drill to practice it — and rate yourself honestly: your stars show you where you stand; only your coach can move the official ones.</Li>
           <Li k="Log it">Surfed on your own? Trained at home? Log it here — it counts toward your hours and your coach sees it. The more honest the log, the better your coaching gets.</Li>
         </Sec>
 

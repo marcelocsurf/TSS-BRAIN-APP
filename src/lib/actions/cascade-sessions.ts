@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { stampNextFocus } from '@/lib/activity/coach-focus';
 import { revalidatePath } from 'next/cache';
 import { isBeltInRange } from '@/lib/constants/cascade';
 import { getCurrentAcademyId } from '@/lib/actions/auth';
@@ -474,6 +475,9 @@ export async function createCascadeSession(
             last_session_status: formState.status || null,
             last_homework: homeworkText || null,
             next_recommended_focus: whatsNextText || null,
+            next_focus_sequence_id: null,
+            next_focus_step_id: null,
+            ...stampNextFocus(effectiveCoachId ?? null),
           })
           .eq('id', formState.student_id!);
         if (profErr) console.error('[cascade close] profile update failed', profErr);

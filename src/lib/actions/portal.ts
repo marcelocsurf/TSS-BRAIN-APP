@@ -2,6 +2,7 @@
 
 import { studentBlockNote } from '@/lib/planner/block-notes';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCoachFocus } from '@/lib/activity/coach-focus';
 import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import { computeSurfSplit, coachSessionMinutes } from '@/lib/utils/surf-hours';
@@ -358,6 +359,7 @@ export async function getStudentPortalData(token: string) {
   // Final-evaluation note the coach wrote for this student (student-visible
   // only — coach_private_note is intentionally NOT selected here). Attach to
   // each past camp so the portal can show "your coach's note".
+  const coachFocus = await getCoachFocus(admin, student.id).then((f) => (f && f.pending ? f : null)).catch((e) => { console.error('[portal] coach focus failed', e); return null; });
   let standaloneEvaluation: { note: string | null; focus: string | null; at: string } | null = null;
   {
     // Se piden TODAS las actas del alumno, no solo las de sus camps pasados:
@@ -566,6 +568,9 @@ export async function getStudentPortalData(token: string) {
     upcomingCamps: upcomingCampsWithPreview,
     pastCamps,
     standaloneEvaluation,
+    // LA TAREA DEL COACH (2026-09-25): solo mientras esté pendiente. Cuando
+    // el alumno la trabaja una vez, deja de aparecer (coach-focus.ts).
+    coachFocus,
     academyBranding,
   };
 }
@@ -874,67 +879,9 @@ export async function logFreeSurf(
   return { ok: true };
 }
 
-// ─── Lo que el coach dejó para trabajar: ¿sigue pendiente? ───
-//
-// Marcelo (2026-08-28): "el alumno trabaja en lo que le dejó el coach, después
-// se va, sigue solo y lo domina… ¿cómo hacemos que al momento que lo entrene y
-// lo lleve a 4 deje de salir ahí?".
-//
-// La nota del coach es TEXTO: no sabe de qué paso habla. Pero cuando la
-// escribió, el coach estaba calificando — y los pasos que dejó por debajo de 4
-// SON lo que hay que trabajar. Entonces la sugerencia vive mientras alguno de
-// esos pasos siga por debajo de 4 en la nota del PROPIO alumno.
-//
-// La asimetría es a propósito: la estrella oficial del coach no se toca ni se
-// pisa — nadie se asciende solo. Lo único que cambia es que la sugerencia deja
-// de perseguirlo, y la pantalla lo dice: lo llevaste a 4, tu coach lo confirma
-// la próxima vez que te vea.
-export async function getCoachFocusState(
-  portalToken: string,
-): Promise<{ flagged: number; pending: number; clearedByStudent: boolean; firstPendingStepId: string | null }> {
-  try {
-    const studentId = await studentIdFromPortalToken(portalToken);
-    if (!studentId) return { flagged: 0, pending: 0, clearedByStudent: false, firstPendingStepId: null };
-    const admin = createAdminClient();
-    // Foco ELEGIBLE del coach (2026-09-16): si eligió secuencia (+ paso), se
-    // apaga cuando el alumno lleva ESE paso (o toda la secuencia) a 4★ solo.
-    const { data: stu } = await admin.from('students').select('next_focus_sequence_id, next_focus_step_id').eq('id', studentId).maybeSingle();
-    if (stu?.next_focus_sequence_id) {
-      let stepIds: string[] = [];
-      if (stu.next_focus_step_id) stepIds = [stu.next_focus_step_id];
-      else {
-        const { data: ls } = await admin.from('lessons').select('id').eq('wb_sequence_id', stu.next_focus_sequence_id).eq('active', true);
-        stepIds = (ls ?? []).map((l: any) => l.id);
-      }
-      const { data: rs } = stepIds.length
-        ? await admin.from('student_step_ratings').select('step_id, current_rating').eq('student_id', studentId).in('step_id', stepIds)
-        : { data: [] as any[] };
-      const byStep = new Map((rs ?? []).map((r: any) => [r.step_id, r.current_rating ?? 0]));
-      const pending = stepIds.filter((id) => (byStep.get(id) ?? 0) < 4);
-      return { flagged: stepIds.length, pending: pending.length, clearedByStudent: stepIds.length > 0 && pending.length === 0, firstPendingStepId: pending[0] ?? null };
-    }
-    const { data } = await admin
-      .from('student_step_ratings')
-      .select('step_id, coach_rating, current_rating')
-      .eq('student_id', studentId)
-      .not('coach_rating', 'is', null)
-      .lt('coach_rating', 4)
-      .order('step_id');
-    const rows = data ?? [];
-    const pendingRows = rows.filter((r: any) => (r.current_rating ?? 0) < 4);
-    return {
-      flagged: rows.length,
-      pending: pendingRows.length,
-      clearedByStudent: rows.length > 0 && pendingRows.length === 0,
-      // El primer paso que el coach dejó bajo 4★ y sigue pendiente: la fila
-      // "From your coach" lo abre en Let's Play (auditoría 2026-09-15).
-      firstPendingStepId: (pendingRows[0] as any)?.step_id ?? null,
-    };
-  } catch {
-    // Es una ayuda, no el contenido: si falla, la nota se muestra como siempre.
-    return { flagged: 0, pending: 0, clearedByStudent: false, firstPendingStepId: null };
-  }
-}
+// getCoachFocusState (regla 4★) se fue el 2026-09-25: no tenía llamadores y
+// contradecía la regla de Marcelo (una sesión = trabajada). La regla única
+// vive en src/lib/activity/coach-focus.ts.
 
 // ─── Get pending surveys (sessions without survey responses) ───
 

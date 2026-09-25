@@ -13,6 +13,7 @@ import { sortByBlocks } from '@/lib/constants/learning-blocks';
 import { SHARED_PRE_COURSE_SECTIONS } from '@/lib/constants/courses';
 import { participantPresentOn, participantLastDay, exigeCierreDeDias } from '@/lib/utils/camp-window';
 import { isVisibleSelfSession, selfSessionDetail, resolveStepTitles } from '@/lib/activity/build';
+import { stampNextFocus } from '@/lib/activity/coach-focus';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -1831,7 +1832,7 @@ export async function closeCampFinal(
         }
         for (const r of withFocus) {
           const focus = (r.next_focus as string).trim();
-          await admin.from('students').update({ next_recommended_focus: focus, next_focus_sequence_id: (r as any).next_focus_sequence_id || null, next_focus_step_id: (r as any).next_focus_step_id || null }).eq('id', r.student_id);
+          await admin.from('students').update({ next_recommended_focus: focus, next_focus_sequence_id: (r as any).next_focus_sequence_id || null, next_focus_step_id: (r as any).next_focus_step_id || null, ...stampNextFocus(coach.id) }).eq('id', r.student_id);
           const ssrId = latestByStudent.get(r.student_id);
           if (ssrId) await admin.from('student_session_results').update({ whats_next: focus }).eq('id', ssrId);
         }
@@ -2784,6 +2785,7 @@ export async function closeServicePlan(
           next_recommended_focus: firstBlock.whats_next ?? null,
           next_focus_sequence_id: firstBlock.next_focus_sequence_id ?? null,
           next_focus_step_id: firstBlock.next_focus_step_id ?? null,
+          ...stampNextFocus(coach.id),
         }).eq('id', studentId);
       } catch { /* best-effort */ }
     }

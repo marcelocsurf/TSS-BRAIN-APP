@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { stampNextFocus } from '@/lib/activity/coach-focus';
 import { validateMandatoryFields } from '@/lib/validations/session-close';
 import { revalidatePath } from 'next/cache';
 import type { BeltLevel } from '@/lib/constants/belts';
@@ -356,6 +357,10 @@ export async function closeStandaloneSession(
     p_whats_next: evaluation.whats_next,
   });
 
+  // El RPC estampa la fecha pero no sabe quién (00217): se anota el coach.
+  if (!rpcErr && evaluation.whats_next) {
+    await admin.from('students').update({ next_focus_set_by: coach.id }).eq('id', draft.student_id);
+  }
   if (rpcErr) {
     await supabase.from('students').update({
       last_session_id: result.id,
@@ -365,6 +370,9 @@ export async function closeStandaloneSession(
       last_session_status: overallStatus,
       last_homework: evaluation.homework,
       next_recommended_focus: evaluation.whats_next,
+      next_focus_sequence_id: null,
+      next_focus_step_id: null,
+      ...stampNextFocus(coach.id),
     }).eq('id', draft.student_id);
   }
 

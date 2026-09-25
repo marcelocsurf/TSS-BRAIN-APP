@@ -457,6 +457,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               weakestStepId={seq.weakestStepId}
               weakestTitle={seq.weakestTitle}
               weakestIsOfficial={seq.weakestIsOfficial}
+              weakestCoachRatedAt={seq.weakestCoachRatedAt ?? null}
               selfSequenceRating={seq.selfSequenceRating}
               heldBackStepId={seq.heldBackStepId}
               heldBackTitle={seq.heldBackTitle}
@@ -498,6 +499,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                 weakestStepId={seq.weakestStepId}
                 weakestTitle={seq.weakestTitle}
                 weakestIsOfficial={seq.weakestIsOfficial}
+                weakestCoachRatedAt={seq.weakestCoachRatedAt ?? null}
                 selfSequenceRating={seq.selfSequenceRating}
                 heldBackStepId={seq.heldBackStepId}
                 heldBackTitle={seq.heldBackTitle}
@@ -550,6 +552,7 @@ function BlockSection({
   weakestStepId = null,
   weakestTitle = null,
   weakestIsOfficial = false,
+  weakestCoachRatedAt = null,
   selfSequenceRating = null,
   heldBackStepId = null,
   heldBackTitle = null,
@@ -578,6 +581,7 @@ function BlockSection({
   weakestStepId?: string | null;
   weakestTitle?: string | null;
   weakestIsOfficial?: boolean;
+  weakestCoachRatedAt?: string | null;
   /** La nota del alumno para la cadena y el paso que la detuvo (Let's Play). */
   selfSequenceRating?: number | null;
   heldBackStepId?: string | null;
@@ -744,7 +748,9 @@ function BlockSection({
           <span className="block text-[12.5px] text-[#10263B] leading-snug">
             <b>{weakestTitle}</b> is holding this sequence back
             {minRating !== null && ` — ${minRating}★`}
-            {weakestIsOfficial && ' (your coach)'}
+            {/* La estrella oficial manda sobre la tuya: se dice quién y cuándo
+                (Marcelo 2026-09-25: "las estrellas no se movían"). */}
+            {weakestIsOfficial && ` · your coach's star${weakestCoachRatedAt ? `, ${new Date(weakestCoachRatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' })}` : ''} · only they can move it`}
           </span>
         </button>
       )}

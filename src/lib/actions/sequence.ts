@@ -101,6 +101,8 @@ export type SequenceData = {
     weakestTitle: string | null;
     /** true = ese freno lo puso el coach, no la auto-evaluación. */
     weakestIsOfficial: boolean;
+    /** Cuándo la puso el coach (para decir "your coach · Sep 21"). */
+    weakestCoachRatedAt?: string | null;
     /** Let's Play por secuencia: la nota del alumno para la CADENA (aparte
      *  de los pasos) y el paso que la detuvo la última vez. */
     selfSequenceRating: number | null;
@@ -404,6 +406,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
         weakestStepId: weakest?.step_id ?? null,
         weakestTitle: weakest?.step_title ?? null,
         weakestIsOfficial: weakest?.coach_rating != null,
+        weakestCoachRatedAt: weakest?.coach_rated_at ?? null,
         selfSequenceRating: sr?.current_rating ?? null,
         heldBackStepId: heldBack?.step_id ?? null,
         heldBackTitle: heldBack?.step_title ?? null,
