@@ -214,3 +214,37 @@ describe('participantPresentOn — la estadía del campista', () => {
     expect(stayLength({ planned_departure: '2026-10-05' }, camp.start, camp.end)).toEqual({ days: 1, total: 6 });
   });
 });
+
+
+import { pickSequenceVideos, resolveSequenceVideo, hasStanceVideos } from '@/lib/sequence-pages/videos';
+
+describe('videos por secuencia · lado y stance', () => {
+  const rows = [
+    { title: 'WB-SEQ-4 · BS Goofy', file_url: 'u-bs-goofy' },
+    { title: 'WB-SEQ-4 · FS Regular turn', file_url: 'u-fs-regular' },
+    { title: 'WB-SEQ-4 · Backside turn', file_url: 'u-bs' },
+    { title: 'WB-SEQ-4 · Directional Turns', file_url: 'u-general' },
+    { title: 'WB-SEQ-4 · sin url', file_url: null },
+  ];
+  const v = pickSequenceVideos(rows, 'WB-SEQ-4');
+  it('clasifica por lado y stance', () => {
+    expect(v.bs_goofy?.url).toBe('u-bs-goofy');
+    expect(v.fs_regular?.url).toBe('u-fs-regular');
+    expect(v.bs?.url).toBe('u-bs');
+    expect(v.general?.url).toBe('u-general');
+    expect(hasStanceVideos(v)).toBe(true);
+  });
+  it('cae de lado+stance a lado, a stance y a general', () => {
+    expect(resolveSequenceVideo(v, 'bs', 'goofy')?.url).toBe('u-bs-goofy');
+    expect(resolveSequenceVideo(v, 'bs', 'regular')?.url).toBe('u-bs');
+    expect(resolveSequenceVideo(v, 'fs', 'goofy')?.url).toBe('u-general');
+    const noGeneral = pickSequenceVideos([{ title: 'X · BS Goofy', file_url: 'g' }], 'X');
+    expect(resolveSequenceVideo(noGeneral, 'fs', 'goofy')).toBeNull();
+    expect(resolveSequenceVideo(noGeneral, null, null)?.url).toBe('g');
+    expect(resolveSequenceVideo(v, null, null)?.url).toBe('u-general');
+  });
+  it('la primera fila (más nueva) gana', () => {
+    const w = pickSequenceVideos([{ title: 'X · BS new', file_url: 'new' }, { title: 'X · BS old', file_url: 'old' }], 'X');
+    expect(w.bs?.url).toBe('new');
+  });
+});

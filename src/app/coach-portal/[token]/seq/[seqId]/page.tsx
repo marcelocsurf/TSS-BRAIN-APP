@@ -9,7 +9,7 @@ import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { SequencePage, type LessonBits, type PieceRow, type CoachStepLayer } from '@/components/portal/sequence-page/SequencePage';
-import { pickSequenceVideos } from '@/lib/sequence-pages/videos';
+import { pickSequenceVideos, resolveSequenceVideo } from '@/lib/sequence-pages/videos';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -73,7 +73,7 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
       <link rel="stylesheet" href="/tss/theme.css" />
       <SequencePage
         cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={false}
-        video={videos.general ?? videos.bs ?? videos.fs} videos={videos}
+        video={resolveSequenceVideo(videos, null, null)} videos={videos} stance={null}
         progress={null} initialTab={initialTab} flip={sequenceSide(cfg.id) === 'bs'}
         coach={{ layers, backHref: `/coach-portal/${token}?tab=courses` }}
       />

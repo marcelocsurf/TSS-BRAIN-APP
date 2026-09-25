@@ -5,7 +5,7 @@
 import { getCourseLocks } from '@/lib/portal/course-lock';
 import { CourseLockedScreen } from '@/components/portal/CourseLockedScreen';
 import { sequenceSide } from '@/lib/constants/learning-blocks';
-import { isGoofy, boardFlip } from '@/lib/stance';
+import { isGoofy, boardFlip, stanceOf } from '@/lib/stance';
 import { notFound, redirect } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -13,7 +13,7 @@ import { COURSES } from '@/lib/constants/courses';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { getStudentAccess } from '@/lib/portal/access';
 import { SequencePage, type LessonBits, type PieceRow } from '@/components/portal/sequence-page/SequencePage';
-import { pickSequenceVideos } from '@/lib/sequence-pages/videos';
+import { pickSequenceVideos, resolveSequenceVideo } from '@/lib/sequence-pages/videos';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -124,7 +124,7 @@ export default async function SequencePageRoute({ params, searchParams }: { para
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       {/* Línea aprobada (TSS_Design_Handoff): reglas limitadas a .tss; /tss/ es público en el middleware. */}
       <link rel="stylesheet" href="/tss/theme.css" />
-      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={videos.general ?? videos.bs ?? videos.fs} videos={videos} progress={progress} initialTab={initialTab} flip={boardFlip(sequenceSide(cfg.id), isGoofy(student as any))} />
+      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={resolveSequenceVideo(videos, null, null)} videos={videos} stance={stanceOf(student as any)} progress={progress} initialTab={initialTab} flip={boardFlip(sequenceSide(cfg.id), isGoofy(student as any))} />
     </div>
   );
 }

@@ -20,6 +20,7 @@ import { COMMAND_COLORS } from '@/lib/sequence-pages/wave-guide-svg';
 import { BoardMap } from './BoardMap';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { SEQUENCE_LAMINAS } from '@/lib/sequence-pages/laminas';
+import { hasStanceVideos, resolveSequenceVideo, type SequenceVideos, type Stance } from '@/lib/sequence-pages/videos';
 
 // Tokens del paquete (public/tss/tokens.css) + semánticos legibles sobre crema.
 /** Una lámina del método: el mapa de la secuencia de una sola mirada. Se
@@ -77,7 +78,7 @@ export interface SequenceProgress {
 }
 
 export function SequencePage({
-  video, videos = null, cfg, lessons, pieces, token, canTrack, progress, initialTab = null, flip = false, coach = null }: {
+  video, videos = null, stance = null, cfg, lessons, pieces, token, canTrack, progress, initialTab = null, flip = false, coach = null }: {
   cfg: SequencePageConfig;
   lessons: Record<string, LessonBits>;
   pieces: Record<string, PieceRow>;
@@ -86,7 +87,9 @@ export function SequencePage({
   /** Video de la ejecución (Library → kind video, título que empieza con el id de la secuencia). */
   video?: { url: string; title: string } | null;
   /** General + por lado (videos.ts). El selector Backside · Frontside elige. */
-  videos?: { general: { url: string; title: string } | null; bs: { url: string; title: string } | null; fs: { url: string; title: string } | null } | null;
+  videos?: SequenceVideos | null;
+  /** Goofy · Regular de la ficha (null si no lo sabe): elige el video del stance. */
+  stance?: Stance | null;
   /** Lo que Let's Play sabe de esta secuencia para este alumno. */
   progress?: SequenceProgress | null;
   /** ?tab=feel desde Let's Play ("Rehearse it on land first"). */
@@ -109,7 +112,15 @@ export function SequencePage({
   const setSide = (v: 'bs' | 'fs') => { setSideState(v); try { window.localStorage.setItem(`tss:side:${cfg.id}`, v); } catch {} };
   const sideOf = (stepId: string | null | undefined): 'fs' | 'bs' | null => (stepId && cfg.sideOfStep ? cfg.sideOfStep[stepId] ?? null : null);
   const onSide = (stepId: string | null | undefined) => !side || !sideOf(stepId) || sideOf(stepId) === side;
-  const shownVideo = side && videos?.[side] ? videos[side] : video;
+  // Regular · Goofy: automático por la ficha; interruptor solo si hay videos por stance.
+  const [stanceSel, setStanceSel] = useState<Stance>(() => {
+    try { const v = typeof window !== 'undefined' ? window.localStorage.getItem('tss:stance') : null; if (v === 'goofy' || v === 'regular') return v; } catch {}
+    return stance ?? 'regular';
+  });
+  const setStance = (v: Stance) => { setStanceSel(v); try { window.localStorage.setItem('tss:stance', v); } catch {} };
+  // Con un lado elegido y sin video de ese lado, NO se muestra el del otro
+  // lado: queda la línea sobre la ola. Sin selector de lado, el general.
+  const shownVideo = resolveSequenceVideo(videos, side, hasStanceVideos(videos) ? stanceSel : null) ?? (side ? null : video);
   const [coachOn, setCoachOn] = useState(true);
   const coachLayers = coach && coachOn ? coach.layers : [];
   // Foco opcional dentro de la misión (Marcelo 2026-09-09): la misión es
@@ -161,6 +172,20 @@ export function SequencePage({
                 {v === 'bs' ? 'Backside' : 'Frontside'}
               </button>
             ))}
+          </div>
+        )}
+        {hasStanceVideos(videos) && (
+          <div className="mt-2 flex items-center justify-end gap-2">
+            <span className="text-[11px]" style={{ color: 'rgba(247,249,250,.7)' }}>{stance ? 'Your stance' : 'Your stance?'}</span>
+            <div className="flex gap-1 p-0.5 rounded-full" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.35)' }}>
+              {(['regular', 'goofy'] as const).map((v) => (
+                <button key={v} type="button" onClick={() => setStance(v)} aria-pressed={stanceSel === v}
+                  className="h-8 px-3 rounded-full text-[11px] font-black uppercase tracking-wide"
+                  style={stanceSel === v ? { background: '#00D2FF', color: '#061C2B' } : { color: 'rgba(247,249,250,.78)' }}>
+                  {v === 'goofy' ? 'Goofy' : 'Regular'}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {/* Arriba de todo: la ejecución. El video cuando exista; si no, la línea sobre la ola. */}
