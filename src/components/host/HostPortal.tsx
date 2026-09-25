@@ -22,6 +22,7 @@ import {
   type HostStudentRow, type HostDayEvent, type HostDayAlerts, type TransportBoardRow, type AvailabilityRow,
 } from '@/lib/actions/host-portal';
 import { HostGuide } from '@/components/host/HostGuide';
+import { HostQuality } from '@/components/host/HostQuality';
 import { CopyTextButton } from '@/components/dashboard/CopyTextButton';
 import { HoldingAssignPanel } from '@/components/shared/HoldingAssignPanel';
 import { hostHoldingBoard, hostAssignFromHolding, type HoldingSeat, type HoldingTarget } from '@/lib/actions/holding';
@@ -37,7 +38,7 @@ const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GR
 const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em' };
 const F_M: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.18em' };
 
-type Tab = 'hoy' | 'operacion' | 'disponibilidad' | 'transporte' | 'espacios' | 'tablas' | 'clientes';
+type Tab = 'hoy' | 'operacion' | 'disponibilidad' | 'transporte' | 'espacios' | 'tablas' | 'clientes' | 'calidad';
 
 // Cinta legible + nivel entre paréntesis mientras el equipo aprende los
 // colores (pedido de Rick): "Purple Belt (Emerging)" en vez de "purple_belt".
@@ -408,7 +409,7 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
           </div>
         </div>
         <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
-          {([['disponibilidad', '📣 Disponibilidad'], ['transporte', '🚐 Transporte'], ['espacios', '🏛 Espacios'], ['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['tablas', '🏄 Tablas'], ['clientes', '👥 Clientes']] as const).map(([id, label]) => (
+          {([['disponibilidad', '📣 Disponibilidad'], ['transporte', '🚐 Transporte'], ['espacios', '🏛 Espacios'], ['hoy', '📋 Hoy'], ['operacion', '🗓 Agenda'], ['tablas', '🏄 Tablas'], ['clientes', '👥 Clientes'], ['calidad', '⭐ Calidad']] as const).map(([id, label]) => (
             <button key={id} type="button" onClick={() => setTab(id)}
               className="flex-1 shrink-0 whitespace-nowrap rounded-full py-2.5 px-3 text-[9px]"
               style={{ ...F_M, background: tab === id ? CYAN : 'rgba(247,249,250,.08)', color: tab === id ? INK : 'rgba(247,249,250,.7)' }}>
@@ -624,6 +625,10 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
              qué sala/lugar y cuándo (yoga deck, BJJ, gym, ice bath, skate). */
           <PortalSpaces token={token} coachId={hostId ?? ''} />
         )}
+
+        {/* CALIDAD · atención al cliente (Marcelo 2026-09-25): ratings, encuestas,
+            experiencia e incidentes de la academia, en una pantalla. */}
+        {tab === 'calidad' && <HostQuality token={token} />}
 
         {tab === 'clientes' && (
           <div className="space-y-3">

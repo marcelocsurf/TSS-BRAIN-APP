@@ -1154,3 +1154,157 @@ export async function hostQuizLeads(token: string): Promise<QuizLeadRow[]> {
       portal_url: s.portal_token ? `${BASE()}/intake/${s.portal_token}` : null,
     }));
 }
+
+// ═══ CALIDAD · atención al cliente (Marcelo 2026-09-25) ═══
+// "Que Kat tenga toda la info para saber exactamente qué está pasando: los
+// ratings, las encuestas, los incidentes." Mismo núcleo que /reports (sin
+// duplicar la lógica), acotado a su academia y a los últimos 30 días.
+import { ratingsByCoachCore, surveyResponseByCampCore, type CoachRatingRow, type CampSurveyRow, type PendingSurveyStudent } from '@/lib/reports/satisfaction-core';
+import { experienceReportCore, type ExperienceReport } from '@/lib/reports/experience-core';
+import { EXPERIENCE_LABELS_ES, DIM_COLS } from '@/lib/survey/experience-questions';
+import { toElSalvadorDate } from '@/lib/utils/tz';
+
+export interface HostQualityAlert {
+  kind: 'coach' | 'method' | 'comment' | 'experience' | 'incident';
+  date: string;
+  student: string;
+  camp: string | null;
+  coach: string | null;
+  /** Lo que disparó la alerta, en dos palabras: "Coach 2★", "Método 3★", "NPS 4", "Incidente · lesión". */
+  score: string;
+  text: string | null;
+}
+
+export interface HostQualityResponse {
+  id: string;
+  date: string;
+  student: string;
+  camp: string | null;
+  coach: string | null;
+  coach_rating: number | null;
+  method_clarity: number | null;
+  method_next: number | null;
+  flow_channel: number | null;
+  comment: string | null;
+}
+
+export interface HostQualityBoard {
+  from: string;
+  to: string;
+  kpis: {
+    coachAvg: number | null; coachN: number;
+    methodAvg: number | null; methodN: number;
+    nps: number | null; npsN: number;
+    responsePct: number | null; invited: number; answered: number;
+    incidents: number;
+  };
+  alerts: HostQualityAlert[];
+  responses: HostQualityResponse[];
+  camps: CampSurveyRow[];
+  pending: PendingSurveyStudent[];
+  coaches: CoachRatingRow[];
+  experience: { labels: Record<string, string>; dims: ExperienceReport['totals']['dims']; nps: ExperienceReport['totals']['nps']; responses: number };
+  incidents: { id: string; date: string; type: string; student: string | null; coach: string | null; description: string | null; action: string | null }[];
+}
+
+export async function hostQualityBoard(token: string): Promise<HostQualityBoard | null> {
+  const who = await resolveHost(token);
+  if (!who?.academy_id) return null;
+  const admin = createAdminClient();
+  const academyId = who.academy_id as string;
+  const to = elSalvadorToday();
+  const from = toElSalvadorDate(new Date(Date.now() - 30 * 86400000)) || to;
+  const fromUtc = `${from}T00:00:00.000Z`;
+  const scope = { scopeAcademyId: academyId, isPlatformAdmin: false };
+
+  const [ratings, camps, exp, incRes, respRes] = await Promise.all([
+    ratingsByCoachCore(admin, scope, from, to),
+    surveyResponseByCampCore(admin, academyId, from, to),
+    experienceReportCore(admin, scope, from, to),
+    admin.from('session_incidents')
+      .select('id, created_at, incident_type, student_name, description, action_taken, coaches:coach_id(display_name)')
+      .eq('academy_id', academyId).gte('created_at', fromUtc).order('created_at', { ascending: false }).limit(60),
+    admin.from('survey_responses')
+      .select('id, submitted_at, coach_rating, method_clarity, method_next, flow_channel, open_comment, student_session_results!inner(coach_id, camp_session_id, student_id, students!inner(first_name, last_name, academy_id, is_test))')
+      .eq('student_session_results.students.academy_id', academyId)
+      .gte('submitted_at', fromUtc)
+      .order('submitted_at', { ascending: false })
+      .limit(400),
+  ]);
+
+  // Nombres de coach y de camp para las respuestas (dos lookups chicos).
+  const raw = ((respRes.data ?? []) as any[]).map((r) => ({ ...r, _ssr: Array.isArray(r.student_session_results) ? r.student_session_results[0] : r.student_session_results }))
+    .filter((r) => { const st = Array.isArray(r._ssr?.students) ? r._ssr.students[0] : r._ssr?.students; return !st?.is_test; });
+  const coachIds = Array.from(new Set(raw.map((r) => r._ssr?.coach_id).filter(Boolean)));
+  const sessIds = Array.from(new Set(raw.map((r) => r._ssr?.camp_session_id).filter(Boolean)));
+  const [{ data: coachRows }, { data: sessRows }] = await Promise.all([
+    coachIds.length ? admin.from('coaches').select('id, display_name').in('id', coachIds) : Promise.resolve({ data: [] as any[] }),
+    sessIds.length ? admin.from('camp_sessions').select('id, camp_instances:camp_instance_id(camp_name)').in('id', sessIds) : Promise.resolve({ data: [] as any[] }),
+  ]);
+  const coachName = new Map((coachRows ?? []).map((c: any) => [c.id, c.display_name as string]));
+  const campName = new Map((sessRows ?? []).map((s: any) => [s.id, (Array.isArray(s.camp_instances) ? s.camp_instances[0] : s.camp_instances)?.camp_name ?? null]));
+
+  const responses: HostQualityResponse[] = raw.map((r) => {
+    const st = Array.isArray(r._ssr?.students) ? r._ssr.students[0] : r._ssr?.students;
+    return {
+      id: r.id,
+      date: toElSalvadorDate(r.submitted_at) ?? '',
+      student: [st?.first_name, st?.last_name].filter(Boolean).join(' ') || '—',
+      camp: campName.get(r._ssr?.camp_session_id) ?? null,
+      coach: coachName.get(r._ssr?.coach_id) ?? null,
+      coach_rating: r.coach_rating ?? null,
+      method_clarity: r.method_clarity ?? null,
+      method_next: r.method_next ?? null,
+      flow_channel: r.flow_channel ?? null,
+      comment: r.open_comment?.trim() ? r.open_comment.trim() : null,
+    };
+  });
+
+  const methodVals = responses.flatMap((r) => [r.method_clarity, r.method_next]).filter((v): v is number => typeof v === 'number' && v >= 1 && v <= 5);
+  const methodAvg = methodVals.length ? Math.round((methodVals.reduce((a, b) => a + b, 0) / methodVals.length) * 10) / 10 : null;
+
+  const incidents = ((incRes.data ?? []) as any[]).map((i) => ({
+    id: i.id,
+    date: toElSalvadorDate(i.created_at) ?? '',
+    type: i.incident_type ?? 'incidente',
+    student: i.student_name ?? null,
+    coach: (Array.isArray(i.coaches) ? i.coaches[0] : i.coaches)?.display_name ?? null,
+    description: i.description ?? null,
+    action: i.action_taken ?? null,
+  }));
+
+  const expOk = !('error' in exp && exp.error) ? (exp as Exclude<typeof exp, { error?: string }>) : null;
+
+  // ── Para atender: todo lo que pide una llamada o un mensaje, junto y por fecha ──
+  const alerts: HostQualityAlert[] = [];
+  for (const r of responses) {
+    if (r.coach_rating != null && r.coach_rating <= 3) alerts.push({ kind: 'coach', date: r.date, student: r.student, camp: r.camp, coach: r.coach, score: `Coach ${r.coach_rating}★`, text: r.comment });
+    else if ((r.method_clarity != null && r.method_clarity <= 3) || (r.method_next != null && r.method_next <= 3)) alerts.push({ kind: 'method', date: r.date, student: r.student, camp: r.camp, coach: r.coach, score: `Método ${Math.min(r.method_clarity ?? 5, r.method_next ?? 5)}★`, text: r.comment });
+    else if (r.comment) alerts.push({ kind: 'comment', date: r.date, student: r.student, camp: r.camp, coach: r.coach, score: `Coach ${r.coach_rating ?? '—'}★`, text: r.comment });
+  }
+  for (const a of expOk?.alerts ?? []) {
+    const lowDim = DIM_COLS.filter((c) => typeof a.scores[c] === 'number' && (a.scores[c] as number) <= 3).map((c) => `${EXPERIENCE_LABELS_ES[c]} ${a.scores[c]}★`);
+    const parts = [...lowDim, ...(a.nps != null && a.nps <= 6 ? [`NPS ${a.nps}`] : [])];
+    alerts.push({ kind: 'experience', date: a.date, student: a.studentName, camp: a.campName, coach: null, score: parts.join(' · ') || 'Experiencia', text: a.comment });
+  }
+  for (const i of incidents) alerts.push({ kind: 'incident', date: i.date, student: i.student ?? '—', camp: null, coach: i.coach, score: `Incidente · ${i.type}`, text: [i.description, i.action ? `Acción: ${i.action}` : null].filter(Boolean).join(' — ') || null });
+  alerts.sort((a, b) => b.date.localeCompare(a.date));
+
+  return {
+    from, to,
+    kpis: {
+      coachAvg: ratings.totals.avg, coachN: ratings.totals.total,
+      methodAvg, methodN: methodVals.length / 2,
+      nps: expOk?.totals.nps.score ?? null, npsN: expOk?.totals.nps.n ?? 0,
+      responsePct: camps.totals.pct, invited: camps.totals.invited, answered: camps.totals.answered,
+      incidents: incidents.length,
+    },
+    alerts: alerts.slice(0, 60),
+    responses,
+    camps: camps.rows,
+    pending: camps.pending,
+    coaches: ratings.coaches,
+    experience: { labels: EXPERIENCE_LABELS_ES, dims: expOk?.totals.dims ?? ({} as any), nps: expOk?.totals.nps ?? { score: null, promoters: 0, passives: 0, detractors: 0, n: 0 }, responses: expOk?.totals.responses ?? 0 },
+    incidents,
+  };
+}
