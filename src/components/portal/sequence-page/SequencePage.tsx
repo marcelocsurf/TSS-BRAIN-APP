@@ -12,7 +12,7 @@
 // cyan, nav inferior blanca. La ola es el Wave Guide ilustrado con el
 // recorrido ORIGINAL de cada secuencia. TODO el contenido (textos, orden,
 // links, lógica de Let's Play) es el mismo de antes: solo cambia cómo se ve.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowRight, Lock, Play } from 'lucide-react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { WaveGuide, WAVE_KIT_SEQUENCE } from './WaveGuide';
@@ -21,6 +21,7 @@ import { BoardMap } from './BoardMap';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { SEQUENCE_LAMINAS } from '@/lib/sequence-pages/laminas';
 import { hasStanceVideos, resolveSequenceVideo, type SequenceVideos, type Stance } from '@/lib/sequence-pages/videos';
+import { ZoomImage } from '@/components/shared/ImageLightbox';
 
 // Tokens del paquete (public/tss/tokens.css) + semánticos legibles sobre crema.
 /** Una lámina del método: el mapa de la secuencia de una sola mirada. Se
@@ -28,11 +29,8 @@ import { hasStanceVideos, resolveSequenceVideo, type SequenceVideos, type Stance
 function Lamina({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
   return (
     <figure className="m-0 mb-3">
-      <a href={src} target="_blank" rel="noopener noreferrer"
-         className="block rounded-[10px] overflow-hidden" style={{ border: '1px solid #DCD7C6' }}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={src} width={1672} height={941} alt={alt} style={{ width: '100%', height: 'auto', display: 'block' }} />
-      </a>
+      {/* Se abre adentro del app (ImageLightbox), no en otra pestaña. */}
+      <ZoomImage src={src} alt={alt} caption={caption ?? alt} className="rounded-[10px] overflow-hidden" style={{ border: '1px solid #DCD7C6' }} />
       {caption && (
         <figcaption className="mt-1.5 text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#55666E' }}>
           {caption}
@@ -104,19 +102,21 @@ export function SequencePage({
   const [tab, setTab] = useState<Tab>(initialTab ?? 'think');
   // Backside · Frontside (Marcelo 2026-09-25): un toque, y la página muestra
   // los pasos y el video de ese lado. Se recuerda por secuencia.
-  const [side, setSideState] = useState<'bs' | 'fs' | null>(() => {
-    if (!cfg.sideOfStep) return null;
-    try { const v = typeof window !== 'undefined' ? window.localStorage.getItem(`tss:side:${cfg.id}`) : null; if (v === 'fs' || v === 'bs') return v; } catch {}
-    return 'bs';
-  });
+  // El valor guardado se lee DESPUÉS de montar: si se leyera al inicializar,
+  // el servidor pintaría un lado y el navegador otro (error de hidratación).
+  const [side, setSideState] = useState<'bs' | 'fs' | null>(cfg.sideOfStep ? 'bs' : null);
+  useEffect(() => {
+    if (!cfg.sideOfStep) return;
+    try { const v = window.localStorage.getItem(`tss:side:${cfg.id}`); if (v === 'fs' || v === 'bs') setSideState(v); } catch {}
+  }, [cfg.id, cfg.sideOfStep]);
   const setSide = (v: 'bs' | 'fs') => { setSideState(v); try { window.localStorage.setItem(`tss:side:${cfg.id}`, v); } catch {} };
   const sideOf = (stepId: string | null | undefined): 'fs' | 'bs' | null => (stepId && cfg.sideOfStep ? cfg.sideOfStep[stepId] ?? null : null);
   const onSide = (stepId: string | null | undefined) => !side || !sideOf(stepId) || sideOf(stepId) === side;
   // Regular · Goofy: automático por la ficha; interruptor solo si hay videos por stance.
-  const [stanceSel, setStanceSel] = useState<Stance>(() => {
-    try { const v = typeof window !== 'undefined' ? window.localStorage.getItem('tss:stance') : null; if (v === 'goofy' || v === 'regular') return v; } catch {}
-    return stance ?? 'regular';
-  });
+  const [stanceSel, setStanceSel] = useState<Stance>(stance ?? 'regular');
+  useEffect(() => {
+    try { const v = window.localStorage.getItem('tss:stance'); if (v === 'goofy' || v === 'regular') setStanceSel(v); } catch {}
+  }, []);
   const setStance = (v: Stance) => { setStanceSel(v); try { window.localStorage.setItem('tss:stance', v); } catch {} };
   // Con un lado elegido y sin video de ese lado, NO se muestra el del otro
   // lado: queda la línea sobre la ola. Sin selector de lado, el general.

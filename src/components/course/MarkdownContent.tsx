@@ -1,5 +1,7 @@
 'use client';
 
+import { ZoomImage } from '@/components/shared/ImageLightbox';
+
 /**
  * Lightweight markdown renderer (no external deps).
  * Supports: H1-H4, **bold**, *italic*, `code`, ==highlight==, lists, blockquotes,
@@ -406,11 +408,8 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
     case 'image':
       return (
         <figure key={idx} className="my-4 mx-0">
-          <a href={block.src} target="_blank" rel="noreferrer" className="block">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={block.src} alt={block.alt} className="w-full h-auto rounded-lg border border-[#DCD7C6]" loading="lazy" />
-          </a>
-          {block.alt && <figcaption className="text-[12px] text-[#55666E] mt-1.5">{block.alt} · tap to open</figcaption>}
+          <ZoomImage src={block.src} alt={block.alt} caption={block.alt || null} width={1672} height={941} className="rounded-lg overflow-hidden border border-[#DCD7C6]" />
+          {block.alt && <figcaption className="text-[12px] text-[#55666E] mt-1.5">{block.alt} · tap to enlarge</figcaption>}
         </figure>
       );
     case 'hr':

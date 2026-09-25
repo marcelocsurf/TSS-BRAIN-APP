@@ -17,6 +17,7 @@ import { WaveGuide } from './WaveGuide';
 import { CIRCLES, CIRCLES_INTRO, gameContext, type Circle } from '@/lib/sequence-pages/three-circles';
 import type { WaveBoardData } from '@/lib/sequence-pages/types';
 import type { PieceRow } from './SequencePage';
+import { ZoomImage } from '@/components/shared/ImageLightbox';
 
 const INK = '#10263B', NAVY = '#061C2B', CYAN = '#00D2FF', MUTED = '#55666E', PAPER = '#F7F9FA', BORDER = '#DCD7C6';
 const CIRCLE_COLOR: Record<Circle['key'], string> = { body: 'var(--tss-circle-body)', board: 'var(--tss-circle-board)', wave: 'var(--tss-circle-wave)' };
@@ -78,13 +79,8 @@ function Game({ p, portal }: { p?: PieceRow; portal?: string }) {
  *  en el teléfono el detalle fino —la cadena cinética, las flechas del freno—
  *  no se lee de otro modo. Todas miden 1672x941. */
 function Lamina({ src, alt }: { src: string; alt: string }) {
-  return (
-    <a href={src} target="_blank" rel="noopener noreferrer"
-       className="block mb-4 rounded-[10px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }}>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} width={1672} height={941} alt={alt} style={{ width: '100%', height: 'auto', display: 'block' }} />
-    </a>
-  );
+  // Se abre adentro del app (ImageLightbox), no en otra pestaña.
+  return <ZoomImage src={src} alt={alt} caption={alt} className="mb-4 rounded-[10px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }} />;
 }
 
 function Card({ title, children, color, id }: { title?: string; children: React.ReactNode; color?: string; id?: string }) {
