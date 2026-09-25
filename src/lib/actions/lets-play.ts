@@ -1,5 +1,5 @@
 'use server';
-import { MAX_OPEN_TASKS } from '@/lib/stars';
+import { MAX_OPEN_TASKS, takesRunStar } from '@/lib/stars';
 
 // ═══ LET'S PLAY POR SECUENCIA ═══
 // Marcelo (2026-09-04): la unidad de entreno es la SECUENCIA. El paso es el
@@ -14,8 +14,11 @@ import { MAX_OPEN_TASKS } from '@/lib/stars';
 //                   opcional) y, opcional, la estrella de la secuencia.
 //
 // La estrella de la secuencia vive APARTE de las de los pasos
-// (student_sequence_ratings): "corrí la secuencia y salió 4" no pisa "el
-// pop-up sigue en 2". Los pasos solo se mueven si el alumno entra al detalle.
+// (student_sequence_ratings). Desde 2026-09-25 (Marcelo): un run a 4★ o más
+// SÍ cuenta para cada paso que no marcaste como freno (llena o sube, nunca
+// baja un paso ejecutado más alto); bajo la barra, los pasos solo se mueven
+// si el alumno entra al detalle. "Corrí la secuencia y salió 3" sigue sin
+// pisar "el pop-up está en 4".
 //
 // Seguridad: el admin client salta RLS, así que la puerta es el token del
 // portal; los ids de pasos y los textos de criterio se validan contra la
@@ -511,39 +514,52 @@ export async function saveSequenceSession(
     if (!isVirtual && isRun) {
       const marked = new Set((stepMarks ?? []).map((m) => m.step_id));
       for (const m of stepMarks ?? []) if (isRating(m.rating)) stepUpserts.push({ step_id: m.step_id, rating: m.rating as number });
-      if (runPassed) {
-        const { data: cur } = await admin
+      // Secuencia de dos lados (Yellow #7, doctrina "complete on both sides"):
+      // los pasos toman la estrella solo cuando LOS DOS lados están guardados
+      // y a la barra. Ojo: seqRatingToStore es fs ?? bs cuando falta un lado,
+      // así que no sirve de compuerta por sí solo. El primer lado a 4★ queda
+      // guardado por lado y los pasos esperan al otro.
+      const bothSidesHold = kind !== 'both'
+        || (sideCols.rating_fs != null && sideCols.rating_bs != null && Math.min(sideCols.rating_fs, sideCols.rating_bs) >= SEQUENCE_PASS_STARS);
+      // La estrella que toman los pasos: la de la secuencia (en dos lados, el lado más flojo).
+      const stepStar = kind === 'both' ? (seqRatingToStore as number) : (seqRating as number);
+      if (runPassed && bothSidesHold) {
+        const { data: cur, error: curErr } = await admin
           .from('student_step_ratings')
           .select('step_id, current_rating, self_source')
           .eq('student_id', studentId)
           .in('step_id', order);
+        // Sin esta lectura no hay garantía de "nunca baja": se corta acá.
+        if (curErr) { console.error('[lets-play] step ratings read failed', curErr); return rollback('Could not read your step ratings. Try again.'); }
         const curMap = new Map(((cur ?? []) as any[]).map((r) => [r.step_id as string, r]));
         for (const id of order) {
           if (marked.has(id)) continue;
-          const c = curMap.get(id);
-          const higherExecuted = !!c && c.self_source !== 'assessed' && isRating(c.current_rating) && (c.current_rating as number) > (seqRating as number);
-          if (higherExecuted) continue;
-          stepUpserts.push({ step_id: id, rating: seqRating as number });
+          if (!takesRunStar(curMap.get(id), stepStar)) continue;
+          stepUpserts.push({ step_id: id, rating: stepStar });
           stepsCounted += 1;
         }
       }
     }
     if (!isVirtual && !isRun && focus && execution) stepUpserts.push({ step_id: focus.step_id, rating: execution });
-    for (const u of stepUpserts) {
-      const { error: stepErr } = await admin.from('student_step_ratings').upsert({
+    if (stepUpserts.length) {
+      const now = new Date().toISOString();
+      // UNA sola escritura para todos los pasos: entran todos o ninguno (antes
+      // era un upsert por paso y un fallo a mitad dejaba la cadena a medias).
+      const { error: stepErr } = await admin.from('student_step_ratings').upsert(stepUpserts.map((u) => ({
         student_id: studentId,
         step_id: u.step_id,
         current_rating: u.rating,
         // Ejecutado en el agua: pisa cualquier autoevaluación.
         self_source: 'executed',
         assessed_criteria: null,
-        last_updated: new Date().toISOString(),
-      }, { onConflict: 'student_id,step_id' });
+        last_updated: now,
+      })), { onConflict: 'student_id,step_id' });
       if (stepErr) { console.error('[lets-play] step rating failed', stepErr); return rollback('Could not save your step rating.'); }
       // Una tarea propia se cierra sola cuando el paso llega a 4★ en el agua.
-      if (u.rating >= SEQUENCE_PASS_STARS) {
-        await admin.from('student_tasks').update({ status: 'done', done_at: new Date().toISOString(), done_reason: 'reached_4' })
-          .eq('student_id', studentId).eq('step_id', u.step_id).eq('status', 'open');
+      const reached = stepUpserts.filter((u) => u.rating >= SEQUENCE_PASS_STARS).map((u) => u.step_id);
+      if (reached.length) {
+        await admin.from('student_tasks').update({ status: 'done', done_at: now, done_reason: 'reached_4' })
+          .eq('student_id', studentId).in('step_id', reached).eq('status', 'open');
       }
     }
 

@@ -29,3 +29,17 @@ export function starsFromCriteria(results: ('met' | 'partial' | 'not_met')[]): n
 
 /** Tareas propias abiertas como máximo (doctrina 2026-09-10). */
 export const MAX_OPEN_TASKS = 3;
+
+/** Run de la secuencia a 4★+ (Marcelo 2026-09-25): ¿este paso toma la
+ *  estrella del run? Sí si no tiene nota propia, si la suya es una
+ *  autoevaluación sin ola, o si la ejecutada es igual o más baja. NO si ya
+ *  la ejecutó más alto: el run nunca baja un paso. La del coach no entra
+ *  acá: no se toca. */
+export function takesRunStar(
+  existing: { current_rating?: number | null; self_source?: StarSource | string | null } | null | undefined,
+  runStar: number,
+): boolean {
+  if (!existing || existing.current_rating == null) return true;
+  if (existing.self_source === 'assessed') return true;
+  return existing.current_rating <= runStar;
+}

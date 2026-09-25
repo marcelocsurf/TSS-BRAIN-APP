@@ -1,6 +1,7 @@
 // Lógica pura: reglas del método y validaciones que no tocan la base.
 import { describe, it, expect, vi } from 'vitest';
 import { pickWeakestCriterion } from '@/lib/utils/criteria';
+import { takesRunStar, selfStarsThatCount } from '@/lib/stars';
 import { dobError } from '@/lib/utils/dob';
 import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
 import { computeV2, isValidV2Answers } from '@/lib/quiz/surf-level-v2';
@@ -246,5 +247,27 @@ describe('videos por secuencia · lado y stance', () => {
   it('la primera fila (más nueva) gana', () => {
     const w = pickSequenceVideos([{ title: 'X · BS new', file_url: 'new' }, { title: 'X · BS old', file_url: 'old' }], 'X');
     expect(w.bs?.url).toBe('new');
+  });
+});
+
+describe('takesRunStar — un run a 4★+ cuenta para cada paso (2026-09-25)', () => {
+  it('llena un paso sin nota propia', () => {
+    expect(takesRunStar(undefined, 4)).toBe(true);
+    expect(takesRunStar({ current_rating: null, self_source: 'executed' }, 4)).toBe(true);
+  });
+  it('sube un paso ejecutado más bajo o igual', () => {
+    expect(takesRunStar({ current_rating: 3, self_source: 'executed' }, 4)).toBe(true);
+    expect(takesRunStar({ current_rating: 4, self_source: 'executed' }, 4)).toBe(true);
+  });
+  it('NUNCA baja un paso ejecutado más alto', () => {
+    expect(takesRunStar({ current_rating: 5, self_source: 'executed' }, 4)).toBe(false);
+  });
+  it('pisa una autoevaluación sin ola, aunque diga 5', () => {
+    expect(takesRunStar({ current_rating: 5, self_source: 'assessed' }, 4)).toBe(true);
+  });
+  it('la autoevaluación vale hasta 3★ para el camino', () => {
+    expect(selfStarsThatCount(5, 'assessed')).toBe(3);
+    expect(selfStarsThatCount(5, 'executed')).toBe(5);
+    expect(selfStarsThatCount(null)).toBeNull();
   });
 });

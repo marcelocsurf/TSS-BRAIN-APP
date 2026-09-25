@@ -11,6 +11,7 @@
 
 import { FocusPicker, FlowPicker } from '@/components/portal/close-pickers';
 import { useEffect, useRef, useState } from 'react';
+import { THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
 import {
   getSequenceTraining,
   saveSequenceSession,
@@ -194,10 +195,13 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   // "Go deeper": niveles cerrados por defecto.
   const [deeper, setDeeper] = useState(false);
   // Run bajo la barra (Marcelo 2026-09-25): la pregunta "¿qué se rompió?" se
-  // abre sola. A 4★+ queda cerrada: el run cuenta para cada paso.
-  useEffect(() => {
-    if (seqStars != null && seqStars < SEQUENCE_PASS_STARS) setDeeper(true);
-  }, [seqStars]);
+  // abre sola la primera vez que la estrella cruza la barra hacia abajo. Si el
+  // alumno la cierra, se respeta (no es un efecto sobre cada cambio).
+  const rateRun = (n: number) => {
+    const prev = seqStars;
+    setSeqStars(n);
+    if (n < SEQUENCE_PASS_STARS && (prev == null || prev >= SEQUENCE_PASS_STARS)) setDeeper(true);
+  };
   const [deepStep, setDeepStep] = useState<Record<string, boolean>>({});
   const [noteOpen, setNoteOpen] = useState(false);
   const [focusRating, setFocusRating] = useState<number | null>(null);
@@ -310,6 +314,8 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   }
 
   const seq = data.sequence;
+  // La secuencia virtual de los Tres Círculos no mueve estrellas de paso.
+  const isVirtualSeq = seq.id === THREE_CIRCLES_SEQUENCE_ID;
   const steps = data.steps;
   const moments = momentsByStep(seq.id, steps.map((s) => ({ id: s.step_id, title: s.title })));
   const focus: SequenceTrainingStep | null = !isRun ? steps.find((s) => s.step_id === focusId) ?? null : null;
@@ -733,11 +739,15 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
               <p className="text-[12px]" style={{ ...F_M, color: '#00A8CC' }}>Honest evaluation</p>
               <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>How did it go?</h3>
               <p className="text-[12.5px] text-[#55666E] mt-1">Three taps: your star for the whole sequence, your focus, how it felt.</p>
-              <div className="mt-2"><StarRating value={seqStars} onChange={setSeqStars} size="lg" showLabel /></div>
+              <div className="mt-2"><StarRating value={seqStars} onChange={rateRun} size="lg" showLabel /></div>
               {seqStars != null && (
                 <p className="text-[12.5px] mt-2 rounded-[5px] px-3 py-2" style={seqStars >= SEQUENCE_PASS_STARS ? { background: 'rgba(6,214,160,.12)', color: INK } : { background: 'rgba(255,209,102,.28)', color: INK }}>
                   {seqStars >= SEQUENCE_PASS_STARS
-                    ? <>The whole line held. <b>{seqStars}★ counts for every step</b> of this sequence you don't mark below. Your coach's star, where there is one, still rules.</>
+                    ? (isVirtualSeq
+                        ? <>The whole line held.</>
+                        : twoSided
+                          ? <>The whole line held on this side. Once both sides hold at 4★ or more, that star <b>fills or raises every step</b> you don't mark below — it never lowers one. Your coach's star, where there is one, still rules.</>
+                          : <>The whole line held. <b>{seqStars}★ fills or raises every step</b> you don't mark below — it never lowers one. Your coach's star, where there is one, still rules.</>)
                     : <>Below the bar. <b>What broke?</b> Tap the step or the moment of the line below — or save as is and check the steps in Let's Play.</>}
                 </p>
               )}
@@ -747,8 +757,10 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             <FlowPicker flow={flow} onChange={setFlow} />
 
             <DeeperToggle open={deeper} onToggle={() => setDeeper((d) => !d)}
-              label={seqStars != null && seqStars < SEQUENCE_PASS_STARS ? 'What broke? Tap the step' : 'Something held it back? Mark the step'}
-              hint="Tap the moment of the line where it broke, or the step itself — the earliest one in the chain becomes your next focus. Open a step to check its details." />
+              label={seqStars != null && seqStars >= SEQUENCE_PASS_STARS ? 'Something held it back? Mark the step' : 'What broke? Tap the step'}
+              hint={seqStars != null && seqStars >= SEQUENCE_PASS_STARS
+                ? 'Only if one step was not clean: mark it and it keeps its own star instead of the run\u2019s. It becomes your next focus.'
+                : 'Tap the moment of the line where it broke, or the step itself — the earliest one in the chain becomes your next focus. Open a step to check its details.'} />
             {deeper && (
             <div>
               <div className="space-y-1.5">
@@ -915,7 +927,13 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
               {(result?.stepsCounted ?? 0) > 0 && (
                 <div className="flex justify-between text-xs gap-3">
                   <span className="text-[#55666E] shrink-0">Counted for</span>
-                  <span className="font-bold text-right" style={{ color: INK }}>{result!.stepsCounted} step{result!.stepsCounted === 1 ? '' : 's'} · {seqStars}★ each</span>
+                  <span className="font-bold text-right" style={{ color: INK }}>{result!.stepsCounted} step{result!.stepsCounted === 1 ? '' : 's'}{twoSided ? '' : ` · ${seqStars}★ each`}</span>
+                </div>
+              )}
+              {(seqStars ?? 0) >= SEQUENCE_PASS_STARS && (result?.stepsCounted ?? 0) === 0 && !isVirtualSeq && (
+                <div className="flex justify-between text-xs gap-3">
+                  <span className="text-[#55666E] shrink-0">Your steps</span>
+                  <span className="font-bold text-right" style={{ color: INK }}>{twoSided ? 'take the star once both sides hold' : 'already at this star or higher'}</span>
                 </div>
               )}
             </>

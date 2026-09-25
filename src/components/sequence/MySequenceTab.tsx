@@ -789,6 +789,24 @@ function BlockSection({
   );
 }
 
+/** La línea de la nota PROPIA, igual en las dos ramas de la fila (con o sin
+ *  estrella del coach): qué vale hoy y, si mapeó más sin ola, por qué se ve
+ *  3★ (auditoría 2026-09-15: la autoevaluación vale hasta 3★ para el camino). */
+function SelfStarLine({ item }: { item: SequenceItem }) {
+  const mine = selfStarsThatCount(item.rating, item.self_source);
+  return (
+    <>
+      <StarRating value={mine} size="sm" readOnly />
+      <div className="text-[12px] text-[#55666E] text-right">
+        You {mine}/5
+        {item.self_source === 'assessed' && ((item.rating ?? 0) > (mine ?? 0)
+          ? <span className="block">mapped {item.rating}/5 · counts as 3★ until you surf it</span>
+          : ' · self-assessed')}
+      </div>
+    </>
+  );
+}
+
 function StepRow({
   item,
   moments,
@@ -852,31 +870,11 @@ function StepRow({
               <div className="text-[12px] text-[var(--tss-cyan,#00D2FF)] font-bold uppercase tracking-wider">
                 Coach {item.coach_rating}/5
               </div>
-              {item.rating !== null && (
-                <>
-                  <StarRating value={selfStarsThatCount(item.rating, item.self_source)} size="sm" readOnly />
-                  <div className="text-[12px] text-[#55666E] text-right">
-                    You {selfStarsThatCount(item.rating, item.self_source)}/5
-                    {item.self_source === 'assessed' && ' · self-assessed'}
-                  </div>
-                </>
-              )}
+              {item.rating !== null ? <SelfStarLine item={item} /> : null}
               {item.ready_to_confirm && <div className="text-[11px] font-semibold" style={{ color: '#0A7C5D' }}>ready for your coach</div>}
             </>
           ) : (
-            <>
-              {/* La estrella que CUENTA (auditoría 2026-09-15): una autoevaluación sin ola
-                  vale hasta 3★ para el camino; si mapeó 4★, se ve el 3★ efectivo y por qué. */}
-              <StarRating value={effectiveStars(item)} size="sm" readOnly />
-              {item.rating !== null && (
-                <div className="text-[12px] text-[#55666E] text-right">
-                  You {effectiveStars(item)}/5
-                  {item.self_source === 'assessed' && (item.rating > (effectiveStars(item) ?? 0)
-                    ? <span className="block">mapped {item.rating}/5 · counts as 3★ until you surf it</span>
-                    : ' · self-assessed')}
-                </div>
-              )}
-            </>
+            item.rating !== null ? <SelfStarLine item={item} /> : <StarRating value={null} size="sm" readOnly />
           )}
         </div>
       </div>
