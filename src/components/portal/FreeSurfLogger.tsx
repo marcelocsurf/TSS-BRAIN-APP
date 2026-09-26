@@ -35,7 +35,7 @@ const INTENTIONS = [
   'Reset my head',
 ];
 
-export function FreeSurfLogger({ token }: { token: string }) {
+export function FreeSurfLogger({ token, variant = 'primary' }: { token: string; /** 'secondary' = borde cyan sobre navy: no compite con la tarjeta de acción (Home 2026-09-26). */ variant?: 'primary' | 'secondary' }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [minutes, setMinutes] = useState(60);
@@ -61,9 +61,11 @@ export function FreeSurfLogger({ token }: { token: string }) {
         type="button"
         onClick={() => setOpen(true)}
         className="w-full min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase"
-        style={{ background: '#00D2FF', color: '#061C2B', letterSpacing: '0.035em', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}
+        style={variant === 'secondary'
+          ? { background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(0,210,255,.55)', letterSpacing: '0.035em', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }
+          : { background: '#00D2FF', color: '#061C2B', letterSpacing: '0.035em', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}
       >
-        <SurfboardIcon size={18} color="#061C2B" />
+        <SurfboardIcon size={18} color={variant === 'secondary' ? '#F7F9FA' : '#061C2B'} />
         Log free surf <span aria-hidden="true">+</span>
       </button>
     );

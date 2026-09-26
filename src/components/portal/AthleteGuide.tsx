@@ -57,11 +57,11 @@ export function AthleteGuide({ onClose, hpAccess = false }: { onClose: () => voi
           Come back to this guide anytime with the book button at the top.
         </p>
 
-        <Sec Icon={Home} title="Home — your dashboard">
-          <Li k="Work on this">The one thing to train right now. If your coach left you a task, it shows here and first in Let&apos;s Play — train it once and it clears itself; your coach sees the date you did it. No coach task? Your next move from the Sequence shows instead, with a line from One Wave to set your mind.</Li>
-          <Li k="Your belt card">Tap it to open <strong style={{ color: '#eaf4fa' }}>What it takes</strong> — the full, honest list for your next belt: every skill, where you stand on each one, and what&apos;s still open. The belt selector shows the belt you hold; the guide shows the road out of it.</Li>
-          <Li k="In the water">The row under your belt opens <strong style={{ color: '#eaf4fa' }}>Your water level</strong> — where you can paddle out on your own. It&apos;s safety, not technique, so it lives apart from your belt: no stars, you pass it or you don&apos;t, and your coach confirms each level in the water.</Li>
-          <Li k="Hours ring">Every minute you spend in the water — sessions with your coach and sessions you log yourself. Watch it grow.</Li>
+        <Sec Icon={Home} title="Home — what to do today">
+          <Li k="The card on top">The one thing for today. In a camp it is your class with your coach: the day, the hour, the sequence you will work on, and what to study before. Between camps it is what your coach left you, or the sequence to train next. One button.</Li>
+          <Li k="Your progress">One row: your belt, how many sequences are yours, your hours in the water. Tap it (or your belt) for the full picture — level, what your next belt takes, your sessions and your feedback.</Li>
+          <Li k="Log free surf">Surfed on your own? Two seconds and it counts toward your hours.</Li>
+          <Li k="Below">Your last class, a belt promotion, your camp result, your book. They come when they matter and leave on their own.</Li>
         </Sec>
 
         <Sec Icon={Megaphone} title="The Lineup — your community channel">
@@ -77,7 +77,7 @@ export function AthleteGuide({ onClose, hpAccess = false }: { onClose: () => voi
 
         <Sec Icon={Waves} title="Let's Play — train &amp; log your sessions">
           <Li k="My Sequence">The exact skills you&apos;re working on, straight from your coach&apos;s evaluations. Tap a drill to practice it — and rate yourself honestly: your stars show you where you stand; only your coach can move the official ones.</Li>
-          <Li k="Log it">Surfed on your own? Trained at home? Log it here — it counts toward your hours and your coach sees it. The more honest the log, the better your coaching gets.</Li>
+          <Li k="Log it">Surfed on your own? Trained at home? Log it — it counts toward your hours and your coach sees it. During a camp you train with your coach; Let&apos;s Play is for the days in between.</Li>
         </Sec>
 
         {/* Solo para quien tiene el ACCESO de alto rendimiento. Prometerle "tu
@@ -98,7 +98,7 @@ export function AthleteGuide({ onClose, hpAccess = false }: { onClose: () => voi
         )}
 
         <Sec Icon={MessageCircle} title="Feedback & My Coach">
-          <p>After your sessions, tell us how it went — your coach reads every word. Your full session history and past feedback live in the archive at the bottom of your Home. And in <strong style={{ color: '#eaf4fa' }}>My Coach</strong> you can see who&apos;s guiding you and their credentials.</p>
+          <p>After a class, rate your coach — it unlocks the coach&apos;s feedback on that session, and your coach reads every word. Your full session history lives in <strong style={{ color: '#eaf4fa' }}>Your progress → My Sessions</strong>. Messages from your coach land in the bell at the top.</p>
         </Sec>
 
         <Sec Icon={Smartphone} title="Install it on your phone">

@@ -1324,6 +1324,30 @@ function HomeTab({
     if (!c.final?.at) return false;
     return Date.now() - new Date(c.final.at).getTime() < 21 * 86400000;
   }) ?? null;
+  // ═══ EL HOME EN UNA REGLA (Marcelo 2026-09-26: "que sienta claridad, que es
+  // lo que vende el método"). UNA tarjeta de acción, la primera que aplique:
+  //   1 sesión abierta (arriba del nombre, como siempre)
+  //   2 la clase con el coach: camp en curso o clase hoy/mañana
+  //   3 la tarea del coach (fuera de camp)
+  //   4 tus secuencias (nadie te dejó nada: vos decidís)
+  //   5 toda la cinta es tuya → la próxima
+  // Debajo, la fila de progreso; después, filas de una línea que no compiten.
+  const campNow: any = upcomingCamps[0] ?? null;
+  const campStart = campNow ? new Date((campNow.start_date ?? '') + 'T00:00:00') : null;
+  const campEnd = campNow ? new Date(((campNow.end_date ?? campNow.start_date) ?? '') + 'T00:00:00') : null;
+  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
+  const campDays = campStart && campEnd ? Math.max(1, Math.round((campEnd.getTime() - campStart.getTime()) / 86400000) + 1) : 0;
+  const campDayNum = campStart && today0 >= campStart ? Math.min(campDays, Math.round((today0.getTime() - campStart.getTime()) / 86400000) + 1) : null;
+  const daysToCamp = campStart ? Math.round((campStart.getTime() - today0.getTime()) / 86400000) : null;
+  const classSoon = !!campNow && (campDayNum != null || (daysToCamp != null && daysToCamp <= 1));
+  const coachTask = data.canTrack !== false && !data.courseLocked && data.coachFocus && (data.coachFocus.label || data.coachFocus.text) ? data.coachFocus : null;
+  const seqScores = data.canTrack !== false && !data.courseLocked && (data.sequenceScores?.rows?.length ?? 0) > 0 ? data.sequenceScores! : null;
+  const seqRows = seqScores ? (seqScores.rows.filter((r) => !r.aside).length ? seqScores.rows.filter((r) => !r.aside) : seqScores.rows) : [];
+  const seqOwned = seqRows.filter((r) => r.state === 'owned').length;
+  const allOwned = seqRows.length > 0 && seqOwned === seqRows.length;
+  const preCourseDone = data.courseData?.preCourseCompleted;
+  const slot: 'class' | 'coach' | 'sequences' | 'next-belt' | null =
+    classSoon ? 'class' : coachTask ? 'coach' : seqScores && !allOwned ? 'sequences' : allOwned ? 'next-belt' : null;
   const surf = data.surfHours ?? { trainingMinutes: 0, freeSurfMinutes: 0, totalMinutes: 0 };
   const fmtHm = (mins: number) => {
     const h = Math.floor(mins / 60);
@@ -1387,10 +1411,13 @@ function HomeTab({
           </p>
           <p className="mt-0.5" style={{ ...T_LABEL, color: '#D9E4EA' }}>Current level</p>
           <div className="mt-1 flex items-center gap-2.5 flex-wrap">
-            <span className="inline-flex items-center rounded-[5px] px-2.5 py-1" style={{ ...T_LABEL, background: belt?.color || '#E8E8E8', color: LIGHT_BELTS.includes(beltLevel) ? T_NAVY : '#fff' }}>
+            {/* La cinta es también la puerta a My progress (2026-09-26). */}
+            <button type="button" onClick={() => { if (data.canTrack !== false) setProgressOpen(true); }} className="inline-flex items-center rounded-[5px] px-2.5 py-1" style={{ ...T_LABEL, background: belt?.color || '#E8E8E8', color: LIGHT_BELTS.includes(beltLevel) ? T_NAVY : '#fff' }}>
               {belt?.en}
-            </span>
+            </button>
             <span className="text-[14px]" style={{ color: '#D9E4EA' }}>{belt?.levelName ? `${belt.levelName} · ` : ''}Level {BELT_RANK[beltLevel] ?? 1} of 6</span>
+            {/* Cinta provisional (del quiz): etiqueta, no caja. El coach la confirma en el agua. */}
+            {(student as any).belt_provisional && <span style={{ ...T_LABEL, color: '#D9E4EA', opacity: 0.75 }}>provisional</span>}
           </div>
         </div>
         {data.canTrack !== false && (
@@ -1406,12 +1433,132 @@ function HomeTab({
         )}
       </div>
 
-          {/* LA TAREA DEL COACH (Marcelo 2026-09-25): "le aparece, y si la
-              trabaja una vez deja de aparecer". Arriba de tus secuencias
-              mientras esté pendiente; el servidor la quita cuando registra
-              una sesión sobre ella. Misma fila que abre Let's Play. */}
-          {data.canTrack !== false && !data.courseLocked && data.coachFocus && (data.coachFocus.label || data.coachFocus.text) && (() => {
-            const cf = data.coachFocus!;
+      {/* ═══ LA TARJETA DE ACCIÓN · 1 de 4: LA CLASE (Marcelo 2026-09-26) ═══
+          En camp (o con clase mañana) lo primero es la clase con el coach: día,
+          hora, qué va a trabajar, qué estudiar. Antes se dibujaba AL FINAL del
+          Home. La tarea del coach entra ACÁ como línea, sin TRAIN IT: en el camp
+          se entrena con el coach (doctrina 2026-09-19). */}
+      {slot === 'class' && (() => {
+        const c: any = upcomingCamps[0];
+        const startD = new Date((c.start_date ?? '') + 'T00:00:00');
+        const endD = new Date(((c.end_date ?? c.start_date) ?? '') + 'T00:00:00');
+        const todayD = new Date(); todayD.setHours(0, 0, 0, 0);
+        const totalDays = Math.max(1, Math.round((endD.getTime() - startD.getTime()) / 86400000) + 1);
+        const dayNum = todayD >= startD ? Math.min(totalDays, Math.round((todayD.getTime() - startD.getTime()) / 86400000) + 1) : null;
+        const certN = c.coach?.certification_level ? String(c.coach.certification_level).replace(/\D/g, '') : null;
+        return (
+          <div className="rounded-lg p-4" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
+            <p className="text-[12px]" style={{ ...F_LABEL, color: '#0090B0' }}>
+              {dayNum
+                ? `In progress · Day ${dayNum} of ${totalDays}`
+                : `Next class · ${startD.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`}
+            </p>
+            <p className="mt-1.5 text-lg" style={{ ...F_DISPLAY, color: '#061C2B' }}>{c.camp_name}</p>
+            {/* El plan del coach para la próxima sesión, en el idioma del curso
+                (Marcelo 2026-09-17): la secuencia y el foco, con Study it y
+                Rehearse it para llegar preparado. Solo si el coach ya lo armó. */}
+            {((Array.isArray(c.plans) && c.plans.length > 0) || (Array.isArray(c.topics) && c.topics.length > 0)) && (() => {
+              const plansArr: any[] = Array.isArray(c.plans) ? c.plans : [];
+              const sd = c.next_session?.session_date as string | undefined;
+              const when = (() => {
+                if (!sd) return 'Next session';
+                const d = new Date(sd + 'T00:00:00'); const t = new Date(); t.setHours(0, 0, 0, 0);
+                const diff = Math.round((d.getTime() - t.getTime()) / 86400000);
+                return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'long' });
+              })();
+              const many = plansArr.length > 1;
+              return (
+                <div className="mt-3 rounded-lg p-3.5" style={{ background: T_NAVY, border: '1px solid rgba(0,210,255,.35)' }}>
+                  <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{when}{c.coach?.display_name ? ` with ${c.coach.display_name}` : ''}{plansArr.length ? ' · you will work on' : ' · theory'}{many ? ` · ${plansArr.length} sequences, one at a time` : ''}</p>
+                  <div className={many ? 'mt-1 space-y-2.5' : 'mt-1'}>
+                    {plansArr.map((pl: any, i: number) => {
+                      const isGame = pl.kind === 'game';
+                      const isCircle = pl.kind === 'circle';
+                      const seqHref = isGame || isCircle ? `/portal/${data.token}/circles` : `/portal/${data.token}/seq/${pl.sequenceId}`;
+                      const rehearseHref = `${seqHref}?tab=feel`;
+                      return (
+                        <div key={pl.sequenceId} className={many ? 'rounded-[5px] px-3 py-2.5' : ''} style={many ? { background: 'rgba(247,249,250,.06)', border: '1px solid rgba(247,249,250,.14)' } : undefined}>
+                          <p className="text-[20px] leading-tight" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{many ? `${i + 1} · ` : ''}{pl.label ?? (pl.kind === 'entry' ? pl.title : `#${pl.number} · ${pl.title}`)}</p>
+                          <p className="mt-1.5 text-[13.5px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
+                            {pl.kind === 'game' ? 'One rule, the wave is the referee. You play it with your coach; your coach stars it. Tonight, learn the rule.' : pl.focus.length > 0 ? <><span className="font-bold" style={{ color: '#F7F9FA' }}>Your focus:</span> {pl.focus.join(' · ')}</> : 'The whole sequence, start to finish.'}
+                          </p>
+                          {pl.notes && <p className="mt-1.5 text-[13px] italic" style={{ color: 'rgba(247,249,250,.75)' }}>"{pl.notes}"</p>}
+                          {/* Durante el camp el entreno es CON el coach y lo califica el coach
+                              (Marcelo 2026-09-19): el alumno estudia y ensaya en tierra, no
+                              registra solo. Por eso el juego no tiene "Play it" acá. */}
+                          <div className={`mt-2.5 grid gap-2 ${isGame || isCircle ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                            <a href={seqHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: '#00D2FF', color: T_NAVY, fontFamily: ARCHIVO }}>Study it</a>
+                            {!isGame && !isCircle && <a href={rehearseHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.5)', fontFamily: ARCHIVO }}>Rehearse it on land</a>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {Array.isArray(c.topics) && c.topics.length > 0 && (
+                    <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(247,249,250,.14)' }}>
+                      <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Also today · theory</p>
+                      <div className="mt-1.5 space-y-1.5">
+                        {c.topics.map((t: any) => (
+                          <div key={t.id} className="flex items-center justify-between gap-3">
+                            <p className="text-[14px] font-bold leading-snug" style={{ color: '#F7F9FA' }}>{t.title}</p>
+                            <a href={`/portal/${data.token}${t.href}`} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.45)', fontFamily: ARCHIVO }}>Study it</a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+            {coachTask && (
+              <div className="mt-3 rounded-[5px] px-3 py-2.5" style={{ background: T_PAPER, borderLeft: '3px solid #00D2FF' }}>
+                <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>From your coach</p>
+                <p className="text-[15px] font-bold leading-snug mt-0.5" style={{ color: T_INK }}>{coachTask.label ?? 'A note from your coach'}</p>
+                {(coachTask.label ? coachTask.note : coachTask.text) && <p className="text-[13.5px] mt-0.5 leading-snug italic" style={{ color: T_INK }}>{coachTask.label ? coachTask.note : coachTask.text}</p>}
+                <p className="text-[12.5px] mt-1" style={{ color: T_MUTED }}>You work it with your coach in class.</p>
+              </div>
+            )}
+            {preCourseDone === false && (
+              <button type="button" onClick={() => onGoTo('course')} className="mt-3 w-full flex items-center justify-between gap-3 rounded-[5px] px-3 py-2.5 text-left" style={{ background: T_PAPER, border: `1px solid ${T_BORDER}` }}>
+                <span className="min-w-0">
+                  <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>{campDayNum ? 'Pre-Course · still open' : 'Before day 1'}</span>
+                  <span className="block text-[15px] font-bold leading-snug" style={{ color: T_INK }}>Finish the Pre-Course — it is what your camp builds on</span>
+                </span>
+                <ArrowRight size={16} style={{ color: T_INK }} />
+              </button>
+            )}
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm" style={{ color: T_MUTED }}>
+              {c.scheduled_time && (
+                <span className="inline-flex items-center gap-1.5"><Clock size={14} style={{ color: '#0090B0' }} />{c.scheduled_time}</span>
+              )}
+              <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} style={{ color: '#0090B0' }} />{totalDays} day{totalDays === 1 ? '' : 's'}</span>
+            </div>
+            {c.coach && (
+              <button type="button" onClick={() => { if (data.coachProfileUnlocked) onGoTo('my-coach'); }} className="mt-3 w-full flex items-center gap-3 rounded-[5px] px-3 py-2.5 text-left" style={{ background: T_PAPER, border: `1px solid ${T_BORDER}`, cursor: data.coachProfileUnlocked ? 'pointer' : 'default' }}>
+                <div className="w-10 h-11 rounded-full overflow-hidden bg-gray-200 shrink-0">
+                  {c.coach.photo_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.coach.photo_url} alt="" className="w-full h-full object-cover" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold truncate" style={{ color: '#061C2B' }}>{c.coach.display_name}</p>
+                  {certN && <p className="text-[12px] mt-0.5" style={{ ...F_LABEL, color: '#55666E' }}>Level {certN} certified</p>}
+                </div>
+                {data.coachProfileUnlocked && <ChevronRight size={16} className="shrink-0" style={{ color: T_MUTED }} />}
+              </button>
+            )}
+          </div>
+        );
+      })()}
+
+
+          {/* ═══ 2 de 4: LA TAREA DEL COACH (Marcelo 2026-09-25): "le aparece, y
+              si la trabaja una vez deja de aparecer". Fuera de camp es LA
+              tarjeta mientras esté pendiente; el servidor la quita cuando
+              registra una sesión sobre ella. Misma fila que abre Let's Play. */}
+          {slot === 'coach' && coachTask && (() => {
+            const cf = coachTask;
             const when = cf.set_at ? new Date(cf.set_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' }) : null;
             const who = cf.set_by_name ? `${cf.set_by_name} left it` : 'Your coach left it';
             const train = cf.sequence_id
@@ -1441,20 +1588,20 @@ function HomeTab({
             );
           })()}
 
-          {/* TUS SECUENCIAS (Marcelo 2026-09-21): qué vale cada secuencia de tu
-              cinta, y vos decidís qué entrenar. Reemplaza "Your next move"
-              (la sugerencia). La estrella oficial del coach manda. */}
-          {data.canTrack !== false && !data.courseLocked && (data.sequenceScores?.rows?.length ?? 0) > 0 && (() => {
-            const sc = data.sequenceScores!;
-            const main = sc.rows.filter((r) => !r.aside);
-            const rowsToShow = main.length ? main : sc.rows;
-            const owned = rowsToShow.filter((r) => r.state === 'owned').length;
+          {/* ═══ 3 de 4: TUS SECUENCIAS (Marcelo 2026-09-21): qué vale cada
+              secuencia de tu cinta, y vos decidís qué entrenar. Es LA tarjeta
+              cuando no hay clase ni tarea del coach; si no, el conteo vive en
+              la fila de progreso y el mapa completo en Let's Play. */}
+          {slot === 'sequences' && seqScores && (() => {
+            const sc = seqScores;
+            const rowsToShow = seqRows;
+            const owned = seqOwned;
             const beltWord = sc.belt.charAt(0).toUpperCase() + sc.belt.slice(1);
             return (
-              <div>
-                <h1 className="text-[36px] mb-1" style={{ ...H_BIG, color: '#F7F9FA' }}>Your sequences</h1>
-                <p className="text-[14px] mb-3" style={{ color: '#D9E4EA' }}>{beltWord} Belt · {owned} of {rowsToShow.length} are yours{(() => { const ready = rowsToShow.reduce((n, r) => n + (r.readyCount ?? 0), 0); return ready > 0 ? ` · ${ready} step${ready === 1 ? '' : 's'} ready for your coach to confirm` : ''; })()}. Tap one to train it.</p>
-                <div className="rounded-lg overflow-hidden" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
+              <div className="rounded-lg p-4" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
+                <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Your sequences</p>
+                <p className="text-[15px] mt-1 mb-3 leading-snug" style={{ color: T_INK }}>{beltWord} Belt · {owned} of {rowsToShow.length} are yours{(() => { const ready = rowsToShow.reduce((n, r) => n + (r.readyCount ?? 0), 0); return ready > 0 ? ` · ${ready} step${ready === 1 ? '' : 's'} ready for your coach to confirm` : ''; })()}. Tap one to train it.</p>
+                <div className="rounded-[5px] overflow-hidden" style={{ background: T_PAPER, color: T_INK, border: `1px solid ${T_BORDER}` }}>
                   {rowsToShow.map((r, idx) => {
                     const ownedRow = r.state === 'owned';
                     const both = !ownedRow && r.selfMinRating != null && r.selfMinRating !== r.minRating;
@@ -1477,30 +1624,174 @@ function HomeTab({
             );
           })()}
 
-      {/* ── Horas surfeadas + racha: dos casillas navy con borde cyan (mock de
-          Home 2026-09-14). Las mismas cifras del cockpit. ── */}
+
+          {/* ═══ 4 de 4: TODA LA CINTA ES TUYA → la próxima ═══ */}
+          {slot === 'next-belt' && (
+            <div className="rounded-lg p-4" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
+              <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Your sequences</p>
+              <p className="text-[22px] font-extrabold leading-tight mt-1" style={{ fontFamily: ARCHIVO, color: T_INK }}>Every {belt?.en ?? 'belt'} sequence is yours.</p>
+              <p className="text-[15px] mt-1 leading-snug" style={{ color: T_INK }}>Keep them alive in the water and ask your coach about the next belt.</p>
+              {onOpenRoadmap && (
+                <button type="button" onClick={() => onOpenRoadmap()} className="w-full mt-3 min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase" style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.035em', fontFamily: ARCHIVO }}>
+                  What the next belt takes <ArrowRight size={18} />
+                </button>
+              )}
+            </div>
+          )}
+
+      {/* ═══ LA FILA DE PROGRESO (Marcelo 2026-09-26): cinta · secuencias · horas,
+          una fila tocable que abre My progress. Reemplaza las dos casillas
+          (horas/racha), el h1 "Your sequences" cuando otra tarjeta manda y el
+          link de texto "View my progress" que quedaba escondido. La racha vive
+          en My progress → Time in the water. ═══ */}
       {data.canTrack !== false && (
-        <div className="grid grid-cols-2 gap-2.5">
-          <div className="rounded-lg px-4 py-3.5 flex items-center gap-3" style={{ border: '1px solid rgba(0,210,255,.35)' }}>
-            <Clock size={26} strokeWidth={1.5} style={{ color: '#F7F9FA' }} />
-            <div className="min-w-0">
-              <p className="text-[26px] font-black leading-none truncate" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F7F9FA' }}>{fmtHm(surf.totalMinutes)}</p>
-              <p className="mt-1.5" style={{ ...T_LABEL, color: '#D9E4EA' }}>Hours surfed</p>
-            </div>
+        <button type="button" onClick={() => setProgressOpen(true)} className="w-full text-left rounded-lg px-4 py-3 flex items-center gap-3" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
+          <BarChart3 size={20} strokeWidth={1.75} className="shrink-0" style={{ color: T_INK }} />
+          <span className="min-w-0 flex-1">
+            <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Your progress</span>
+            <span className="block text-[15px] font-bold leading-snug mt-0.5" style={{ color: T_INK }}>
+              {belt?.en}{seqRows.length ? (() => { const cw = seqScores!.belt.charAt(0).toUpperCase() + seqScores!.belt.slice(1); const mine = String(belt?.en ?? '').startsWith(cw); return ` · ${seqOwned} of ${seqRows.length}${mine ? '' : ` ${cw}`} sequences yours`; })() : ` · Level ${BELT_RANK[beltLevel] ?? 1} of 6`} · {fmtHm(surf.totalMinutes)} in the water
+            </span>
+          </span>
+          <ChevronRight size={16} className="shrink-0" style={{ color: T_INK }} />
+        </button>
+      )}
+
+      {/* Log free surf: el registro de dos segundos (2026-09-22) se queda en el
+          Home, pero como botón SECUNDARIO: un solo cyan lleno por pantalla, y es
+          el de la tarjeta de acción. */}
+      {data.canTrack !== false && <FreeSurfLogger token={data.token} variant="secondary" />}
+
+      {/* ═══ EL BUZÓN, EN FILAS (regla 2026-08-14: lo que te llegó, caduca y se
+          vacía). Una línea cada una; nada del tamaño de la acción. ═══ */}
+      {/* Última clase con el coach · solo 7 días (después vive en My progress → My Sessions). */}
+      {latestResult && (Date.now() - effectiveDate(latestResult) <= 7 * 86400000) && (() => {
+        const when = new Date(effectiveDate(latestResult)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const surveyDone = data.surveyResultIds.includes(latestResult.id);
+        const canRate = !surveyDone && !!latestResult.survey_unlocked;
+        const openSessions = () => {
+          setProgressOpen(true);
+          setTimeout(() => { const d = document.getElementById('my-sessions') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); } }, 120);
+        };
+        const saw = coachSawLine(latestResult);
+        const meaning = statusMeaning(latestResult.status);
+        return (
+          <div className="rounded-lg overflow-hidden" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
+            <button type="button" onClick={openSessions} className="w-full text-left px-4 py-3 flex items-center gap-3">
+              <span className="min-w-0 flex-1">
+                <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Last class · {when}{latestResult.coaches?.display_name ? ` · ${latestResult.coaches.display_name}` : ''}</span>
+                <span className="block text-[15px] font-bold leading-snug mt-0.5" style={{ color: T_INK }}>{latestResult.mission || latestResult.standalone_sessions?.mission || 'Session'}{meaning ? ` · ${meaning}` : ''}</span>
+                {saw && <span className="block text-[13px] mt-0.5" style={{ color: T_MUTED }}>Your coach saw: {saw}</span>}
+              </span>
+              <ChevronRight size={16} className="shrink-0" style={{ color: T_INK }} />
+            </button>
+            {canRate && (
+              <button type="button" onClick={() => onGoTo('feedback')} className="w-full text-left px-4 py-2.5 text-[14px] font-bold flex items-center justify-between gap-3" style={{ borderTop: `1px solid ${T_BORDER}`, color: T_INK }}>
+                Rate your coach · unlock the session feedback <ArrowRight size={15} />
+              </button>
+            )}
           </div>
-          <div className="rounded-lg px-4 py-3.5 flex items-center gap-3" style={{ border: '1px solid rgba(0,210,255,.35)' }}>
-            <Flame size={26} strokeWidth={1.5} style={{ color: '#F7F9FA' }} />
-            <div className="min-w-0">
-              <p className="text-[26px] font-black leading-none truncate" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F7F9FA' }}>{streak} {streak === 1 ? 'day' : 'days'}</p>
-              <p className="mt-1.5" style={{ ...T_LABEL, color: '#D9E4EA' }}>Current streak</p>
+        );
+      })()}
+
+      {/* Promoción de cinta (30 días, 2026-08-09): fila que se despliega. Sin emoji ni degradado. */}
+      {(() => {
+        const promotedAt = (student as any).belt_promoted_at as string | null;
+        if (!promotedAt) return null;
+        const days = (Date.now() - new Date(promotedAt).getTime()) / 86400000;
+        if (!(days >= 0 && days <= 30)) return null;
+        const d = BELT_DISPLAY[beltLevel];
+        const copy = PROMOTION_COPY[beltLevel];
+        if (!d || !copy?.next) return null;
+        // La nota del coach se muestra UNA vez: si el acta del camp (abajo) ya la trae, acá no.
+        const note = recentCampResult?.final?.note ? null : (campWithNote?.coach_final_note ?? null);
+        return (
+          <details className="rounded-lg overflow-hidden" style={{ background: T_CREAM, border: `1px solid ${d.color}` }}>
+            <summary className="list-none cursor-pointer px-4 py-3 flex items-center gap-3">
+              <span className="min-w-0 flex-1">
+                <span style={{ ...T_LABEL, color: creamLabel(d.color) }}>Belt promotion</span>
+                <span className="block text-[16px] font-extrabold leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>You’re now a {d.en}!</span>
+              </span>
+              <ChevronRight size={16} className="shrink-0" style={{ color: T_INK }} />
+            </summary>
+            <div className="px-4 pb-4 space-y-2">
+              {copy.mastered && <p className="text-[14px] leading-snug" style={{ color: T_INK }}>✓ {copy.mastered}</p>}
+              <p className="text-[14px] leading-snug" style={{ color: T_INK }}>→ {copy.next}</p>
+              {note && (
+                <div className="rounded-[5px] px-3 py-2" style={{ background: T_PAPER, borderLeft: '3px solid #00D2FF' }}>
+                  <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>From your coach</p>
+                  <p className="text-[14px] italic leading-snug mt-0.5" style={{ color: T_INK }}>{note}</p>
+                </div>
+              )}
+              <button type="button" onClick={() => onGoTo('sequence')} className="w-full min-h-[44px] rounded-[5px] text-[14px] font-black uppercase" style={{ background: T_NAVY, color: '#F7F9FA', fontFamily: ARCHIVO }}>
+                See your new sequences →
+              </button>
             </div>
-          </div>
+          </details>
+        );
+      })()}
+
+      {/* El acta del camp (2026-09-18, 21 días): fila que se despliega. */}
+      {recentCampResult && (() => {
+        const c: any = recentCampResult;
+        const f = c.final;
+        const m = String(f.summary ?? '').match(/(\d+)\/(\d+) secuencias/);
+        const seqLine = m ? `${m[1]} of ${m[2]} sequences are yours` : null;
+        const targetBelt = c.template_name ? String(c.template_name).match(/(white|yellow|blue|purple)/i)?.[1] : null;
+        const beltLabel = targetBelt ? `${targetBelt.charAt(0).toUpperCase()}${targetBelt.slice(1).toLowerCase()} Belt` : 'the next level';
+        return (
+          <details className="rounded-lg overflow-hidden" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
+            <summary className="list-none cursor-pointer px-4 py-3 flex items-center gap-3">
+              <span className="min-w-0 flex-1">
+                <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Your camp · result</span>
+                <span className="block text-[15px] font-bold leading-snug mt-0.5" style={{ color: T_INK }}>{c.camp_name} · {f.approved ? `Ready for ${beltLabel}` : 'In progress · keep going'}</span>
+              </span>
+              <ChevronRight size={16} className="shrink-0" style={{ color: T_INK }} />
+            </summary>
+            <div className="px-4 pb-4 space-y-2">
+              {f.approved && <p className="text-[14px] leading-snug" style={{ color: T_INK }}>Recommended by your coach. Your coach confirms the belt with the academy.</p>}
+              {seqLine && <p className="text-[14px] leading-snug" style={{ color: T_INK }}>{seqLine}. {f.approved ? '' : 'What you did not show yet is still yours to earn — it lives in your course.'}</p>}
+              {f.focus && (
+                <div className="rounded-[5px] px-3 py-2" style={{ background: T_PAPER, borderLeft: '3px solid #00D2FF' }}>
+                  <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Your next focus</p>
+                  <p className="text-[14px] mt-0.5" style={{ color: T_INK }}>{f.focus}</p>
+                </div>
+              )}
+              {f.note && <p className="text-[14px] whitespace-pre-line leading-snug italic" style={{ color: T_INK }}>{f.note}</p>}
+            </div>
+          </details>
+        );
+      })()}
+
+      {/* Próximo camp lejos (más de un día): una línea, sin plan todavía. */}
+      {campNow && !classSoon && (
+        <div className="rounded-lg px-4 py-3 flex items-center gap-3" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
+          <CalendarDays size={18} className="shrink-0" style={{ color: T_INK }} />
+          <span className="min-w-0 flex-1">
+            <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Next camp · {campStart ? campStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : ''}</span>
+            <span className="block text-[15px] font-bold leading-snug mt-0.5" style={{ color: T_INK }}>{campNow.camp_name}{campNow.coach?.display_name ? ` · with ${campNow.coach.display_name}` : ''}</span>
+          </span>
         </div>
       )}
 
-      {/* Log free surf: acción rápida, botón cyan bajo las casillas (mock Home 2026-09-15). */}
-      {data.canTrack !== false && <FreeSurfLogger token={data.token} />}
-
+      {/* ── Find your level: invitación al quiz v2 (Marcelo 2026-09-16, caso
+          Gustavo Dias: lo hizo por fuera y quedó en un duplicado). Con ?t=
+          el resultado se ata a esta ficha y &from=portal lo trae de vuelta. ── */}
+      {data.levelQuizDone === false && (
+        <a
+          href={`/quiz-v2.html?t=${encodeURIComponent(data.token)}&from=portal`}
+          className="block w-full text-left rounded-lg overflow-hidden"
+          style={{ background: T_CREAM, border: `1px solid ${T_BORDER}`, textDecoration: 'none' }}
+        >
+          <div className="flex items-center gap-3 px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <p style={{ ...T_LABEL, color: T_MUTED }}>Optional · 3 minutes</p>
+              <p className="text-[15px] font-bold leading-snug" style={{ color: T_INK }}>Find your level · ten quick scenes, your coach confirms it in the water</p>
+            </div>
+            <ChevronRight size={16} className="shrink-0" style={{ color: T_INK }} />
+          </div>
+        </a>
+      )}
       {/* ── 📖 ONE WAVE — la compra del libro, adelante y al centro (venta
           web 2026-09-01). Solo si tiene el grant; abre el PDF inline con el
           mismo mecanismo de materiales. Las DEMÁS presentaciones siguen en
@@ -1510,6 +1801,16 @@ function HomeTab({
           (p: any) => p.id === 'f50677a2-72b1-4abd-9335-fe0c99c80333',
         );
         if (!bk) return null;
+        // Con curso, el libro es una fila del buzón: vive también en Course.
+        if (data.hasAnyCourse) return (
+          <button type="button" onClick={() => setReader({ id: bk.id, title: 'ONE WAVE' })} className="w-full text-left rounded-lg px-4 py-3 flex items-center gap-3" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
+            <span className="min-w-0 flex-1">
+              <span style={{ ...T_LABEL, color: T_MUTED }}>Your book</span>
+              <span className="block text-[15px] font-bold leading-snug" style={{ color: T_INK }}>ONE WAVE · read it here</span>
+            </span>
+            <ChevronRight size={16} style={{ color: T_INK }} />
+          </button>
+        );
         return (
           <button
             type="button"
@@ -1538,94 +1839,9 @@ function HomeTab({
           </button>
         );
       })()}
-      {/* ── Find your level: invitación al quiz v2 (Marcelo 2026-09-16, caso
-          Gustavo Dias: lo hizo por fuera y quedó en un duplicado). Con ?t=
-          el resultado se ata a esta ficha y &from=portal lo trae de vuelta. ── */}
-      {data.levelQuizDone === false && (
-        <a
-          href={`/quiz-v2.html?t=${encodeURIComponent(data.token)}&from=portal`}
-          className="block w-full text-left rounded-lg overflow-hidden"
-          style={{ background: T_CREAM, border: `1px solid ${T_BORDER}`, textDecoration: 'none' }}
-        >
-          <div className="flex items-center gap-4 p-4">
-            <div className="min-w-0 flex-1">
-              <p style={{ ...T_LABEL, color: T_MUTED }}>Optional · 3 minutes</p>
-              <p className="text-[22px] font-black leading-tight mt-0.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: T_INK }}>Find your level</p>
-              <p className="text-[14px] mt-1 leading-snug" style={{ color: T_INK }}>
-                Ten quick scenes from a surf session. You get a level to start from — your coach confirms it in the water.
-              </p>
-            </div>
-            <span className="shrink-0 inline-flex items-center gap-1 text-[15px] font-bold" style={{ color: T_INK }}>
-              Start <ArrowRight size={15} />
-            </span>
-          </div>
-        </a>
-      )}
       {reader && (
         <MaterialReader token={data.token} resourceId={reader.id} title={reader.title} onClose={() => setReader(null)} />
       )}
-      {/* "View my progress" (mock de Home): baja al cockpit de progreso. */}
-      {data.canTrack !== false && (
-        <button type="button" onClick={() => setProgressOpen(true)} className="w-full flex items-center justify-center gap-2 py-1 text-[15px] font-bold" style={{ color: '#00D2FF' }}>
-          <BarChart3 size={18} strokeWidth={1.75} /> View my progress <ArrowRight size={15} />
-        </button>
-      )}
-      {/* ── 🏆 Promoción de cinta — celebración 30 días, SIN candados. El copy
-          es por cinta (qué dominó / qué desbloquea) desde promotion-copy.ts. ── */}
-      {(() => {
-        const promotedAt = (student as any).belt_promoted_at as string | null;
-        if (!promotedAt) return null;
-        const days = (Date.now() - new Date(promotedAt).getTime()) / 86400000;
-        if (!(days >= 0 && days <= 30)) return null;
-        const d = BELT_DISPLAY[beltLevel];
-        const copy = PROMOTION_COPY[beltLevel];
-        if (!d || !copy?.next) return null;
-        const note = campWithNote?.coach_final_note ?? null;
-        const ctaInk = LIGHT_BELTS.includes(beltLevel);
-        return (
-          <div
-            className="relative overflow-hidden rounded-lg p-5"
-            style={{ background: '#0A1628', border: `1px solid ${d.color}77`, boxShadow: `0 6px 30px ${d.color}22` }}
-          >
-            <div
-              className="absolute -top-14 -right-14 w-44 h-44 rounded-full pointer-events-none"
-              style={{ background: `radial-gradient(circle, ${d.color}44, transparent 70%)` }}
-            />
-            <p className="text-[12px] font-mono uppercase tracking-[0.2em] mb-2" style={{ color: d.color }}>
-              🏆 Belt promotion
-            </p>
-            <h2
-              className="text-[24px] font-extrabold uppercase leading-tight mb-2"
-              style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#F7F9FA' }}
-            >
-              You’re now a <span style={{ color: d.color }}>{d.en}</span>!
-            </h2>
-            {copy.mastered && (
-              <p className="text-[13px] leading-relaxed mb-1.5" style={{ color: 'rgba(247,249,250,.8)' }}>
-                ✓ {copy.mastered}
-              </p>
-            )}
-            <p className="text-[13px] leading-relaxed mb-3" style={{ color: 'rgba(247,249,250,.8)' }}>
-              → {copy.next}
-            </p>
-            {note && (
-              <div className="rounded-xl px-3 py-2.5 mb-3" style={{ background: 'rgba(255,255,255,.05)', borderLeft: '3px solid #00D2FF' }}>
-                <p className="text-[12px] font-mono uppercase tracking-wider mb-1" style={{ color: '#00D2FF' }}>From your coach</p>
-                <p className="text-[13px] italic leading-relaxed" style={{ color: 'rgba(247,249,250,.9)' }}>{note}</p>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => onGoTo('sequence')}
-              className="w-full rounded-full py-3 text-[13px] font-extrabold"
-              style={{ background: d.color, color: ctaInk ? '#061C2B' : '#FFFFFF' }}
-            >
-              See your new sequence →
-            </button>
-          </div>
-        );
-      })()}
-
       {/* ── Solo libro / lead sin curso ni membresía: nada de horas ni progreso.
           El Home le dice qué tiene y qué abre lo demás (blueprint 2026-09-04,
           Marcelo 2026-09-08). ── */}
@@ -1851,6 +2067,8 @@ function HomeTab({
                       <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.freeSurfMinutes)}</p>
                     </div>
                   </div>
+                  {/* La racha vivía en el Home (casilla); acá desde 2026-09-26. */}
+                  <p className="text-[13px] mt-3 inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><Flame size={14} strokeWidth={1.75} />Current streak · {streak} {streak === 1 ? 'day' : 'days'}</p>
                   <button type="button" onClick={() => { const d = document.getElementById('my-sessions') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }} className="inline-flex items-center gap-1.5 mt-3 text-[15px] font-bold" style={{ color: T_LINK }}>View sessions <ArrowRight size={15} /></button>
                 </SandCard>
                 <SandCard label="Your next level">
@@ -2006,218 +2224,6 @@ function HomeTab({
       </div>
       )}
 
-      {/* Provisional belt notice — set your expectations: the belt from the
-          quiz is a starting point your coach confirms in the water. */}
-      {(student as any).belt_provisional && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-          <p className="text-sm text-amber-900">
-            <span className="font-semibold">Your belt is provisional.</span>{' '}
-            It started from your quiz — your coach will confirm your level after a few sessions in the water.
-          </p>
-        </div>
-      )}
-
-
-      {/* Your camp · result (2026-09-18): lo que decidió el coach al cerrar el
-          camp — antes el alumno solo veía "Latest session" y la encuesta. */}
-      {recentCampResult && (() => {
-        const c: any = recentCampResult;
-        const f = c.final;
-        const m = String(f.summary ?? '').match(/(\d+)\/(\d+) secuencias/);
-        const seqLine = m ? `${m[1]} of ${m[2]} sequences are yours` : null;
-        const targetBelt = c.template_name ? String(c.template_name).match(/(white|yellow|blue|purple)/i)?.[1] : null;
-        const beltLabel = targetBelt ? `${targetBelt.charAt(0).toUpperCase()}${targetBelt.slice(1).toLowerCase()} Belt` : 'the next level';
-        return (
-          <div className="rounded-lg overflow-hidden" style={{ background: '#0A1628', border: `1px solid ${f.approved ? 'rgba(0,210,255,.45)' : 'rgba(255,209,102,.4)'}` }}>
-            <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.08)' }}>
-              <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Your camp · result</p>
-              <h3 className="text-base font-bold mt-0.5" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#F7F9FA' }}>{c.camp_name}</h3>
-            </div>
-            <div className="px-4 py-3 space-y-2.5">
-              <span className="inline-block text-[11px] font-bold px-2.5 py-1 rounded-full" style={f.approved ? { background: '#00D2FF', color: '#061C2B' } : { background: '#FFD166', color: '#061C2B' }}>
-                {f.approved ? `Ready for ${beltLabel} · recommended by your coach` : 'In progress · keep going'}
-              </span>
-              {seqLine && <p className="text-[13px]" style={{ color: 'rgba(247,249,250,.85)' }}>{seqLine}. {f.approved ? 'Your coach confirms the belt with the academy.' : 'What you did not show yet is still yours to earn — it lives in your course.'}</p>}
-              {f.focus && (
-                <div className="rounded-lg px-3 py-2" style={{ background: '#122236', borderLeft: '3px solid #00D2FF' }}>
-                  <p className="text-[11px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Your next focus</p>
-                  <p className="text-[13px] mt-0.5" style={{ color: '#F7F9FA' }}>{f.focus}</p>
-                </div>
-              )}
-              {f.note && <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: 'rgba(247,249,250,.85)' }}>{f.note}</p>}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Latest Session — dark, matches the hero. OJO: fondo oscuro → textos
-          CLAROS (antes quedaron en tinta #061C2B y la tarjeta era ilegible). */}
-      {latestResult && (
-        <div className="rounded-lg overflow-hidden" style={{ background: '#0A1628', border: '1px solid rgba(0,210,255,.18)' }}>
-          <div className="px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,.08)' }}>
-            <p className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>Latest session</p>
-            <h3 className="text-base font-bold mt-0.5" style={{ fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', color: '#F7F9FA' }}>
-              {latestResult.mission || latestResult.standalone_sessions?.mission || 'Session'}
-            </h3>
-          </div>
-          <div className="px-4 py-3 space-y-2.5">
-            <div className="flex justify-between items-center">
-              <span className="text-xs" style={{ color: 'rgba(247,249,250,.78)' }}>Date</span>
-              <span className="text-sm" style={{ color: '#F7F9FA' }}>
-                {(latestResult.camp_sessions?.session_date ? new Date(latestResult.camp_sessions.session_date + 'T12:00:00') : new Date(latestResult.created_at)).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-              </span>
-            </div>
-            {latestResult.coaches?.display_name && (
-              <div className="flex justify-between items-center">
-                <span className="text-xs" style={{ color: 'rgba(247,249,250,.78)' }}>Coach</span>
-                <span className="text-sm font-medium" style={{ color: '#F7F9FA' }}>{latestResult.coaches.display_name}</span>
-              </div>
-            )}
-            <div className="flex justify-between items-start gap-3">
-              <span className="text-xs" style={{ color: 'rgba(247,249,250,.78)' }}>Status</span>
-              <div className="text-right" style={{ maxWidth: '64%' }}>
-                <StatusBadge status={latestResult.status} />
-                {statusMeaning(latestResult.status) && (
-                  <p className="text-[12px] mt-1" style={{ color: 'rgba(247,249,250,.78)' }}>{statusMeaning(latestResult.status)}</p>
-                )}
-              </div>
-            </div>
-            {coachSawLine(latestResult) && (
-              <div className="flex justify-between items-center gap-3">
-                <span className="text-xs" style={{ color: 'rgba(247,249,250,.78)' }}>Your coach saw</span>
-                <span className="text-sm" style={{ color: '#F7F9FA' }}>{coachSawLine(latestResult)}</span>
-              </div>
-            )}
-
-            {data.surveyResultIds.includes(latestResult.id) ? (
-              latestResult.student_visible_summary && (
-                <div className="pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
-                  <p className="text-[12px] font-mono uppercase tracking-wider mb-1" style={{ color: '#00D2FF' }}>Coach feedback</p>
-                  <p className="text-sm whitespace-pre-line leading-relaxed" style={{ color: 'rgba(247,249,250,.85)' }}>
-                    {latestResult.student_visible_summary}
-                  </p>
-                </div>
-              )
-            ) : (
-              latestResult.survey_unlocked && (
-                <div className="pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
-                  <button
-                    type="button"
-                    onClick={() => onGoTo('feedback')}
-                    className="w-full text-left rounded-xl p-3 transition-opacity hover:opacity-90"
-                    style={{ background: '#122236', borderLeft: '3px solid #FFD166' }}
-                  >
-                    <p className="text-[12px] font-mono uppercase tracking-wider mb-0.5" style={{ color: '#FFD166' }}>
-                      Coach feedback waiting
-                    </p>
-                    <p className="text-sm font-semibold" style={{ color: '#F7F9FA' }}>
-                      Rate your coach to unlock the session feedback →
-                    </p>
-                  </button>
-                </div>
-              )
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Next class + My Coach (M140) — first upcoming official service. */}
-      {upcomingCamps.length > 0 && (() => {
-        const c: any = upcomingCamps[0];
-        const startD = new Date((c.start_date ?? '') + 'T00:00:00');
-        const endD = new Date(((c.end_date ?? c.start_date) ?? '') + 'T00:00:00');
-        const todayD = new Date(); todayD.setHours(0, 0, 0, 0);
-        const totalDays = Math.max(1, Math.round((endD.getTime() - startD.getTime()) / 86400000) + 1);
-        const dayNum = todayD >= startD ? Math.min(totalDays, Math.round((todayD.getTime() - startD.getTime()) / 86400000) + 1) : null;
-        const certN = c.coach?.certification_level ? String(c.coach.certification_level).replace(/\D/g, '') : null;
-        return (
-          <div className="rounded-lg p-4" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
-            <p className="text-[12px]" style={{ ...F_LABEL, color: '#0090B0' }}>
-              {dayNum
-                ? `In progress · Day ${dayNum} of ${totalDays}`
-                : `Next class · ${startD.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`}
-            </p>
-            <p className="mt-1.5 text-lg" style={{ ...F_DISPLAY, color: '#061C2B' }}>{c.camp_name}</p>
-            {/* El plan del coach para la próxima sesión, en el idioma del curso
-                (Marcelo 2026-09-17): la secuencia y el foco, con Study it y
-                Rehearse it para llegar preparado. Solo si el coach ya lo armó. */}
-            {((Array.isArray(c.plans) && c.plans.length > 0) || (Array.isArray(c.topics) && c.topics.length > 0)) && (() => {
-              const plansArr: any[] = Array.isArray(c.plans) ? c.plans : [];
-              const sd = c.next_session?.session_date as string | undefined;
-              const when = (() => {
-                if (!sd) return 'Next session';
-                const d = new Date(sd + 'T00:00:00'); const t = new Date(); t.setHours(0, 0, 0, 0);
-                const diff = Math.round((d.getTime() - t.getTime()) / 86400000);
-                return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'long' });
-              })();
-              const many = plansArr.length > 1;
-              return (
-                <div className="mt-3 rounded-lg p-3.5" style={{ background: T_NAVY, border: '1px solid rgba(0,210,255,.35)' }}>
-                  <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{when}{c.coach?.display_name ? ` with ${c.coach.display_name}` : ''}{plansArr.length ? ' · you will work on' : ' · theory'}{many ? ` · ${plansArr.length} sequences, one at a time` : ''}</p>
-                  <div className={many ? 'mt-1 space-y-2.5' : 'mt-1'}>
-                    {plansArr.map((pl: any, i: number) => {
-                      const isGame = pl.kind === 'game';
-                      const isCircle = pl.kind === 'circle';
-                      const seqHref = isGame || isCircle ? `/portal/${data.token}/circles` : `/portal/${data.token}/seq/${pl.sequenceId}`;
-                      const rehearseHref = `${seqHref}?tab=feel`;
-                      return (
-                        <div key={pl.sequenceId} className={many ? 'rounded-[5px] px-3 py-2.5' : ''} style={many ? { background: 'rgba(247,249,250,.06)', border: '1px solid rgba(247,249,250,.14)' } : undefined}>
-                          <p className="text-[20px] leading-tight" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{many ? `${i + 1} · ` : ''}{pl.label ?? (pl.kind === 'entry' ? pl.title : `#${pl.number} · ${pl.title}`)}</p>
-                          <p className="mt-1.5 text-[13.5px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
-                            {pl.kind === 'game' ? 'One rule, the wave is the referee. You play it with your coach; your coach stars it. Tonight, learn the rule.' : pl.focus.length > 0 ? <><span className="font-bold" style={{ color: '#F7F9FA' }}>Your focus:</span> {pl.focus.join(' · ')}</> : 'The whole sequence, start to finish.'}
-                          </p>
-                          {pl.notes && <p className="mt-1.5 text-[13px] italic" style={{ color: 'rgba(247,249,250,.75)' }}>"{pl.notes}"</p>}
-                          {/* Durante el camp el entreno es CON el coach y lo califica el coach
-                              (Marcelo 2026-09-19): el alumno estudia y ensaya en tierra, no
-                              registra solo. Por eso el juego no tiene "Play it" acá. */}
-                          <div className={`mt-2.5 grid gap-2 ${isGame || isCircle ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                            <a href={seqHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: '#00D2FF', color: T_NAVY, fontFamily: ARCHIVO }}>Study it</a>
-                            {!isGame && !isCircle && <a href={rehearseHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.5)', fontFamily: ARCHIVO }}>Rehearse it on land</a>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {Array.isArray(c.topics) && c.topics.length > 0 && (
-                    <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(247,249,250,.14)' }}>
-                      <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Also today · theory</p>
-                      <div className="mt-1.5 space-y-1.5">
-                        {c.topics.map((t: any) => (
-                          <div key={t.id} className="flex items-center justify-between gap-3">
-                            <p className="text-[14px] font-bold leading-snug" style={{ color: '#F7F9FA' }}>{t.title}</p>
-                            <a href={`/portal/${data.token}${t.href}`} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.45)', fontFamily: ARCHIVO }}>Study it</a>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
-              {c.scheduled_time && (
-                <span className="inline-flex items-center gap-1.5"><Clock size={14} style={{ color: '#0090B0' }} />{c.scheduled_time}</span>
-              )}
-              <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} style={{ color: '#0090B0' }} />{totalDays} day{totalDays === 1 ? '' : 's'}</span>
-            </div>
-            {c.coach && (
-              <button type="button" onClick={() => onGoTo('my-coach')} className="mt-3 w-full flex items-center gap-3 rounded-xl bg-gray-50 border border-gray-100 px-3 py-2.5 text-left">
-                <div className="w-10 h-11 rounded-full overflow-hidden bg-gray-200 shrink-0">
-                  {c.coach.photo_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={c.coach.photo_url} alt="" className="w-full h-full object-cover" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold truncate" style={{ color: '#061C2B' }}>{c.coach.display_name}</p>
-                  {certN && <p className="text-[12px] mt-0.5" style={{ ...F_LABEL, color: '#55666E' }}>Level {certN} certified</p>}
-                </div>
-                <ChevronRight size={16} className="text-gray-300 shrink-0" />
-              </button>
-            )}
-          </div>
-        );
-      })()}
 
     </div>
   );
@@ -3537,358 +3543,6 @@ function StatCard({
   );
 }
 
-// ═══════════════════════════════════════
-// PORTAL ALERTS — compact notification list (new service / coach message /
-// session report). Replaces the large hero cards to save vertical space.
-// ═══════════════════════════════════════
-
-function PortalAlerts({
-  upcomingCamp,
-  legacyUpcoming,
-  campWithNote,
-  latestResult,
-  onGoTo,
-}: {
-  upcomingCamp: any;
-  legacyUpcoming: any;
-  campWithNote: any;
-  latestResult: any;
-  onGoTo: (tab: Tab) => void;
-}) {
-  const [noteOpen, setNoteOpen] = useState(false);
-
-  const fmtDate = (d: string | null | undefined) =>
-    d
-      ? new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-      : '';
-
-  type Row = {
-    key: string;
-    Icon: LucideIcon;
-    color: string;
-    bg: string;
-    title: string;
-    subtitle: string;
-    onClick: () => void;
-    expanded?: React.ReactNode;
-  };
-  const rows: Row[] = [];
-
-  // New / next service
-  if (upcomingCamp) {
-    const nextDate = upcomingCamp.next_session?.session_date ?? upcomingCamp.start_date;
-    const totalDays =
-      upcomingCamp.start_date && upcomingCamp.end_date
-        ? Math.round(
-            (new Date(upcomingCamp.end_date).getTime() - new Date(upcomingCamp.start_date).getTime()) /
-              86400000,
-          ) + 1
-        : 1;
-    const day = upcomingCamp.next_session?.day_number ?? 1;
-    const dayTag = totalDays > 1 ? ` · Day ${day}/${totalDays}` : '';
-    rows.push({
-      key: 'next-class',
-      Icon: Calendar,
-      color: BRAND.colors.cyan,
-      bg: 'rgba(90,195,231,0.14)',
-      title: `Next class · ${upcomingCamp.camp_name}`,
-      subtitle: `${fmtDate(nextDate)}${upcomingCamp.scheduled_time ? ` · ${upcomingCamp.scheduled_time}` : ''}${dayTag}${upcomingCamp.coach?.display_name ? ` · Coach ${upcomingCamp.coach.display_name.split(' ')[0]}` : ''}`,
-      onClick: () => onGoTo('sessions'),
-    });
-  } else if (legacyUpcoming) {
-    rows.push({
-      key: 'next-legacy',
-      Icon: Calendar,
-      color: BRAND.colors.cyan,
-      bg: 'rgba(90,195,231,0.14)',
-      title: 'Upcoming session',
-      subtitle: fmtDate(legacyUpcoming.session_date),
-      onClick: () => onGoTo('sessions'),
-    });
-  }
-
-  // Coach message / final note (expandable inline)
-  if (campWithNote?.coach_final_note) {
-    rows.push({
-      key: 'coach-note',
-      Icon: MessageCircle,
-      color: BRAND.colors.navy,
-      bg: 'rgba(10,22,40,0.08)',
-      title: 'Message from your coach',
-      subtitle: noteOpen ? 'Tap to hide' : `${campWithNote.camp_name} — tap to read`,
-      onClick: () => setNoteOpen((o) => !o),
-      expanded: noteOpen ? (
-        <p className="text-sm text-[var(--tss-navy)] leading-relaxed whitespace-pre-line px-4 pb-3">
-          {campWithNote.coach_final_note}
-        </p>
-      ) : null,
-    });
-  }
-
-  // New session report (feedback / homework / next focus)
-  const lr = latestResult as any;
-  // Ping cuando hay contenido que el alumno VE: summary (final eval), homework,
-  // o el "Next Focus" del cierre diario (whats_next — student-facing desde
-  // 2026-08-09; el coach_feedback diario sigue interno).
-  if (lr && (lr.student_visible_summary || lr.homework || lr.whats_next)) {
-    rows.push({
-      key: 'session-report',
-      Icon: ClipboardList,
-      color: '#b8860b',
-      bg: 'rgba(255,209,102,0.18)',
-      title: 'New session report',
-      subtitle: 'Feedback & homework ready',
-      onClick: () => onGoTo('sessions'),
-    });
-  }
-
-  if (rows.length === 0) return null;
-
-  return (
-    <div>
-      <p className="tss-section-label">
-        <Bell size={11} strokeWidth={1.75} />
-        Notifications
-      </p>
-      <div className="space-y-2">
-        {rows.map((r) => (
-          <div key={r.key} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <button
-              onClick={r.onClick}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
-            >
-              <div
-                className="w-9 h-11 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: r.bg }}
-              >
-                <r.Icon size={16} strokeWidth={1.9} style={{ color: r.color }} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-[var(--tss-navy)] truncate">{r.title}</p>
-                <p className="text-xs text-gray-500 truncate">{r.subtitle}</p>
-              </div>
-              <ChevronRight size={16} className="text-gray-300 shrink-0" />
-            </button>
-            {r.expanded}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════
-// UPCOMING CAMP CARD — M45 — replaces multi_block UpcomingSessionCard
-// for official services programmed by the academy.
-// ═══════════════════════════════════════
-
-function UpcomingCampCard({ camp }: { camp: any }) {
-  const nextDate = camp.next_session?.session_date ?? camp.start_date;
-  const dateLabel = nextDate
-    ? new Date(nextDate).toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-      })
-    : '';
-  const dayNumber = camp.next_session?.day_number ?? 1;
-  const totalDays = camp.start_date && camp.end_date
-    ? Math.round(
-        (new Date(camp.end_date).getTime() - new Date(camp.start_date).getTime()) / 86400000
-      ) + 1
-    : 1;
-  const isMultiDay = totalDays > 1;
-  const coach = camp.coach;
-  // Only show real, coach-defined objectives — never the "Coach will define
-  // the focus" placeholder (it reads as broken/unfinished).
-  const previewBlocks = (camp.blocks ?? []).filter(
-    (b: any) => b.objective_text && b.objective_text.trim(),
-  );
-
-  return (
-    <div className="bg-[var(--tss-navy)] text-white rounded-2xl p-5 shadow-md">
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <p className="text-[12px] font-mono uppercase tracking-wider text-[var(--tss-cyan)]">
-          Your next class
-        </p>
-        {isMultiDay && (
-          <span className="text-[12px] px-2 py-0.5 rounded-full bg-white/15 text-white font-semibold">
-            Day {dayNumber} of {totalDays}
-          </span>
-        )}
-      </div>
-      <h2 className="text-lg font-bold leading-tight">{camp.camp_name}</h2>
-      {camp.template_name && (
-        <p className="text-[12px] text-white/70 italic mt-0.5">{camp.template_name}</p>
-      )}
-      <p className="text-sm text-white/85 mt-2">
-        {dateLabel}
-        {camp.scheduled_time && ` · ${camp.scheduled_time}`}
-      </p>
-
-      {/* Coach profile — who's taking you in the water: photo, name, level */}
-      {coach && (
-        <div className="mt-3 flex items-center gap-3 bg-white/10 rounded-xl px-3 py-2.5">
-          {coach.photo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={coach.photo_url}
-              alt={coach.display_name}
-              className="w-12 h-12 rounded-full object-cover shrink-0"
-              style={{ border: '2px solid var(--tss-cyan, #5AC3E7)' }}
-            />
-          ) : (
-            <div
-              className="w-12 h-12 rounded-full bg-white/15 flex items-center justify-center text-sm font-bold shrink-0"
-              style={{ border: '2px solid var(--tss-cyan, #5AC3E7)' }}
-            >
-              {coach.display_name
-                ?.split(' ')
-                .map((p: string) => p[0])
-                .filter(Boolean)
-                .slice(0, 2)
-                .join('')
-                .toUpperCase()}
-            </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-mono uppercase tracking-[0.18em] text-[var(--tss-cyan)]">
-              Your coach
-            </p>
-            <p className="text-sm font-semibold truncate mt-0.5">{coach.display_name}</p>
-            <div className="flex flex-wrap items-center gap-1.5 mt-1">
-              {coach.certification_level && (
-                <span className="text-[12px] px-2 py-0.5 rounded-full bg-white/15 text-white/85 font-semibold uppercase tracking-wide">
-                  {String(coach.certification_level).replace(/_/g, ' ').replace(/\btss\b/i, 'TSS')}
-                </span>
-              )}
-              {coach.max_belt_permission && BELT_DISPLAY[coach.max_belt_permission as BeltLevel] && (
-                <span
-                  className="text-[12px] px-2 py-0.5 rounded-full font-semibold inline-flex items-center gap-1"
-                  style={{ background: 'rgba(255,255,255,.12)', color: '#fff' }}
-                >
-                  <span
-                    className="w-2 h-2 rounded-full inline-block"
-                    style={{
-                      background: BELT_DISPLAY[coach.max_belt_permission as BeltLevel]?.color || '#fff',
-                      boxShadow: '0 0 0 1px rgba(255,255,255,.35)',
-                    }}
-                  />
-                  {BELT_DISPLAY[coach.max_belt_permission as BeltLevel]?.en}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* What you'll work on today */}
-      {previewBlocks.length > 0 && (
-        <div className="mt-3">
-          <p className="text-[12px] font-mono uppercase tracking-wider text-[var(--tss-cyan)] mb-1.5">
-            What you'll work on
-          </p>
-          <div className="space-y-1">
-            {previewBlocks.slice(0, 3).map((b: any, i: number) => (
-              <div key={i} className="text-[12px] text-white/90 bg-white/5 rounded-lg px-2.5 py-1.5">
-                {b.step_id && <span className="text-[var(--tss-cyan)] font-mono mr-1.5">{b.step_id}</span>}
-                {b.objective_text ?? 'Coach will define the focus'}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════
-// UPCOMING SESSION CARD — legacy multi_block_sessions card
-// ═══════════════════════════════════════
-
-function UpcomingSessionCard({ upcoming }: { upcoming: UpcomingMultiBlock }) {
-  const isInProgress = upcoming.completion_state === 'in_progress';
-  const coachRel = Array.isArray(upcoming.coaches) ? upcoming.coaches[0] : upcoming.coaches;
-  const coachName = coachRel?.display_name || 'your coach';
-  const dateLabel = new Date(upcoming.session_date).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-  });
-
-  return (
-    <div
-      className="rounded-2xl p-4 shadow-sm border-2"
-      style={{
-        background: isInProgress ? '#ECFDF5' : '#FEF3C7',
-        borderColor: isInProgress ? '#10B981' : BRAND.colors.gold,
-      }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <div>
-          <p className="inline-flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-wider"
-             style={{ color: isInProgress ? '#047857' : '#92400E' }}>
-            {isInProgress
-              ? <CircleDot size={13} strokeWidth={2} />
-              : <Calendar size={13} strokeWidth={1.75} />}
-            {isInProgress ? 'Session in progress' : 'Your next session'}
-          </p>
-          <p className="text-base font-bold mt-0.5"
-             style={{ color: isInProgress ? '#065F46' : '#78350F' }}>
-            {dateLabel}
-            {upcoming.training_venue ? ` · ${upcoming.training_venue}` : ''}
-          </p>
-          <p className="text-[12px] mt-0.5"
-             style={{ color: isInProgress ? '#047857' : '#92400E' }}>
-            Coach: {coachName} · {upcoming.total_planned_minutes} min planned
-          </p>
-        </div>
-      </div>
-
-      {upcoming.blocks.length > 0 && (
-        <div className="space-y-1.5 mt-3">
-          <p className="text-[12px] font-mono uppercase tracking-wider"
-             style={{ color: isInProgress ? '#047857' : '#92400E' }}>
-            What you'll work on
-          </p>
-          {upcoming.blocks.map((b, idx) => (
-            <div
-              key={b.id}
-              className="bg-white rounded-lg p-2.5 flex items-start gap-2"
-            >
-              <span className="text-[12px] font-mono text-gray-400 w-6 text-center shrink-0 mt-0.5">
-                #{idx + 1}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-800">
-                  {b.step_id && (
-                    <span className="text-[12px] font-mono text-gray-400 mr-1">
-                      {b.step_id}
-                    </span>
-                  )}
-                  {b.drill_id || 'Custom block'}
-                </p>
-                {b.objective_text && (
-                  <p className="flex items-start gap-1.5 text-[12px] text-gray-500 italic mt-0.5">
-                    <CornerDownRight size={12} strokeWidth={1.75} className="shrink-0 mt-0.5" />
-                    {b.objective_text}
-                  </p>
-                )}
-              </div>
-              <span className="text-[12px] text-gray-500 font-medium shrink-0">
-                {b.duration_minutes}m
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {upcoming.blocks.length === 0 && (
-        <p className="text-[12px] italic mt-2"
-           style={{ color: isInProgress ? '#047857' : '#92400E' }}>
-          Your coach is still building this session.
-        </p>
-      )}
-    </div>
-  );
-}
+// ═══ 2026-09-26: PortalAlerts, UpcomingCampCard y UpcomingSessionCard vivían acá
+// sin montarse en ningún lado (el Home nuevo dibuja la clase arriba con su
+// propia tarjeta). Se borraron; están en git si hicieran falta.
