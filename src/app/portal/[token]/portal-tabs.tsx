@@ -1339,7 +1339,11 @@ function HomeTab({
   const campDays = campStart && campEnd ? Math.max(1, Math.round((campEnd.getTime() - campStart.getTime()) / 86400000) + 1) : 0;
   const campDayNum = campStart && today0 >= campStart ? Math.min(campDays, Math.round((today0.getTime() - campStart.getTime()) / 86400000) + 1) : null;
   const daysToCamp = campStart ? Math.round((campStart.getTime() - today0.getTime()) / 86400000) : null;
-  const classSoon = !!campNow && (campDayNum != null || (daysToCamp != null && daysToCamp <= 1));
+  // La clase manda con el camp en curso o hasta 7 días antes: es la semana en
+  // que el alumno llega con el Pre-Course hecho (los 4 clientes del lunes
+  // 2026-09-28 abren el portal el sábado con el curso bajo candado y sin otra
+  // tarjeta posible). Más lejos, una fila 'Next camp'.
+  const classSoon = !!campNow && (campDayNum != null || (daysToCamp != null && daysToCamp <= 7));
   const coachTask = data.canTrack !== false && !data.courseLocked && data.coachFocus && (data.coachFocus.label || data.coachFocus.text) ? data.coachFocus : null;
   const seqScores = data.canTrack !== false && !data.courseLocked && (data.sequenceScores?.rows?.length ?? 0) > 0 ? data.sequenceScores! : null;
   const seqRows = seqScores ? (seqScores.rows.filter((r) => !r.aside).length ? seqScores.rows.filter((r) => !r.aside) : seqScores.rows) : [];
