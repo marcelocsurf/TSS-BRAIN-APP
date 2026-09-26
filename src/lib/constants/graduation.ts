@@ -152,6 +152,6 @@ export const CANON_REFERENCE: Record<string, string[]> = {
     'Execute the Universal Sequence Formula on at least 4 of 5 attempts per sequence (Seq #10, #11, #12, #13)',
     'Pump effectively on FS and BS (Seq #8, #9) at least 3 of 5 attempts per side',
     'Demonstrate the 4 BB Concepts (Floater, Impulso, Low Finish, BT Concept) in context',
-    'Verbalize Compromiso Consciente in your own words',
+    'Verbalize Conscious Commitment in your own words',
   ],
 };
