@@ -716,6 +716,28 @@ export async function anonymizeStudentRecord(
   const { error } = await admin.from('students').update(updates).eq('id', id);
   if (error) return { ok: false, error: error.message };
 
+  // Tablas laterales (auditoría 2026-09-25): la Política §5 promete borrar
+  // estas categorías y quedaban con el mismo student_id. Se conservan los
+  // conteos y las fechas; se vacía lo que identifica o es salud.
+  const side: PromiseLike<unknown>[] = [
+    admin.from('hp_athlete_profiles').update({
+      injury: null, blood_type: null, medications: null, medical_history: null, doctor_name: null, doctor_phone: null,
+      insurance_provider: null, insurance_number: null, emergency_relationship: null, emergency_phone_alt: null,
+      dui: null, passport_number: null, passport_issue_date: null, passport_expiry_date: null, birth_place: null,
+      civil_status: null, sponsors: null, palmares_historico: null, why_train: null,
+    }).eq('student_id', id),
+    admin.from('level_quiz_attempts').update({ email: null, phone: null }).eq('student_id', id),
+    admin.from('session_incidents').update({ student_name: `Deleted user ${tag}` }).eq('student_id', id),
+    admin.from('portal_visits').delete().eq('student_id', id),
+  ];
+  if (st.email) {
+    side.push(admin.from('level_quiz_attempts').update({ email: null, phone: null }).is('student_id', null).eq('email', st.email));
+    side.push(admin.from('board_rentals').update({ renter_name: `Deleted user ${tag}`, renter_phone: null, renter_email: null, id_doc_path: null, signature_path: null }).eq('renter_email', st.email));
+    side.push(admin.from('tool_leads').update({ name: null, email: null }).eq('email', st.email));
+  }
+  const sideResults = await Promise.allSettled(side);
+  for (const r of sideResults) if (r.status === 'rejected') console.error('[anonymizeStudent] side table failed', r.reason);
+
   if (st.photo_url && st.photo_url.includes('/avatars/')) {
     const path = st.photo_url.split('/avatars/')[1]?.split('?')[0];
     if (path) { try { await admin.storage.from('avatars').remove([decodeURIComponent(path)]); } catch { /* sin bloqueo */ } }

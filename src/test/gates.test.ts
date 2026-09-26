@@ -143,17 +143,37 @@ describe('legal — aceptación de términos', () => {
     expect((await acceptTerms('11111111-1111-1111-1111-111111111111')).ok).toBe(false);
     expect(fake.writes().length).toBe(0);
   });
-  it('token válido guarda versión, fecha, IP y navegador; y ya no pide aceptar', async () => {
+  it('con datos de salud sin consentimiento, exige la casilla de salud (auditoría 2026-09-25)', async () => {
+    const { acceptTerms, termsGateNeeds } = await import('@/lib/actions/legal');
+    // La ficha tiene medical_notes 'asma' y ningún health_data_consent_at.
+    expect(await termsGateNeeds(STUDENT)).toEqual({ minor: false, needsGuardian: false, needsHealth: true });
+    const r = await acceptTerms(TOKEN);
+    expect(r.ok).toBe(false);
+    expect(r.error).toMatch(/health/i);
+    expect(fake.writes().length).toBe(0);
+  });
+  it('token válido guarda versión, fecha, IP, navegador y consentimiento de salud; y ya no pide aceptar', async () => {
     const { acceptTerms, needsTermsAcceptance } = await import('@/lib/actions/legal');
     const { CURRENT_LEGAL_VERSION } = await import('@/lib/legal/versions');
     expect(await needsTermsAcceptance(STUDENT)).toBe(true);
-    expect((await acceptTerms(TOKEN)).ok).toBe(true);
+    expect((await acceptTerms(TOKEN, { healthConsent: true })).ok).toBe(true);
     const s = fake.tables.students[0];
     expect(s.terms_version).toBe(CURRENT_LEGAL_VERSION);
     expect(s.terms_accepted_at).toBeTruthy();
+    expect(s.health_data_consent_at).toBeTruthy();
     expect(s.consent_ip).toBe('203.0.113.9');
     expect(s.consent_user_agent).toBe('vitest');
     expect(await needsTermsAcceptance(STUDENT)).toBe(false);
+  });
+  it('un menor sin tutor: el tutor escribe su nombre y queda guardado', async () => {
+    const { acceptTerms, termsGateNeeds } = await import('@/lib/actions/legal');
+    fake.tables.students[0].date_of_birth = '2015-05-05';
+    fake.tables.students[0].health_data_consent_at = '2026-01-01';
+    expect(await termsGateNeeds(STUDENT)).toEqual({ minor: true, needsGuardian: true, needsHealth: false });
+    expect((await acceptTerms(TOKEN)).ok).toBe(false);
+    expect((await acceptTerms(TOKEN, { guardianName: 'Madre Prueba' })).ok).toBe(true);
+    expect(fake.tables.students[0].guardian_name).toBe('Madre Prueba');
+    expect(fake.tables.students[0].guardian_relationship).toBe('parent/guardian');
   });
   it('si cambia la versión, vuelve a pedir', async () => {
     const { needsTermsAcceptance } = await import('@/lib/actions/legal');
