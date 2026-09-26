@@ -51,17 +51,21 @@ export default async function SequencePageRoute({ params, searchParams }: { para
   if (!student) notFound();
 
   // El curso es para siempre: quien tiene el curso de esta cinta ve la página.
-  const course = COURSES.find((c) => c.key === cfg.courseKey);
-  const owns = COURSE_OWNER_IDS.has((student as any).id) || !!(course && (student as any)[course.accessColumn]);
+  // Las páginas de entrada se abren también desde el curso Yellow (2026-09-26):
+  // manda el primer curso que el alumno tenga.
+  const pageCourses = [cfg.courseKey, ...(cfg.alsoCourseKeys ?? [])].map((k) => COURSES.find((c) => c.key === k)).filter((c): c is (typeof COURSES)[number] => !!c);
+  const ownedCourse = pageCourses.find((c) => !!(student as any)[c.accessColumn]) ?? null;
+  const course = ownedCourse ?? pageCourses[0] ?? null;
+  const owns = COURSE_OWNER_IDS.has((student as any).id) || !!ownedCourse;
   // Sin el curso de esa cinta (p. ej. "Study it" desde el plan de un camp de
   // otra cinta): una pantalla que explica, no la página de error (2026-09-26).
   if (!owns) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4 py-10" style={{ background: '#061C2B' }}>
         <div className="w-full max-w-md rounded-lg px-6 py-6" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
-          <p className="m-0 text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em', color: '#55666E' }}>Part of the {course?.label ?? 'belt'} course</p>
+          <p className="m-0 text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em', color: '#55666E' }}>Part of the {course?.label ?? 'belt course'}</p>
           <h1 className="m-0 mt-1 text-[26px] leading-[1.06] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, letterSpacing: '-0.02em', color: '#10263B' }}>{cfg.title}</h1>
-          <p className="m-0 mt-3 text-[16px] leading-snug" style={{ color: '#10263B' }}>This sequence opens with the {course?.label ?? 'belt'} course. Your coach works it with you in the water; the full page unlocks when that course is yours.</p>
+          <p className="m-0 mt-3 text-[16px] leading-snug" style={{ color: '#10263B' }}>This sequence opens with the {course?.label ?? 'belt course'}. Your coach works it with you in the water; the full page unlocks when that course is yours.</p>
           <a href={`/portal/${token}`} className="mt-5 inline-flex w-full items-center justify-center h-12 rounded-[5px] text-[15px] font-extrabold uppercase tracking-wide no-underline" style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>Back to your portal →</a>
         </div>
       </main>

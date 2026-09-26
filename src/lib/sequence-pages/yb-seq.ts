@@ -14,6 +14,7 @@ import { BB_CATCH } from './bb-entry';
 export const YB_SEQ_6: SequencePageConfig = {
   ...BB_CATCH,
   id: 'YB-SEQ-6.0',
+  alsoCourseKeys: undefined,
   kind: 'entry',
   eyebrow: undefined,
   belt: 'yellow_belt',

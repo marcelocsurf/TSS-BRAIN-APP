@@ -449,9 +449,21 @@ export function CourseTab({ data }: { data: CourseData }) {
 
   // Prólogo de Blue (Marcelo 2026-09-09): el camino del agua antes de los
   // tres círculos — Navigate the Ocean · Catch Waves · Pick Your Line + Pop-Up.
+  // Desde 2026-09-26 también en Yellow (Marcelo: "en el curso de Yellow debe
+  // estar la clase de Cobra + Pick your line y la de angle of paddling, las 3
+  // que salen en Blue"). En Yellow, Catch Waves ES su secuencia #6: abre la
+  // página #6 (voz de Yellow, su misión de Let's Play), no la de Blue.
+  const isYellowCourse = activeCourse.key === 'yellow_belt';
   const bluePrelude =
-    activeCourse.key === 'blue_belt'
-      ? BLUE_COURSE_PRELUDE.map((g) => ({ ...g, lessons: resolveSteps(g.steps) })).filter((g) => g.lessons.length > 0)
+    activeCourse.key === 'blue_belt' || isYellowCourse
+      ? BLUE_COURSE_PRELUDE.map((g) => ({
+          ...g,
+          pageId: isYellowCourse && g.id === 'BB-CATCH' ? 'YB-SEQ-6.0' : g.id,
+          promise: isYellowCourse && g.id === 'BB-CATCH'
+            ? 'Your sequence #6: you read the stage, chase the pocket and paddle in at the correct angle.'
+            : g.promise,
+          lessons: resolveSteps(g.steps),
+        })).filter((g) => g.lessons.length > 0)
       : [];
 
   // Blue muestra arriba el mapa de bloques y la clase de los tres círculos,
@@ -786,7 +798,9 @@ export function CourseTab({ data }: { data: CourseData }) {
             theme={beltTheme}
             eyebrow={`${bluePrelude.length} groups · from the water up`}
             title="Going out, catching the wave, picking your line"
-            subtitle="Out the back, catch the wave, pick the line, stand up. The same steps you learned before, in the order Blue Belt uses them."
+            subtitle={isYellowCourse
+              ? 'Out the back, catch the wave, pick the line from the cobra, stand up. The classes that make you self-sufficient in the water.'
+              : 'Out the back, catch the wave, pick the line, stand up. The same steps you learned before, in the order Blue Belt uses them.'}
             videoUrl={null}
           />
           {bluePrelude.map((g) => (
@@ -799,7 +813,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               lessons={g.lessons}
               onOpenLesson={(id) => openLesson(id)}
               theme={beltTheme}
-              onePageHref={sequencePageFor(g.id) ? `/portal/${data.portalToken}/seq/${g.id}` : null}
+              onePageHref={sequencePageFor(g.pageId) ? `/portal/${data.portalToken}/seq/${g.pageId}` : null}
             />
           ))}
         </div>

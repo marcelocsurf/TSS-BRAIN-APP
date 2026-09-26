@@ -157,7 +157,7 @@ export function SequencePage({
               </button>
             </div>
           )}
-          <p className="mt-2" style={{ ...MONO, color: CYAN }}>{cfg.eyebrow ?? `Sequence #${cfg.number}`} · {cfg.belt.replace('_belt', ' belt')}</p>
+          <p className="mt-2" style={{ ...MONO, color: CYAN }}>{cfg.eyebrow ?? `Sequence #${cfg.number}`}{cfg.alsoCourseKeys?.length ? '' : ` · ${cfg.belt.replace('_belt', ' belt')}`}</p>
           <h1 style={H1}>{cfg.title}</h1>
           <p className="tss-subtitle">{cfg.think.whatIs.headline}</p>
         </header>

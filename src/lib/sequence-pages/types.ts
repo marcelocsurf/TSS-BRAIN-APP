@@ -64,6 +64,11 @@ export interface SequencePageConfig {
   eyebrow?: string;
   belt: 'white_belt' | 'yellow_belt' | 'blue_belt' | 'purple_belt';
   courseKey: string;
+  /** Otros cursos que también abren esta página. Las de entrada (Navigate the
+   *  Ocean · Pick Your Line + Pop-Up) son de Yellow y de Blue: Marcelo
+   *  2026-09-26 las quiere también en el curso Yellow. Solo la ruta lo lee;
+   *  no crea una secuencia nueva en planner, cierre ni Let's Play. */
+  alsoCourseKeys?: string[];
   number: number;
   title: string;
   stepIds: string[];
