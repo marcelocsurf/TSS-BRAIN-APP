@@ -21,7 +21,7 @@ function Li({ k, children }: { k: string; children: React.ReactNode }) {
   return <p><strong style={{ color: INK }}>{k}</strong> — {children}</p>;
 }
 
-export function CoachGuide({ onClose }: { onClose: () => void }) {
+export function CoachGuide({ onClose, noCourses = false }: { onClose: () => void; /** Alcance sin cursos (2026-09-26): la guía no habla de la pestaña Cursos. */ noCourses?: boolean }) {
   return (
     <div className="fixed inset-0 z-[90] overflow-y-auto" style={{ background: PAPER }}>
       <div className="px-4 pt-5 pb-4 sticky top-0 z-10" style={{ background: INK }}>
@@ -50,9 +50,11 @@ export function CoachGuide({ onClose }: { onClose: () => void }) {
           <Li k="Plan anual">Si sos head coach de un atleta de alto rendimiento, ves su temporada con las fases del año y los <strong>días al pico</strong> — el detalle completo vive en tu portal de equipo (/equipo).</Li>
         </Sec>
 
+        {!noCourses && (
         <Sec icon="📚" title="Cursos — tu certificación">
           <p>Tus cursos según tu nivel: <strong>Safety Canon</strong> (requisito L1, con examen final) y <strong>Foundations</strong> (el método). Al avanzar de nivel se te abren más cursos, drills y misiones. El progreso se guarda solo.</p>
         </Sec>
+        )}
 
         <Sec icon="📋" title="Plan — planear y CERRAR (lo más importante)">
           <Li k="Ver el plan">El manual del día: venue, warm-up, drills por alumno. Leelo antes de la clase.</Li>

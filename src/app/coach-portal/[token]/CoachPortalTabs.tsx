@@ -236,7 +236,7 @@ export function CoachPortalTabs({
           </div>
         )}
       </div>
-      {guideOpen && <CoachGuide onClose={closeGuide} />}
+      {guideOpen && <CoachGuide onClose={closeGuide} noCourses={noCourses} />}
 
       {/* Bottom nav — hidden while the planner is open (focused mode). */}
       {!plannerOpen && (
