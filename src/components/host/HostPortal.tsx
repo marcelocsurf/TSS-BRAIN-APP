@@ -48,11 +48,11 @@ const beltPretty = (b: string) => {
   return d ? `${d.en} (${d.levelName})` : `Cinta ${b}`;
 };
 
-function Check({ ok, label }: { ok: boolean; label: string }) {
+function Check({ ok, label, partial = false, title }: { ok: boolean; label: string; partial?: boolean; title?: string }) {
   return (
-    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold"
-      style={ok ? { background: 'rgba(6,214,160,.18)', color: '#0a7c5d' } : { background: 'rgba(255,107,107,.15)', color: '#c04545' }}>
-      {ok ? '✓' : '✗'} {label}
+    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" title={title}
+      style={ok ? { background: 'rgba(6,214,160,.18)', color: '#0a7c5d' } : partial ? { background: 'rgba(255,209,102,.3)', color: '#8a5a00' } : { background: 'rgba(255,107,107,.15)', color: '#c04545' }}>
+      {ok ? '✓' : partial ? '~' : '✗'} {label}
     </span>
   );
 }
@@ -99,7 +99,9 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
         </div>
         <div className="flex flex-wrap gap-1.5 mt-2">
           <Check ok={row.waiver} label="Waiver" />
-          <Check ok={row.intake} label="Ficha" />
+          {/* Ficha vieja importada (marzo) sin la del app: ámbar, no ✗. */}
+          <Check ok={row.intake} partial={!row.intake && row.intake_legacy} label={!row.intake && row.intake_legacy ? 'Ficha anterior' : 'Ficha'}
+            title={!row.intake && row.intake_legacy ? 'Tiene la ficha vieja (importada): nacimiento y contacto de emergencia. Todavía no llenó la ficha del app (consentimientos y datos nuevos).' : undefined} />
           {row.quiz_required && <Check ok={row.quiz} label="Quiz nivel" />}
         </div>
       </button>

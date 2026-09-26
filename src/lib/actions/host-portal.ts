@@ -64,6 +64,10 @@ export interface HostStudentRow {
   belt: string | null;
   waiver: boolean;
   intake: boolean;
+  /** Sin la ficha del app pero con la ficha VIEJA importada (nacimiento +
+   *  contacto de emergencia): Kat lo ve distinto de "no llenó nada"
+   *  (caso Jesse Goodman, 2026-09-26: "Rick confirma que sí la llenó"). */
+  intake_legacy: boolean;
   quiz: boolean;
   /** false = solo servicios de 1 día → el quiz no aplica (regla 2026-09-11). */
   quiz_required: boolean;
@@ -83,6 +87,7 @@ function toRow(s: any, quizRequired = true): HostStudentRow {
     belt: s.belt_level ?? null,
     waiver: !!s.waiver_signed,
     intake: !!s.intake_completed_at,
+    intake_legacy: !s.intake_completed_at && !!s.date_of_birth && !!(s.emergency_contact_name || s.emergency_contact_phone),
     quiz: !!s.level_quiz_completed_at,
     quiz_required: quizRequired,
     lifecycle: s.lifecycle_status ?? null,
@@ -91,7 +96,7 @@ function toRow(s: any, quizRequired = true): HostStudentRow {
   };
 }
 
-const STUDENT_COLS = 'id, first_name, last_name, email, phone, belt_level, waiver_signed, intake_completed_at, level_quiz_completed_at, lifecycle_status, portal_token, status, created_at';
+const STUDENT_COLS = 'id, first_name, last_name, email, phone, belt_level, waiver_signed, intake_completed_at, date_of_birth, emergency_contact_name, emergency_contact_phone, level_quiz_completed_at, lifecycle_status, portal_token, status, created_at';
 
 // Buscar clientes por nombre/email/teléfono.
 export async function hostSearchStudents(token: string, q: string): Promise<HostStudentRow[]> {
