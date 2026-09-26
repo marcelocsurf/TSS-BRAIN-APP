@@ -330,13 +330,16 @@ let leadInfo=null;
 const CAMP_BY_LEVEL={Beginner:"Surf Camp Beginner \u00b7 White Belt",Novice:"Surf Camp Novice \u00b7 Yellow Belt",Foundation:"Surf Camp Foundation \u00b7 Blue Belt"};
 function waLink(num,text){return 'https://wa.me/'+String(num).replace(/[^0-9]/g,'')+'?text='+encodeURIComponent(text)}
 function nextStepBlock(lv,returning,whatsapp){
-  const camp=CAMP_BY_LEVEL[lv.name]||'Personal Coaching \u00b7 built for your level';
+  // Emerging, Pre-Elite y Elite entran por Foundation (Marcelo 2026-09-25):
+  // no se promete un camp a medida ni "personal coaching".
+  const advanced=!CAMP_BY_LEVEL[lv.name];
+  const camp=CAMP_BY_LEVEL[lv.name]||CAMP_BY_LEVEL.Foundation;
   const msg=`Hi! I just did the level quiz: I'm ${lv.name} (${lv.belt}). I'd like info about the ${camp}.`;
   return `<div style="max-width:440px;margin:18px auto 0;background:var(--card);border:1.5px solid var(--cyan);border-radius:14px;padding:16px 18px;text-align:left">
     <div class="mono" style="font-size:.6rem;color:var(--cyan)">Your next step</div>
     ${returning?`<p style="font-size:.85rem;line-height:1.5;margin-top:6px;color:var(--tl)">Welcome back \u2014 we already have your profile at Puro Surf. This result is now on it.</p>`:''}
     <p style="font-size:.95rem;font-weight:600;margin-top:6px;color:var(--tw)">${camp}</p>
-    <p style="font-size:.82rem;line-height:1.5;margin-top:4px;color:var(--tl)">Built for exactly where you are. Your coach confirms your level in the water on day one.</p>
+    <p style="font-size:.82rem;line-height:1.5;margin-top:4px;color:var(--tl)">${advanced?'Foundation is where advanced surfers start with us: the language of the method, then your level in the water with your coach on day one.':'Built for exactly where you are. Your coach confirms your level in the water on day one.'}</p>
     ${whatsapp?`<a class="btn" href="${waLink(whatsapp,msg)}" target="_blank" rel="noopener" style="display:block;text-align:center;margin-top:12px;text-decoration:none;background:#25D366;color:#fff">Book on WhatsApp \u2192</a>`:`<p style="font-size:.8rem;margin-top:10px;color:var(--tm)">Write to Puro Surf on WhatsApp or Instagram to book \u2014 tell them your level.</p>`}
   </div>`;
 }

@@ -251,13 +251,19 @@ export async function createLeadFromQuiz(input: {
     // estado, no escribimos — el intento igual se loguea abajo.
     const { data: existing, error: gErr } = await admin
       .from('students')
-      .select('belt_provisional, ocean_level_provisional')
+      .select('belt_provisional, ocean_level_provisional, academy_id, academies:academy_id(archived_at)')
       .eq('id', existingId)
       .maybeSingle();
     if (gErr || !existing) {
       // Estado desconocido → no tocar al alumno; el historial queda igual.
     } else {
       const update: Record<string, unknown> = { ...quizFields };
+      // Un lead viejo de una academia ARCHIVADA (o sin academia) que hace el
+      // quiz de Puro Surf pasa a Puro Surf: si no, queda invisible para el
+      // front desk (Kat, 2026-09-25: Jesse Goodman no aparecía en el app).
+      const acad = Array.isArray((existing as any).academies) ? (existing as any).academies[0] : (existing as any).academies;
+      const parked = !existing.academy_id || !!acad?.archived_at;
+      if (academyId && parked && existing.academy_id !== academyId) update.academy_id = academyId;
       if (existing.belt_provisional === false) {
         delete update.belt_level;
         delete update.belt_provisional;
