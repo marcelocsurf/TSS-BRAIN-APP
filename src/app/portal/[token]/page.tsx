@@ -118,10 +118,6 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     getLineup(token).then((r) => (r.ok ? r.data : null)).catch(() => null),
   ]);
 
-  const termsPending = isImpersonatingThisStudent ? false : await needsTermsAcceptance(student.id);
-  const gateNeeds = termsPending ? await termsGateNeeds(student.id).catch(() => ({ minor: false, needsGuardian: false, needsHealth: false })) : null;
-  // Registro y progreso = curso o membresía (blueprint). El libro solo, no.
-  const access = await getStudentAccess(student.id);
 
   // Bundle del Home: valores ya desenvueltos, con la MISMA semántica que cada
   // tarjeta usaba al hacer su propio fetch (ok:false → conservar null/[]).
@@ -170,10 +166,34 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   // Candado hasta el día antes del camp (Marcelo 2026-09-17): el curso que
   // vino por inscripción se ve completo pero cerrado; el Pre-Course y el
   // libro quedan abiertos. Ver src/lib/portal/course-lock.ts.
-  const courseLocks = isOwner ? {} : await getCourseLocks(student.id);
+  // Segunda ola de lecturas EN PARALELO (auditoría 2026-09-25: nueve viajes
+  // en serie sumaban 1–2 s a cada carga del portal). Todas dependen solo del
+  // token, del alumno o del curso activo, que ya están resueltos.
+  const beltForHome = activeCourse?.belt ?? 'white';
+  const [termsPending, access, courseLocks, homeSeq, coachSide, membershipInfo, circlesProg, openSession, tasks] = await Promise.all([
+    isImpersonatingThisStudent ? Promise.resolve(false) : needsTermsAcceptance(student.id),
+    // Registro y progreso = curso o membresía (blueprint). El libro solo, no.
+    getStudentAccess(student.id),
+    isOwner ? Promise.resolve({} as Awaited<ReturnType<typeof getCourseLocks>>) : getCourseLocks(student.id),
+    // El camino y los puntajes por secuencia, de UNA sola carga (2026-09-21).
+    getHomeSequenceData(token, beltForHome),
+    getCoachSideForStudent(student.id),
+    getMembershipInfo(student.id),
+    (beltForHome === 'yellow' || beltForHome === 'blue') ? getThreeCirclesProgress(token).catch(() => [] as Awaited<ReturnType<typeof getThreeCirclesProgress>>) : Promise.resolve([] as Awaited<ReturnType<typeof getThreeCirclesProgress>>),
+    getOpenSession(token),
+    getTasks(token),
+  ]);
+  const gateNeeds = termsPending ? await termsGateNeeds(student.id).catch(() => ({ minor: false, needsGuardian: false, needsHealth: false })) : null;
   const activeLock = activeCourse ? courseLocks[activeCourse.key] ?? null : null;
-  // El camino y los puntajes por secuencia, de UNA sola carga (2026-09-21).
-  const homeSeq = await getHomeSequenceData(token, activeCourse?.belt ?? 'white');
+  // Compuerta SUAVE (Marcelo 2026-09-17): para Yellow y Blue, los Tres
+  // Círculos son el primer requisito en la ola. Si no están a 4★, el
+  // Home los recomienda primero; nada se bloquea.
+  const circlesNext = (() => {
+    if (circlesProg.length === 0) return null;
+    const done = circlesProg.filter((g) => (g.lastStars ?? 0) >= 4).length;
+    const nextGame = circlesProg.find((g) => (g.lastStars ?? 0) < 4) ?? null;
+    return nextGame ? { gameId: nextGame.id, title: nextGame.title, done, total: circlesProg.length } : null;
+  })();
 
   // Build course data
   const courseData = {
@@ -222,10 +242,10 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           courseData,
           myCoach,
           coachProfileUnlocked: coachUnlocked,
-          coachSide: await getCoachSideForStudent(student.id),
+          coachSide,
           hasAnyCourse,
           canTrack: isOwner || access.canTrack,
-          membership: { active: access.membershipActive, ends_at: access.membershipEndsAt, pending_request: (await getMembershipInfo(student.id)).pending_request },
+          membership: { active: access.membershipActive, ends_at: access.membershipEndsAt, pending_request: membershipInfo.pending_request },
           hasBook: (hbPresentations ?? []).some((p: any) => p.id === 'f50677a2-72b1-4abd-9335-fe0c99c80333'),
           // Invitación al quiz de nivel v2 desde el Home (Marcelo 2026-09-16):
           // solo si nunca lo hizo; el resultado se ata a SU ficha (?t=token).
@@ -235,25 +255,14 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           // El próximo movimiento: la primera secuencia sin lograr y el paso
           // que la frena. Sale de las notas que el coach ya puso.
           nextMove: homeSeq.nextMove,
-          // Compuerta SUAVE (Marcelo 2026-09-17): para Yellow y Blue, los Tres
-          // Círculos son el primer requisito en la ola. Si no están a 4★, el
-          // Home los recomienda primero; nada se bloquea.
-          circlesNext: await (async () => {
-            const b = activeCourse?.belt ?? 'white';
-            if (b !== 'yellow' && b !== 'blue') return null;
-            const prog = await getThreeCirclesProgress(token);
-            if (prog.length === 0) return null;
-            const done = prog.filter((g) => (g.lastStars ?? 0) >= 4).length;
-            const nextGame = prog.find((g) => (g.lastStars ?? 0) < 4) ?? null;
-            return nextGame ? { gameId: nextGame.id, title: nextGame.title, done, total: prog.length } : null;
-          })(),
+          circlesNext,
           // El curso es aprender, la membresía es entrenar: los links al curso
           // solo salen para quien lo tiene.
           ownedBelts: ownedCourses.filter((c) => !courseLocks[c.key]).map((c) => c.key),
           courseLocked: !!activeLock,
           // El plan guardado antes del agua, si hay uno abierto (Marcelo 2026-09-10).
-          openSession: await getOpenSession(token),
-          tasks: await getTasks(token),
+          openSession,
+          tasks,
           // Tus puntajes por secuencia (Marcelo 2026-09-21): reemplazan la
           // sugerencia del coach en el Home; el alumno ve y decide.
           sequenceScores: homeSeq.scores,
