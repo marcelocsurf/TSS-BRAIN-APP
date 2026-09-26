@@ -78,3 +78,23 @@ export function loadLastLesson(token: string): string | null {
 export function clearLastLesson(token: string) {
   try { localStorage.removeItem(lastKey(token)); } catch { /* nada */ }
 }
+
+// ═══ Lección en curso de completarse (2026-09-25, revisión) ═══
+// "Mark as done" revalida el layout y el portal se vuelve a montar; la URL
+// puede volver a la canónica de Next (la del deep link original) y el curso
+// reabría OTRA lección. Se marca la que se está completando justo antes de
+// guardar y, al montar, esa manda durante 60 s.
+export function markLessonCompleting(token: string, lessonId: string) {
+  try { sessionStorage.setItem(`tss_completing_${token}`, JSON.stringify({ id: lessonId, t: Date.now() })); } catch { /* nada */ }
+}
+export function takeLessonCompleting(token: string): string | null {
+  try {
+    const k = `tss_completing_${token}`;
+    const raw = sessionStorage.getItem(k);
+    if (!raw) return null;
+    sessionStorage.removeItem(k);
+    const v = JSON.parse(raw) as { id?: string; t?: number };
+    if (!v?.id || typeof v.t !== 'number' || Date.now() - v.t > 60_000) return null;
+    return v.id;
+  } catch { return null; }
+}

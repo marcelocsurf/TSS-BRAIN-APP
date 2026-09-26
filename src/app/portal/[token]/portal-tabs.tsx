@@ -829,6 +829,19 @@ export function PortalTabs({
     } catch { /* la limpieza es cosmética, nunca debe romper el portal */ }
   }, []);
 
+  // Atrás del teléfono después de cambiar de pestaña por la barra: la pestaña
+  // sigue a la URL (revisión 2026-09-25), así no queda una pulsación muerta.
+  useEffect(() => {
+    const onPop = () => {
+      try {
+        const t = new URLSearchParams(window.location.search).get('tab') as Tab | null;
+        if (t && TABS.some((x) => x.key === t)) setActiveTab((cur) => (cur === t ? cur : t));
+      } catch { /* nada */ }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
   const { student } = data;
   const belt = BELT_DISPLAY[student.belt_level as BeltLevel];
 
@@ -1180,6 +1193,9 @@ export function PortalTabs({
               <button
                 key={tab.key}
                 onClick={() => {
+                  // Tocar la pestaña en la que ya estás no cambia nada (si no,
+                  // soltaba la lección abierta y la URL quedaba desfasada).
+                  if (tab.key === activeTab) return;
                   // La barra cambia de pestaña: la lección abierta se suelta
                   // (antes el Course volvía a la última lección durante 10 min)
                   // y la URL dice en qué pestaña estás.

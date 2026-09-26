@@ -42,6 +42,8 @@ interface LessonViewerProps {
   nextLesson?: { id: string; title: string } | null;
   /** Avisa al curso para que marque la lección al instante. */
   onCompleted?: (id: string) => void;
+  /** Justo antes de guardar (el portal se vuelve a montar al revalidar). */
+  onBeforeComplete?: (id: string) => void;
 }
 
 // A few sequence steps share their content with a canonical Pre-Course
@@ -54,7 +56,7 @@ const SEQUENCE_TO_INTRO: Record<string, { id: string; label: string }> = {
 
 type Section = 'video' | 'theory' | 'drill' | 'mission' | 'errors' | 'quiz' | 'form';
 
-export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, nextLesson = null, onCompleted }: LessonViewerProps) {
+export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, nextLesson = null, onCompleted, onBeforeComplete }: LessonViewerProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -316,7 +318,7 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, next
               <div className="prose prose-sm max-w-none mt-3"><MarkdownContent markdown={lesson.errors_md} /></div>
             </details>
           )}
-          <MarkDoneButton portalToken={portalToken} lessonId={lesson.id} completed={!!progress?.completed} onDone={async () => { await refreshProgress(); onCompleted?.(lesson.id); }} />
+          <MarkDoneButton portalToken={portalToken} lessonId={lesson.id} completed={!!progress?.completed} onBefore={() => onBeforeComplete?.(lesson.id)} onDone={async () => { await refreshProgress(); onCompleted?.(lesson.id); }} />
           {progress?.completed && (
             nextLesson && onOpenLesson ? (
               <button type="button" onClick={() => onOpenLesson(nextLesson.id)}
@@ -352,13 +354,14 @@ function SectionLabel({ icon: Icon, text }: { icon: IconType; text: string }) {
 }
 
 function MarkDoneButton({
-  portalToken, lessonId, completed, onDone,
+  portalToken, lessonId, completed, onDone, onBefore,
 }: {
-  portalToken: string; lessonId: string; completed: boolean; onDone: () => void;
+  portalToken: string; lessonId: string; completed: boolean; onDone: () => void; onBefore?: () => void;
 }) {
   const [saving, setSaving] = useState(false);
   const handle = async () => {
     setSaving(true);
+    onBefore?.();
     await markLessonComplete(portalToken, lessonId);
     await onDone();
     setSaving(false);
