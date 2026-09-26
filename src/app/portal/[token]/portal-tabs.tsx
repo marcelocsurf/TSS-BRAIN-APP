@@ -834,8 +834,9 @@ export function PortalTabs({
   useEffect(() => {
     const onPop = () => {
       try {
-        const t = new URLSearchParams(window.location.search).get('tab') as Tab | null;
-        if (t && TABS.some((x) => x.key === t)) setActiveTab((cur) => (cur === t ? cur : t));
+        // Sin ?tab= la entrada es la portada: Home.
+        const t = (new URLSearchParams(window.location.search).get('tab') || 'home') as Tab;
+        if (TABS.some((x) => x.key === t)) setActiveTab((cur) => (cur === t ? cur : t));
       } catch { /* nada */ }
     };
     window.addEventListener('popstate', onPop);

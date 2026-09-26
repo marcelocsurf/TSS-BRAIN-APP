@@ -237,10 +237,17 @@ export function CourseTab({ data }: { data: CourseData }) {
       courseTabMountedBefore = true;
       const restoredEarly = remount ? loadPortalState(data.portalToken) : null;
       if (remount && restoredEarly?.lesson) {
-        setOpenLessonId(restoredEarly.lesson);
-        const st = (window.history.state && typeof window.history.state === 'object') ? (window.history.state as any) : {};
-        pushedRef.current = !!st.tssLesson; depthRef.current = Number(st.tssDepth) || (st.tssLesson ? 1 : 0);
-        return;
+        const rl = data.lessons.find((x) => x.id === restoredEarly.lesson);
+        const rlLocked = !!data.courseLock && !!rl && !(SHARED_PRE_COURSE_SECTIONS as readonly string[]).includes(rl.course_section);
+        if (!rlLocked) {
+          setOpenLessonId(restoredEarly.lesson);
+          const st = (window.history.state && typeof window.history.state === 'object') ? (window.history.state as any) : {};
+          pushedRef.current = !!st.tssLesson; depthRef.current = Number(st.tssDepth) || (st.tssLesson ? 1 : 0);
+          // La barra de direcciones vuelve a decir la lección que se ve (Next
+          // la había devuelto a la canónica): una recarga queda consistente.
+          try { if (new URLSearchParams(window.location.search).get('lesson') !== restoredEarly.lesson) window.history.replaceState(nextState({ tssLesson: restoredEarly.lesson, tssDepth: depthRef.current || 1 }), '', pathWithLesson(restoredEarly.lesson)); } catch { /* nada */ }
+          return;
+        }
       }
       const id = new URLSearchParams(window.location.search).get('lesson');
       // Con el curso bajo candado (hasta el día antes del camp) un deep link
