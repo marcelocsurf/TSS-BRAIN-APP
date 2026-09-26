@@ -19,7 +19,7 @@ import {
 import { SurveyForm } from './survey-form';
 import { SurveySectionHead } from '@/components/survey/SurveyUi';
 import { PROMOTION_COPY, LIGHT_BELTS } from '@/lib/constants/promotion-copy';
-import { toElSalvadorDate } from '@/lib/utils/tz';
+import { toElSalvadorDate, elSalvadorToday } from '@/lib/utils/tz';
 import { CourseTab } from '@/components/course/CourseTab';
 
 // Fecha de la sesión para las tarjetas de encuesta: usar la fecha REAL de la
@@ -1334,24 +1334,37 @@ function HomeTab({
   // Debajo, la fila de progreso; después, filas de una línea que no compiten.
   const campNow: any = upcomingCamps[0] ?? null;
   const campStart = campNow ? new Date((campNow.start_date ?? '') + 'T00:00:00') : null;
-  const campEnd = campNow ? new Date(((campNow.end_date ?? campNow.start_date) ?? '') + 'T00:00:00') : null;
-  const today0 = new Date(); today0.setHours(0, 0, 0, 0);
-  const campDays = campStart && campEnd ? Math.max(1, Math.round((campEnd.getTime() - campStart.getTime()) / 86400000) + 1) : 0;
+  const campEnd = campNow ? new Date(((campNow.last_day ?? campNow.end_date ?? campNow.start_date) ?? '') + 'T00:00:00') : null;
+  // Hoy en El Salvador, igual en el servidor (UTC) y en el teléfono (revisión 2026-09-26).
+  const today0 = new Date(elSalvadorToday() + 'T00:00:00');
+  // Camp corto: cuenta SUS días (3 de un camp de 6), no los del camp.
+  const campDays = campNow?.stay_days ?? (campStart && campEnd ? Math.max(1, Math.round((campEnd.getTime() - campStart.getTime()) / 86400000) + 1) : 0);
   const campDayNum = campStart && today0 >= campStart ? Math.min(campDays, Math.round((today0.getTime() - campStart.getTime()) / 86400000) + 1) : null;
   const daysToCamp = campStart ? Math.round((campStart.getTime() - today0.getTime()) / 86400000) : null;
   // La clase manda con el camp en curso o hasta 7 días antes: es la semana en
   // que el alumno llega con el Pre-Course hecho (los 4 clientes del lunes
   // 2026-09-28 abren el portal el sábado con el curso bajo candado y sin otra
   // tarjeta posible). Más lejos, una fila 'Next camp'.
-  const classSoon = !!campNow && (campDayNum != null || (daysToCamp != null && daysToCamp <= 7));
+  // Revisión 2026-09-26: un camp con curso bajo candado manda siempre (no hay
+  // otra acción posible); un servicio suelto (clase, lesson, trip) solo el
+  // día antes y el día, para no tapar una semana la tarea del coach.
+  const beltCamp = campNow ? campNow.belt_camp !== false : false;
+  const classSoon = !!campNow && (
+    campDayNum != null
+    || (daysToCamp != null && daysToCamp <= (beltCamp ? 7 : 1))
+    || (beltCamp && !!data.courseLocked)
+  );
   const coachTask = data.canTrack !== false && !data.courseLocked && data.coachFocus && (data.coachFocus.label || data.coachFocus.text) ? data.coachFocus : null;
   const seqScores = data.canTrack !== false && !data.courseLocked && (data.sequenceScores?.rows?.length ?? 0) > 0 ? data.sequenceScores! : null;
   const seqRows = seqScores ? (seqScores.rows.filter((r) => !r.aside).length ? seqScores.rows.filter((r) => !r.aside) : seqScores.rows) : [];
   const seqOwned = seqRows.filter((r) => r.state === 'owned').length;
   const allOwned = seqRows.length > 0 && seqOwned === seqRows.length;
   const preCourseDone = data.courseData?.preCourseCompleted;
+  const courseBeltWord = seqScores ? seqScores.belt.charAt(0).toUpperCase() + seqScores.belt.slice(1) : null;
+  const courseIsMyBelt = !!courseBeltWord && String(belt?.en ?? '').startsWith(courseBeltWord);
   const slot: 'class' | 'coach' | 'sequences' | 'next-belt' | null =
-    classSoon ? 'class' : coachTask ? 'coach' : seqScores && !allOwned ? 'sequences' : allOwned ? 'next-belt' : null;
+    data.openSession ? null
+    : classSoon ? 'class' : coachTask ? 'coach' : seqScores && !allOwned ? 'sequences' : allOwned ? 'next-belt' : null;
   const surf = data.surfHours ?? { trainingMinutes: 0, freeSurfMinutes: 0, totalMinutes: 0 };
   const fmtHm = (mins: number) => {
     const h = Math.floor(mins / 60);
@@ -1446,8 +1459,8 @@ function HomeTab({
         const c: any = upcomingCamps[0];
         const startD = new Date((c.start_date ?? '') + 'T00:00:00');
         const endD = new Date(((c.end_date ?? c.start_date) ?? '') + 'T00:00:00');
-        const todayD = new Date(); todayD.setHours(0, 0, 0, 0);
-        const totalDays = Math.max(1, Math.round((endD.getTime() - startD.getTime()) / 86400000) + 1);
+        const todayD = new Date(elSalvadorToday() + 'T00:00:00');
+        const totalDays = c.stay_days ?? Math.max(1, Math.round((endD.getTime() - startD.getTime()) / 86400000) + 1);
         const dayNum = todayD >= startD ? Math.min(totalDays, Math.round((todayD.getTime() - startD.getTime()) / 86400000) + 1) : null;
         const certN = c.coach?.certification_level ? String(c.coach.certification_level).replace(/\D/g, '') : null;
         return (
@@ -1466,7 +1479,7 @@ function HomeTab({
               const sd = c.next_session?.session_date as string | undefined;
               const when = (() => {
                 if (!sd) return 'Next session';
-                const d = new Date(sd + 'T00:00:00'); const t = new Date(); t.setHours(0, 0, 0, 0);
+                const d = new Date(sd + 'T00:00:00'); const t = new Date(elSalvadorToday() + 'T00:00:00');
                 const diff = Math.round((d.getTime() - t.getTime()) / 86400000);
                 return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'long' });
               })();
@@ -1481,7 +1494,7 @@ function HomeTab({
                       const seqHref = isGame || isCircle ? `/portal/${data.token}/circles` : `/portal/${data.token}/seq/${pl.sequenceId}`;
                       const rehearseHref = `${seqHref}?tab=feel`;
                       return (
-                        <div key={pl.sequenceId} className={many ? 'rounded-[5px] px-3 py-2.5' : ''} style={many ? { background: 'rgba(247,249,250,.06)', border: '1px solid rgba(247,249,250,.14)' } : undefined}>
+                        <div key={`${pl.sequenceId}:${i}`} className={many ? 'rounded-[5px] px-3 py-2.5' : ''} style={many ? { background: 'rgba(247,249,250,.06)', border: '1px solid rgba(247,249,250,.14)' } : undefined}>
                           <p className="text-[20px] leading-tight" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{many ? `${i + 1} · ` : ''}{pl.label ?? (pl.kind === 'entry' ? pl.title : `#${pl.number} · ${pl.title}`)}</p>
                           <p className="mt-1.5 text-[13.5px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
                             {pl.kind === 'game' ? 'One rule, the wave is the referee. You play it with your coach; your coach stars it. Tonight, learn the rule.' : pl.focus.length > 0 ? <><span className="font-bold" style={{ color: '#F7F9FA' }}>Your focus:</span> {pl.focus.join(' · ')}</> : 'The whole sequence, start to finish.'}
@@ -1522,7 +1535,7 @@ function HomeTab({
                 <p className="text-[12.5px] mt-1" style={{ color: T_MUTED }}>You work it with your coach in class.</p>
               </div>
             )}
-            {preCourseDone === false && (
+            {preCourseDone === false && data.hasAnyCourse && beltCamp && (
               <button type="button" onClick={() => onGoTo('course')} className="mt-3 w-full flex items-center justify-between gap-3 rounded-[5px] px-3 py-2.5 text-left" style={{ background: T_PAPER, border: `1px solid ${T_BORDER}` }}>
                 <span className="min-w-0">
                   <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>{campDayNum ? 'Pre-Course · still open' : 'Before day 1'}</span>
@@ -1633,9 +1646,14 @@ function HomeTab({
           {slot === 'next-belt' && (
             <div className="rounded-lg p-4" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
               <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Your sequences</p>
-              <p className="text-[22px] font-extrabold leading-tight mt-1" style={{ fontFamily: ARCHIVO, color: T_INK }}>Every {belt?.en ?? 'belt'} sequence is yours.</p>
-              <p className="text-[15px] mt-1 leading-snug" style={{ color: T_INK }}>Keep them alive in the water and ask your coach about the next belt.</p>
-              {onOpenRoadmap && (
+              <p className="text-[22px] font-extrabold leading-tight mt-1" style={{ fontFamily: ARCHIVO, color: T_INK }}>Every {courseBeltWord ?? ''} Belt sequence is yours.</p>
+              <p className="text-[15px] mt-1 leading-snug" style={{ color: T_INK }}>{courseIsMyBelt ? 'Keep them alive in the water and ask your coach about the next belt.' : 'Keep them alive in the water. Your coach tells you what comes next.'}</p>
+              {!courseIsMyBelt && (
+                <button type="button" onClick={() => onGoTo('sequence')} className="w-full mt-3 min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase" style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.035em', fontFamily: ARCHIVO }}>
+                  Keep them alive <ArrowRight size={18} />
+                </button>
+              )}
+              {courseIsMyBelt && onOpenRoadmap && (
                 <button type="button" onClick={() => onOpenRoadmap()} className="w-full mt-3 min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase" style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.035em', fontFamily: ARCHIVO }}>
                   What the next belt takes <ArrowRight size={18} />
                 </button>
@@ -1674,6 +1692,8 @@ function HomeTab({
         const surveyDone = data.surveyResultIds.includes(latestResult.id);
         const canRate = !surveyDone && !!latestResult.survey_unlocked;
         const openSessions = () => {
+          // Sin membresía no existe My progress: su historial es la pantalla de sesiones.
+          if (data.canTrack === false) { onGoTo('sessions'); return; }
           setProgressOpen(true);
           setTimeout(() => { const d = document.getElementById('my-sessions') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); } }, 120);
         };
@@ -1686,6 +1706,9 @@ function HomeTab({
                 <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Last class · {when}{latestResult.coaches?.display_name ? ` · ${latestResult.coaches.display_name}` : ''}</span>
                 <span className="block text-[15px] font-bold leading-snug mt-0.5" style={{ color: T_INK }}>{latestResult.mission || latestResult.standalone_sessions?.mission || 'Session'}{meaning ? ` · ${meaning}` : ''}</span>
                 {saw && <span className="block text-[13px] mt-0.5" style={{ color: T_MUTED }}>Your coach saw: {saw}</span>}
+                {surveyDone && latestResult.student_visible_summary && (
+                  <span className="block text-[13.5px] mt-1.5 leading-snug italic line-clamp-3" style={{ color: T_INK }}>“{latestResult.student_visible_summary}”</span>
+                )}
               </span>
               <ChevronRight size={16} className="shrink-0" style={{ color: T_INK }} />
             </button>
@@ -1849,7 +1872,7 @@ function HomeTab({
       {/* ── Solo libro / lead sin curso ni membresía: nada de horas ni progreso.
           El Home le dice qué tiene y qué abre lo demás (blueprint 2026-09-04,
           Marcelo 2026-09-08). ── */}
-      {data.canTrack === false && (
+      {data.canTrack === false && slot !== 'class' && (
         <div className="rounded-lg overflow-hidden p-5" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.2)' }}>
           {data.hasAnyCourse ? (
             <>

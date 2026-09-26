@@ -13,6 +13,8 @@ import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pag
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import { isElementOf } from '@/lib/sequence-pages/circles-seq';
 import { topicById } from '@/lib/sequence-pages/topics';
+import { participantLastDay, stayLength } from '@/lib/utils/camp-window';
+import { usesBeltEvaluation } from '@/lib/constants/service-kinds';
 import { THREE_CIRCLES_SEQUENCE_ID, THREE_CIRCLES_GAME_TITLES, gameContext } from '@/lib/sequence-pages/three-circles';
 
 // ─── Get comprehensive student data for the portal ───
@@ -91,9 +93,9 @@ export async function getStudentPortalData(token: string) {
       .limit(30),
     admin.from('camp_participants')
       .select(
-        'camp_instance_id, ' +
+        'camp_instance_id, enrollment_status, planned_departure, departed_on, finalized_at, ' +
           'camp_instances:camp_instance_id(' +
-            'id, camp_name, start_date, end_date, status, scheduled_time, ' +
+            'id, camp_name, start_date, end_date, status, scheduled_time, is_holding, ' +
             'template_id, head_coach_id, coach_id, ' +
             'camp_templates:template_id(template_name, service_kind), ' +
             'head_coach:head_coach_id(display_name, photo_url, certification_level, max_belt_permission)' +
@@ -350,6 +352,11 @@ export async function getStudentPortalData(token: string) {
   for (const p of (participations ?? []) as any[]) {
     const ci = Array.isArray(p.camp_instances) ? p.camp_instances[0] : p.camp_instances;
     if (!ci) continue;
+    // Revisión del Home 2026-09-26: una inscripción sacada o cancelada, un camp
+    // cancelado y el camp de espera (2099, 'nivel por confirmar') no son "tu
+    // camp": antes se adueñaban de la tarjeta de la clase.
+    if (p.enrollment_status === 'removed' || p.enrollment_status === 'cancelled') continue;
+    if (ci.status === 'cancelled' || ci.is_holding) continue;
     const tpl = Array.isArray(ci.camp_templates) ? ci.camp_templates[0] : ci.camp_templates;
     const headCoach = Array.isArray(ci.head_coach) ? ci.head_coach[0] : ci.head_coach;
     const summary = {
@@ -361,6 +368,10 @@ export async function getStudentPortalData(token: string) {
       scheduled_time: ci.scheduled_time ?? null,
       template_name: tpl?.template_name ?? null,
       service_kind: tpl?.service_kind ?? null,
+      // Camp corto (planned_departure): su último día y cuántos días contrató.
+      belt_camp: usesBeltEvaluation(tpl?.service_kind ?? null),
+      last_day: participantLastDay(p) ?? ci.end_date ?? null,
+      stay_days: ci.start_date && ci.end_date ? (stayLength(p, ci.start_date, ci.end_date)?.days ?? null) : null,
       coach: headCoach
         ? {
             display_name: headCoach.display_name,
@@ -370,7 +381,9 @@ export async function getStudentPortalData(token: string) {
           }
         : null,
     };
-    if (ci.end_date && ci.end_date >= today && ci.status !== 'completed') {
+    // Después de su último día (se fue antes), el camp ya es pasado para él.
+    const lastDay = participantLastDay(p) ?? ci.end_date;
+    if (ci.end_date && lastDay && lastDay >= today && ci.status !== 'completed') {
       upcomingCamps.push(summary);
     } else {
       pastCamps.push(summary);
