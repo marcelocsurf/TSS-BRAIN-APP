@@ -451,19 +451,16 @@ export function CourseTab({ data }: { data: CourseData }) {
   // tres círculos — Navigate the Ocean · Catch Waves · Pick Your Line + Pop-Up.
   // Desde 2026-09-26 también en Yellow (Marcelo: "en el curso de Yellow debe
   // estar la clase de Cobra + Pick your line y la de angle of paddling, las 3
-  // que salen en Blue"). En Yellow, Catch Waves ES su secuencia #6: abre la
-  // página #6 (voz de Yellow, su misión de Let's Play), no la de Blue.
+  // que salen en Blue"). En Yellow, Catch Waves ES su secuencia #6 (que ya
+  // tiene el ángulo de remada): no se repite en el bloque (Marcelo, mismo
+  // día: "que no se repita"); la fila de la #6 nombra el ángulo.
   const isYellowCourse = activeCourse.key === 'yellow_belt';
   const bluePrelude =
     activeCourse.key === 'blue_belt' || isYellowCourse
-      ? BLUE_COURSE_PRELUDE.map((g) => ({
-          ...g,
-          pageId: isYellowCourse && g.id === 'BB-CATCH' ? 'YB-SEQ-6.0' : g.id,
-          promise: isYellowCourse && g.id === 'BB-CATCH'
-            ? 'Your sequence #6: you read the stage, chase the pocket and paddle in at the correct angle.'
-            : g.promise,
-          lessons: resolveSteps(g.steps),
-        })).filter((g) => g.lessons.length > 0)
+      ? BLUE_COURSE_PRELUDE
+          .filter((g) => !(isYellowCourse && g.id === 'BB-CATCH'))
+          .map((g) => ({ ...g, pageId: g.id, lessons: resolveSteps(g.steps) }))
+          .filter((g) => g.lessons.length > 0)
       : [];
 
   // Blue muestra arriba el mapa de bloques y la clase de los tres círculos,
@@ -797,9 +794,9 @@ export function CourseTab({ data }: { data: CourseData }) {
           <GroupHeader
             theme={beltTheme}
             eyebrow={`${bluePrelude.length} groups · from the water up`}
-            title="Going out, catching the wave, picking your line"
+            title={isYellowCourse ? 'Going out, picking your line' : 'Going out, catching the wave, picking your line'}
             subtitle={isYellowCourse
-              ? 'Out the back, catch the wave, pick the line from the cobra, stand up. The classes that make you self-sufficient in the water.'
+              ? 'Out the back on your own, then the line from the cobra and the pop-up. Catching the wave is your sequence #6, right below.'
               : 'Out the back, catch the wave, pick the line, stand up. The same steps you learned before, in the order Blue Belt uses them.'}
             videoUrl={null}
           />
@@ -989,6 +986,8 @@ function groupByWbSequence(lessons: LessonRow[]) {
 // es get speed going up and down; snap, make a turn, change direction with
 // intention"). Para las que no están acá se usa la promesa del grupo.
 const SEQ_DESC: Record<string, string> = {
+  // Yellow #6 = Catch Waves: el ángulo de remada a la vista (Marcelo 2026-09-26).
+  'YB-SEQ-6.0': 'Read the stage, chase the pocket and paddle in at the correct angle: a wave you catch on your own.',
   'BB-SEQ-08': 'Generate speed going up and down the face, frontside.',
   'BB-SEQ-09': 'Generate speed going up and down the face, with your back to the wave.',
   'BB-SEQ-10': 'Change direction with intention: one U, one rail change, keep running the wave.',
