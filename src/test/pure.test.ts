@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { pickWeakestCriterion } from '@/lib/utils/criteria';
 import { takesRunStar, selfStarsThatCount } from '@/lib/stars';
 import { sequenceStarChanges } from '@/lib/evaluation/sequence-stars';
+import { BB_LINE, BB_NAV, entryPageForCourse } from '@/lib/sequence-pages/bb-entry';
 import { dobError } from '@/lib/utils/dob';
 import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
 import { computeV2, isValidV2Answers } from '@/lib/quiz/surf-level-v2';
@@ -289,5 +290,24 @@ describe('sequenceStarChanges — estrellas para toda la secuencia (2026-09-26)'
   });
   it('nada que escribir cuando todo ya está en esa estrella', () => {
     expect(sequenceStarChanges(['a', 'b'], cur({ a: 4, b: 4 }), 4)).toEqual([]);
+  });
+});
+
+describe('páginas de entrada compartidas Yellow + Blue (2026-09-26)', () => {
+  it('a Yellow, Pick Your Line + Pop-Up no le habla del Infinite Circle ni de FP3', () => {
+    const y = entryPageForCourse(BB_LINE, 'yellow_belt');
+    const text = JSON.stringify(y.think);
+    expect(text).not.toMatch(/Infinite Circle/);
+    expect(text).not.toMatch(/circle begins/);
+    expect(text).not.toMatch(/FP1, FP2 and FP3 are/);
+    expect(text).toMatch(/FP3 comes later/);
+  });
+  it('Blue la ve igual, y Navigate the Ocean no cambia', () => {
+    expect(entryPageForCourse(BB_LINE, 'blue_belt')).toBe(BB_LINE);
+    expect(entryPageForCourse(BB_NAV, 'yellow_belt')).toBe(BB_NAV);
+  });
+  it('desde Yellow se entrenan dentro de su #6 y su #7', () => {
+    expect(BB_NAV.trainAs?.yellow_belt).toBe('YB-SEQ-6.0');
+    expect(BB_LINE.trainAs?.yellow_belt).toBe('YB-SEQ-7.0');
   });
 });

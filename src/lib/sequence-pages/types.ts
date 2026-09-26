@@ -69,6 +69,10 @@ export interface SequencePageConfig {
    *  2026-09-26 las quiere también en el curso Yellow. Solo la ruta lo lee;
    *  no crea una secuencia nueva en planner, cierre ni Let's Play. */
   alsoCourseKeys?: string[];
+  /** Desde esos otros cursos, el botón de Let's Play entrena ESTA secuencia
+   *  (curso → id). Let's Play arma BB-NAV/BB-LINE solo para Blue; un alumno
+   *  Yellow las entrena dentro de su #6 o su #7 (revisión 2026-09-26). */
+  trainAs?: Record<string, string>;
   number: number;
   title: string;
   stepIds: string[];

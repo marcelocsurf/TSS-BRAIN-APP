@@ -16,6 +16,7 @@ export const BB_NAV: SequencePageConfig = {
   belt: 'blue_belt',
   courseKey: 'blue_belt',
   alsoCourseKeys: ['yellow_belt'],
+  trainAs: { yellow_belt: 'YB-SEQ-6.0' },
   number: 0,
   title: 'Navigate the Ocean',
   stepIds: ['STP-010', 'STP-027', 'STP-024', 'YB-FND-03'],
@@ -127,6 +128,7 @@ export const BB_LINE: SequencePageConfig = {
   belt: 'blue_belt',
   courseKey: 'blue_belt',
   alsoCourseKeys: ['yellow_belt'],
+  trainAs: { yellow_belt: 'YB-SEQ-7.0' },
   number: 0,
   title: 'Pick Your Line + Pop-Up',
   stepIds: ['STP-034', 'STP-016', 'STP-030'],
@@ -169,3 +171,25 @@ export const BB_LINE: SequencePageConfig = {
   ],
   review: { howItFeels: 'It feels like the ride starts before you are standing: the line is already there, the pop-up only puts you on it, and your feet land where your head already was.' },
 };
+
+/** La voz de Yellow para una página de entrada compartida (revisión
+ *  2026-09-26): a un alumno Yellow no se le habla del Infinite Circle ni de
+ *  FP3, que llegan en Blue (su #7 dice "FP3 comes later"). Blue la ve igual. */
+export function entryPageForCourse(cfg: SequencePageConfig, courseKey: string): SequencePageConfig {
+  if (courseKey !== 'yellow_belt' || cfg.id !== 'BB-LINE') return cfg;
+  return {
+    ...cfg,
+    think: {
+      ...cfg.think,
+      whatIs: {
+        ...cfg.think.whatIs,
+        where: 'On the green face, the moment the wave takes you. This is where drawing on the wave begins: the line starts the instant you are standing.',
+      },
+      bodyMarkdown: cfg.think.bodyMarkdown?.replace('You are running the line — and the circle begins.', 'You are already running the line.'),
+      rulesMarkdown: cfg.think.rulesMarkdown?.replace(
+        '- FP1, FP2 and FP3 are the back foot. The front foot lands centred on the stringer.',
+        '- FP1 and FP2 are the back foot at Yellow Belt; FP3 comes later. The front foot lands centred on the stringer.',
+      ),
+    },
+  };
+}

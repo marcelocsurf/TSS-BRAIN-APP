@@ -11,6 +11,7 @@ import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { COURSES } from '@/lib/constants/courses';
 import { sequencePageFor } from '@/lib/sequence-pages';
+import { entryPageForCourse } from '@/lib/sequence-pages/bb-entry';
 import { getStudentAccess } from '@/lib/portal/access';
 import { SequencePage, type LessonBits, type PieceRow } from '@/components/portal/sequence-page/SequencePage';
 import { pickSequenceVideos, resolveSequenceVideo } from '@/lib/sequence-pages/videos';
@@ -54,7 +55,11 @@ export default async function SequencePageRoute({ params, searchParams }: { para
   // Las páginas de entrada se abren también desde el curso Yellow (2026-09-26):
   // manda el primer curso que el alumno tenga.
   const pageCourses = [cfg.courseKey, ...(cfg.alsoCourseKeys ?? [])].map((k) => COURSES.find((c) => c.key === k)).filter((c): c is (typeof COURSES)[number] => !!c);
-  const ownedCourse = pageCourses.find((c) => !!(student as any)[c.accessColumn]) ?? null;
+  // Entre los cursos que tiene, manda uno ABIERTO: con Yellow abierto y Blue
+  // bajo candado por un camp que viene, la página se ve como Yellow.
+  const locks = COURSE_OWNER_IDS.has((student as any).id) ? {} : await getCourseLocks((student as any).id);
+  const ownedList = pageCourses.filter((c) => !!(student as any)[c.accessColumn]);
+  const ownedCourse = ownedList.find((c) => !(locks as any)[c.key]) ?? ownedList[0] ?? null;
   const course = ownedCourse ?? pageCourses[0] ?? null;
   const owns = COURSE_OWNER_IDS.has((student as any).id) || !!ownedCourse;
   // Sin el curso de esa cinta (p. ej. "Study it" desde el plan de un camp de
@@ -73,9 +78,16 @@ export default async function SequencePageRoute({ params, searchParams }: { para
   }
   // Candado hasta el día antes del camp (Marcelo 2026-09-17).
   if (!COURSE_OWNER_IDS.has((student as any).id) && course) {
-    const lock = (await getCourseLocks((student as any).id))[course.key];
+    const lock = (locks as any)[course.key];
     if (lock) return <CourseLockedScreen token={token} unlocksOn={lock.unlocksOn} campName={lock.campName} what={cfg.title} />;
   }
+
+  // Visto desde otro curso (Yellow abriendo una página de entrada de Blue):
+  // su voz y su secuencia de Let's Play.
+  const viewKey = ownedCourse?.key ?? cfg.courseKey;
+  const pageCfg = viewKey !== cfg.courseKey ? entryPageForCourse(cfg, viewKey) : cfg;
+  const trainCfg = cfg.trainAs?.[viewKey] ? sequencePageFor(cfg.trainAs[viewKey]) : null;
+  const trainAs = trainCfg ? { id: trainCfg.id, number: trainCfg.number, stepIds: trainCfg.stepIds } : null;
 
   const [{ data: lessonRows }, { data: pieceRows }, access, { data: videoRows }, { data: seqRating }, { data: stepRatings }] = await Promise.all([
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),
@@ -141,7 +153,7 @@ export default async function SequencePageRoute({ params, searchParams }: { para
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       {/* Línea aprobada (TSS_Design_Handoff): reglas limitadas a .tss; /tss/ es público en el middleware. */}
       <link rel="stylesheet" href="/tss/theme.css" />
-      <SequencePage cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={resolveSequenceVideo(videos, null, null)} videos={videos} stance={stanceOf(student as any)} progress={progress} initialTab={initialTab} flip={boardFlip(sequenceSide(cfg.id), isGoofy(student as any))} />
+      <SequencePage cfg={pageCfg} trainAs={trainAs} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={resolveSequenceVideo(videos, null, null)} videos={videos} stance={stanceOf(student as any)} progress={progress} initialTab={initialTab} flip={boardFlip(sequenceSide(cfg.id), isGoofy(student as any))} />
     </div>
   );
 }

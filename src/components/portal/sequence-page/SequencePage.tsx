@@ -76,8 +76,10 @@ export interface SequenceProgress {
 }
 
 export function SequencePage({
-  video, videos = null, stance = null, cfg, lessons, pieces, token, canTrack, progress, initialTab = null, flip = false, coach = null }: {
+  video, videos = null, stance = null, cfg, lessons, pieces, token, canTrack, progress, initialTab = null, flip = false, coach = null, trainAs = null }: {
   cfg: SequencePageConfig;
+  /** Desde otro curso, el botón de Let's Play entrena esta secuencia (Yellow → su #6 o #7). */
+  trainAs?: { id: string; number: number; stepIds: string[] } | null;
   lessons: Record<string, LessonBits>;
   pieces: Record<string, PieceRow>;
   token: string;
@@ -393,9 +395,11 @@ export function SequencePage({
                   objetivo de la sesión. La misión sola queda como opción. */}
               {(() => {
                 // Let's Play agrupa por wb_sequence_id: el mismo id de la página (BB-SEQ-09…).
-                const lp = cfg.id;
+                const lp = trainAs?.id ?? cfg.id;
                 const chosen = focus ? cfg.details.find((d) => d.key === focus) : null;
-                const focusStep = chosen?.deeper?.lessonId ?? null;
+                const focusStep0 = chosen?.deeper?.lessonId ?? null;
+                // Desde otro curso, el foco solo si el paso vive en esa secuencia.
+                const focusStep = focusStep0 && (!trainAs || trainAs.stepIds.includes(focusStep0)) ? focusStep0 : null;
                 const word = chosen ? chosen.title.replace(/^\d+ · /, '') : '';
                 if (!canTrack) return <p className="inline-flex items-center gap-2 mt-3 mb-0 text-[13px]" style={{ color: MUTED }}><Lock size={13} /> Training and logging come with your training tool.</p>;
                 if (!lp) return pieces[cfg.do.missionId] ? <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="tss-primary no-underline">Start the mission in Let&apos;s Play</a> : null;
@@ -406,7 +410,7 @@ export function SequencePage({
                     {focusHref ? (
                       <a href={focusHref} className="tss-primary no-underline" style={chosen?.command ? { background: COMMAND_COLORS[chosen.command], color: chosen.command === 'projection' ? NAVY : WHITE } : undefined}>Train it in Let&apos;s Play · focus: {word}</a>
                     ) : (
-                      <a href={runHref} className="tss-primary no-underline">Train the whole sequence in Let&apos;s Play</a>
+                      <a href={runHref} className="tss-primary no-underline">{trainAs ? `Train it in Let’s Play · inside your sequence #${trainAs.number}` : 'Train the whole sequence in Let’s Play'}</a>
                     )}
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
                       {focusHref && <Go href={runHref} small>or the whole sequence, no focus</Go>}
