@@ -816,7 +816,16 @@ export function PortalTabs({
     try {
       if (!window.location.search) return;
       const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
-      window.history.replaceState({ ...st, __NA: true }, '', window.location.pathname);
+      // Se conserva SOLO ?tab= (y &lesson= dentro del Course): así una recarga
+      // o un link compartido vuelven a la misma pantalla, y los parámetros
+      // que arman flujos (?seq=, ?step=, ?drill=, ?survey=) se limpian.
+      const p = new URLSearchParams(window.location.search);
+      const keep = new URLSearchParams();
+      const tab = p.get('tab');
+      if (tab) keep.set('tab', tab);
+      if (tab === 'course' && p.get('lesson')) keep.set('lesson', p.get('lesson')!);
+      const q = keep.toString();
+      window.history.replaceState({ ...st, __NA: true }, '', `${window.location.pathname}${q ? `?${q}` : ''}`);
     } catch { /* la limpieza es cosmética, nunca debe romper el portal */ }
   }, []);
 
@@ -1170,7 +1179,17 @@ export function PortalTabs({
             return (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => {
+                  // La barra cambia de pestaña: la lección abierta se suelta
+                  // (antes el Course volvía a la última lección durante 10 min)
+                  // y la URL dice en qué pestaña estás.
+                  setActiveTab(tab.key);
+                  savePortalState(data.token, { tab: tab.key, lesson: null });
+                  try {
+                    const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+                    window.history.replaceState({ ...st, __NA: true, tssLesson: null }, '', `${window.location.pathname}?tab=${tab.key}`);
+                  } catch { /* nada */ }
+                }}
                 className={`relative flex-1 flex flex-col items-center py-2.5 text-[12px] font-semibold transition-colors ${
                   isActive ? 'text-[var(--tss-navy)]' : 'text-gray-400 hover:text-gray-600'
                 }`}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { LessonViewer } from './LessonViewer';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { CourseFinalQuiz } from './CourseFinalQuiz';
@@ -9,7 +9,7 @@ import { touchPortalVisit } from '@/lib/actions/portal';
 import { toEmbedUrl } from '@/lib/utils/video-embed';
 import { CourseSwitcher } from './CourseSwitcher';
 import { COURSES, SHARED_PRE_COURSE_SECTIONS, type CourseKey } from '@/lib/constants/courses';
-import { loadPortalState, savePortalState } from '@/lib/portal/portal-state';
+import { loadPortalState, savePortalState, saveLastLesson, loadLastLesson } from '@/lib/portal/portal-state';
 import { BELT_THEMES, type BeltLevel, type BeltTheme } from '@/lib/constants/belt-theme';
 import {
   groupByBlocks,
@@ -140,13 +140,76 @@ export function CourseTab({ data }: { data: CourseData }) {
   const [intros, setIntros] = useState<Record<string, SectionIntro>>({});
   useEffect(() => { getSectionIntros().then(setIntros).catch(() => {}); }, []);
 
+  // ── Continuidad (auditoría 2026-09-25) ──
+  // 1) El botón "atrás" del teléfono cierra la lección en vez de sacar del
+  //    portal: abrir una lección agrega una entrada al historial (con el
+  //    estado interno de Next, __NA, para que no navegue al servidor) y
+  //    popstate la cierra. 2) Volver al curso devuelve al mismo scroll.
+  // 3) "Mark as done" se refleja al instante (doneOverride) aunque la
+  //    revalidación del servidor tarde. 4) La última lección queda guardada
+  //    para la tarjeta "Continue where you left off".
+  const scrollBeforeOpen = useRef(0);
+  const pushedRef = useRef(false);
+  const restoreScrollRef = useRef(false);
+  const [doneOverride, setDoneOverride] = useState<Set<string>>(() => new Set());
+  const [lastLesson, setLastLesson] = useState<string | null>(null);
+
+  const pathWithLesson = (id: string | null) => `${window.location.pathname}?tab=course${id ? `&lesson=${encodeURIComponent(id)}` : ''}`;
+  const nextState = (extra: Record<string, unknown>) => {
+    const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+    return { ...st, __NA: true, ...extra };
+  };
+  const openLesson = (id: string) => {
+    try {
+      scrollBeforeOpen.current = window.scrollY;
+      window.history.pushState(nextState({ tssLesson: id }), '', pathWithLesson(id));
+      pushedRef.current = true;
+    } catch { pushedRef.current = false; }
+    setOpenLessonId(id);
+    saveLastLesson(data.portalToken, id);
+    setLastLesson(id);
+    try { window.scrollTo(0, 0); } catch { /* nada */ }
+  };
+  const closeLesson = () => {
+    restoreScrollRef.current = true;
+    if (pushedRef.current) {
+      pushedRef.current = false;
+      try { window.history.back(); return; } catch { /* sigue abajo */ }
+    }
+    try { window.history.replaceState(nextState({ tssLesson: null }), '', pathWithLesson(null)); } catch { /* nada */ }
+    setOpenLessonId(null);
+  };
+  useEffect(() => {
+    const onPop = (e: PopStateEvent) => {
+      const id = (e.state && typeof e.state === 'object' && (e.state as any).tssLesson) || null;
+      if (id) { setOpenLessonId(String(id)); pushedRef.current = true; }
+      else { pushedRef.current = false; restoreScrollRef.current = true; setOpenLessonId(null); }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+  useEffect(() => {
+    if (openLessonId === null && restoreScrollRef.current) {
+      restoreScrollRef.current = false;
+      const y = scrollBeforeOpen.current;
+      try { requestAnimationFrame(() => window.scrollTo(0, y)); } catch { /* nada */ }
+    }
+  }, [openLessonId]);
+
   // Deep-link a una lección: ?tab=course&lesson=PC-PRE-10. Lo usa el enlace
   // del Home bajo Training / Free Surf — sin esto el link abría el curso pero
   // dejaba al alumno buscando la clase a mano.
   useEffect(() => {
     try {
+      setLastLesson(loadLastLesson(data.portalToken));
       const id = new URLSearchParams(window.location.search).get('lesson');
-      if (id) { setOpenLessonId(id); return; }
+      if (id) {
+        setOpenLessonId(id);
+        // Si esta entrada del historial la creó openLesson (recarga o remount
+        // por revalidación), el botón atrás sigue funcionando igual.
+        pushedRef.current = !!(window.history.state && (window.history.state as any).tssLesson);
+        return;
+      }
       // Remount por refresh (marcar leída, cambiar de curso…): la lección
       // que estaba abierta vuelve a abrirse sola.
       const restored = loadPortalState(data.portalToken);
@@ -156,6 +219,11 @@ export function CourseTab({ data }: { data: CourseData }) {
   }, []);
   useEffect(() => { savePortalState(data.portalToken, { lesson: openLessonId }); }, [openLessonId, data.portalToken]);
   useEffect(() => { if (openLessonId) void touchPortalVisit(data.portalToken, 'course', openLessonId); }, [openLessonId, data.portalToken]);
+
+  // Las lecciones con lo marcado en esta sesión encima (feedback inmediato).
+  const lessons: LessonRow[] = doneOverride.size
+    ? data.lessons.map((l) => (doneOverride.has(l.id) ? { ...l, completed: true } : l))
+    : data.lessons;
 
   // Access gate
   if (!data.hasAccess) {
@@ -175,12 +243,21 @@ export function CourseTab({ data }: { data: CourseData }) {
 
   // If a lesson is open, show the lesson viewer
   if (openLessonId) {
+    // "Next lesson": la siguiente sin completar en el orden del curso; si no
+    // queda ninguna después, la primera pendiente; si el curso está completo, nada.
+    const order = courseOrder(lessons, data.activeCourseKey);
+    const idx = order.findIndex((l) => l.id === openLessonId);
+    const after = idx >= 0 ? order.slice(idx + 1).find((l) => !l.completed && !l.locked) : undefined;
+    const anyLeft = order.find((l) => l.id !== openLessonId && !l.completed && !l.locked);
+    const next = after ?? anyLeft ?? null;
     return (
       <LessonViewer
         lessonId={openLessonId}
         portalToken={data.portalToken}
-        onBack={() => setOpenLessonId(null)}
-        onOpenLesson={(id) => setOpenLessonId(id)}
+        onBack={closeLesson}
+        onOpenLesson={(id) => openLesson(id)}
+        nextLesson={next ? { id: next.id, title: next.title } : null}
+        onCompleted={(id) => setDoneOverride((prev) => { const n = new Set(prev); n.add(id); return n; })}
       />
     );
   }
@@ -199,20 +276,20 @@ export function CourseTab({ data }: { data: CourseData }) {
       ? activeCourse.lessonSections[0]
       : undefined;
 
-  const preCourseLessons = data.lessons.filter((l) =>
+  const preCourseLessons = lessons.filter((l) =>
     (SHARED_PRE_COURSE_SECTIONS as readonly string[]).includes(l.course_section)
   );
-  const onboardingLessons = data.lessons.filter(
+  const onboardingLessons = lessons.filter(
     (l) => l.course_section === onboardingSection
   );
-  const beltLessons = data.lessons.filter(
+  const beltLessons = lessons.filter(
     (l) => l.course_section === beltSection
   );
   // Lessons belonging to an earlier course (e.g. wb_onboarding when on YB).
   // Surfaced as a "Prerequisites from White Belt" block so the YB student
   // who already finished WB sees them ✓ Completed, and a YB-direct student
   // can complete them on the spot.
-  const sharedOnboardingLessons = data.lessons.filter((l) =>
+  const sharedOnboardingLessons = lessons.filter((l) =>
     activeCourse.sharedLessonSections.includes(l.course_section),
   );
 
@@ -266,9 +343,9 @@ export function CourseTab({ data }: { data: CourseData }) {
   // tanto las secuencias de Blue como las secuencias completadas con pasos
   // prestados de otra cinta.
   const lessonByKey = new Map<string, LessonRow>();
-  for (const l of data.lessons) lessonByKey.set(stepKey(l.course_section, l.step_number), l);
+  for (const l of lessons) lessonByKey.set(stepKey(l.course_section, l.step_number), l);
   const lessonById = new Map<string, LessonRow>();
-  for (const l of data.lessons) lessonById.set(l.id, l);
+  for (const l of lessons) lessonById.set(l.id, l);
 
   // Un paso prestado de una cinta anterior se abre igual: es parte de este
   // curso, y para eso se trajo. El progreso se guarda por lección, así que
@@ -373,7 +450,7 @@ export function CourseTab({ data }: { data: CourseData }) {
   // el curso de Blue ya incluye entre sus secciones compartidas).
   const threeCirclesLesson =
     activeCourse.key === 'blue_belt'
-      ? data.lessons.find((l) => l.id === THREE_CIRCLES_LESSON_ID) ?? null
+      ? lessons.find((l) => l.id === THREE_CIRCLES_LESSON_ID) ?? null
       : null;
 
   // Siguiente paso = la primera secuencia de la cinta con algún paso sin completar.
@@ -476,6 +553,22 @@ export function CourseTab({ data }: { data: CourseData }) {
         ))}
       </div>
 
+      {/* CONTINUE (auditoría 2026-09-25): la última lección abierta, si sigue
+          pendiente, vuelve en una tarjeta en vez de abrirse sola. */}
+      {(() => {
+        const l = lastLesson ? lessons.find((x) => x.id === lastLesson) : null;
+        if (!l || l.completed || l.locked) return null;
+        return (
+          <button type="button" onClick={() => openLesson(l.id)} className="mx-2 mt-4 w-[calc(100%-16px)] text-left rounded-[8px] px-4 py-3.5 flex items-center justify-between gap-3" style={{ background: '#E9E2D2', border: '1px solid #00D2FF', color: '#10263B' }}>
+            <span className="min-w-0">
+              <span className="block text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em', color: '#55666E' }}>Continue where you left off</span>
+              <span className="block text-[17px] font-bold leading-tight mt-0.5 truncate">{l.title}</span>
+            </span>
+            <span className="shrink-0 text-[14px] font-extrabold" style={{ color: '#00A8CC' }}>Open →</span>
+          </button>
+        );
+      })()}
+
       {/* PRE-COURSE — 8 sections */}
       {pcSections.length > 0 && (
         <div className="space-y-3">
@@ -496,7 +589,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               Icon={PC_SECTION_ICON[section.id] || BookOpen}
               badge={null}
               lessons={section.lessons}
-              onOpenLesson={(id) => setOpenLessonId(id)}
+              onOpenLesson={(id) => openLesson(id)}
               theme={preTheme}
             />
           ))}
@@ -536,7 +629,7 @@ export function CourseTab({ data }: { data: CourseData }) {
             lessons={sharedOnboardingLessons.sort(
               (a, b) => (a.display_order || 0) - (b.display_order || 0)
             )}
-            onOpenLesson={(id) => setOpenLessonId(id)}
+            onOpenLesson={(id) => openLesson(id)}
             theme={whiteTheme}
           />
         </div>
@@ -562,7 +655,7 @@ export function CourseTab({ data }: { data: CourseData }) {
                 Icon={PC_SECTION_ICON[section.id] || Compass}
                 badge={null}
                 lessons={section.lessons}
-                onOpenLesson={(id) => setOpenLessonId(id)}
+                onOpenLesson={(id) => openLesson(id)}
                 theme={beltTheme}
                 onePageHref={section.id === 'YB-FUND' ? `/portal/${data.portalToken}/circles` : null}
               />
@@ -576,7 +669,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               lessons={onboardingLessons.sort(
                 (a, b) => (a.display_order || 0) - (b.display_order || 0)
               )}
-              onOpenLesson={(id) => setOpenLessonId(id)}
+              onOpenLesson={(id) => openLesson(id)}
               theme={beltTheme}
             />
           )}
@@ -599,7 +692,7 @@ export function CourseTab({ data }: { data: CourseData }) {
             Icon={Compass}
             badge={null}
             lessons={[threeCirclesLesson]}
-            onOpenLesson={(id) => setOpenLessonId(id)}
+            onOpenLesson={(id) => openLesson(id)}
             theme={beltTheme}
             onePageHref={`/portal/${data.portalToken}/circles`}
           />
@@ -622,7 +715,7 @@ export function CourseTab({ data }: { data: CourseData }) {
             Icon={PC_SECTION_ICON['BB-INF'] || Compass}
             badge={null}
             lessons={loopGroup.lessons}
-            onOpenLesson={(id) => setOpenLessonId(id)}
+            onOpenLesson={(id) => openLesson(id)}
             theme={beltTheme}
             onePageHref={`/portal/${data.portalToken}/loop`}
           />
@@ -647,7 +740,7 @@ export function CourseTab({ data }: { data: CourseData }) {
               Icon={WB_SEQUENCE_ICON[g.id] || BookOpen}
               badge={null}
               lessons={g.lessons}
-              onOpenLesson={(id) => setOpenLessonId(id)}
+              onOpenLesson={(id) => openLesson(id)}
               theme={beltTheme}
               onePageHref={sequencePageFor(g.id) ? `/portal/${data.portalToken}/seq/${g.id}` : null}
             />
@@ -687,7 +780,7 @@ export function CourseTab({ data }: { data: CourseData }) {
                   : null
               }
               lessons={group.lessons}
-              onOpenLesson={(id) => setOpenLessonId(id)}
+              onOpenLesson={(id) => openLesson(id)}
               theme={beltTheme}
               onePageHref={sequencePageFor(group.id) ? `/portal/${data.portalToken}/seq/${group.id}` : null}
             />
@@ -713,7 +806,7 @@ export function CourseTab({ data }: { data: CourseData }) {
             Icon={Rocket}
             badge={null}
             lessons={whiteTools}
-            onOpenLesson={(id) => setOpenLessonId(id)}
+            onOpenLesson={(id) => openLesson(id)}
             theme={beltTheme}
           />
         </div>
@@ -1044,4 +1137,20 @@ function LessonCard({ lesson, onOpen }: { lesson: LessonRow; onOpen: () => void 
       </div>
     </button>
   );
+}
+
+
+// El orden de lectura del curso activo: Pre-Course, luego lo compartido y el
+// onboarding, luego la cinta (por display_order). Lo usa "Next lesson".
+function courseOrder(lessons: LessonRow[], activeCourseKey: string): LessonRow[] {
+  const course = COURSES.find((c) => c.key === activeCourseKey) ?? COURSES[0];
+  const sectionsInOrder = [
+    ...(SHARED_PRE_COURSE_SECTIONS as readonly string[]),
+    ...course.sharedLessonSections,
+    ...course.lessonSections,
+  ];
+  const rank = new Map(sectionsInOrder.map((sec, i) => [sec, i]));
+  return lessons
+    .filter((l) => rank.has(l.course_section))
+    .sort((a, b) => (rank.get(a.course_section)! - rank.get(b.course_section)!) || (a.display_order - b.display_order));
 }

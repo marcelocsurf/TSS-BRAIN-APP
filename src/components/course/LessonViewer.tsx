@@ -37,6 +37,11 @@ interface LessonViewerProps {
   // Lets a lesson jump to another lesson (e.g. a sequence step pointing to
   // its canonical Pre-Course version). Optional — falls back to no banner.
   onOpenLesson?: (id: string) => void;
+  /** La siguiente lección pendiente del curso (auditoría 2026-09-25): tras
+   *  "Mark as done" el alumno sigue sin volver a buscar en la lista. */
+  nextLesson?: { id: string; title: string } | null;
+  /** Avisa al curso para que marque la lección al instante. */
+  onCompleted?: (id: string) => void;
 }
 
 // A few sequence steps share their content with a canonical Pre-Course
@@ -49,7 +54,7 @@ const SEQUENCE_TO_INTRO: Record<string, { id: string; label: string }> = {
 
 type Section = 'video' | 'theory' | 'drill' | 'mission' | 'errors' | 'quiz' | 'form';
 
-export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: LessonViewerProps) {
+export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, nextLesson = null, onCompleted }: LessonViewerProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -311,7 +316,24 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson }: Le
               <div className="prose prose-sm max-w-none mt-3"><MarkdownContent markdown={lesson.errors_md} /></div>
             </details>
           )}
-          <MarkDoneButton portalToken={portalToken} lessonId={lesson.id} completed={!!progress?.completed} onDone={refreshProgress} />
+          <MarkDoneButton portalToken={portalToken} lessonId={lesson.id} completed={!!progress?.completed} onDone={async () => { await refreshProgress(); onCompleted?.(lesson.id); }} />
+          {progress?.completed && (
+            nextLesson && onOpenLesson ? (
+              <button type="button" onClick={() => onOpenLesson(nextLesson.id)}
+                className="w-full min-h-[52px] rounded-[5px] px-4 text-left flex items-center justify-between gap-3"
+                style={{ background: '#00D2FF', color: '#061C2B' }}>
+                <span className="min-w-0">
+                  <span className="block text-[10px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em', opacity: .75 }}>Next lesson</span>
+                  <span className="block text-[15px] font-extrabold leading-tight truncate">{nextLesson.title}</span>
+                </span>
+                <span className="shrink-0 text-[18px] font-black">→</span>
+              </button>
+            ) : (
+              <button type="button" onClick={onBack} className="w-full py-3 rounded-[5px] text-sm font-bold" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6', color: '#10263B' }}>
+                ← Back to course
+              </button>
+            )
+          )}
         </>
       )}
     </div>

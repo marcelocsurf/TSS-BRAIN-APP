@@ -58,3 +58,23 @@ export function touchPortalState(token: string) {
     sessionStorage.setItem(key(token), JSON.stringify({ ...s, t: Date.now() }));
   } catch { /* nada */ }
 }
+
+// ═══ Última lección abierta (continuidad, 2026-09-25) ═══
+// Aparte del estado efímero de arriba: vive en localStorage SIN caducidad,
+// por token. Sirve para la tarjeta "Continue where you left off" del Course,
+// nunca para abrir una lección sola.
+function lastKey(token: string) {
+  return `tss_last_lesson_${token}`;
+}
+
+export function saveLastLesson(token: string, lessonId: string) {
+  try { localStorage.setItem(lastKey(token), lessonId); } catch { /* nada */ }
+}
+
+export function loadLastLesson(token: string): string | null {
+  try { return localStorage.getItem(lastKey(token)); } catch { return null; }
+}
+
+export function clearLastLesson(token: string) {
+  try { localStorage.removeItem(lastKey(token)); } catch { /* nada */ }
+}
