@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { setEmailEnabled, type EmailSettingRow } from '@/lib/actions/email-settings';
+import { setEmailEnabled, sendSurveyPreviewEmail, type EmailSettingRow } from '@/lib/actions/email-settings';
 
 const AUD: Record<string, string> = { student: 'Al alumno', coach: 'Al coach', staff: 'Al equipo', lead: 'A leads' };
 
@@ -8,6 +8,10 @@ export function EmailSwitches({ rows: initial }: { rows: EmailSettingRow[] }) {
   const [rows, setRows] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const groups = ['student', 'coach', 'staff', 'lead'].map((a) => ({ a, list: rows.filter((r) => r.audience === a) })).filter((g) => g.list.length);
+  // Vista previa del correo de cierre de camp (Marcelo 2026-09-26): el equipo
+  // de la academia ve exactamente lo que le llega al cliente.
+  const [previewTo, setPreviewTo] = useState('academy@purosurf.com');
+  const [previewState, setPreviewState] = useState<{ busy: boolean; msg: string | null; ok: boolean }>({ busy: false, msg: null, ok: false });
   return (
     <div className="max-w-2xl mx-auto p-4 space-y-5">
       <div>
@@ -39,6 +43,24 @@ export function EmailSwitches({ rows: initial }: { rows: EmailSettingRow[] }) {
           ))}
         </div>
       ))}
+
+      <div className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] px-4 py-4 space-y-2">
+        <p className="text-[11px] font-mono uppercase tracking-wider text-[#55666E]">Vista previa · correo de cierre de camp</p>
+        <p className="text-sm text-[#10263B]">Manda a la dirección que escribas el mismo correo que recibe el cliente al cerrar su camp: logo de Puro Surf, próximo foco y el link a la encuesta (Method &amp; coach → Experience). Usa la persona de prueba Androide; el link se puede abrir y responder sin tocar a ningún cliente real.</p>
+        <form className="flex flex-col sm:flex-row gap-2" onSubmit={async (e) => {
+          e.preventDefault();
+          setPreviewState({ busy: true, msg: null, ok: false });
+          const r = await sendSurveyPreviewEmail(previewTo);
+          setPreviewState({ busy: false, ok: r.ok, msg: r.ok ? `Enviado a ${previewTo.trim()}.` : (r.error ?? 'No salió.') });
+        }}>
+          <input type="email" value={previewTo} onChange={(e) => setPreviewTo(e.target.value)} required
+            className="flex-1 h-10 rounded-lg px-3 text-sm bg-white border border-[#DCD7C6]" placeholder="correo@dominio.com" />
+          <button type="submit" disabled={previewState.busy} className="h-10 px-4 rounded-full text-[12px] font-bold disabled:opacity-50" style={{ background: '#00D2FF', color: '#061C2B' }}>
+            {previewState.busy ? 'Enviando…' : 'Enviar vista previa'}
+          </button>
+        </form>
+        {previewState.msg && <p className="text-[12px]" style={{ color: previewState.ok ? '#0a7c5d' : '#b42318' }}>{previewState.msg}</p>}
+      </div>
     </div>
   );
 }
