@@ -6,7 +6,7 @@ import { createNotification } from '@/lib/actions/notifications';
 import { sendAssignmentEmail, sendAssignmentResponseEmail } from '@/lib/actions/email';
 import { revalidatePath } from 'next/cache';
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
 
 // SECURITY: verify the caller (coordinator/admin, platform bypasses) owns the
 // academy of this camp before reading/mutating its staff. Returns null when OK.

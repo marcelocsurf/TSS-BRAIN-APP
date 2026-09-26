@@ -1,5 +1,7 @@
 'use server';
 
+import { getCurrentCoach } from '@/lib/actions/auth';
+
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
@@ -22,6 +24,12 @@ export interface ContentVideo {
 }
 
 // ─── List all content with their videos (Content admin page) ────
+
+// Escribir videos del curso es de admin (auditoría 2026-09-25).
+async function requireContentAdmin() {
+  const me = await getCurrentCoach();
+  if (!me || (!me.is_platform_admin && me.role !== 'admin')) throw new Error('No autorizado.');
+}
 
 export async function getContentInventory() {
   const admin = createAdminClient();
@@ -128,6 +136,7 @@ export async function addContentVideo(input: {
   caption?: string;
   mediaType?: 'video' | 'image' | 'diagram' | 'document';
 }) {
+  await requireContentAdmin();
   const supabase = await createClient();
 
   const parents = [
@@ -220,6 +229,7 @@ export async function updateContentVideo(
   id: string,
   patch: Partial<{ url: string; label: string; caption: string; display_order: number }>
 ) {
+  await requireContentAdmin();
   const supabase = await createClient();
 
   const updates: Record<string, unknown> = {};
@@ -247,6 +257,7 @@ export async function updateContentVideo(
 // ─── Delete a video ──
 
 export async function deleteContentVideo(id: string) {
+  await requireContentAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from('content_videos').delete().eq('id', id);
   if (error) throw new Error(error.message);
@@ -256,6 +267,7 @@ export async function deleteContentVideo(id: string) {
 // ─── Reorder videos (swap up/down) ──
 
 export async function reorderContentVideo(id: string, direction: 'up' | 'down') {
+  await requireContentAdmin();
   const supabase = await createClient();
 
   const { data: target } = await supabase

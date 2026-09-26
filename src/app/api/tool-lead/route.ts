@@ -1,3 +1,4 @@
+import { rateLimitOk, clientIp } from '@/lib/rate-limit';
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 
@@ -16,6 +17,8 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: Request) {
+  // Límite por IP (auditoría 2026-09-25): antes no había ninguno.
+  if (!rateLimitOk(`tool-lead:${clientIp(req.headers)}`, 10, 10 * 60_000)) return new Response(JSON.stringify({ ok: false, error: 'Too many requests' }), { status: 429, headers: { 'Content-Type': 'application/json' } });
   try {
     const body = await req.json();
     const email = String(body.email ?? '').trim().toLowerCase();

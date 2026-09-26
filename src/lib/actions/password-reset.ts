@@ -33,7 +33,7 @@ export async function requestPasswordReset(
     };
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
 
   const { data, error } = await admin.auth.admin.generateLink({
     type: 'recovery',

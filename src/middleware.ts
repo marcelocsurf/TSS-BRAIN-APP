@@ -8,6 +8,13 @@ export async function middleware(request: NextRequest) {
   // de diseño). El resto de las rutas pasan igual (p.ej. /quiz funciona
   // también en este host). app.thesurfsequence.com no entra acá.
   const host = request.headers.get('host') ?? '';
+  // Un solo dominio para clientes (auditoría 2026-09-25): el host de Vercel
+  // redirige al oficial en producción. Así el PWA, las cookies y los links
+  // compartidos viven en un solo origen.
+  if (host === 'tss-brain-app.vercel.app' && process.env.VERCEL_ENV === 'production') {
+    const to = new URL(request.nextUrl.pathname + request.nextUrl.search, 'https://app.thesurfsequence.com');
+    return NextResponse.redirect(to, 308);
+  }
   if (
     (host === 'thesurfsequence.com' || host === 'www.thesurfsequence.com') &&
     request.nextUrl.pathname === '/'

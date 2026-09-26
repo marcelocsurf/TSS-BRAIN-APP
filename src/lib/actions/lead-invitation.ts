@@ -1,5 +1,7 @@
 'use server';
 
+import { LEGAL_FOOTER_HTML } from '@/lib/legal/email-footer';
+
 // Sends the newly-created Lead a single link to the /intake/[token] flow:
 // required safety + waiver first, then (for members) the level quiz and
 // extended profile — all in one link, no second send. Falls back to
@@ -82,6 +84,7 @@ function buildHtml(firstName: string, url: string): string {
       </div>
       <p style="font-size:12px;color:#64748B;margin-top:20px;">— The Surf Sequence</p>
     </div>
+    ${LEGAL_FOOTER_HTML}
   </div>
 </body>
 </html>`;

@@ -365,12 +365,18 @@ export function SequencePage({
             <Card title="Visualize · the whole line" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
               <p className="text-[15px] m-0 leading-snug" style={{ color: INK }}>{cfg.feel.visualize}</p>
             </Card>
-            <Card title="Simulate · land, sand, pool or calm water" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
-              {cfg.feel.land.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
-            </Card>
-            <Card title="Simulate · surf skate" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
-              {cfg.feel.skate.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
-            </Card>
+            {/* Una tarjeta sin piezas (drills apagados o solo-coach) no se dibuja:
+                antes quedaba el rótulo vacío (auditoría 2026-09-25, Yellow #6). */}
+            {cfg.feel.land.some((id) => pieces[id]) && (
+              <Card title="Simulate · land, sand, pool or calm water" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
+                {cfg.feel.land.filter((id) => pieces[id]).map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
+              </Card>
+            )}
+            {cfg.feel.skate.some((id) => pieces[id]) && (
+              <Card title="Simulate · surf skate" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
+                {cfg.feel.skate.filter((id) => pieces[id]).map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
+              </Card>
+            )}
             <p className="text-[13px] px-1 mt-3 mb-0" style={{ color: ON_DARK }}>Each drill closes with one question: ready to take it to the water?</p>
           </div>
         )}

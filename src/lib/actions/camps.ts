@@ -407,7 +407,7 @@ export async function updateCampHeadCoach(
           metadata: { campInstanceId },
         });
         if (coach.email) {
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
+          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
           const { sendAssignmentEmail } = await import('./email');
           await sendAssignmentEmail({
             toEmail: coach.email,

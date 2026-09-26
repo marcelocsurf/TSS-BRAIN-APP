@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
+      process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
     const redirectTo = `${appUrl}/auth/callback?next=/`;
 
     const linkRes = await generateCoachInviteLink({

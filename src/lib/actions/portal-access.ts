@@ -1,5 +1,8 @@
 'use server';
 
+import { headers } from 'next/headers';
+import { rateLimitOk, clientIp } from '@/lib/rate-limit';
+
 // Public "get my portal link" flow (/my-portal). A student on any device
 // enters their email; if it matches active students we email them their
 // portal link(s). The response is always the same neutral success so the
@@ -44,6 +47,8 @@ export async function requestPortalLink(rawEmail: string): Promise<{ ok: true }>
       })),
     });
   } catch (e) {
+  // Límite por IP (auditoría 2026-09-25).
+  try { const ip = clientIp(headers()); if (!rateLimitOk(`my-portal:${ip}`, 5, 10 * 60_000)) return { ok: false, error: 'Too many attempts. Try again in a few minutes.' } as any; } catch { /* sin cabeceras (tests) no se limita */ }
     // Never leak errors to the public page.
     console.error('[requestPortalLink] failed:', e);
   }

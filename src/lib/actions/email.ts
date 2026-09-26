@@ -23,7 +23,7 @@ async function sendEmail(payload: Parameters<typeof resend.emails.send>[0]) {
 // dark header). alt text keeps the brand name for image-blocking clients.
 // Pie legal de todo correo (auditoría 2026-09-05): quién lo manda y dónde
 // están la privacidad y los términos. Transaccional: no hay "unsubscribe".
-const LEGAL_FOOTER_HTML = `<p style="text-align:center;font-size:10px;color:#9CA3AF;margin:8px 0 0;line-height:1.6;">Sent by Enkrateia, S.A. de C.V. · The Surf Sequence® · <a href="https://app.thesurfsequence.com/legal/privacy" style="color:#9CA3AF;">Privacy</a> · <a href="https://app.thesurfsequence.com/legal/terms" style="color:#9CA3AF;">Terms</a> · info@thesurfsequence.com</p>`;
+import { LEGAL_FOOTER_HTML } from '@/lib/legal/email-footer';
 // v10.1 (2026-09-18): logo horizontal oficial en blanco sobre transparente
 // (public/brand/tss-logo-full-white.png). El -h viejo traía un gris horneado.
 const EMAIL_LOGO = `<img src="https://app.thesurfsequence.com/brand/tss-logo-full-white.png" alt="${BRAND.name}" width="220" style="display:block;margin:0 auto;max-width:70%;height:auto;" />`;
@@ -536,7 +536,7 @@ function buildCoachInviteHtml(data: CoachInviteEmailData): string {
           <strong>Button didn't work, or the link expired?</strong>
         </p>
         <p style="margin:0;font-size:12px;color:#374151;line-height:1.6;">
-          Go to <a href="${(process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app')}/forgot-password" style="color:${BRAND.colors.navy};font-weight:600;">${(process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app').replace(/^https?:\/\//, '')}</a>,
+          Go to <a href="${(process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com')}/forgot-password" style="color:${BRAND.colors.navy};font-weight:600;">${(process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com').replace(/^https?:\/\//, '')}</a>,
           enter <strong>${toEmail}</strong>, and we'll send a fresh link to set your password.
         </p>
       </div>

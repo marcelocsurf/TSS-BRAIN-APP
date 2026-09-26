@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { getCurrentCoach } from '@/lib/actions/auth';
 import { getContentInventory } from '@/lib/actions/content';
 import { ContentVideoManager } from '@/components/content/ContentVideoManager';
 import {
@@ -48,6 +50,11 @@ export default async function ContentAdminPage({
 }: {
   searchParams: Promise<{ bucket?: string }>;
 }) {
+  // Solo admin / platform admin (auditoría 2026-09-25: cualquier coach podía
+  // cambiar los videos que ven los alumnos).
+  const me = await getCurrentCoach();
+  if (!me) redirect('/login');
+  if (!me.is_platform_admin && me.role !== 'admin') redirect('/dashboard');
   const { lessons, drillsMissions, steps } = await getContentInventory();
   const { bucket: bucketParam } = await searchParams;
   const bucket: Bucket =

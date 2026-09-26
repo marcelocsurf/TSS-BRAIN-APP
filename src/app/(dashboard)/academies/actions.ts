@@ -67,7 +67,7 @@ export async function assignCoordinator(input: {
 
   const normalizedEmail = input.email.trim().toLowerCase();
   const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
+    process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
   const redirectTo = `${appUrl}/auth/callback?next=/`;
 
   // Email must be unique across coaches

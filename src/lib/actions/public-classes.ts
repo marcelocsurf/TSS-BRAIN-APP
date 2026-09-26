@@ -1,5 +1,8 @@
 'use server';
 
+import { headers } from 'next/headers';
+import { rateLimitOk, clientIp } from '@/lib/rate-limit';
+
 // PUBLIC class signup (QR flow, M147). No auth — everything is scoped by the
 // academy slug and validated server-side. Students self-enroll into
 // service_kind='class' services (yoga, skate, ice bath…), signing the waiver
@@ -236,6 +239,8 @@ export async function publicEnroll(input: {
   // 2. Coupon (optional).
   let coupon: { id: string; code: string; percent_off: number } | null = null;
   if (input.coupon?.trim()) {
+  // Límite por IP (auditoría 2026-09-25).
+  try { const ip = clientIp(headers()); if (!rateLimitOk(`join-enroll:${ip}`, 10, 10 * 60_000)) return { ok: false, error: 'Too many attempts. Try again in a few minutes.' } as any; } catch { /* sin cabeceras (tests) no se limita */ }
     const { data: cp } = await admin
       .from('class_coupons')
       .select('id, code, percent_off, active, expires_on, max_uses, uses')
@@ -509,6 +514,8 @@ export async function publicAddCompanion(input: {
   const age = await ageFromDob(input.date_of_birth);
   if (input.date_of_birth && age == null) return { ok: false, error: 'Check the date of birth.' };
   if (age != null && age < MIN_AGE) {
+  // Límite por IP (auditoría 2026-09-25).
+  try { const ip = clientIp(headers()); if (!rateLimitOk(`join-companion:${ip}`, 10, 10 * 60_000)) return { ok: false, error: 'Too many attempts. Try again in a few minutes.' } as any; } catch { /* sin cabeceras (tests) no se limita */ }
     return { ok: false, error: `For surfers under ${MIN_AGE} we set things up in person — please stop by front desk.` };
   }
   const bookerName = [booker.first_name, booker.last_name].filter(Boolean).join(' ');

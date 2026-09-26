@@ -203,7 +203,11 @@ export function CourseTab({ data }: { data: CourseData }) {
     try {
       setLastLesson(loadLastLesson(data.portalToken));
       const id = new URLSearchParams(window.location.search).get('lesson');
-      if (id) {
+      // Con el curso bajo candado (hasta el día antes del camp) un deep link
+      // solo abre lecciones del Pre-Course (auditoría 2026-09-25).
+      const target = id ? data.lessons.find((x) => x.id === id) : null;
+      const lockedByCamp = !!data.courseLock && !!target && !(SHARED_PRE_COURSE_SECTIONS as readonly string[]).includes(target.course_section);
+      if (id && !lockedByCamp) {
         setOpenLessonId(id);
         // Si esta entrada del historial la creó openLesson (recarga o remount
         // por revalidación), el botón atrás sigue funcionando igual.

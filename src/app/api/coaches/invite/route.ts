@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
       let emailError: string | undefined;
       if (!existingCoach.password_set_at) {
         const appUrlReassign =
-          process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
+          process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
         const redirectToReassign = `${appUrlReassign}/auth/callback?next=/`;
         const linkRes = await generateCoachInviteLink({
           admin,
@@ -198,7 +198,7 @@ export async function POST(req: NextRequest) {
     // link) but DOES NOT send Supabase's default email. We send our
     // own branded email via Resend right below.
     const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app';
+      process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com';
     const redirectTo = `${appUrl}/auth/callback?next=/`;
 
     // No coach row exists yet. The helper tries 'invite' first and

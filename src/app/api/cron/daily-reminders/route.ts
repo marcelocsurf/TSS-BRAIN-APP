@@ -1,4 +1,5 @@
 import { participantPresentOn } from '@/lib/utils/camp-window';
+import { LEGAL_FOOTER_HTML } from '@/lib/legal/email-footer';
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sendTaskOverdueEmail, sendServiceReminderEmail } from '@/lib/actions/email';
@@ -185,6 +186,7 @@ async function handle(req: NextRequest) {
           <p><strong>Training tool · $99/year</strong></p>
           <p><a href="${appUrl}/portal/${st.portal_token}" style="display:inline-block;background:#00D2FF;color:#061C2B;font-weight:700;padding:12px 22px;border-radius:999px;text-decoration:none;">Renew from your portal →</a></p>
           <p style="color:#55666E;font-size:13px;">Or just pay at the academy — we&#39;ll extend it on the spot.</p>
+          ${LEGAL_FOOTER_HTML}
         </div>`,
       }).catch((e: any) => ({ error: e }));
       // SOLO marcar 'enviado' si el correo salió — antes se estampaba aunque

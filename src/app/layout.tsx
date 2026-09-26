@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   // link previews (WhatsApp/iMessage/social) work. Uses the same canonical
   // app URL as email links, so pointing it at app.thesurfsequence.com updates
   // both previews and email links at once.
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://tss-brain-app.vercel.app'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://app.thesurfsequence.com'),
   title: 'The Surf Sequence',
   description: 'The Surf Sequence — learn to surf the right way, step by step.',
   manifest: '/manifest.webmanifest',

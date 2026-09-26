@@ -74,7 +74,8 @@ export async function computeWeekRanking(
     // Las personas de prueba (Androide) no compiten con atletas reales.
     if (a.students?.is_test) continue;
     if (!roster.has(a.student_id)) {
-      roster.set(a.student_id, `${a.students?.first_name ?? ''} ${a.students?.last_name ?? ''}`.trim() || '—');
+      // Privacidad entre atletas (auditoría 2026-09-25): nombre + inicial.
+      roster.set(a.student_id, `${a.students?.first_name ?? ''} ${(a.students?.last_name ?? '').trim().charAt(0)}${(a.students?.last_name ?? '').trim() ? '.' : ''}`.trim() || '—');
     }
   }
   const studentIds = Array.from(roster.keys());
