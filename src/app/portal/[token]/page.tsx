@@ -21,7 +21,7 @@ import { getThreeCirclesProgress, getHomeSequenceData } from '@/lib/actions/sequ
 import { getOpenSession, getTasks } from '@/lib/actions/lets-play';
 import { RenewalGate } from './RenewalGate';
 import { TermsGate } from './TermsGate';
-import { needsTermsAcceptance } from '@/lib/actions/legal';
+import { needsTermsAcceptance, termsGateNeeds } from '@/lib/actions/legal';
 import { getStudentAccess } from '@/lib/portal/access';
 import { getMembershipInfo } from '@/lib/actions/memberships';
 import { getMyProgram, getMySeason, getMyAppointments, getMyAthleteScores, getMyMessages, getMyTeamWall, getMyTodayExtras } from '@/lib/actions/programs';
@@ -119,6 +119,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   ]);
 
   const termsPending = isImpersonatingThisStudent ? false : await needsTermsAcceptance(student.id);
+  const gateNeeds = termsPending ? await termsGateNeeds(student.id).catch(() => ({ minor: false, needsGuardian: false, needsHealth: false })) : null;
   // Registro y progreso = curso o membresía (blueprint). El libro solo, no.
   const access = await getStudentAccess(student.id);
 
@@ -204,7 +205,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
       {/* Términos + Privacidad: una vez por versión. No se muestra al admin
           que mira "como" el alumno — la aceptación es personal. */}
       {!isImpersonatingThisStudent && termsPending && (
-        <TermsGate token={token} firstName={student.first_name || 'surfer'} isUpdate={!!(student as any).terms_accepted_at} />
+        <TermsGate token={token} firstName={student.first_name || 'surfer'} isUpdate={!!(student as any).terms_accepted_at} needsGuardian={!!gateNeeds?.needsGuardian} minor={!!gateNeeds?.minor} needsHealth={!!gateNeeds?.needsHealth} />
       )}
       <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       <PortalTabs

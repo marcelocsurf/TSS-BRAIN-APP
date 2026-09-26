@@ -8,8 +8,18 @@ import { PRIVACY_URL, TERMS_URL } from '@/lib/legal/versions';
 
 const INK = '#061C2B', CYAN = '#00D2FF', PAPER = '#F7F9FA';
 
-export function TermsGate({ token, firstName, isUpdate }: { token: string; firstName: string; isUpdate: boolean }) {
+export function TermsGate({ token, firstName, isUpdate, minor = false, needsGuardian = false, needsHealth = false }: {
+  token: string; firstName: string; isUpdate: boolean;
+  /** Menor de 18 según la ficha: el tutor acepta por él/ella. */
+  minor?: boolean;
+  /** Menor sin tutor registrado: se pide el nombre del tutor. */
+  needsGuardian?: boolean;
+  /** Ficha con datos de salud sin consentimiento expreso (auditoría 2026-09-25). */
+  needsHealth?: boolean;
+}) {
   const [ok, setOk] = useState(false);
+  const [health, setHealth] = useState(false);
+  const [guardian, setGuardian] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [done, setDone] = useState(false);
@@ -29,15 +39,30 @@ export function TermsGate({ token, firstName, isUpdate }: { token: string; first
         <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(247,249,250,.8)' }}>
           Your portal keeps your progress, your safety info and what your coach writes about your surfing. Please read how we handle it: the {link(TERMS_URL, 'Terms of Service')} and the {link(PRIVACY_URL, 'Privacy Policy')}. You can ask us to correct or delete your data anytime.
         </p>
+        {minor && (
+          <div className="rounded-xl p-3 space-y-2" style={{ background: 'rgba(0,210,255,.08)', border: `1px solid ${CYAN}55` }}>
+            <p className="text-[13px] leading-snug m-0">{firstName} is under 18: a <b>parent or legal guardian</b> accepts on their behalf.</p>
+            {needsGuardian && (
+              <input value={guardian} onChange={(e) => setGuardian(e.target.value)} placeholder="Parent / guardian full name" maxLength={120}
+                className="w-full h-11 rounded-lg px-3 text-[14px]" style={{ background: PAPER, color: INK, border: '1px solid #DCD7C6' }} />
+            )}
+          </div>
+        )}
+        {needsHealth && (
+          <label className="flex items-start gap-2.5 text-[13px] cursor-pointer">
+            <input type="checkbox" checked={health} onChange={(e) => setHealth(e.target.checked)} className="mt-0.5 h-4 w-4" />
+            <span>I consent to The Surf Sequence storing {minor ? `${firstName}'s` : 'my'} health and safety information (emergency contact, allergies, injuries, medical notes) so the coaches can teach {minor ? 'them' : 'me'} safely. Only the staff who coach {minor ? 'them' : 'me'} can see it.</span>
+          </label>
+        )}
         <label className="flex items-start gap-2.5 text-[13px] cursor-pointer">
           <input type="checkbox" checked={ok} onChange={(e) => setOk(e.target.checked)} className="mt-0.5 h-4 w-4" />
-          <span>I have read and accept the Terms of Service and the Privacy Policy.</span>
+          <span>I have read and accept the Terms of Service and the Privacy Policy{minor ? ` on behalf of ${firstName}` : ''}.</span>
         </label>
         {err && <p className="text-[12px]" style={{ color: '#FF8A8F' }}>{err}</p>}
-        <button type="button" disabled={!ok || busy}
+        <button type="button" disabled={!ok || busy || (needsHealth && !health) || (needsGuardian && guardian.trim().length < 3)}
           onClick={async () => {
             setBusy(true); setErr('');
-            const r = await acceptTerms(token);
+            const r = await acceptTerms(token, { guardianName: needsGuardian ? guardian : null, healthConsent: needsHealth ? health : undefined });
             if (!r.ok) { setErr(r.error || 'Could not save.'); setBusy(false); return; }
             // Cerrar la puerta acá mismo: volver a renderizar el portal entero
             // (20 lecturas) solo para que desaparezca era lo que hacía sentir
