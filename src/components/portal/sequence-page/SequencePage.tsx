@@ -26,16 +26,13 @@ import { ZoomImage } from '@/components/shared/ImageLightbox';
 // Tokens del paquete (public/tss/tokens.css) + semánticos legibles sobre crema.
 /** Una lámina del método: el mapa de la secuencia de una sola mirada. Se
  *  toca y se abre en grande (Marcelo 2026-09-24). Todas miden 1672x941. */
-function Lamina({ src, alt, caption }: { src: string; alt: string; caption?: string }) {
+function Lamina({ src, alt }: { src: string; alt: string; caption?: string }) {
   return (
     <figure className="m-0 mb-3">
-      {/* Se abre adentro del app (ImageLightbox), no en otra pestaña. */}
-      <ZoomImage src={src} alt={alt} caption={caption ?? alt} className="rounded-[10px] overflow-hidden" style={{ border: '1px solid #DCD7C6' }} />
-      {caption && (
-        <figcaption className="mt-1.5 text-[12px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#55666E' }}>
-          {caption}
-        </figcaption>
-      )}
+      {/* Se abre adentro del app (ImageLightbox), no en otra pestaña. Solo la
+          imagen (Marcelo 2026-09-26: "no le agregues texto a las imágenes"):
+          sin pie de foto, tampoco en grande. El alt queda para lectores de pantalla. */}
+      <ZoomImage src={src} alt={alt} caption={null} className="rounded-[10px] overflow-hidden" style={{ border: '1px solid #DCD7C6' }} />
     </figure>
   );
 }

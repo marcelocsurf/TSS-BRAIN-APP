@@ -80,7 +80,7 @@ function Game({ p, portal }: { p?: PieceRow; portal?: string }) {
  *  no se lee de otro modo. Todas miden 1672x941. */
 function Lamina({ src, alt }: { src: string; alt: string }) {
   // Se abre adentro del app (ImageLightbox), no en otra pestaña.
-  return <ZoomImage src={src} alt={alt} caption={alt} className="mb-4 rounded-[10px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }} />;
+  return <ZoomImage src={src} alt={alt} caption={null} className="mb-4 rounded-[10px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }} />;
 }
 
 function Card({ title, children, color, id }: { title?: string; children: React.ReactNode; color?: string; id?: string }) {

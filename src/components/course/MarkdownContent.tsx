@@ -408,8 +408,10 @@ function renderBlock(block: Block, idx: number): React.ReactNode {
     case 'image':
       return (
         <figure key={idx} className="my-4 mx-0">
-          <ZoomImage src={block.src} alt={block.alt} caption={block.alt || null} width={1672} height={941} className="rounded-lg overflow-hidden border border-[#DCD7C6]" />
-          {block.alt && <figcaption className="text-[12px] text-[#55666E] mt-1.5">{block.alt} · tap to enlarge</figcaption>}
+          {/* Solo la imagen (Marcelo 2026-09-26: "no le agregues texto a las
+              imágenes, el texto ya existe abajo"). El alt queda para lectores
+              de pantalla; no se dibuja pie de foto ni en grande. */}
+          <ZoomImage src={block.src} alt={block.alt} caption={null} width={1672} height={941} className="rounded-lg overflow-hidden border border-[#DCD7C6]" />
         </figure>
       );
     case 'hr':
