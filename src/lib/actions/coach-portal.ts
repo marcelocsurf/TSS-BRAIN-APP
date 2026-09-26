@@ -723,6 +723,9 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     // courses (Method, Foundations Tier 1, Career, Safety Canon, …) are
     // universal — any course_section not in the belt map shows to everyone.
     coachCourses: (coachCoursesResult.data ?? []).filter((l: any) => {
+      // Sin cursos (2026-09-26, Walter · Apnea): instructor de un servicio que
+      // no es surf. Ve su portal (reservas, plan, espacios) pero ningún curso.
+      if ((coach as any).course_access_scope === 'none') return false;
       // Alcance restringido: instructores en formación inicial ven SOLO
       // Safety Canon + Foundations (método) hasta que se les abra el resto.
       if ((coach as any).course_access_scope === 'safety_method') {
@@ -810,10 +813,12 @@ export async function getCoachLessonDetail(
   // Resolve coach by token to scope progress lookup
   const { data: coach } = await admin
     .from('coaches')
-    .select('id')
+    .select('id, course_access_scope')
     .eq('portal_token', token)
     .single();
   if (!coach) return null;
+  // Alcance sin cursos: tampoco se abre una lección por link directo.
+  if ((coach as any).course_access_scope === 'none') return null;
 
   const { data: lesson } = await admin
     .from('lessons')

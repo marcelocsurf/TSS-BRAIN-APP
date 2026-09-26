@@ -33,8 +33,9 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
   if (!cfg || !UUID_RE.test(token)) notFound();
 
   const admin = createAdminClient();
-  const { data: coach } = await admin.from('coaches').select('id, course_access_granted').eq('portal_token', token).maybeSingle();
-  if (!coach || !coach.course_access_granted) notFound();
+  const { data: coach } = await admin.from('coaches').select('id, course_access_granted, course_access_scope').eq('portal_token', token).maybeSingle();
+  // Alcance sin cursos (2026-09-26): el material del método tampoco se abre.
+  if (!coach || !coach.course_access_granted || (coach as any).course_access_scope === 'none') notFound();
 
   const [{ data: lessonRows }, { data: pieceRows }, { data: videoRows }, { data: coachRows }] = await Promise.all([
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),

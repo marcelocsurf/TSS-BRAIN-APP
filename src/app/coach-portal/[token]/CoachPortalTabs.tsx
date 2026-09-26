@@ -150,7 +150,10 @@ export function CoachPortalTabs({
   // (schedule + tasks), Espacios (they prepare/clean the rooms), Courses,
   // plus a Sell tab when they're a seller. Coaching keeps the full set.
   const SELL_TAB = { key: 'sell' as Tab, label: 'Vender', Icon: BarChart2 };
-  const visibleTabs = isSupport
+  // Alcance 'none' (2026-09-26): instructor sin cursos (p. ej. Apnea) — la
+  // pestaña Cursos no aparece.
+  const noCourses = (coach as any).course_access_scope === 'none';
+  const visibleTabs = (isSupport
     ? [
         TABS.find((t) => t.key === 'home')!,
         TABS.find((t) => t.key === 'spaces')!,
@@ -158,7 +161,7 @@ export function CoachPortalTabs({
         ...(canSell ? [SELL_TAB] : []),
         TABS.find((t) => t.key === 'courses')!,
       ]
-    : TABS;
+    : TABS).filter((t) => !(noCourses && t.key === 'courses'));
 
   return (
     <div
@@ -203,7 +206,7 @@ export function CoachPortalTabs({
         {activeTab === 'sell' && canSell && (
           <SellTab services={data.academyServices} token={coach.portal_token} />
         )}
-        {activeTab === 'courses' && (
+        {activeTab === 'courses' && !noCourses && (
           <CoursesTab
             courses={data.coachCourses}
             progress={data.courseProgress}

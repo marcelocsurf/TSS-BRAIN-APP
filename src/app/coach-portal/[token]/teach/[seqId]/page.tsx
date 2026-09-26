@@ -38,10 +38,10 @@ export default async function CoachTeachPage({ params, searchParams }: {
   const admin = createAdminClient();
   const { data: coach } = await admin
     .from('coaches')
-    .select('id, course_access_granted')
+    .select('id, course_access_granted, course_access_scope')
     .eq('portal_token', token)
     .maybeSingle();
-  if (!coach || !coach.course_access_granted) notFound();
+  if (!coach || !coach.course_access_granted || (coach as any).course_access_scope === 'none') notFound();
 
   // Los juegos de una secuencia 'circle' viven en su config (play), no por paso.
   const playIds = [
