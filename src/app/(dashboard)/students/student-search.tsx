@@ -14,8 +14,15 @@ export function StudentSearch({ defaultValue, belt, status }: Props) {
   const searchParams = useSearchParams();
   const [value, setValue] = useState(defaultValue);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
+  // Bug (Marcelo 2026-09-26: "pongo una letra y me la borra"): cada búsqueda
+  // hace un push a la URL y la página vuelve del servidor con el q VIEJO; este
+  // efecto pisaba lo que el usuario siguió tecleando durante el viaje. Mientras
+  // el campo tiene el foco, lo que escribe el usuario manda; la URL solo
+  // resincroniza el campo cuando no está escribiendo (p. ej. "Clear all").
   useEffect(() => {
+    if (document.activeElement === inputRef.current) return;
     setValue(defaultValue);
   }, [defaultValue]);
 
@@ -29,7 +36,8 @@ export function StudentSearch({ defaultValue, belt, status }: Props) {
     } else {
       p.delete('q');
     }
-    router.push(`/students${p.toString() ? '?' + p.toString() : ''}`);
+    // replace, no push: tecleo ≠ historial (antes cada pausa era un "atrás").
+    router.replace(`/students${p.toString() ? '?' + p.toString() : ''}`);
   }, [searchParams, router]);
 
   const handleChange = (newValue: string) => {
@@ -41,6 +49,7 @@ export function StudentSearch({ defaultValue, belt, status }: Props) {
   return (
     <div className="mb-4">
       <input
+        ref={inputRef}
         type="text"
         value={value}
         onChange={(e) => handleChange(e.target.value)}
