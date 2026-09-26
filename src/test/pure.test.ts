@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { pickWeakestCriterion } from '@/lib/utils/criteria';
 import { takesRunStar, selfStarsThatCount } from '@/lib/stars';
+import { sequenceStarChanges } from '@/lib/evaluation/sequence-stars';
 import { dobError } from '@/lib/utils/dob';
 import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
 import { computeV2, isValidV2Answers } from '@/lib/quiz/surf-level-v2';
@@ -269,5 +270,24 @@ describe('takesRunStar — un run a 4★+ cuenta para cada paso (2026-09-25)', (
     expect(selfStarsThatCount(5, 'assessed')).toBe(3);
     expect(selfStarsThatCount(5, 'executed')).toBe(5);
     expect(selfStarsThatCount(null)).toBeNull();
+  });
+});
+
+describe('sequenceStarChanges — estrellas para toda la secuencia (2026-09-26)', () => {
+  const cur = (m: Record<string, number | null>) => (id: string) => m[id] ?? null;
+  it('"La tiene" sube a 4★ lo vacío y lo que estaba abajo; no toca lo que ya llega', () => {
+    const r = sequenceStarChanges(['a', 'b', 'c', 'd'], cur({ a: null, b: 3, c: 4, d: 5 }), 4, { raiseOnly: true });
+    expect(r).toEqual([{ stepId: 'a', stars: 4 }, { stepId: 'b', stars: 4 }]);
+  });
+  it('5★ a la línea: sube todo a 5; una 5★ vieja no se reescribe', () => {
+    const r = sequenceStarChanges(['a', 'b', 'c'], cur({ a: null, b: 4, c: 5 }), 5);
+    expect(r).toEqual([{ stepId: 'a', stars: 5 }, { stepId: 'b', stars: 5 }]);
+  });
+  it('4★ a la línea nunca baja una 5★ de otro camp, pero sí corrige una 5★ de esta pasada', () => {
+    const r = sequenceStarChanges(['a', 'b'], cur({ a: 5, b: 5 }), 4, { writtenThisPass: new Set(['b']) });
+    expect(r).toEqual([{ stepId: 'b', stars: 4 }]);
+  });
+  it('nada que escribir cuando todo ya está en esa estrella', () => {
+    expect(sequenceStarChanges(['a', 'b'], cur({ a: 4, b: 4 }), 4)).toEqual([]);
   });
 });

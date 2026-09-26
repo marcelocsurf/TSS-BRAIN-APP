@@ -22,16 +22,24 @@
 //
 // No hace falta guardar nada nuevo: el veredicto se escribe en las notas de los
 // pasos, que es de donde el alumno ya lee todo.
-//   La tiene  → 4★ SOLO donde no hay nota. Nunca baja una que ya existe: si en
-//               un camp anterior sacó 5★, se queda en 5★. No es un invento —
-//               por el canon, decir "la tiene" ES afirmar que cada parte llega
-//               a la barra, y 4★ es el mínimo consistente con eso.
+//   La tiene  → 4★ donde no hay nota o donde estaba por debajo de la barra.
+//               Nunca baja una que ya existe: si en un camp anterior sacó 5★,
+//               se queda en 5★. Por el canon, decir "la tiene" ES afirmar que
+//               cada parte llega a la barra, y 4★ es el mínimo consistente.
+//               (Hasta 2026-09-26 solo llenaba lo vacío: un paso en 3★ dejaba
+//               la secuencia en "Le falta" sin salida — Marcelo lo vio en la
+//               evaluación final. Regla pura en lib/evaluation/sequence-stars.)
+//   ★ de línea → 4★ o 5★ en la cabecera: toda la secuencia queda en esa
+//               estrella (una nota vieja más alta se respeta; una de esta
+//               pasada se corrige). 1–3★ no escribe nada: abre los pasos para
+//               marcar cuál la frena.
 //   Le falta  → las que marca con sus estrellas; el resto de la secuencia, 4★
 //               donde estuviera vacío.
-//   No la vi  → deshace SOLO lo que se escribió en esta pasada. Una nota
-//               anterior no se toca: para borrarla está la × del paso, que es
-//               deliberada y de a una. setOfficialStepRating hace upsert con
-//               null y NO hay historial: una nota borrada no vuelve.
+//   No la vi  → deshace SOLO lo que se escribió en esta pasada y devuelve lo
+//               que había antes. Una nota anterior no se toca: para borrarla
+//               está la × del paso, que es deliberada y de a una.
+//               setOfficialStepRating hace upsert con null y NO hay historial:
+//               una nota borrada no vuelve.
 //
 // Es la MISMA evaluación en las dos puertas: al cerrar un camp y en la ficha
 // del alumno en cualquier momento. Cerrar un camp es solo uno de los momentos.
@@ -50,6 +58,7 @@ import {
   SIDE_SHORT,
 } from '@/lib/constants/learning-blocks';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
+import { sequenceStarChanges } from '@/lib/evaluation/sequence-stars';
 import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
 
 export interface EvalRow extends SequenceGroupable {
@@ -87,11 +96,15 @@ export function SequenceEvaluation({
 }) {
   const { groups, orphans } = groupBySequence(rows);
   const [open, setOpen] = useState<Record<string, boolean>>({});
+  // "Le falta" / 1–3★ en la cabecera: recordar que el coach está buscando el
+  // paso que frena, para mostrarle la pista arriba de la lista.
+  const [hint, setHint] = useState<Record<string, boolean>>({});
 
   const starsOf = (id: string) => ratings[id] ?? null;
 
-  // Qué notas escribió ESTA pantalla. "No la vi" solo puede deshacer esto:
-  // nunca la nota que otro coach dejó en otro camp.
+  // Qué notas escribió ESTA pantalla y qué había antes en cada una. "No la
+  // vi" solo puede deshacer esto, y devuelve lo anterior: nunca la nota que
+  // otro coach dejó en otro camp.
   //
   // En la ficha del alumno cada cambio se guarda al instante, y
   // setOfficialStepRating hace UPSERT con coach_rating: null — o sea PISA la
@@ -100,27 +113,39 @@ export function SequenceEvaluation({
   // las SEIS secuencias de Blue, un "No la vi" sobre una arrastraba los
   // prerequisitos de las otras cinco.
   const written = useRef<Set<string>>(new Set());
+  const before = useRef<Map<string, number | null>>(new Map());
   const emit = (changes: { stepId: string; stars: number | null }[]) => {
     if (changes.length === 0) return; // nunca escribir de gusto
-    for (const c of changes) written.current.add(c.stepId);
+    for (const c of changes) {
+      if (!before.current.has(c.stepId)) before.current.set(c.stepId, starsOf(c.stepId));
+      written.current.add(c.stepId);
+    }
     onRate(changes);
   };
+  const ids = (rs: EvalRow[]) => rs.map((r) => r.step_id);
 
+  /** "La tiene": cada paso llega a la barra. Sube a 4★ lo vacío y lo que
+   *  estaba abajo; lo que ya está en 4★ o 5★ no se toca. */
   const markOwned = (rs: EvalRow[]) =>
-    emit(
-      rs
-        .filter((r) => starsOf(r.step_id) === null)
-        .map((r) => ({ stepId: r.step_id, stars: SEQUENCE_PASS_STARS }))
-    );
+    emit(sequenceStarChanges(ids(rs), starsOf, SEQUENCE_PASS_STARS, { raiseOnly: true }));
 
-  /** Deshace lo de esta pasada. Lo anterior no se toca — para borrar una nota
+  /** Estrellas para TODA la línea (4★ o 5★): la secuencia queda lograda con
+   *  esa cantidad. Una nota vieja más alta se respeta; una de esta pasada se
+   *  corrige. */
+  const rateSequence = (rs: EvalRow[], n: number) =>
+    emit(sequenceStarChanges(ids(rs), starsOf, n, { writtenThisPass: written.current }));
+
+  /** Deshace lo de esta pasada y devuelve lo que había. Para borrar una nota
    *  vieja está la × del paso, que es deliberada y de a una. */
-  const markUnseen = (rs: EvalRow[]) =>
-    emit(
-      rs
-        .filter((r) => starsOf(r.step_id) !== null && written.current.has(r.step_id))
-        .map((r) => ({ stepId: r.step_id, stars: null }))
-    );
+  const markUnseen = (rs: EvalRow[]) => {
+    const changes = rs
+      .filter((r) => written.current.has(r.step_id))
+      .map((r) => ({ stepId: r.step_id, stars: before.current.get(r.step_id) ?? null }))
+      .filter((c) => c.stars !== starsOf(c.stepId));
+    for (const r of rs) { written.current.delete(r.step_id); before.current.delete(r.step_id); }
+    if (changes.length === 0) return;
+    onRate(changes);
+  };
 
   return (
     <div className="space-y-2.5">
@@ -146,24 +171,42 @@ export function SequenceEvaluation({
                     alumno{self.rating != null ? ` ${self.rating}★` : ''}{selfHeld ? ` · lo frena ${selfHeld.step_title ?? selfHeld.step_id}` : ''}
                   </span>
                 )}
-                <span className="ml-auto text-[10px] font-mono shrink-0">
-                  {v.state === 'owned' ? (
-                    <span className="text-emerald-600 font-bold">✓ la tiene</span>
-                  ) : v.state === 'unrated' ? (
-                    <span className="text-[#55666E]">sin evaluar</span>
-                  ) : (
-                    <span className="text-amber-700">
-                      {v.min}★
-                      {v.blockerIndex >= 0 &&
-                        ` · empezar por ${g.rows[v.blockerIndex].step_title ?? ''}`}
-                    </span>
-                  )}
+                <span className="ml-auto inline-flex items-center gap-2 shrink-0">
+                  {/* Estrellas de TODA la línea (Marcelo 2026-09-26): 4★ o 5★
+                      la dejan lograda con esa cantidad; 1–3★ abre los pasos
+                      para marcar cuál la frena. */}
+                  <StarRating
+                    value={v.min}
+                    size="sm"
+                    variant="official"
+                    onChange={(n) => {
+                      if (n >= SEQUENCE_PASS_STARS) {
+                        rateSequence(g.rows, n);
+                        setOpen((o) => ({ ...o, [g.id]: false }));
+                        setHint((h) => ({ ...h, [g.id]: false }));
+                      } else {
+                        setOpen((o) => ({ ...o, [g.id]: true }));
+                        setHint((h) => ({ ...h, [g.id]: true }));
+                      }
+                    }}
+                  />
+                  <span className="text-[10px] font-mono">
+                    {v.state === 'owned' ? (
+                      <span className="text-emerald-600 font-bold">✓ la tiene</span>
+                    ) : v.state === 'unrated' ? (
+                      <span className="text-[#55666E]">sin evaluar</span>
+                    ) : v.blockerIndex >= 0 ? (
+                      <span className="text-amber-700">empezar por {g.rows[v.blockerIndex].step_title ?? ''}</span>
+                    ) : (
+                      <span className="text-amber-700">faltan pasos por ver</span>
+                    )}
+                  </span>
                 </span>
               </div>
               <div className="flex gap-1.5 mt-2">
                 <button
                   type="button"
-                  onClick={() => { markOwned(g.rows); setOpen((o) => ({ ...o, [g.id]: false })); }}
+                  onClick={() => { markOwned(g.rows); setOpen((o) => ({ ...o, [g.id]: false })); setHint((h) => ({ ...h, [g.id]: false })); }}
                   className={`flex-1 h-8 rounded-lg text-[11px] font-semibold border ${
                     v.state === 'owned'
                       ? 'bg-emerald-600 text-white border-emerald-600'
@@ -174,7 +217,7 @@ export function SequenceEvaluation({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setOpen((o) => ({ ...o, [g.id]: true }))}
+                  onClick={() => { setOpen((o) => ({ ...o, [g.id]: true })); setHint((h) => ({ ...h, [g.id]: true })); }}
                   className={`flex-1 h-8 rounded-lg text-[11px] font-semibold border ${
                     v.state === 'working'
                       ? 'bg-amber-500 text-white border-amber-500'
@@ -185,7 +228,7 @@ export function SequenceEvaluation({
                 </button>
                 <button
                   type="button"
-                  onClick={() => { markUnseen(g.rows); setOpen((o) => ({ ...o, [g.id]: false })); }}
+                  onClick={() => { markUnseen(g.rows); setOpen((o) => ({ ...o, [g.id]: false })); setHint((h) => ({ ...h, [g.id]: false })); }}
                   className={`flex-1 h-8 rounded-lg text-[11px] font-semibold border ${
                     v.state === 'unrated'
                       ? 'bg-gray-700 text-white border-gray-700'
@@ -199,6 +242,11 @@ export function SequenceEvaluation({
 
             {isOpen && (
               <div className="divide-y divide-gray-100">
+                {hint[g.id] && v.state !== 'owned' && (
+                  <p className="m-0 px-3 py-1.5 text-[10.5px] text-amber-800" style={{ background: '#FFFBF0' }}>
+                    Marcá con estrellas el paso que la frena · el resto de la línea queda en 4★.
+                  </p>
+                )}
                 {g.rows.map((r, i) => {
                   const val = starsOf(r.step_id);
                   const blocks = i === v.blockerIndex;

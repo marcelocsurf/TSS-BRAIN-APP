@@ -61,7 +61,10 @@ export function StarRating({
               key={n}
               type="button"
               disabled={readOnly}
-              onClick={() => !readOnly && onChange?.(n)}
+              // Al tocar, soltar el hover: en teléfono el hover se queda pegado
+              // y la fila mostraba N★ aunque no se hubiera escrito nada
+              // (estrellas de línea 1–3★ en la evaluación, 2026-09-26).
+              onClick={() => { if (readOnly) return; setHover(null); onChange?.(n); }}
               onMouseEnter={() => !readOnly && setHover(n)}
               className={`${cls.star} transition-all ${
                 readOnly ? 'cursor-default' : 'cursor-pointer hover:scale-110'
