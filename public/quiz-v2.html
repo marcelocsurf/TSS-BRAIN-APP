@@ -243,32 +243,29 @@ const QS=[
 ];
 
 /* ── Niveles: cintas + virtudes del canon, bandas /100 por prototipos ──
+   2026-09-26 (Marcelo): la tarjeta del nivel es párrafo + cita. La lista
+   "Focus next" repetía la de "In the course at this level" (CURRICULUM),
+   que es el programa real del app — una sola lista por resultado.
    Beginner todo-0=0 · Novice todo-3=30 · Foundation típico=54 ·
    Emerging=76 · Pre-Elite=88 · Elite≈100. Margen anti-sesgo: 2 clics. */
 const LEVELS=[
  {name:"Beginner",belt:"White Belt",value:"Humility",min:0,max:14,color:"#C8D0DC",
   open:"You're at the very beginning \u2014 and that's an advantage: nothing to unlearn. Sliding on water is already yours from the very first foam. Right now the whole game is comfort, safety and your first waves.",
-  focus:["Ocean comfort \u2014 getting in, getting out, and feeling safe in the whitewater","Paddle technique \u2014 the engine that catches you waves","A clean, repeatable pop-up and your first glides"],
   quote:"White Belt begins with humility: open to learn, willing to fall, ready to grow."},
  {name:"Novice",belt:"Yellow Belt",value:"Process & Resilience",min:15,max:41,color:"#F5C518",
   open:"You can catch waves \u2014 that's a real milestone. This stage is about the OCEAN as much as the board: reading it, holding your own in the lineup, and becoming self-sufficient wave by wave.",
-  focus:["Getting out on your own \u2014 keeping your board with you through the whitewater","Reading waves and positioning \u2014 raising how many YOU catch, unassisted","Drawing on the face of the wave with more awareness and fundamentals \u2014 self-sufficient, wave by wave"],
   quote:"Resilience isn't enduring \u2014 it's accepting the process and giving it everything."},
  {name:"Foundation",belt:"Blue Belt",value:"Conscious Commitment",min:42,max:63,color:"#1E6FBF",
   open:"You're self-sufficient in the water and the board answers you. This is the most important level in surf development: the quality of what you build here \u2014 speed, connection, your turns \u2014 decides everything that follows.",
-  focus:["Generating and managing speed \u2014 the wave's force and the force you create yourself","Turning where you decide \u2014 both directions, linked, on YOUR board","Rail changes, bottom turns and the fundamentals to draw the lines you want \u2014 board, body and wave connected into expression"],
   quote:"There are no shortcuts. You have to walk the path."},
  {name:"Emerging",belt:"Purple Belt",value:"Personal Responsibility",min:64,max:85,color:"#7B4FBE",
   open:"You're comfortable in a real range of conditions and your own style is taking shape. This is where surfing becomes precise \u2014 and where the mental game starts to matter as much as the physical one.",
-  focus:["Committing fully to your lines \u2014 drawing them with intention, not by accident","Holding speed and control through critical sections","Consistency: making your good waves your normal waves"],
   quote:"The difference between good and great is what you do on every wave."},
  {name:"Pre-Elite",belt:"Brown Belt",value:"Gratitude",min:86,max:96,color:"#7D4E27",
   open:"You command the fundamentals and your surfing is fluid and efficient \u2014 in almost any ocean. What refines from here is mastery, not novelty.",
-  focus:["Linking everything continuously, always working from the pocket","Expanding your repertoire and variation across different waves","Performing when it matters \u2014 heavier days, higher stakes"],
   quote:"Gratitude for the journey."},
  {name:"Elite",belt:"Black Belt",value:"Impact & Sharing",min:97,max:100,color:"#555",
   open:"You've integrated every pillar \u2014 physical, technical, tactical and mental. You read and adapt to almost any spot, from experience and good decisions.",
-  focus:["Refining consistency in the most demanding conditions","Understanding the why deeply enough to teach it","Expressing your own style within the structure"],
   quote:"What you received, you now share. Your way of living influences others."}];
 
 
@@ -487,10 +484,6 @@ function renderResult(r){
   const narrative=`
    <div style="max-width:440px;margin:18px auto 0;background:var(--card);border:1px solid var(--gb);border-left:3px solid ${lv.color};border-radius:14px;padding:16px 18px;text-align:left">
      <p style="font-size:.9rem;line-height:1.6;color:var(--tl)">${lv.open}</p>
-     <div class="mono" style="font-size:.6rem;font-weight:600;color:${lv.color==='#555'?'var(--tw)':lv.color};margin:12px 0 6px">Focus next</div>
-     <ul style="list-style:none;display:flex;flex-direction:column;gap:6px">
-       ${lv.focus.map(f=>`<li style="font-size:.85rem;line-height:1.5;padding-left:14px;position:relative"><span style="position:absolute;left:0;color:var(--cyan)">\u2022</span>${f}</li>`).join('')}
-     </ul>
      <p style="font-size:.88rem;font-weight:600;font-style:italic;color:var(--tw);margin-top:12px;padding-top:12px;border-top:1px solid var(--gb)">\u201c${lv.quote}\u201d</p>
    </div>`;
   /* ── LA ESCALA DE PUNTOS (pedido Marcelo 2026-08-31): dónde caíste
