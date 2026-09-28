@@ -57,7 +57,7 @@ function Check({ ok, label, partial = false, title }: { ok: boolean; label: stri
   );
 }
 
-function StudentCard({ token, row, canCoordinate = false }: { token: string; row: HostStudentRow; canCoordinate?: boolean }) {
+function StudentCard({ token, row, canCoordinate = false, canOpenFicha = false }: { token: string; row: HostStudentRow; canCoordinate?: boolean; /** Cobertura de coordinación: link a la ficha completa del panel (2026-09-28). */ canOpenFicha?: boolean }) {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<any>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -78,9 +78,14 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
     setDetail(null); // re-fetch para ver la membresía nueva
   };
 
+  const [detailError, setDetailError] = useState(false);
   useEffect(() => {
-    if (open && !detail) hostStudentDetail(token, row.id).then(setDetail).catch(() => {});
-  }, [open, detail, token, row.id]);
+    if (open && !detail && !detailError) {
+      hostStudentDetail(token, row.id)
+        .then((d) => { if (d) setDetail(d); else setDetailError(true); })
+        .catch(() => setDetailError(true));
+    }
+  }, [open, detail, detailError, token, row.id]);
 
   const copy = (url: string | null, what: string) => {
     if (!url) { setMsg('Sin link disponible'); return; }
@@ -121,6 +126,11 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
           </div>
           <button type="button" onClick={() => copy(row.portal_url, 'portal')}
             className="w-full rounded-full py-2 text-[9px] border" style={{ ...F_M, color: INK, borderColor: '#e5e7eb' }}>🔗 Copiar link del portal del alumno</button>
+          {canOpenFicha && (
+            <a href={`/students/${row.id}`} className="block w-full rounded-full py-2 text-[9px] text-center no-underline" style={{ ...F_M, background: INK, color: CYAN }}>
+              📂 Ver ficha completa
+            </a>
+          )}
 
           {/* Encuesta pendiente: antes SOLO salía por correo, así que con un
               correo dudoso (o sin correo) se perdía y nadie podía recuperarla
@@ -296,14 +306,24 @@ function StudentCard({ token, row, canCoordinate = false }: { token: string; row
                   {detail.week_wish && <p className="text-[11px] text-[#55666E]">⭐ Esta semana: {detail.week_wish}</p>}
                   {detail.barrier && <p className="text-[11px] text-[#55666E]">🧱 Barrera: {detail.barrier}</p>}
                   {detail.fears && <p className="text-[11px] text-[#55666E]">😰 Miedos: {detail.fears}</p>}
-                  {detail.injuries && <p className="text-[11px] text-[#55666E]">🩹 Lesiones: {detail.injuries}</p>}
-                  {detail.allergies && <p className="text-[11px] text-[#55666E]">⚠ Alergias: {detail.allergies}</p>}
-                  {detail.emergency && <p className="text-[11px] text-[#55666E]">🆘 Emergencia: {detail.emergency}</p>}
                 </div>
               )}
-              {detail.medical_notes && <p className="text-[11px] text-[#55666E]">🩺 {detail.medical_notes}</p>}
+              {/* Seguridad SIEMPRE a la vista (2026-09-28): antes vivía dentro de
+                  'Perfil surf' y en fichas importadas sin metas no aparecía —
+                  justo el contacto de emergencia. */}
+              {(detail.emergency || detail.injuries || detail.allergies || detail.medical_notes) && (
+                <div className="space-y-0.5 rounded-[5px] p-2.5" style={{ background: 'rgba(255,107,107,.08)', border: '1px solid rgba(255,107,107,.25)' }}>
+                  <p className="text-[9px]" style={{ ...F_M, color: '#c04545' }}>Seguridad</p>
+                  {detail.emergency && <p className="text-[11px] text-[#10263B]">🆘 Emergencia: {detail.emergency}</p>}
+                  {detail.injuries && <p className="text-[11px] text-[#10263B]">🩹 Lesiones: {detail.injuries}</p>}
+                  {detail.allergies && <p className="text-[11px] text-[#10263B]">⚠ Alergias: {detail.allergies}</p>}
+                  {detail.medical_notes && <p className="text-[11px] text-[#10263B]">🩺 {detail.medical_notes}</p>}
+                </div>
+              )}
             </div>
-          ) : <p className="text-[11px] text-[#55666E]">Cargando ficha…</p>}
+          ) : detailError
+            ? <p className="text-[11px]" style={{ color: '#c04545' }}>No se pudo cargar la ficha. Cerrá y abrí de nuevo la tarjeta.</p>
+            : <p className="text-[11px] text-[#55666E]">Cargando ficha…</p>}
         </div>
       )}
     </div>
@@ -397,12 +417,21 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
             <p style={{ ...F_M, color: CYAN }} className="text-[9px]">The Surf Sequence · Servicio al cliente</p>
             <h1 style={{ ...F_D, color: PAPER }} className="text-[24px] mt-1">{hostName}</h1>
           </div>
-          <div className="shrink-0 flex items-center gap-2">
-            {/* Cobertura de coordinación: las herramientas de planeación del coordinador (servicios, camps, coaches, staff). */}
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {/* Cobertura de coordinación: todo lo del coordinador menos costos
+                (2026-09-28). Accesos directos a servicios, alumnos y leads. */}
             {opsCoordination && (
-              <a href="/camps" className="rounded-full px-3 py-2 text-[9px]" style={{ ...F_M, background: CYAN, color: INK }}>
-                🗓 Coordinación
-              </a>
+              <>
+                <a href="/camps" className="rounded-full px-3 py-2 text-[9px]" style={{ ...F_M, background: CYAN, color: INK }}>
+                  🗓 Coordinación
+                </a>
+                <a href="/students" className="rounded-full px-3 py-2 text-[9px]" style={{ ...F_M, background: 'rgba(247,249,250,.1)', color: CYAN }}>
+                  👥 Alumnos
+                </a>
+                <a href="/students?lifecycle=lead" className="rounded-full px-3 py-2 text-[9px]" style={{ ...F_M, background: 'rgba(247,249,250,.1)', color: CYAN }}>
+                  ✨ Leads
+                </a>
+              </>
             )}
             <button type="button" onClick={() => setGuideOpen(true)}
               className="rounded-full px-3 py-2 text-[9px]" style={{ ...F_M, background: 'rgba(247,249,250,.1)', color: CYAN }}>
@@ -707,13 +736,13 @@ export function HostPortal({ token, hostName, services, hostId, academyId }: { t
             {results !== null ? (
               results.length === 0
                 ? <p className="text-[12px] text-[#55666E] text-center py-4">Sin resultados para “{q}”.</p>
-                : results.map((r) => <StudentCard key={r.id} token={token} row={r} canCoordinate={canCoordinate} />)
+                : results.map((r) => <StudentCard key={r.id} token={token} row={r} canCoordinate={canCoordinate} canOpenFicha={opsCoordination} />)
             ) : (
               <>
                 <p className="text-[9px] text-[#55666E] pt-1" style={F_M}>🔔 Necesitan atención · próximos 14 días</p>
                 {attention === null ? <p className="text-[12px] text-[#55666E]">Cargando…</p>
                   : attention.length === 0 ? <p className="text-[12px] py-3" style={{ color: '#0a7c5d' }}>Todos los inscritos tienen sus fichas completas. 🤙</p>
-                  : attention.map((r) => <StudentCard key={r.id} token={token} row={r} canCoordinate={canCoordinate} />)}
+                  : attention.map((r) => <StudentCard key={r.id} token={token} row={r} canCoordinate={canCoordinate} canOpenFicha={opsCoordination} />)}
               </>
             )}
           </div>

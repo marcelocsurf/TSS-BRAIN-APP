@@ -33,10 +33,13 @@ async function hostCanCoordinate(who: { id: string; role: string }): Promise<boo
   const admin = createAdminClient();
   const { data, error } = await admin
     .from('coaches')
-    .select('portal_can_coordinate')
+    .select('portal_can_coordinate, ops_coordination')
     .eq('id', who.id)
     .maybeSingle();
   if (error) return true; // migración 00156 pendiente → hosts habilitados
+  // Cobertura de coordinación (Kat, 2026-09-28): coordina todo menos costos,
+  // así que también confirma renovaciones y lo demás del mostrador.
+  if ((data as any)?.ops_coordination === true) return true;
   return (data as any)?.portal_can_coordinate !== false;
 }
 
@@ -87,7 +90,9 @@ function toRow(s: any, quizRequired = true): HostStudentRow {
     belt: s.belt_level ?? null,
     waiver: !!s.waiver_signed,
     intake: !!s.intake_completed_at,
-    intake_legacy: !s.intake_completed_at && !!s.date_of_birth && !!(s.emergency_contact_name || s.emergency_contact_phone),
+    // Ficha vieja importada: basta el contacto de emergencia o la fecha de
+    // nacimiento (Gregory Lines, 2026-09-28: contacto sí, nacimiento no).
+    intake_legacy: !s.intake_completed_at && !!(s.date_of_birth || s.emergency_contact_name || s.emergency_contact_phone),
     quiz: !!s.level_quiz_completed_at,
     quiz_required: quizRequired,
     lifecycle: s.lifecycle_status ?? null,
@@ -113,7 +118,13 @@ export async function hostSearchStudents(token: string, q: string): Promise<Host
     .select(STUDENT_COLS)
     .eq('academy_id', who.academy_id)
     .eq('status', 'active');
-  if (words.length <= 1) {
+  // Teléfono como lo muestra WhatsApp (+503 7008 7572): se buscan los últimos
+  // 8 dígitos sin importar espacios, guiones o paréntesis guardados (2026-09-28).
+  const digits = q.replace(/\D/g, '');
+  const phoneLike = /^[\d\s+()\-.]+$/.test(q.trim()) && digits.length >= 6;
+  if (phoneLike) {
+    query = query.ilike('phone', `%${digits.slice(-8).split('').join('%')}%`);
+  } else if (words.length <= 1) {
     query = query.or(`first_name.ilike.${term},last_name.ilike.${term},email.ilike.${term},phone.ilike.${term}`);
   } else {
     for (const w of words) query = query.or(`first_name.ilike.%${w}%,last_name.ilike.%${w}%`);
@@ -498,7 +509,7 @@ export async function hostCreateAdhocClass(token: string, input: {
   });
   // Aviso a coordinación: hay una clase nueva fuera de la parrilla, asignarle coach.
   const { createNotification } = await import('@/lib/actions/notifications');
-  const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', who.academy_id).in('role', ['coordinator', 'admin']).eq('active_status', true);
+  const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', who.academy_id).or('role.in.(coordinator,admin),and(role.eq.host,ops_coordination.eq.true)').eq('active_status', true);
   for (const c of coords ?? []) {
     await createNotification({
       recipientCoachId: c.id, type: 'adhoc_class',
@@ -652,7 +663,7 @@ export async function hostAssignCoach(token: string, campId: string, coachId: st
     }).catch(() => {});
   }
   // Trazabilidad: coordinación se entera de que el host cubrió esto.
-  const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', who.academy_id).in('role', ['coordinator', 'admin']).eq('active_status', true).neq('id', who.id);
+  const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', who.academy_id).or('role.in.(coordinator,admin),and(role.eq.host,ops_coordination.eq.true)').eq('active_status', true).neq('id', who.id);
   for (const c of coords ?? []) {
     await createNotification({
       recipientCoachId: c.id, type: 'assignment',
@@ -695,7 +706,7 @@ function classLabel(dateISO: string, time: string) {
 
 async function notifyClassChange(admin: any, who: any, campId: string, title: string, body: string, effectiveCoachId: string | null) {
   const { createNotification } = await import('@/lib/actions/notifications');
-  const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', who.academy_id).in('role', ['coordinator', 'admin']).eq('active_status', true).neq('id', who.id);
+  const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', who.academy_id).or('role.in.(coordinator,admin),and(role.eq.host,ops_coordination.eq.true)').eq('active_status', true).neq('id', who.id);
   const targets = [...new Set([...(coords ?? []).map((c: any) => c.id), ...(effectiveCoachId ? [effectiveCoachId] : [])])];
   for (const id of targets) {
     await createNotification({ recipientCoachId: id, type: 'adhoc_class', title, body, link: null, metadata: { campInstanceId: campId } }).catch(() => {});

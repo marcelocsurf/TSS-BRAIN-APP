@@ -125,6 +125,7 @@ export default async function AcademyDetailPage({ params }: Props) {
         activeServices={(activeServicesList.data ?? []) as any[]}
         boards={boards}
         viewerIsPlatformAdmin={viewerIsPlatformAdmin}
+        canSeeBilling={viewerIsPlatformAdmin || !(me as any)?.ops_only}
       />
     </div>
   );

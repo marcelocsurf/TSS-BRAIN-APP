@@ -23,17 +23,18 @@ const REPORTS: { href: string; title: string; desc: string; Icon: typeof DollarS
 
 export default async function ReportsIndexPage() {
   const me = await getCurrentCoach();
-  // Cobertura de coordinación (host): sin acceso a lo que no es planeación.
-  if ((me as any)?.ops_only) redirect('/dashboard');
   if (!me || !(me.is_platform_admin || me.role === 'admin' || me.role === 'coordinator')) {
     redirect('/dashboard');
   }
 
   // Adherencia de programas (Alto Rendimiento): cruza academias, así que solo
   // aparece para el admin de plataforma — la página también lo gatea.
+  // Cobertura de coordinación (Kat): todos los reportes MENOS el P&L, que es
+  // costos y margen (2026-09-28).
+  const baseReports = (me as any).ops_only ? REPORTS.filter((r) => r.href !== '/reports/pnl') : REPORTS;
   const visibleReports = me.is_platform_admin
     ? [
-        ...REPORTS,
+        ...baseReports,
         {
           href: '/reports/programas',
           title: 'Programas · Adherencia',
@@ -41,7 +42,7 @@ export default async function ReportsIndexPage() {
           Icon: ClipboardList,
         },
       ]
-    : REPORTS;
+    : baseReports;
 
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">

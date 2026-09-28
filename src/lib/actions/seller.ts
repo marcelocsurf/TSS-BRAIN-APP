@@ -171,7 +171,7 @@ export async function sellerReserveSpot(token: string, campId: string, input: {
     .from('coaches')
     .select('id, role')
     .eq('academy_id', coach.academy_id)
-    .in('role', ['coordinator', 'admin'])
+    .or('role.in.(coordinator,admin),and(role.eq.host,ops_coordination.eq.true)')
     .eq('active_status', true);
   for (const c of coords ?? []) {
     if (c.id === coach.id) continue;

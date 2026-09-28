@@ -46,6 +46,8 @@ export async function getAcademyPnL(opts: {
     totals: { seatRevenueCents: 0, membershipRevenueCents: 0, revenueCents: 0, coachCostCents: 0, netCents: 0, marginPct: null },
   };
   if (!scope.ok) return { ...base, error: 'No autorizado.' };
+  // Cobertura de coordinación (Kat): todo menos costos — el P&L es costos.
+  if (scope.me?.ops_only) return { ...base, error: 'No autorizado.' };
 
   const admin = createAdminClient();
   const only = scope.scopeAcademyId; // null = todas (platform admin sin override)

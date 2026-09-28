@@ -33,6 +33,8 @@ export default async function AcademyBillingPage({ params }: Props) {
   // Coordinators of this academy can see their own bill; admins can see any.
   if (!me) redirect('/');
   if (!isAdmin && me.academy_id !== id) redirect('/dashboard');
+  // Cobertura de coordinación (Kat): lo que la academia paga a TSS es costo (2026-09-28).
+  if (!isAdmin && (me as any).ops_only) redirect('/dashboard');
 
   const admin = createAdminClient();
   const { data: academy } = await admin

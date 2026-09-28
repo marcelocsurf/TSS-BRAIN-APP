@@ -361,7 +361,7 @@ export async function deskTransferSeat(token: string, participantId: string, tar
   const tgtCoach = ((target as any).head_coach_status === 'accepted' && (target as any).head_coach_id) ? (target as any).head_coach_id : (target as any).coach_id;
   await notify(curCoach, `Transferencia: ${name} sale de tu grupo`, `${fromName} → ${toName}. Su bitácora queda en su perfil.`);
   await notify(tgtCoach, `Transferencia: ${name} entra a tu grupo`, `Viene de ${fromName} — revisá su perfil y bitácora antes de planear.`);
-  const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', who.academy_id).in('role', ['coordinator', 'admin']).eq('active_status', true);
+  const { data: coords } = await admin.from('coaches').select('id').eq('academy_id', who.academy_id).or('role.in.(coordinator,admin),and(role.eq.host,ops_coordination.eq.true)').eq('active_status', true);
   for (const c of coords ?? []) {
     if (c.id === curCoach || c.id === tgtCoach) continue;
     await notify(c.id, `Transferencia de grupo: ${name}`, `${fromName} → ${toName}${priceDiff !== 0 ? ` · dif. $${(priceDiff / 100).toFixed(2)} por ajustar` : ''}. Pago ${paid ? 'ya realizado' : 'pendiente en recepción'}.`);

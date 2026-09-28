@@ -69,9 +69,11 @@ interface Props {
   boards: Board[];
   /** Platform admin sees admin-only controls (assign coordinator, invite coach, delete). */
   viewerIsPlatformAdmin?: boolean;
+  /** false = la cobertura de coordinación (Kat) no ve lo que la academia paga a TSS (2026-09-28). */
+  canSeeBilling?: boolean;
 }
 
-export function AcademyDetail({ academy, coordinator, stats, coaches, activeServices, boards, viewerIsPlatformAdmin = false }: Props) {
+export function AcademyDetail({ academy, coordinator, stats, coaches, activeServices, boards, viewerIsPlatformAdmin = false, canSeeBilling = true }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
@@ -278,12 +280,14 @@ export function AcademyDetail({ academy, coordinator, stats, coaches, activeServ
         >
           {pending ? 'Working…' : 'Enter as this academy →'}
         </button>
+        {canSeeBilling && (
         <a
           href={`/academies/${academy.id}/billing`}
           className="px-4 py-3 text-sm font-semibold rounded-[5px] bg-[#F7F9FA] border border-[#DCD7C6] text-[var(--tss-navy)] hover:bg-[#F7F9FA] transition-all shadow-sm"
         >
           Billing
         </a>
+        )}
       </div>
 
       {/* Coordinator — admin-only management */}

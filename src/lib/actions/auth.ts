@@ -13,10 +13,11 @@ export interface CurrentCoach {
   academy_id?: string | null;
   is_platform_admin?: boolean;
   /** Host con cobertura de coordinación (coaches.ops_coordination): entra como
-   *  coordinator SOLO para planeación (servicios, camps, coaches, staff, alumnos,
-   *  espacios). Costos, reportes, nómina, ventas y códigos quedan cerrados.
-   *  Marcelo (2026-09-15, Kat): "las herramientas del coordinador en cuanto a
-   *  planeación y coordinación para cubrir cuando el coordinador no está". */
+   *  coordinator con TODO lo del coordinador MENOS costos: Costs, Payroll y el
+   *  reporte P&L (y el panel de costo de cada servicio). Marcelo (2026-09-28,
+   *  Kat): "debe poder ver todo, quiénes se inscriben, los leads… ella hace la
+   *  coordinación los días que no está Rick; lo único que no, costos". Antes
+   *  (2026-09-15) era solo planeación. */
   ops_only?: boolean;
 }
 

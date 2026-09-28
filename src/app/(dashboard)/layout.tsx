@@ -115,10 +115,10 @@ export default async function DashboardLayout({
     .select('display_name, role, academy_id, ops_coordination')
     .eq('auth_user_id', user.id)
     .single();
-  // Cobertura de coordinación (Kat, 2026-09-15): un host con ops_coordination
-  // ve el menú del coordinador PERO solo lo de planeación.
+  // Cobertura de coordinación (Kat): un host con ops_coordination ve el menú
+  // del coordinador completo MENOS costos (2026-09-28; antes solo planeación).
   const opsOnly = (coach as any)?.role === 'host' && (coach as any)?.ops_coordination === true;
-  const OPS_ALLOWED = new Set(['/', '/students', '/camps', '/coaches', '/spaces', '/desk']);
+  const OPS_BLOCKED = new Set(['/costs', '/payroll']);
 
   if (coachError) {
     console.error('[DashboardLayout] Failed to fetch coach for user', user.id, coachError);
@@ -141,7 +141,7 @@ export default async function DashboardLayout({
   // 'admin': sin este filtro, un admin de academia veía el ítem y se
   // topaba con "Solo el dueño del método".
   const visibleNav = getNavItemsForRole(effectiveRole).filter(
-    (i) => (i.href !== '/metodo' || (isAdmin && !actAsId)) && (!opsOnly || OPS_ALLOWED.has(i.href)),
+    (i) => (i.href !== '/metodo' || (isAdmin && !actAsId)) && (!opsOnly || !OPS_BLOCKED.has(i.href)),
   );
   const navGroups: { title: string | null; items: NavItem[] }[] = effectiveRole === 'coordinator'
     ? COORD_GROUPS

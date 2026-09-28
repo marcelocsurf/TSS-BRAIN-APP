@@ -33,7 +33,8 @@ export async function listPendingPromotions(): Promise<PendingPromotion[]> {
       .eq('status', 'pending')
       .order('created_at', { ascending: true });
 
-    const role = (me as any).role;
+    // Cobertura de coordinación (Kat, host + ops_coordination) = coordinator (2026-09-28).
+    const role = (me as any).role === 'host' && (me as any).ops_coordination === true ? 'coordinator' : (me as any).role;
     if (role !== 'admin' && role !== 'coordinator') {
       // Coaches only see recommendations for camps they head; admins and
       // coordinators see everything (they can confirm when their own
@@ -94,7 +95,7 @@ export async function resolvePromotion(
     const beltOk =
       rec.recommended_belt in BELT_RANK &&
       (BELT_RANK[cap] ?? 0) >= (BELT_RANK[rec.recommended_belt as BeltLevel] ?? 99);
-    let positionOk = (me as any).role === 'coordinator';
+    let positionOk = (me as any).role === 'coordinator' || ((me as any).role === 'host' && (me as any).ops_coordination === true);
     if (!positionOk && rec.camp_instance_id) {
       const { data: camp } = await admin
         .from('camp_instances')

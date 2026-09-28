@@ -112,7 +112,7 @@ export async function requestMembershipRenewal(portalToken: string, months: numb
 
   const name = [student.first_name, student.last_name].filter(Boolean).join(' ');
   const { data: coords } = await admin.from('coaches').select('id')
-    .eq('academy_id', student.academy_id).in('role', ['coordinator', 'admin']).eq('active_status', true);
+    .eq('academy_id', student.academy_id).or('role.in.(coordinator,admin),and(role.eq.host,ops_coordination.eq.true)').eq('active_status', true);
   for (const c of coords ?? []) {
     await createNotification({
       recipientCoachId: c.id,

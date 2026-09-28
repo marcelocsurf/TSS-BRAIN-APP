@@ -669,7 +669,7 @@ export async function sendQuizLeadEmail(
         .from('coaches')
         .select('email, role, active_status')
         .eq('academy_id', data.academyId)
-        .in('role', ['coordinator', 'admin']);
+        .or('role.in.(coordinator,admin),and(role.eq.host,ops_coordination.eq.true)');
       for (const c of staff ?? []) {
         if (c.email && c.active_status !== false) to.add(c.email);
       }

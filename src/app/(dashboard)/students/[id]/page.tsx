@@ -6,7 +6,7 @@ import { getStudentVisitStats } from '@/lib/actions/students';
 import { PriorVisitsEditor } from '@/components/student/PriorVisitsEditor';
 import { getOceanLevelHistory } from '@/lib/actions/evaluations';
 import { getCurrentCoach } from '@/lib/actions/sessions';
-import { isRealPlatformAdmin } from '@/lib/actions/auth';
+import { isRealPlatformAdmin, getCurrentCoach as getAuthCoach } from '@/lib/actions/auth';
 import { OpenAsButton } from '@/components/admin/OpenAsButton';
 import { PromoteLeadCard } from '@/components/student/PromoteLeadCard';
 import { createClient } from '@/lib/supabase/server';
@@ -117,6 +117,11 @@ export default async function StudentProfilePage({ params, searchParams }: Props
   } catch {
     // Not a coach — evaluation buttons won't show
   }
+  // Rol EFECTIVO (auth): la cobertura de coordinación (Kat, host +
+  // ops_coordination) cuenta como coordinator acá (2026-09-28). `coach` sigue
+  // siendo la fila cruda: los lanzadores de evaluación usan max_belt_permission.
+  const viewer = await getAuthCoach().catch(() => null);
+  const viewerRole = viewer?.role ?? coach?.role ?? null;
 
   // Final-evaluation camp notes (coach/bitácora only — includes the private note)
   const campNotes = await getCampNotesForStudent(id);
@@ -384,8 +389,8 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     : [];
   const intakeComplete = !!student.waiver_signed && !!student.intake_completed_at;
   const canManageCourses =
-    coach?.role === 'coordinator' ||
-    coach?.role === 'admin' ||
+    viewerRole === 'coordinator' ||
+    viewerRole === 'admin' ||
     !!coach?.is_platform_admin;
 
   const unlockedKeys = levelAccess.map((a: any) => a.level_key);
@@ -444,7 +449,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               >
                 {belt?.en}{belt?.levelName ? ` (${belt.levelName})` : ''}
               </span>
-              {(coach?.role === 'coordinator' || coach?.role === 'admin') && (
+              {(viewerRole === 'coordinator' || viewerRole === 'admin') && (
                 <BeltOverride studentId={student.id} current={student.belt_level} />
               )}
               {/* Critical flags — always visible, whatever tab is open (M138). */}

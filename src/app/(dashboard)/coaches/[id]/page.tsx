@@ -85,6 +85,9 @@ export default async function CoachProfilePage({ params }: Props) {
   const currentCerts = certifications?.map(c => c.certification_key) || [];
   const currentUserIsAdmin = currentCoach?.role === 'admin';
   const isPlatformAdmin = await isRealPlatformAdmin();
+  // Rol efectivo (auth): la cobertura de coordinación (Kat) ve lo privado del staff (2026-09-28).
+  const { getCurrentCoach: getAuthCoach } = await import('@/lib/actions/auth');
+  const authCoach = await getAuthCoach().catch(() => null);
 
   // Fetch dashboard data in parallel
   const [stats, ratingStats, feedback, resources, recentSessions, services] = await Promise.all([
@@ -122,6 +125,7 @@ export default async function CoachProfilePage({ params }: Props) {
   const canSeePrivate =
     currentCoach?.role === 'admin' ||
     currentCoach?.role === 'coordinator' ||
+    authCoach?.role === 'coordinator' ||
     isPlatformAdmin;
 
   const initial = (coach.display_name || 'C').charAt(0).toUpperCase();
