@@ -8,6 +8,8 @@ import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sequencePageFor } from '@/lib/sequence-pages';
+import { coachTeachRank } from '@/lib/coach/teach-rank';
+import { sequencePageRank } from '@/lib/coach/course-access';
 import { SequencePage, type LessonBits, type PieceRow, type CoachStepLayer } from '@/components/portal/sequence-page/SequencePage';
 import { pickSequenceVideos, resolveSequenceVideo } from '@/lib/sequence-pages/videos';
 
@@ -33,9 +35,11 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
   if (!cfg || !UUID_RE.test(token)) notFound();
 
   const admin = createAdminClient();
-  const { data: coach } = await admin.from('coaches').select('id, course_access_granted, course_access_scope').eq('portal_token', token).maybeSingle();
+  const { data: coach } = await admin.from('coaches').select('id, course_access_granted, course_access_scope, max_belt_permission').eq('portal_token', token).maybeSingle();
   // Alcance sin cursos (2026-09-26): el material del método tampoco se abre.
   if (!coach || !coach.course_access_granted || (coach as any).course_access_scope === 'none') notFound();
+  // Hasta su cinta (+ la de sus camps), 2026-09-29.
+  if (sequencePageRank(cfg) > await coachTeachRank(admin, coach as any)) notFound();
 
   const [{ data: lessonRows }, { data: pieceRows }, { data: videoRows }, { data: coachRows }] = await Promise.all([
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),

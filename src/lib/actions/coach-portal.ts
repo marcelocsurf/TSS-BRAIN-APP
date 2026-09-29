@@ -8,6 +8,8 @@ import { campEnrollmentClosed } from '@/lib/utils/camp-window';
 import { listCoachStps, type StpSummary } from '@/lib/actions/coach-tools';
 import { getAcceptedAssistantCampIds } from '@/lib/actions/service-staff';
 import { revalidatePath } from 'next/cache';
+import { coachTeachRank } from '@/lib/coach/teach-rank';
+import { studentSectionRank, lessonInVisiblePage } from '@/lib/coach/course-access';
 
 // Coach reports an incident (general or student-specific) from their portal.
 // Token-gated like the rest of the coach portal. Lands in session_incidents
@@ -112,6 +114,8 @@ export interface CoachPortalData {
   academySpaceBookings?: any[]; // espacios reservados en esos 7 días (support)
   todayLogistics?: any;    // coach's service running TODAY + its class-day plan (M139)
   coachCourses: any[];  // lessons WHERE course_section LIKE 'coach_%'
+  /** Hasta qué cinta ve el curso del ALUMNO (su cinta + la de sus camps). */
+  teachRank: number;
   courseProgress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
   availableDrills: any[];  // drills_missions filtered by max_belt_permission
   stps: StpSummary[];  // STPs grouped by sequence for the Tools tab browser
@@ -723,6 +727,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     // courses (Method, Foundations Tier 1, Career, Safety Canon, …) are
     // universal — any course_section not in the belt map shows to everyone.
     coachCourses: (coachCoursesResult.data ?? []).filter((l: any) => coachMayOpenCoachLesson(coach as any, l)),
+    teachRank: await coachTeachRank(admin, coach as any),
     courseProgress,
     availableDrills,
     stps: await listCoachStps(token),
@@ -859,6 +864,13 @@ export async function getCoachLessonDetail(
   const studentLesson = !isCoachSection((lesson as any).course_section);
   // Una lección del COACH por link: la misma regla que su lista (alcance y cinta).
   if (!studentLesson && !coachMayOpenCoachLesson(coach as any, lesson as any)) return null;
+  // Una lección del ALUMNO: hasta su cinta (+ la de sus camps), o si sale en
+  // una página de secuencia que ya ve (Marcelo 2026-09-29: "cada coach ve hasta su cinta").
+  if (studentLesson) {
+    const rank = await coachTeachRank(admin, coach as any);
+    const r = studentSectionRank((lesson as any).course_section);
+    if (!((r != null && r <= rank) || lessonInVisiblePage(lessonId, rank))) return null;
+  }
 
   // Videos: content_videos se une por lesson_id (como en el curso del alumno,
   // course.ts). Antes se filtraba por content_type/content_id — columnas que

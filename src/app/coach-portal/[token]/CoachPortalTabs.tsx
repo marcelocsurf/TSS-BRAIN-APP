@@ -40,6 +40,7 @@ import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher'
 import { RoleSwitch } from '@/components/shared/RoleSwitch';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { sequencePageRank } from '@/lib/coach/course-access';
 import {
   Home,
   BookOpen,
@@ -221,6 +222,7 @@ export function CoachPortalTabs({
             token={coach.portal_token}
             initialLessonId={pendingLesson}
             onLessonConsumed={() => setPendingLesson(undefined)}
+            teachRank={data.teachRank}
           />
         )}
         {activeTab === 'tools' && <ToolsTab stps={data.stps} coach={coach} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} />}
@@ -856,6 +858,7 @@ function CoursesTab({
   token,
   initialLessonId,
   onLessonConsumed,
+  teachRank = 1,
 }: {
   courses: any[];
   progress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
@@ -863,6 +866,8 @@ function CoursesTab({
   token: string;
   initialLessonId?: string;
   onLessonConsumed?: () => void;
+  /** Hasta qué cinta ve el curso del alumno (servidor: su cinta + la de sus camps). */
+  teachRank?: number;
 }) {
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
   // Vino por link (?lesson=ID desde una página de secuencia): "Back" vuelve a
@@ -911,7 +916,7 @@ function CoursesTab({
     try { return document.referrer.startsWith(`${window.location.origin}/coach-portal/${token}/`); } catch { return false; }
   };
   const goBack = () => {
-    if (fromLink && openLessonId === linkedId && cameFromThisPortal()) { window.history.back(); return; }
+    if (fromLink && openLessonId === linkedId && cameFromThisPortal() && window.history.length > 1) { window.history.back(); return; }
     setFromLink(false);
     closeLesson();
   };
@@ -978,6 +983,10 @@ function CoursesTab({
             <BookOpen size={36} strokeWidth={1.75} className="animate-pulse mx-auto mb-2 text-[var(--tss-cyan,#00D2FF)]" />
             <p className="text-white/50 text-sm">Loading lesson…</p>
           </div>
+        )}
+
+        {!loading && !detail && (
+          <p className="text-center py-12 text-sm text-white/70">This lesson isn&apos;t open for your level yet.</p>
         )}
 
         {!loading && detail && (
@@ -1236,7 +1245,8 @@ function CoursesTab({
           {/* Los Tres Círculos entran acá también (Marcelo 2026-09-24: "el coach
               los explica siempre y no los tenía"). Orden: círculos primero,
               después White 1–5 · Yellow 6–7 · Blue entrada (0) y 8–13. */}
-          {Object.values(SEQUENCE_PAGES).sort((a, b) => {
+          {/* Hasta su cinta (+ la de sus camps), Marcelo 2026-09-29. */}
+          {Object.values(SEQUENCE_PAGES).filter((sq) => sequencePageRank(sq) <= teachRank).sort((a, b) => {
             const rank = (c: any) => (c.kind === 'circle' ? 0 : 1);
             const belt = (k: string) => ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'].indexOf(k);
             return rank(a) - rank(b) || belt(a.belt) - belt(b.belt) || a.number - b.number || (a.eyebrow ?? '').localeCompare(b.eyebrow ?? '');
@@ -1572,7 +1582,7 @@ function CoachQuizSection({
                   {q.options.map((o, oIdx) => {
                     const isChosen = chosen === oIdx;
                     // La opción correcta solo se muestra si aprobó (el servidor no la manda si no).
-                    const isCorrect = r?.correctIdx !== undefined && oIdx === r.correctIdx;
+                    const isCorrect = r?.correctIdx !== undefined ? oIdx === r.correctIdx : (isChosen && !!r?.gotIt);
                     return (
                       <div
                         key={oIdx}

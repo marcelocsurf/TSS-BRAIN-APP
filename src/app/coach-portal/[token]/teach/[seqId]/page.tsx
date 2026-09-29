@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sequencePageFor, SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
+import { coachTeachRank } from '@/lib/coach/teach-rank';
+import { sequencePageRank } from '@/lib/coach/course-access';
 import { boardFlip } from '@/lib/stance';
 import { sequenceSide } from '@/lib/constants/learning-blocks';
 import { TeachKit, type TeachPiece, type TeachLayer } from '@/components/coach-portal/TeachKit';
@@ -38,10 +40,12 @@ export default async function CoachTeachPage({ params, searchParams }: {
   const admin = createAdminClient();
   const { data: coach } = await admin
     .from('coaches')
-    .select('id, course_access_granted, course_access_scope')
+    .select('id, course_access_granted, course_access_scope, max_belt_permission')
     .eq('portal_token', token)
     .maybeSingle();
   if (!coach || !coach.course_access_granted || (coach as any).course_access_scope === 'none') notFound();
+  // Hasta su cinta (+ la de sus camps), 2026-09-29.
+  if (sequencePageRank(cfg) > await coachTeachRank(admin, coach as any)) notFound();
 
   // Los juegos de una secuencia 'circle' viven en su config (play), no por paso.
   const playIds = [

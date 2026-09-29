@@ -4,6 +4,8 @@ import { pickWeakestCriterion } from '@/lib/utils/criteria';
 import { takesRunStar, selfStarsThatCount } from '@/lib/stars';
 import { sequenceStarChanges } from '@/lib/evaluation/sequence-stars';
 import { BB_LINE, BB_NAV, entryPageForCourse } from '@/lib/sequence-pages/bb-entry';
+import { beltRankOf, sequencePageRank, studentSectionRank, lessonInVisiblePage } from '@/lib/coach/course-access';
+import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 import { dobError } from '@/lib/utils/dob';
 import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
 import { computeV2, isValidV2Answers } from '@/lib/quiz/surf-level-v2';
@@ -309,5 +311,31 @@ describe('páginas de entrada compartidas Yellow + Blue (2026-09-26)', () => {
   it('desde Yellow se entrenan dentro de su #6 y su #7', () => {
     expect(BB_NAV.trainAs?.yellow_belt).toBe('YB-SEQ-6.0');
     expect(BB_LINE.trainAs?.yellow_belt).toBe('YB-SEQ-7.0');
+  });
+});
+
+
+// Curso del alumno para el coach: "cada coach ve hasta su cinta" (Marcelo 2026-09-29).
+describe('coach course access by belt', () => {
+  it('ranks belts, empty = white', () => {
+    expect(beltRankOf('yellow_belt')).toBe(2);
+    expect(beltRankOf('blue')).toBe(3);
+    expect(beltRankOf(null)).toBe(1);
+  });
+  it('a page opens from the lowest course that shows it', () => {
+    expect(sequencePageRank(BB_NAV)).toBe(2); // también está en Yellow
+    expect(sequencePageRank(SEQUENCE_PAGES['BB-SEQ-08'])).toBe(3);
+    expect(sequencePageRank(SEQUENCE_PAGES['WB-SEQ-1'])).toBe(1);
+  });
+  it('student sections map to belts; unknown sections stay closed', () => {
+    expect(studentSectionRank('pre_course_fundamentals')).toBe(1);
+    expect(studentSectionRank('yb_onboarding')).toBe(2);
+    expect(studentSectionRank('blue_belt')).toBe(3);
+    expect(studentSectionRank('something_new')).toBeNull();
+  });
+  it('a lesson on a page the coach sees is open; a higher one is not', () => {
+    expect(lessonInVisiblePage('STP-016', 1)).toBe(true);
+    expect(lessonInVisiblePage('STP-035', 1)).toBe(false);
+    expect(lessonInVisiblePage('STP-035', 2)).toBe(true); // BB-NAV sale en Yellow
   });
 });
