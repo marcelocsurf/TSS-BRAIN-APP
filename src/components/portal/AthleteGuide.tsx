@@ -58,8 +58,9 @@ export function AthleteGuide({ onClose, hpAccess = false }: { onClose: () => voi
         </p>
 
         <Sec Icon={Home} title="Home — what to do today">
-          <Li k="The card on top">The one thing for today. In a camp it is your class with your coach: the day, the hour, the sequence you will work on, and what to study before. Between camps it is what your coach left you, or the sequence to train next. One button.</Li>
-          <Li k="Your progress">One row: your belt, how many sequences are yours, your hours in the water. Tap it (or your belt) for the full picture — level, what your next belt takes, your sessions and your feedback.</Li>
+          <Li k="The card on top">Only when there is something for you. In a camp it is your class with your coach: the day, the hour, the sequence you will work on, and what to study before. Between camps it is what your coach left you. One button.</Li>
+          <Li k="Your numbers">Your time in the water (training and free surf), your Flow Channel and how many sequences of your course are yours (before your course opens: your next belt). Tap any of them (or your belt) for the full picture — level, what your next belt takes, your sessions and your feedback.</Li>
+          <Li k="What to train next">When nobody left you anything: opens Let&apos;s Play, your whole path, and you pick what to train by today&apos;s ocean.</Li>
           <Li k="Log free surf">Surfed on your own? Two seconds and it counts toward your hours.</Li>
           <Li k="Below">Your last class, a belt promotion, your camp result, your book. They come when they matter and leave on their own.</Li>
         </Sec>
@@ -98,7 +99,7 @@ export function AthleteGuide({ onClose, hpAccess = false }: { onClose: () => voi
         )}
 
         <Sec Icon={MessageCircle} title="Feedback & My Coach">
-          <p>After a class, rate your coach — it unlocks the coach&apos;s feedback on that session, and your coach reads every word. Your full session history lives in <strong style={{ color: '#eaf4fa' }}>Your progress → My Sessions</strong>. Messages from your coach land in the bell at the top.</p>
+          <p>After a class, rate your coach — it unlocks the coach&apos;s feedback on that session, and your coach reads every word. Your full session history lives in <strong style={{ color: '#eaf4fa' }}>My progress → My Sessions</strong> (tap your numbers or your belt on Home). Messages from your coach land in the bell at the top.</p>
         </Sec>
 
         <Sec Icon={Smartphone} title="Install it on your phone">

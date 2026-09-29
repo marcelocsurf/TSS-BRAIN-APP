@@ -959,6 +959,9 @@ export function PortalTabs({
             belt={belt}
             onGoTo={setActiveTab}
             onOpenStep={openStepInPlay}
+            // "What to train next" abre SIEMPRE el camino: un flujo abandonado
+            // (tarea del coach, drill, sesión libre, paso) no lo secuestra.
+            onOpenPath={() => { setPendingSequence(null); setPendingDrillMissionId(null); setShowCustomSession(false); setDeepStepId(null); setActiveTab('sequence'); }}
             onTrainSequence={(a) => { setDeepStepId(null); setPendingDrillMissionId(null); setPendingSequence(a); setActiveTab('sequence'); }}
             onOpenRoadmap={() => setRoadmapOpen(true)}
             onOpenWater={() => setWaterOpen(true)}
@@ -1259,10 +1262,13 @@ function HomeTab({
   onOpenWater,
   onFinishOpenSession,
   onDiscardOpenSession,
+  onOpenPath,
 }: {
   data: PortalData;
   belt: any;
   onGoTo: (tab: Tab) => void;
+  /** Let's Play en el camino (sin flujos viejos abiertos). */
+  onOpenPath?: () => void;
   /** La sesión abierta (plan guardado antes del agua): cerrarla o descartarla. */
   onFinishOpenSession?: () => void;
   onDiscardOpenSession?: () => void;
@@ -1325,13 +1331,14 @@ function HomeTab({
     return Date.now() - new Date(c.final.at).getTime() < 21 * 86400000;
   }) ?? null;
   // ═══ EL HOME EN UNA REGLA (Marcelo 2026-09-26: "que sienta claridad, que es
-  // lo que vende el método"). UNA tarjeta de acción, la primera que aplique:
+  // lo que vende el método"). UNA tarjeta de acción, SOLO cuando es seguro:
   //   1 sesión abierta (arriba del nombre, como siempre)
   //   2 la clase con el coach: camp en curso o clase hoy/mañana
   //   3 la tarea del coach (fuera de camp)
-  //   4 tus secuencias (nadie te dejó nada: vos decidís)
-  //   5 toda la cinta es tuya → la próxima
-  // Debajo, la fila de progreso; después, filas de una línea que no compiten.
+  // 2026-09-29 (Marcelo): si nadie le dejó nada, NO adivinamos qué entrenar
+  // (el mar cambia el foco): la lista de secuencias vive en Let's Play y el
+  // Home muestra sus datos (horas, Flow Channel, secuencias) + "What to train
+  // next". Después, filas de una línea que no compiten.
   const campNow: any = upcomingCamps[0] ?? null;
   const campStart = campNow ? new Date((campNow.start_date ?? '') + 'T00:00:00') : null;
   const campEnd = campNow ? new Date(((campNow.last_day ?? campNow.end_date ?? campNow.start_date) ?? '') + 'T00:00:00') : null;
@@ -1362,9 +1369,9 @@ function HomeTab({
   const preCourseDone = data.courseData?.preCourseCompleted;
   const courseBeltWord = seqScores ? seqScores.belt.charAt(0).toUpperCase() + seqScores.belt.slice(1) : null;
   const courseIsMyBelt = !!courseBeltWord && String(belt?.en ?? '').startsWith(courseBeltWord);
-  const slot: 'class' | 'coach' | 'sequences' | 'next-belt' | null =
+  const slot: 'class' | 'coach' | null =
     data.openSession ? null
-    : classSoon ? 'class' : coachTask ? 'coach' : seqScores && !allOwned ? 'sequences' : allOwned ? 'next-belt' : null;
+    : classSoon ? 'class' : coachTask ? 'coach' : null;
   const surf = data.surfHours ?? { trainingMinutes: 0, freeSurfMinutes: 0, totalMinutes: 0 };
   const fmtHm = (mins: number) => {
     const h = Math.floor(mins / 60);
@@ -1450,7 +1457,7 @@ function HomeTab({
         )}
       </div>
 
-      {/* ═══ LA TARJETA DE ACCIÓN · 1 de 4: LA CLASE (Marcelo 2026-09-26) ═══
+      {/* ═══ LA TARJETA DE ACCIÓN · 1 de 2: LA CLASE (Marcelo 2026-09-26) ═══
           En camp (o con clase mañana) lo primero es la clase con el coach: día,
           hora, qué va a trabajar, qué estudiar. Antes se dibujaba AL FINAL del
           Home. La tarea del coach entra ACÁ como línea, sin TRAIN IT: en el camp
@@ -1570,7 +1577,7 @@ function HomeTab({
       })()}
 
 
-          {/* ═══ 2 de 4: LA TAREA DEL COACH (Marcelo 2026-09-25): "le aparece, y
+          {/* ═══ 2 de 2: LA TAREA DEL COACH (Marcelo 2026-09-25): "le aparece, y
               si la trabaja una vez deja de aparecer". Fuera de camp es LA
               tarjeta mientras esté pendiente; el servidor la quita cuando
               registra una sesión sobre ella. Misma fila que abre Let's Play. */}
@@ -1605,77 +1612,91 @@ function HomeTab({
             );
           })()}
 
-          {/* ═══ 3 de 4: TUS SECUENCIAS (Marcelo 2026-09-21): qué vale cada
-              secuencia de tu cinta, y vos decidís qué entrenar. Es LA tarjeta
-              cuando no hay clase ni tarea del coach; si no, el conteo vive en
-              la fila de progreso y el mapa completo en Let's Play. */}
-          {slot === 'sequences' && seqScores && (() => {
-            const sc = seqScores;
-            const rowsToShow = seqRows;
-            const owned = seqOwned;
-            const beltWord = sc.belt.charAt(0).toUpperCase() + sc.belt.slice(1);
-            return (
-              <div className="rounded-lg p-4" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
-                <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Your sequences</p>
-                <p className="text-[15px] mt-1 mb-3 leading-snug" style={{ color: T_INK }}>{beltWord} Belt · {owned} of {rowsToShow.length} are yours{(() => { const ready = rowsToShow.reduce((n, r) => n + (r.readyCount ?? 0), 0); return ready > 0 ? ` · ${ready} step${ready === 1 ? '' : 's'} ready for your coach to confirm` : ''; })()}. Tap one to train it.</p>
-                <div className="rounded-[5px] overflow-hidden" style={{ background: T_PAPER, color: T_INK, border: `1px solid ${T_BORDER}` }}>
-                  {rowsToShow.map((r, idx) => {
-                    const ownedRow = r.state === 'owned';
-                    const both = !ownedRow && r.selfMinRating != null && r.selfMinRating !== r.minRating;
-                    const value = ownedRow ? '✓ yours' : r.state === 'unrated' ? 'not yet' : r.state === 'partial' ? (r.minRating != null ? `${r.minRating}★ · in progress` : 'in progress') : both ? `coach ${r.minRating ?? '—'}★ · you ${r.selfMinRating}★` : `${r.minRating ?? '—'}★`;
-                    return (
-                      <button key={r.id} type="button"
-                        onClick={() => { if (onTrainSequence) onTrainSequence({ sequenceId: r.id, mode: 'sequence_run' }); else onGoTo('sequence'); }}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-left"
-                        style={{ borderTop: idx ? `1px solid ${T_BORDER}` : undefined }}>
-                        <span className="min-w-0 flex-1 text-[16px] font-extrabold leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: T_INK }}>
-                          {r.label}{r.side === 'fs' ? <span className="ml-1.5 text-[11px] font-semibold" style={{ color: '#55666E' }}>frontside</span> : r.side === 'bs' ? <span className="ml-1.5 text-[11px] font-semibold" style={{ color: '#55666E' }}>backside</span> : null}
-                        </span>
-                        <span className="shrink-0 rounded-[5px] px-2.5 py-1.5 text-[13px] font-black" style={{ background: ownedRow ? '#0A7C5D' : '#fff', color: ownedRow ? '#F7F9FA' : T_INK, border: `1px solid ${ownedRow ? '#0A7C5D' : T_BORDER}`, minWidth: 64, textAlign: 'center' }}>{value}</span>
-                        <ArrowRight size={16} style={{ color: T_INK }} />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
-
-
-          {/* ═══ 4 de 4: TODA LA CINTA ES TUYA → la próxima ═══ */}
-          {slot === 'next-belt' && (
-            <div className="rounded-lg p-4" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
-              <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Your sequences</p>
-              <p className="text-[22px] font-extrabold leading-tight mt-1" style={{ fontFamily: ARCHIVO, color: T_INK }}>Every {courseBeltWord ?? ''} Belt sequence is yours.</p>
-              <p className="text-[15px] mt-1 leading-snug" style={{ color: T_INK }}>{courseIsMyBelt ? 'Keep them alive in the water and ask your coach about the next belt.' : 'Keep them alive in the water. Your coach tells you what comes next.'}</p>
-              {!courseIsMyBelt && (
-                <button type="button" onClick={() => onGoTo('sequence')} className="w-full mt-3 min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase" style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.035em', fontFamily: ARCHIVO }}>
-                  Keep them alive <ArrowRight size={18} />
-                </button>
+      {/* ═══ TUS DATOS (Marcelo 2026-09-29: "el home debe tener más info
+          esencial, como el flow channel y las horas"). Tres datos, nunca más:
+          horas en el agua (training / free surf), Flow Channel y secuencias
+          tuyas de la cinta. Cada uno abre My progress. Sin datos, una frase en
+          vez de ceros. La racha va chica al lado de las horas. ═══ */}
+      {data.canTrack !== false && (() => {
+        const bIdx = BELT_HIERARCHY.indexOf(beltLevel);
+        const nextBelt = bIdx >= 0 && bIdx < BELT_HIERARCHY.length - 1 ? BELT_DISPLAY[BELT_HIERARCHY[bIdx + 1]] : null;
+        const nextWord = nextBelt ? String(nextBelt.en).replace(/ Belt$/, '') : null;
+        const pctTrain = surf.totalMinutes > 0 ? (surf.trainingMinutes / surf.totalMinutes) * 100 : 0;
+        const fc = data.flowChannel;
+        const flowCount = fc?.count ?? 0;
+        // Con UNA sola calificación el promedio no dice nada: desde FLOW_MIN_RATINGS.
+        const flowAvg = fc && fc.avg != null && flowCount >= FLOW_MIN_RATINGS ? fc.avg : null;
+        const flowZone = flowAvg != null ? flowZoneOf(flowAvg) : 'opt';
+        const flowPill = { easy: '#DCE8F2', opt: '#BDEFFF', hard: '#F6D9DC' }[flowZone];
+        const flowWord = flowAvg != null ? flowWordOf(flowAvg) : '';
+        const flowHint = flowZone === 'easy' ? 'too easy lately' : flowZone === 'hard' ? 'too hard lately' : 'learning zone';
+        // flex-col: un <button> centra su contenido; así las dos arrancan arriba.
+        const tile = 'w-full text-left rounded-lg p-3.5 flex flex-col';
+        return (
+          <div className="space-y-2.5">
+            <button type="button" onClick={() => setProgressOpen(true)} className="w-full text-left rounded-lg p-4" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
+              <span className="flex items-baseline justify-between gap-2">
+                <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Time in the water</span>
+                {streak > 0 && <span className="inline-flex items-center gap-1 text-[12px]" style={{ color: T_MUTED }}><Flame size={13} strokeWidth={1.75} />{streak}-day streak</span>}
+              </span>
+              {surf.totalMinutes > 0 ? (
+                <>
+                  <span className="block text-[34px] font-black leading-none mt-1.5" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.totalMinutes)}</span>
+                  <span className="block h-1.5 rounded-full overflow-hidden mt-3" style={{ background: '#06D6A0' }}><span className="block h-full" style={{ width: `${pctTrain}%`, background: '#00D2FF' }} /></span>
+                  <span className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[13px]" style={{ color: T_INK }}>
+                    <span className="inline-flex items-center gap-1.5"><span style={{ width: 8, height: 8, borderRadius: 2, background: '#00D2FF', display: 'inline-block' }} />Training {fmtHm(surf.trainingMinutes)}</span>
+                    <span className="inline-flex items-center gap-1.5"><span style={{ width: 8, height: 8, borderRadius: 2, background: '#06D6A0', display: 'inline-block' }} />Free surf {fmtHm(surf.freeSurfMinutes)}</span>
+                  </span>
+                </>
+              ) : (
+                <span className="block text-[17px] font-bold leading-snug mt-1" style={{ color: T_INK }}>Your first session starts the count.</span>
               )}
-              {courseIsMyBelt && onOpenRoadmap && (
-                <button type="button" onClick={() => onOpenRoadmap()} className="w-full mt-3 min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase" style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.035em', fontFamily: ARCHIVO }}>
-                  What the next belt takes <ArrowRight size={18} />
-                </button>
-              )}
+            </button>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button type="button" onClick={() => setProgressOpen(true)} className={tile} style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
+                <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Flow Channel</span>
+                {flowAvg != null ? (
+                  <>
+                    <span className="block text-[30px] font-black leading-none mt-1.5" style={{ fontFamily: ARCHIVO, color: T_INK }}>{flowAvg.toFixed(1)}</span>
+                    <span className="self-start inline-block rounded-full px-2.5 py-0.5 mt-2 text-[13px] font-bold" style={{ background: flowPill, color: T_INK }}>{flowWord}</span>
+                    <span className="block text-[12px] mt-1" style={{ color: T_MUTED }}>{flowHint}</span>
+                  </>
+                ) : (
+                  <span className="block text-[14px] font-bold leading-snug mt-1.5" style={{ color: T_INK }}>{flowCount === 1 ? 'Rate 1 more session to see your flow.' : 'Rate 2 sessions to see your flow.'}</span>
+                )}
+              </button>
+              <button type="button" onClick={() => setProgressOpen(true)} className={tile} style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
+                <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>{seqRows.length ? 'Sequences' : 'Next belt'}</span>
+                {seqRows.length ? (
+                  <>
+                    <span className="block text-[30px] font-black leading-none mt-1.5" style={{ fontFamily: ARCHIVO, color: T_INK }}>{seqOwned}<span className="text-[17px]" style={{ color: T_MUTED }}> / {seqRows.length}</span></span>
+                    <span className="block h-1.5 rounded-full overflow-hidden mt-3" style={{ background: T_BORDER }}><span className="block h-full" style={{ width: `${(seqOwned / seqRows.length) * 100}%`, background: '#1E88E5' }} /></span>
+                    <span className="block text-[12px] mt-2 leading-snug" style={{ color: T_MUTED }}>{courseBeltWord ? `${courseBeltWord} Belt · ` : ''}{allOwned ? 'all yours' : 'yours'}{nextWord && courseIsMyBelt ? ` · next ${nextWord}` : ''}</span>
+                  </>
+                ) : (
+                  <>
+                    {/* Sin puntajes (curso bajo candado antes del camp): la cinta ya
+                        está en el encabezado; acá va lo que viene. */}
+                    <span className="block text-[24px] font-black leading-tight mt-1.5" style={{ fontFamily: ARCHIVO, color: T_INK }}>{nextWord ?? 'Top belt'}</span>
+                    <span className="block text-[12px] mt-2 leading-snug" style={{ color: T_MUTED }}>{nextWord ? 'what it takes →' : 'you made it'}</span>
+                  </>
+                )}
+              </button>
             </div>
-          )}
+          </div>
+        );
+      })()}
 
-      {/* ═══ LA FILA DE PROGRESO (Marcelo 2026-09-26): cinta · secuencias · horas,
-          una fila tocable que abre My progress. Reemplaza las dos casillas
-          (horas/racha), el h1 "Your sequences" cuando otra tarjeta manda y el
-          link de texto "View my progress" que quedaba escondido. La racha vive
-          en My progress → Time in the water. ═══ */}
-      {data.canTrack !== false && (
-        <button type="button" onClick={() => setProgressOpen(true)} className="w-full text-left rounded-lg px-4 py-3 flex items-center gap-3" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
-          <BarChart3 size={20} strokeWidth={1.75} className="shrink-0" style={{ color: T_INK }} />
+      {/* ═══ QUÉ ENTRENAR (Marcelo 2026-09-29): un botón, no una lista, y solo si
+          nadie le dejó nada ("si el coach le dejó algo que salga en home y si no,
+          que se quede en Let's Play"). Lo elige el alumno según el mar del día. ═══ */}
+      {data.canTrack !== false && data.hasAnyCourse !== false && !data.courseLocked && slot === null && !data.openSession && (
+        <button type="button" onClick={() => { if (onOpenPath) onOpenPath(); else onGoTo('sequence'); window.scrollTo(0, 0); }} className="w-full text-left rounded-lg px-4 py-3.5 flex items-center gap-3" style={{ background: 'transparent', border: '1.5px solid #00D2FF' }}>
           <span className="min-w-0 flex-1">
-            <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Your progress</span>
-            <span className="block text-[15px] font-bold leading-snug mt-0.5" style={{ color: T_INK }}>
-              {belt?.en}{seqRows.length ? (() => { const cw = seqScores!.belt.charAt(0).toUpperCase() + seqScores!.belt.slice(1); const mine = String(belt?.en ?? '').startsWith(cw); return ` · ${seqOwned} of ${seqRows.length}${mine ? '' : ` ${cw}`} sequences yours`; })() : ` · Level ${BELT_RANK[beltLevel] ?? 1} of 6`} · {fmtHm(surf.totalMinutes)} in the water
-            </span>
+            <span className="block text-[17px] font-extrabold leading-tight" style={{ fontFamily: ARCHIVO, color: '#F7F9FA' }}>What to train next</span>
+            <span className="block text-[13px] mt-0.5" style={{ color: '#D9E4EA' }}>Let&apos;s Play · pick it by today&apos;s ocean</span>
           </span>
-          <ChevronRight size={16} className="shrink-0" style={{ color: T_INK }} />
+          <ArrowRight size={20} className="shrink-0" style={{ color: '#00D2FF' }} />
         </button>
       )}
 
@@ -2262,7 +2283,6 @@ function HomeTab({
 // The flow channel is the learning zone between boredom (too easy) and anxiety
 // (too hard); the ideal is the middle, where challenge meets ability. Fed by the
 // student's own session ratings (survey_responses.flow_channel, 1-5; 3 = flow).
-const FLOW_LABELS = ['Bored', 'Easy', 'Optimal', 'Hard', 'Frustrating'];
 
 // Rediseño 2026-08-25 (idea de Marcelo): tres ZONAS rotuladas en vez de un
 // gradiente continuo — se lee de un vistazo y enseña el concepto, no solo lo
@@ -2271,14 +2291,29 @@ const FLOW_LABELS = ['Bored', 'Easy', 'Optimal', 'Hard', 'Frustrating'];
 // podían contradecirse. Ahora TODO sale del promedio.
 // Escala 1-5 → 0-100%: la zona óptima (2.5-3.5) es el 25% central.
 const ZONE_EASY_END = 37.5, ZONE_OPT_END = 62.5;
+// Home y My progress usan el MISMO umbral (revisión 2026-09-29): con una sola
+// calificación el promedio no dice nada.
+const FLOW_MIN_RATINGS = 2;
+function flowZoneOf(avg: number): 'easy' | 'opt' | 'hard' {
+  const pct = ((avg - 1) / 4) * 100;
+  return pct < ZONE_EASY_END ? 'easy' : pct > ZONE_OPT_END ? 'hard' : 'opt';
+}
+// La palabra sale de la zona (antes Math.round(3.5) decía "Hard" dentro de la
+// zona óptima: pastilla y consejo se contradecían).
+function flowWordOf(avg: number): string {
+  const z = flowZoneOf(avg);
+  if (z === 'opt') return 'Optimal';
+  if (z === 'easy') return avg < 1.5 ? 'Bored' : 'Easy';
+  return avg >= 4.5 ? 'Frustrating' : 'Hard';
+}
 
 function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number; boredom: number; anxiety: number } }) {
-  const hasData = !!flow && flow.avg != null && flow.count > 0;
-  const avg = flow?.avg ?? null;
-  const label = avg != null ? (FLOW_LABELS[Math.round(avg) - 1] ?? '') : '';
+  const hasData = !!flow && flow.avg != null && flow.count >= FLOW_MIN_RATINGS;
+  const avg = hasData ? flow!.avg! : null;
+  const label = avg != null ? flowWordOf(avg) : '';
   // Posición del marcador = el mismo promedio que muestra el número.
   const pct = avg != null ? Math.max(2, Math.min(98, ((avg - 1) / 4) * 100)) : 50;
-  const zone = avg == null ? 'opt' : pct < ZONE_EASY_END ? 'easy' : pct > ZONE_OPT_END ? 'hard' : 'opt';
+  const zone = avg == null ? 'opt' : flowZoneOf(avg);
   const advice = !hasData
     ? ''
     : zone === 'easy'
@@ -2299,7 +2334,7 @@ function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number;
     <SandCard label="Flow Channel" right={hasData ? <span className="text-[12px]" style={{ color: T_MUTED }}>from your session ratings</span> : undefined}>
       {!hasData ? (
         <p className="text-[14px] leading-relaxed" style={{ color: T_INK }}>
-          Rate your sessions to map where your flow lives.
+          {flow && flow.count === 1 ? 'Rate 1 more session to see your flow.' : 'Rate your sessions to map where your flow lives.'}
         </p>
       ) : (
         <>
