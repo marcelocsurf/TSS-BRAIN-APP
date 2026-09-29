@@ -12,6 +12,8 @@ import { getServicePlan, coachQuickTransport, type ServicePlanData } from '@/lib
 import { SURF_SPOT_OPTIONS } from '@/lib/constants/brand';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { LessonFigure } from '@/components/course/LessonFigure';
+import { LaminaPresenter } from '@/components/coach-portal/LaminaPresenter';
+import { laminasInMarkdown } from '@/lib/sequence-pages/laminas';
 import { PendingAssignments } from './PendingAssignments';
 import { PendingStaffInvites } from './PendingStaffInvites';
 import { CoachGuide } from './CoachGuide';
@@ -870,6 +872,8 @@ function CoursesTab({
   teachRank?: number;
 }) {
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
+  // Poner en pantalla las láminas de la lección abierta (2026-09-29).
+  const [presenting, setPresenting] = useState(false);
   // Vino por link (?lesson=ID desde una página de secuencia): "Back" vuelve a
   // esa página en vez de a la lista de cursos. Se guarda al montar: el padre
   // limpia el link apenas se consume.
@@ -904,6 +908,7 @@ function CoursesTab({
   const closeLesson = () => {
     setOpenLessonId(null);
     setDetail(null);
+    setPresenting(false);
     // Sin ?lesson= en la URL: recargar no vuelve a abrir la lección cerrada.
     try {
       const u = new URL(window.location.href);
@@ -1056,6 +1061,20 @@ function CoursesTab({
                 )}
                 {detail.lesson.description_md ? (
                   <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] px-5 py-6">
+                    {/* Lección del alumno con láminas: mostrarlas a la clase. */}
+                    {detail.studentLesson && laminasInMarkdown(detail.lesson.description_md).length > 0 && (
+                      <button type="button" onClick={() => setPresenting(true)}
+                        className="mb-4 w-full min-h-[44px] rounded-[5px] text-[14px] font-bold"
+                        style={{ background: '#061C2B', color: '#F7F9FA' }}>
+                        Show the plates on screen · {laminasInMarkdown(detail.lesson.description_md).length}
+                      </button>
+                    )}
+                    {presenting && (
+                      <LaminaPresenter
+                        items={laminasInMarkdown(detail.lesson.description_md).map((l) => ({ src: l.src, alt: l.alt, caption: l.caption, from: detail.lesson.title }))}
+                        onClose={() => setPresenting(false)}
+                      />
+                    )}
                     {/* Lección del alumno: su figura (si tiene) y los '## temas'
                         plegables, igual que en su curso (LessonViewer). */}
                     {detail.studentLesson && <LessonFigure lessonId={detail.lesson.id} />}
@@ -1237,6 +1256,12 @@ function CoursesTab({
 
   return (
     <div className="space-y-4 pb-4">
+      {/* El curso del alumno a mano + elegir la lámina (Marcelo 2026-09-29). */}
+      <a href={`/coach-portal/${token}/course`} className="block rounded-lg p-4 no-underline" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
+        <p className="text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#0090B0' }}>The course · as your students see it</p>
+        <p className="text-[18px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#061C2B' }}>Teach from the course →</p>
+        <p className="text-[13px] mt-1" style={{ color: '#55666E' }}>Every lesson in order. Pick a plate and put it on screen for the class.</p>
+      </a>
       {/* Secuencias como las ve el alumno + capa del coach (Marcelo 2026-09-17). */}
       <div className="rounded-lg p-4" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}>
         <p className="text-[11px] uppercase tracking-[0.18em] mb-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>Teach it · everything for that class</p>

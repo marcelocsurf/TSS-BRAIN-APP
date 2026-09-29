@@ -44,3 +44,28 @@ export const SEQUENCE_LAMINAS: Record<string, Lamina[]> = {
   'YB-SEQ-6.0': CATCH_WAVES,
   'BB-LINE': PICK_YOUR_LINE,
 };
+
+// ═══ Láminas de las páginas propias (Tres Círculos, Infinite Circle) ═══
+// Las mismas que dibujan ThreeCirclesPage e InfiniteCirclePage; acá para que
+// el coach pueda elegirlas y mostrarlas en pantalla (2026-09-29). Si cambia
+// una lámina en esas páginas, cambiarla también acá.
+export const THREE_CIRCLES_LAMINAS: Lamina[] = [
+  { src: '/uploads/fotos/circle-1-basic-movements.webp', caption: 'Circle 1 · Basic movements', alt: 'Circle 1 · Basic Movements: the four movements P·R·C·H, the feet on the board and the dynamic of the wave, with the kinetic chain of the rotation.' },
+  { src: '/uploads/fotos/circle-2-foot-position.webp', caption: 'Circle 2 · Foot position', alt: 'Circle 2 · Foot Position on the Board: FP3 forward, FP2 neutral, FP1 at the tail.' },
+  { src: '/uploads/fotos/circle-2-brake-accelerator.webp', caption: 'Circle 2 · Brake and accelerator', alt: 'How the board answers: press the back foot and the board brakes; stay forward and the board runs.' },
+  { src: '/uploads/fotos/circle-2-front-foot.webp', caption: 'Circle 2 · The front foot', alt: 'The front foot: centred on the stringer is neutral; the closer to a rail, the more that rail sinks.' },
+  { src: '/uploads/fotos/circle-3-wave-dynamics.webp', caption: 'Circle 3 · Wave dynamics', alt: 'Circle 3 · Wave Dynamics: combine the wave energy with what your body generates; the four zones of the face.' },
+];
+export const INFINITE_CIRCLE_LAMINAS: Lamina[] = [
+  { src: '/uploads/fotos/learning-blocks.webp', caption: 'The eight learning blocks', alt: 'Learning Blocks — the eight blocks of the method, from preparation to the infinite circle.' },
+];
+
+/** Las láminas de una lección: cada imagen de /uploads/fotos en su markdown,
+ *  en orden (sola en su línea, como las dibuja MarkdownContent). */
+export function laminasInMarkdown(md: string | null | undefined): Lamina[] {
+  const out: Lamina[] = [];
+  for (const m of String(md ?? '').matchAll(/!\[([^\]]*)\]\((\/uploads\/fotos\/[^)\s]+)\)/g)) {
+    out.push({ src: m[2], alt: m[1] || 'Plate', caption: m[1] || undefined });
+  }
+  return out;
+}
