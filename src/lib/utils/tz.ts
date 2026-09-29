@@ -67,6 +67,13 @@ export function elSalvadorNowHM(): string {
  */
 export function displayDate(ts: string | Date | null | undefined): string {
   if (!ts) return '';
+  // Una fecha SIN hora ('2026-09-29', p. ej. camp_sessions.session_date) ya es
+  // el día de El Salvador: convertirla la leía como medianoche UTC y la
+  // mostraba un día antes (hoja del plan, 2026-09-29).
+  if (typeof ts === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(ts)) {
+    const [y, m, d] = ts.split('-');
+    return `${d}/${m}/${y}`;
+  }
   const iso = toElSalvadorDate(ts);
   if (!iso) return '';
   const [y, m, d] = iso.split('-');

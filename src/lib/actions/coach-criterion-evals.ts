@@ -58,7 +58,25 @@ async function canTouchStudent(coach: Coach, studentId: string): Promise<boolean
   }
   const { getCoachAccessibleStudentIds } = await import('./auth');
   const ids = await getCoachAccessibleStudentIds(coach.id).catch(() => [] as string[]);
-  return ids.includes(studentId);
+  if (ids.includes(studentId)) return true;
+  // Evaluación todavía abierta (Marcelo 2026-09-29, "sí, cambialo"): la ventana
+  // de acceso cierra el día después del camp, pero mientras el coach tenga un
+  // camp suyo SIN FINALIZAR con este alumno, puede ver y marcar los detalles
+  // (antes: las estrellas se guardaban y "Ver detalles" decía Not authorized).
+  return coachHasOpenCampWithStudent(coach.id, studentId);
+}
+
+async function coachHasOpenCampWithStudent(coachId: string, studentId: string): Promise<boolean> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('camp_participants')
+    .select('enrollment_status, camp_instances:camp_instance_id!inner(coach_id, head_coach_id, status)')
+    .eq('student_id', studentId)
+    .eq('enrollment_status', 'active');
+  return ((data ?? []) as any[]).some((r) => {
+    const c = Array.isArray(r.camp_instances) ? r.camp_instances[0] : r.camp_instances;
+    return !!c && (c.coach_id === coachId || c.head_coach_id === coachId) && c.status !== 'completed' && c.status !== 'cancelled';
+  });
 }
 
 /** La pieza del paso que se evalúa: su MISIÓN visible al alumno (la primera por

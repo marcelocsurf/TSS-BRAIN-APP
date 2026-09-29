@@ -3,6 +3,7 @@ import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getServicePlan } from '@/lib/actions/service-planner';
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
+import { topicById } from '@/lib/sequence-pages/topics';
 import { waterSequencesOfBlocks } from '@/lib/sequence-pages/day-sequences';
 import { displayDate } from '@/lib/utils/tz';
 import { PrintButton } from './PrintButton';
@@ -174,6 +175,14 @@ export default async function PrintPlanPage({ params, searchParams }: {
           <div style={{ border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 11px', marginBottom: 16 }}>
             <p style={{ ...MONO, fontSize: 10, color: MUTED, margin: '0 0 4px' }}>Take this with you</p>
             <p style={{ fontSize: 13.5, lineHeight: 1.45, margin: 0 }}>{gear.join(' · ')}</p>
+          </div>
+        )}
+
+        {/* La teoría del día (service_plans.topics): la misma que el alumno ve en "Next class". */}
+        {Array.isArray(p.topics) && p.topics.length > 0 && (
+          <div style={{ border: `1px solid ${BORDER}`, borderRadius: 6, padding: '9px 11px', marginBottom: 12 }}>
+            <p style={{ ...MONO, fontSize: 10, color: MUTED, margin: '0 0 4px' }}>Theory today</p>
+            <p style={{ fontSize: 13.5, lineHeight: 1.45, margin: 0 }}>{(p.topics as string[]).map((id) => topicById(id)?.title ?? id).join(' · ')}</p>
           </div>
         )}
 

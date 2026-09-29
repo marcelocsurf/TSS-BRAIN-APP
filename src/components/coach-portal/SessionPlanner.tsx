@@ -64,7 +64,7 @@ import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { waterSequencesOfBlocks } from '@/lib/sequence-pages/day-sequences';
 import { sequenceElements, isElementOf } from '@/lib/sequence-pages/circles-seq';
-import { topicsForBelt } from '@/lib/sequence-pages/topics';
+import { topicsForBelt, coachTopicHref } from '@/lib/sequence-pages/topics';
 import { gameContext } from '@/lib/sequence-pages/three-circles';
 import { isSidePair, sidePairLabel } from '@/lib/sequence-pages/side-pairs';
 import {
@@ -1524,6 +1524,25 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     })}
                   </div>
                 </details>
+                {/* La teoría elegida, a un toque del material (paso 2, 2026-09-29):
+                    la misma lección que el alumno abre con "Study it". Se abre en
+                    otra pestaña para no perder el plan. */}
+                {(() => {
+                  const chosen = topics.filter((t) => chosenTopics.has(t.id)).map((t) => ({ t, href: coachTopicHref(t, token) })).filter((x) => !!x.href);
+                  if (!chosen.length) return null;
+                  return (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Open the material</span>
+                      {chosen.map(({ t, href }) => (
+                        <a key={t.id} href={href!} target="_blank" rel="noopener"
+                          className="px-3 py-1.5 rounded-full text-[11px] font-semibold no-underline"
+                          style={{ background: '#E9F8FC', border: '1px solid #00A8CC', color: '#061C2B' }}>
+                          {t.title} ↗
+                        </a>
+                      ))}
+                    </div>
+                  );
+                })()}
                 {/* La ficha de cada alumno NO depende de que ya haya una
                     secuencia elegida (Marcelo 2026-09-22): antes vivía adentro
                     de {groupSeq && …} y en un día sin plan — un Half Day Surf

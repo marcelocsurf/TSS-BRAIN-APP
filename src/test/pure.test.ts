@@ -339,3 +339,13 @@ describe('coach course access by belt', () => {
     expect(lessonInVisiblePage('STP-035', 2)).toBe(true); // BB-NAV sale en Yellow
   });
 });
+
+// Una fecha sin hora es el día de El Salvador: no se corre un día (2026-09-29).
+describe('displayDate', () => {
+  it('keeps a date-only string on its own day', async () => {
+    // este archivo mockea tz: acá va la real.
+    const { displayDate } = await vi.importActual<typeof import('@/lib/utils/tz')>('@/lib/utils/tz');
+    expect(displayDate('2026-09-29')).toBe('29/09/2026');
+    expect(displayDate('2026-09-30T03:00:00Z')).toBe('29/09/2026'); // 9 PM del 29 en El Salvador
+  });
+});
