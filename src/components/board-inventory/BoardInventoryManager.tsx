@@ -12,9 +12,9 @@ import { SignaturePad } from './SignaturePad';
 // Default board-rental liability waiver. Editable later by the academy.
 const DEFAULT_WAIVER = `BOARD RENTAL AGREEMENT & LIABILITY WAIVER
 
-I confirm that I am renting this surfboard at my own risk. I am responsible for returning it in the same condition. I accept full responsibility for any loss, theft, or damage to the board while in my possession, and authorize the academy to retain my deposit toward repair or replacement costs if the board is returned damaged, broken, or not returned.
+I confirm that I am renting this surfboard at my own risk. I am responsible for returning it in the same condition. I accept full responsibility for any loss, theft, or damage to the board while in my possession, and authorize Puro Surf to retain my deposit toward repair or replacement costs if the board is returned damaged, broken, or not returned.
 
-I acknowledge that surfing is a hazardous activity and release the academy, its staff and owners from any liability for injury, accident, or loss arising from my use of this equipment.`;
+I acknowledge that surfing is a hazardous activity and release Puro Surf; Surfing Pacifica, S.A. de C.V., the company that operates it; and their staff and owners from any liability for injury, accident, or loss arising from my use of this equipment.`;
 
 const TYPE_OPTIONS = [
   { value: 'soft', label: 'Soft top' },

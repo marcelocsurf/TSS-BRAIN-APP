@@ -18,6 +18,12 @@ Actualizada: 2026-09-17. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico
 
 **Legal (con abogado)**
 - [ ] Mandar a revisar con abogado salvadoreño: `/legal/privacy`, `/legal/terms` y los dos waivers (alumno y coach). Confirmar razón social y domicilio de Enkrateia, S.A. de C.V.
+- [ ] (2026-09-29) Waivers sin Marcelo como parte y con **Surfing Pacifica, S.A. de C.V.** (sin tilde, como en el acuerdo de accionistas) como sociedad que opera Puro Surf: el principal (WAIVER_VERSION tss-purosurf-2026-09), QR `/join`, staff y renta de tablas; también los .docx de `Documentos Legales TSS 2026` y los Guest Camp Agreement (respaldos en `_respaldo_2026-09-29`). Falta alinear con el abogado:
+  - Términos y privacidad dicen que Enkrateia "opera como" Puro Surf Academy → contradice el waiver. Cambiarlos sube TERMS/PRIVACY_VERSION y todos re-aceptan en el portal.
+  - Waiver de coach C1: el Material TSS es "propiedad de las Partes Liberadas" (lista que incluye a Surfing Pacifica). Propuesta: "propiedad exclusiva de Enkrateia, S.A. de C.V.". Decide Marcelo.
+  - QR `/join` y la tarjeta de waiver del staff no guardan versión ni texto firmado; la tarjeta del staff es un resumen de 4 puntos que dice "aceptás el documento completo".
+  - Los 4 textos del app nombran Puro Surf fijo: antes de sumar otra academia, sacar nombre y razón social de la fila de la academia.
+  - Rodrigo (academy@purosurf.com) tiene el Guest Camp Agreement viejo (con "PURO SURF, S.A. DE C.V." y Marcelo en la liberación): reenviarle el corregido.
 - [ ] Aceptar los DPA en los paneles de Supabase, Vercel y Resend y guardar copia.
 
 **Trámite**

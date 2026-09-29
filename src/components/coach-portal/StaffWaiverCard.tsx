@@ -31,9 +31,9 @@ export function StaffWaiverCard({ token }: { token: string }) {
         <div className="mt-3 space-y-2.5">
           <ul className="text-[12px] text-amber-900 space-y-1 list-disc pl-4">
             <li>El surf y el trabajo en el agua implican riesgos serios; los asumo voluntariamente y declaro estar apto/a físicamente.</li>
-            <li>Libero a The Surf Sequence® y a la academia de responsabilidad por negligencia ordinaria durante mis funciones.</li>
+            <li>Libero a Enkrateia, S.A. de C.V.; The Surf Sequence®; Puro Surf; y Surfing Pacifica, S.A. de C.V., sociedad que opera Puro Surf, de responsabilidad por negligencia ordinaria durante mis funciones.</li>
             <li>Me comprometo a seguir los protocolos de seguridad, el plan de emergencia y a reportar todo incidente el mismo día.</li>
-            <li>Autorizo el uso de imagen en material interno y de marca de la academia.</li>
+            <li>Autorizo el uso de imagen en material interno y de marca de Puro Surf y The Surf Sequence®.</li>
           </ul>
           <p className="text-[11px] text-amber-800">Al escribir tu nombre legal completo y firmar, aceptás el documento completo.</p>
           <input

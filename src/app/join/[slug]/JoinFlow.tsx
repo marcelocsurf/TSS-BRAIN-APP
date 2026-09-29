@@ -71,7 +71,7 @@ function groupActivities(classes: Klass[]): Activity[] {
 const SHIRT_SIZES = ['Kids 6', 'Kids 8', 'Kids 10', 'Kids 12', 'XS', 'S', 'M', 'L', 'XL', 'XXL'];
 const LANGUAGES = ['English', 'Español', 'Português', 'Français', 'Deutsch', 'Italiano', 'Other'];
 
-const WAIVER_TEXT = `I acknowledge that participation in physical activities (surf, yoga, skate, ice bath, jiujitsu and related training) involves inherent risks, including injury. I declare I am physically able to participate, I have disclosed any relevant medical conditions, and I release the academy and The Surf Sequence from liability arising from ordinary negligence, to the maximum extent permitted by law. I consent to receive first aid / emergency care if needed.`;
+const WAIVER_TEXT = `I acknowledge that participation in physical activities (surf, yoga, skate, ice bath, jiujitsu and related training) involves inherent risks, including injury. I declare I am physically able to participate, I have disclosed any relevant medical conditions, and I release Puro Surf; Surfing Pacifica, S.A. de C.V., the company that operates it; Enkrateia, S.A. de C.V.; The Surf Sequence®; and their staff and coaches from liability arising from ordinary negligence, to the maximum extent permitted by law. I consent to receive first aid / emergency care if needed.`;
 
 export function JoinFlow({ slug, classes }: { slug: string; classes: Klass[] }) {
   const [pending, start] = useTransition();
