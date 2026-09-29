@@ -22,12 +22,12 @@ export const revalidate = 0;
 
 interface Props {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; lesson?: string }>;
 }
 
 export default async function CoachPortalPage({ params, searchParams }: Props) {
   const { token } = await params;
-  const { tab } = await searchParams;
+  const { tab, lesson } = await searchParams;
 
   // Managers have their own read-only portal — send them there even if they
   // were given (or bookmarked) the coach-portal form of their link.
@@ -68,6 +68,9 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
   // cualquier enlace a ?tab=plan caía en el Home sin decir nada.
   const validTabs = ['home', 'courses', 'tools', 'plan', 'rating', 'sell', 'spaces', 'inventory'];
   const initialTab = tab && validTabs.includes(tab) ? (tab as any) : undefined;
+  // ?tab=courses&lesson=ID (links "Read the full lesson" / "Go deeper" de las
+  // páginas de secuencia del coach, 2026-09-29): abre esa lección al entrar.
+  const initialLessonId = initialTab === 'courses' && lesson && /^[A-Za-z0-9._-]{2,64}$/.test(lesson) ? lesson : undefined;
 
   // M9 — academy branding fallback
   const brand = resolveAcademyBranding(data.academyBranding);
@@ -114,6 +117,7 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
       <CoachPortalTabs
         data={data}
         initialTab={initialTab}
+        initialLessonId={initialLessonId}
         studentSide={await getStudentSideForCoach(data.coach.id)}
       />
     </div>

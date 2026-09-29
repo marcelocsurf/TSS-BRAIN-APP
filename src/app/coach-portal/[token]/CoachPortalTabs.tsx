@@ -11,6 +11,7 @@ import { sellerSearchStudents, sellerReserveSpot, sellerMySales, type SellerSale
 import { getServicePlan, coachQuickTransport, type ServicePlanData } from '@/lib/actions/service-planner';
 import { SURF_SPOT_OPTIONS } from '@/lib/constants/brand';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
+import { LessonFigure } from '@/components/course/LessonFigure';
 import { PendingAssignments } from './PendingAssignments';
 import { PendingStaffInvites } from './PendingStaffInvites';
 import { CoachGuide } from './CoachGuide';
@@ -108,14 +109,20 @@ const TABS: { key: Tab; label: string; Icon: TabIconComponent }[] = [
 export function CoachPortalTabs({
   data,
   initialTab,
+  initialLessonId,
   studentSide,
 }: {
   data: CoachPortalData;
   initialTab?: Tab;
+  /** ?lesson=ID: la lección que se abre al entrar a Courses. */
+  initialLessonId?: string;
   /** Si este coach además entrena como alumno, el link a su portal de alumno. */
   studentSide?: { href: string; name: string } | null;
 }) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'home');
+  // La lección del link (?lesson=) se abre UNA vez por carga: volver a la
+  // pestaña Cursos no la reabre.
+  const [pendingLesson, setPendingLesson] = useState<string | undefined>(initialLessonId);
   // "Run today" desde el Home: el Plan abre ese camp/día directo.
   const [planAutoOpen, setPlanAutoOpen] = useState<{ campId: string; day?: number; view: 'read' | 'run' } | null>(null);
   // When a class is open in the planner we switch to a focused, light-themed
@@ -212,6 +219,8 @@ export function CoachPortalTabs({
             progress={data.courseProgress}
             coach={coach}
             token={coach.portal_token}
+            initialLessonId={pendingLesson}
+            onLessonConsumed={() => setPendingLesson(undefined)}
           />
         )}
         {activeTab === 'tools' && <ToolsTab stps={data.stps} coach={coach} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} />}
@@ -845,13 +854,22 @@ function CoursesTab({
   progress,
   coach,
   token,
+  initialLessonId,
+  onLessonConsumed,
 }: {
   courses: any[];
   progress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
   coach: any;
   token: string;
+  initialLessonId?: string;
+  onLessonConsumed?: () => void;
 }) {
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
+  // Vino por link (?lesson=ID desde una página de secuencia): "Back" vuelve a
+  // esa página en vez de a la lista de cursos. Se guarda al montar: el padre
+  // limpia el link apenas se consume.
+  const [linkedId] = useState<string | undefined>(initialLessonId);
+  const [fromLink, setFromLink] = useState(!!initialLessonId);
   const [detail, setDetail] = useState<CoachLessonDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -881,7 +899,36 @@ function CoursesTab({
   const closeLesson = () => {
     setOpenLessonId(null);
     setDetail(null);
+    // Sin ?lesson= en la URL: recargar no vuelve a abrir la lección cerrada.
+    try {
+      const u = new URL(window.location.href);
+      if (u.searchParams.has('lesson')) { u.searchParams.delete('lesson'); window.history.replaceState(window.history.state, '', u.pathname + u.search); }
+    } catch { /* nada */ }
   };
+  // Solo volvemos con history.back() si la página anterior es de ESTE portal
+  // (la secuencia o Teach it); si el link vino de afuera, cerramos la lección.
+  const cameFromThisPortal = () => {
+    try { return document.referrer.startsWith(`${window.location.origin}/coach-portal/${token}/`); } catch { return false; }
+  };
+  const goBack = () => {
+    if (fromLink && openLessonId === linkedId && cameFromThisPortal()) { window.history.back(); return; }
+    setFromLink(false);
+    closeLesson();
+  };
+
+  // Abrir la lección del link una sola vez. Una lección del COACH solo si está
+  // en su lista y sin prerrequisito pendiente (la misma regla que la lista);
+  // el servidor igual vuelve a chequear alcance y cinta.
+  useEffect(() => {
+    if (!initialLessonId) return;
+    const inList = courses.find((c) => c.id === initialLessonId);
+    const coachId = /^(COACH-|MASTER-)/.test(initialLessonId);
+    const locked = !!inList && ((inList.prerequisites ?? []) as string[]).some((p) => !completedSet.has(p));
+    if (!coachId || (inList && !locked)) openLesson(initialLessonId);
+    else setFromLink(false);
+    onLessonConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const markRead = () => {
     if (!openLessonId) return;
@@ -920,10 +967,10 @@ function CoursesTab({
       <div className="space-y-3 pb-4">
         <button
           type="button"
-          onClick={closeLesson}
+          onClick={goBack}
           className="text-[12px] text-[var(--tss-cyan,#00D2FF)] hover:underline"
         >
-          ← Back to courses
+          {fromLink && openLessonId === linkedId ? '← Back' : '← Back to courses'}
         </button>
 
         {loading && (
@@ -937,7 +984,7 @@ function CoursesTab({
           <>
             <div className="bg-[var(--tss-navy)] text-white rounded-lg px-5 py-6 shadow-md">
               <p className="text-[11px] font-mono text-white/50 mb-1 uppercase tracking-wider">
-                {detail.lesson.id} · ~{detail.lesson.estimated_minutes ?? '?'} min
+                {detail.studentLesson ? 'Student course · as your students read it · ' : ''}{detail.lesson.id} · ~{detail.lesson.estimated_minutes ?? '?'} min
               </p>
               <h2
                 className="text-2xl font-bold leading-tight"
@@ -1000,7 +1047,10 @@ function CoursesTab({
                 )}
                 {detail.lesson.description_md ? (
                   <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] px-5 py-6">
-                    <MarkdownContent markdown={detail.lesson.description_md} />
+                    {/* Lección del alumno: su figura (si tiene) y los '## temas'
+                        plegables, igual que en su curso (LessonViewer). */}
+                    {detail.studentLesson && <LessonFigure lessonId={detail.lesson.id} />}
+                    <MarkdownContent markdown={detail.lesson.description_md} collapsible={detail.studentLesson} />
                   </div>
                 ) : detail.lesson.lesson_type === 'test' ? null : (
                   <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] px-5 py-6 text-sm text-[#55666E] italic">
@@ -1034,7 +1084,7 @@ function CoursesTab({
               /* Mark as read for any lesson that isn't already completed
                  via a quiz pass. STP lessons with a quiz inside the pillar
                  reader handle completion through onPassed instead. */
-              (!detail.lesson.coach_what_md || detail.quizzes.length === 0) && (
+              !detail.studentLesson && (!detail.lesson.coach_what_md || detail.quizzes.length === 0) && (
                 <button
                   type="button"
                   onClick={markRead}
@@ -1449,7 +1499,7 @@ function CoachQuizSection({
   const [result, setResult] = useState<{
     score: number;
     passed: boolean;
-    correctById: Record<string, { correctIdx: number; gotIt: boolean }>;
+    correctById: Record<string, { correctIdx?: number; gotIt: boolean }>;
   } | null>(null);
 
   const allAnswered = quizzes.every((q) => answers[q.id] !== undefined);
@@ -1521,7 +1571,8 @@ function CoachQuizSection({
                 <div className="mt-2 space-y-1">
                   {q.options.map((o, oIdx) => {
                     const isChosen = chosen === oIdx;
-                    const isCorrect = oIdx === r?.correctIdx;
+                    // La opción correcta solo se muestra si aprobó (el servidor no la manda si no).
+                    const isCorrect = r?.correctIdx !== undefined && oIdx === r.correctIdx;
                     return (
                       <div
                         key={oIdx}

@@ -722,23 +722,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     // max_belt_permission (same ladder used for drills). Non-belt coach
     // courses (Method, Foundations Tier 1, Career, Safety Canon, …) are
     // universal — any course_section not in the belt map shows to everyone.
-    coachCourses: (coachCoursesResult.data ?? []).filter((l: any) => {
-      // Sin cursos (2026-09-26, Walter · Apnea): instructor de un servicio que
-      // no es surf. Ve su portal (reservas, plan, espacios) pero ningún curso.
-      if ((coach as any).course_access_scope === 'none') return false;
-      // Alcance restringido: instructores en formación inicial ven SOLO
-      // Safety Canon + Foundations (método) hasta que se les abra el resto.
-      if ((coach as any).course_access_scope === 'safety_method') {
-        return l.id.startsWith('COACH-SAFETY-') || l.id.startsWith('COACH-FOUND-');
-      }
-      const sectionBelt: Record<string, string> = {
-        coach_wb: 'white', coach_wb_master: 'white', coach_yb: 'yellow',
-        coach_bb: 'blue', coach_pb: 'purple', coach_brb: 'brown', coach_blb: 'black',
-      };
-      const belt = sectionBelt[l.course_section];
-      if (!belt) return true; // universal course
-      return (beltRank[belt] ?? 1) <= myRank;
-    }),
+    coachCourses: (coachCoursesResult.data ?? []).filter((l: any) => coachMayOpenCoachLesson(coach as any, l)),
     courseProgress,
     availableDrills,
     stps: await listCoachStps(token),
@@ -758,6 +742,44 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
 // clicks into a course to read it. Also reads any existing
 // coach_lesson_progress row for this coach+lesson pair so the UI can
 // show "read / not read" state.
+
+// ═══ QUÉ LECCIÓN DEL COACH PUEDE ABRIR ESTE COACH (fuente única, 2026-09-29) ═══
+// La MISMA regla arma su lista de cursos (getCoachPortalData) y protege
+// abrir por link (?lesson=), rendir el quiz y marcar leída: antes solo la
+// lista filtraba y un link abría un examen de otra cinta.
+const COACH_SECTION_BELT: Record<string, string> = {
+  coach_wb: 'white', coach_wb_master: 'white', coach_yb: 'yellow',
+  coach_bb: 'blue', coach_pb: 'purple', coach_brb: 'brown', coach_blb: 'black',
+};
+const BELT_RANK_SHORT: Record<string, number> = { white: 1, yellow: 2, blue: 3, purple: 4, brown: 5, black: 6 };
+function coachMayOpenCoachLesson(
+  coach: { course_access_scope?: string | null; max_belt_permission?: string | null },
+  lesson: { id: string; course_section?: string | null },
+): boolean {
+  // Sin cursos (2026-09-26, Walter · Apnea): instructor de un servicio que
+  // no es surf. Ve su portal (reservas, plan, espacios) pero ningún curso.
+  if (coach.course_access_scope === 'none') return false;
+  // Alcance restringido: instructores en formación inicial ven SOLO
+  // Safety Canon + Foundations (método) hasta que se les abra el resto.
+  if (coach.course_access_scope === 'safety_method') {
+    return lesson.id.startsWith('COACH-SAFETY-') || lesson.id.startsWith('COACH-FOUND-');
+  }
+  const belt = COACH_SECTION_BELT[lesson.course_section ?? ''];
+  if (!belt) return true; // universal course
+  // Sin cinta cargada = la más restrictiva (white): se gana por nivel.
+  const my = BELT_RANK_SHORT[(coach.max_belt_permission || '').replace('_belt', '')] ?? 1;
+  return (BELT_RANK_SHORT[belt] ?? 1) <= my;
+}
+const isCoachSection = (s: string | null | undefined) => String(s ?? '').startsWith('coach');
+/** Progreso/quiz del coach: solo lecciones del COACH, activas y abiertas para
+ *  él. Leer el curso del alumno nunca cuenta como certificación. */
+async function assertCoachLessonOpen(admin: ReturnType<typeof createAdminClient>, coach: any, lessonId: string): Promise<void> {
+  if (coach.course_access_granted === false) throw new Error('Lesson not available.');
+  const { data: l } = await admin.from('lessons').select('id, course_section').eq('id', lessonId).eq('active', true).maybeSingle();
+  if (!l || !isCoachSection((l as any).course_section) || !coachMayOpenCoachLesson(coach, l as any)) {
+    throw new Error('Lesson not available.');
+  }
+}
 
 export interface CoachLessonDetail {
   lesson: {
@@ -788,6 +810,9 @@ export interface CoachLessonDetail {
   // Ojo: NUNCA exponer el flag `correct` al navegador — sería el answer key del
   // quiz de certificación. La corrección la hace el server (submitCoachQuiz).
   quizzes: { id: string; question: string; options: { text: string }[]; display_order: number }[];
+  /** Lección del curso del ALUMNO (no coach_*): el coach la lee tal cual, sin
+   *  marcar progreso propio ni rendir su quiz (paso 1 de unificar, 2026-09-29). */
+  studentLesson: boolean;
   // The drill + mission for the linked STP (pulled from drills_missions)
   linkedDrill: LinkedTool | null;
   linkedMission: LinkedTool | null;
@@ -813,57 +838,83 @@ export async function getCoachLessonDetail(
   // Resolve coach by token to scope progress lookup
   const { data: coach } = await admin
     .from('coaches')
-    .select('id, course_access_scope')
+    .select('id, course_access_scope, max_belt_permission, course_access_granted')
     .eq('portal_token', token)
     .single();
   if (!coach) return null;
-  // Alcance sin cursos: tampoco se abre una lección por link directo.
-  if ((coach as any).course_access_scope === 'none') return null;
+  // Alcance sin cursos (o portal sin acceso): tampoco se abre una lección por link directo.
+  if ((coach as any).course_access_scope === 'none' || (coach as any).course_access_granted === false) return null;
 
   const { data: lesson } = await admin
     .from('lessons')
     .select(
-      'id, title, subtitle, description_md, video_url, cover_image_url, estimated_minutes, prerequisites, display_order, lesson_type, coach_what_md, coach_deliver_md, coach_errors_md, coach_validate_md, linked_step_id'
+      'id, title, subtitle, description_md, video_url, cover_image_url, estimated_minutes, prerequisites, display_order, lesson_type, coach_what_md, coach_deliver_md, coach_errors_md, coach_validate_md, linked_step_id, course_section'
     )
     .eq('id', lessonId)
     .eq('active', true)
     .single();
   if (!lesson) return null;
+  // Las lecciones del coach viven en course_section coach_* (coach_wb,
+  // coach_wb_master, coach_yb, coach_bb). Todo lo demás es el curso del alumno.
+  const studentLesson = !isCoachSection((lesson as any).course_section);
+  // Una lección del COACH por link: la misma regla que su lista (alcance y cinta).
+  if (!studentLesson && !coachMayOpenCoachLesson(coach as any, lesson as any)) return null;
 
-  const { data: videos } = await admin
+  // Videos: content_videos se une por lesson_id (como en el curso del alumno,
+  // course.ts). Antes se filtraba por content_type/content_id — columnas que
+  // no existen — y el coach no veía NINGÚN video de lección (fix 2026-09-29).
+  const { data: videoRows } = await admin
     .from('content_videos')
-    .select('id, title, url, provider, display_order')
-    .eq('content_type', 'lesson')
-    .eq('content_id', lessonId)
+    .select('id, label, url, media_type, display_order')
+    .eq('lesson_id', lessonId)
     .order('display_order');
+  const providerOf = (url: string) =>
+    /youtu\.?be/i.test(url) ? 'youtube' : /vimeo\.com/i.test(url) ? 'vimeo' : 'other';
+  const videos: CoachLessonDetail['videos'] = (videoRows ?? [])
+    .filter((v: any) => v.url && (!v.media_type || v.media_type === 'video'))
+    .map((v: any) => ({ id: v.id, title: v.label ?? null, url: v.url, provider: providerOf(v.url), display_order: v.display_order ?? 0 }));
+  // El video de la propia lección (lessons.video_url), si no está ya en la lista.
+  const ownVideo = (lesson as any).video_url as string | null;
+  if (ownVideo && !videos.some((v) => v.url === ownVideo)) {
+    videos.unshift({ id: `lesson-video-${lessonId}`, title: null, url: ownVideo, provider: providerOf(ownVideo), display_order: -1 });
+  }
 
   // Touch a coach_lesson_progress row on first open so the coach's Courses
   // list can show "In progress" for lessons they've started reading but
   // haven't marked as read. The upsert is a no-op for rows that already
-  // exist (so completed lessons stay completed).
-  await admin
-    .from('coach_lesson_progress')
-    .upsert(
-      {
-        coach_id: coach.id,
-        lesson_id: lessonId,
-        started_at: new Date().toISOString(),
-      },
-      { onConflict: 'coach_id,lesson_id', ignoreDuplicates: true },
-    );
+  // exist (so completed lessons stay completed). Solo lecciones del coach:
+  // leer el curso del alumno no ensucia el progreso de certificación.
+  if (!studentLesson) {
+    await admin
+      .from('coach_lesson_progress')
+      .upsert(
+        {
+          coach_id: coach.id,
+          lesson_id: lessonId,
+          started_at: new Date().toISOString(),
+        },
+        { onConflict: 'coach_id,lesson_id', ignoreDuplicates: true },
+      );
+  }
 
-  const { data: progress } = await admin
-    .from('coach_lesson_progress')
-    .select('completed, completed_at, quiz_score, quiz_attempts')
-    .eq('coach_id', coach.id)
-    .eq('lesson_id', lessonId)
-    .maybeSingle();
+  const { data: progress } = studentLesson
+    ? { data: null }
+    : await admin
+        .from('coach_lesson_progress')
+        .select('completed, completed_at, quiz_score, quiz_attempts')
+        .eq('coach_id', coach.id)
+        .eq('lesson_id', lessonId)
+        .maybeSingle();
 
-  const { data: quizzes } = await admin
-    .from('lesson_quizzes')
-    .select('id, question, options, display_order')
-    .eq('lesson_id', lessonId)
-    .order('display_order');
+  // El quiz del alumno no se rinde desde el portal del coach (iría a
+  // submitCoachQuiz y contaría como certificación).
+  const { data: quizzes } = studentLesson
+    ? { data: [] as any[] }
+    : await admin
+        .from('lesson_quizzes')
+        .select('id, question, options, display_order')
+        .eq('lesson_id', lessonId)
+        .order('display_order');
 
   // For STP lessons, pull the linked drill + mission from drills_missions
   let linkedDrill: CoachLessonDetail['linkedDrill'] = null;
@@ -896,8 +947,9 @@ export async function getCoachLessonDetail(
       ...lesson,
       prerequisites: (lesson.prerequisites ?? []) as string[],
     },
-    videos: videos ?? [],
+    videos,
     progress: progress ?? null,
+    studentLesson,
     // Strip the answer key: solo mandamos el texto de cada opción al navegador.
     quizzes: (quizzes ?? []).map((q: any) => ({
       id: q.id,
@@ -919,17 +971,19 @@ export async function submitCoachQuiz(
 ): Promise<{
   score: number;       // 0-100 percentage
   passed: boolean;     // >= 80%
-  correctById: Record<string, { correctIdx: number; gotIt: boolean }>;
+  /** correctIdx solo viaja cuando APROBÓ: un intento fallido no regala el answer key. */
+  correctById: Record<string, { correctIdx?: number; gotIt: boolean }>;
   attempts: number;
 }> {
   const admin = createAdminClient();
 
   const { data: coach } = await admin
     .from('coaches')
-    .select('id')
+    .select('id, course_access_scope, max_belt_permission, course_access_granted')
     .eq('portal_token', token)
     .single();
   if (!coach) throw new Error('Coach not found.');
+  await assertCoachLessonOpen(admin, coach, lessonId);
 
   const { data: quizzes } = await admin
     .from('lesson_quizzes')
@@ -941,16 +995,19 @@ export async function submitCoachQuiz(
   }
 
   let correctCount = 0;
-  const correctById: Record<string, { correctIdx: number; gotIt: boolean }> = {};
+  const correctById: Record<string, { correctIdx?: number; gotIt: boolean }> = {};
+  const keyById: Record<string, number> = {};
   for (const q of quizzes as any[]) {
     const correctIdx = (q.options as any[]).findIndex((o) => o.correct);
     const chosen = answers[q.id];
     const gotIt = chosen === correctIdx;
     if (gotIt) correctCount++;
-    correctById[q.id] = { correctIdx, gotIt };
+    keyById[q.id] = correctIdx;
+    correctById[q.id] = { gotIt };
   }
   const score = Math.round((correctCount / quizzes.length) * 100);
   const passed = score >= 80;
+  if (passed) for (const id of Object.keys(correctById)) correctById[id].correctIdx = keyById[id];
 
   // Upsert progress with score + attempts++
   const { data: prev } = await admin
@@ -985,10 +1042,11 @@ export async function markCoachLessonRead(token: string, lessonId: string): Prom
 
   const { data: coach } = await admin
     .from('coaches')
-    .select('id')
+    .select('id, course_access_scope, max_belt_permission, course_access_granted')
     .eq('portal_token', token)
     .single();
   if (!coach) throw new Error('Coach not found.');
+  await assertCoachLessonOpen(admin, coach, lessonId);
 
   const { error } = await admin
     .from('coach_lesson_progress')
