@@ -179,7 +179,9 @@ export async function grantCourseToStudent(
   // Idempotent: upsert by (student_id, access_type, level_key).
   // course.key is the same string as the belt's level_key (white_belt,
   // yellow_belt, …) so we can reuse it directly.
-  await admin
+  // No frena el otorgamiento del curso, pero si falla se registra: hasta
+  // 2026-09-29 la CHECK de source lo rechazaba en silencio (00220).
+  const { error: levelErr } = await admin
     .from('student_level_access')
     .upsert(
       {
@@ -192,6 +194,11 @@ export async function grantCourseToStudent(
       },
       { onConflict: 'student_id,access_type,level_key' },
     );
+  if (levelErr) {
+    console.error('[grantCourseToStudent] acceso por nivel no se pudo crear', {
+      studentId, courseKey, error: levelErr.message,
+    });
+  }
 
   // El curso INCLUYE 12 meses de membresía: el curso y sus drills quedan para
   // siempre; Let's Play, el registro y el progreso viven un año y después se
