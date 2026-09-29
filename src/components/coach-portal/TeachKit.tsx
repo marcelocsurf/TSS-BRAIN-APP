@@ -16,6 +16,7 @@
 // No hay contenido nuevo: todo sale de lo que ya existe (la config de la
 // secuencia, drills_missions, coach_resources y la capa COACH-* de lessons).
 
+import { VideoList, type CourseVideo } from './VideoEmbed';
 import { useState } from 'react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { WaveGuide, WAVE_KIT_SEQUENCE } from '@/components/portal/sequence-page/WaveGuide';
@@ -38,10 +39,11 @@ export interface TeachPiece {
 export interface TeachLayer { stepId: string; title: string; what: string; deliver: string; errors: string; validate: string }
 
 export function TeachKit({
-  cfg, video, pieces, layers, cue, token, waveDirection = 'right', focus = null,
+  cfg, videos, pieces, layers, cue, token, waveDirection = 'right', focus = null,
 }: {
   cfg: SequencePageConfig;
-  video: { url: string; title: string } | null;
+  /** TODOS los videos de la secuencia (general, por lado y stance), 2026-09-29. */
+  videos: CourseVideo[];
   pieces: TeachPiece[];
   layers: TeachLayer[];
   /** "The cue you will hear" de la lección del paso principal. */
@@ -144,7 +146,7 @@ export function TeachKit({
 
         {/* 2 · QUÉ MUESTRO */}
         <Block n={2} title="Show it" hint="Hold up the phone. This is what they look at.">
-          {video ? <Video url={video.url} title={video.title} /> : (
+          {videos.length ? <VideoList videos={videos} /> : (
             <p className="text-[13px] m-0" style={{ color: MUTED }}>No video for this one yet. The drawing below still does the job.</p>
           )}
           {cfg.think?.board && (
@@ -266,18 +268,6 @@ function Group({ label, items }: { label: string; items: TeachPiece[] }) {
           );
         })}
       </div>
-    </div>
-  );
-}
-
-function Video({ url, title }: { url: string; title: string }) {
-  const yt = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{6,})/);
-  const vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  const src = yt ? `https://www.youtube-nocookie.com/embed/${yt[1]}?rel=0&modestbranding=1` : vm ? `https://player.vimeo.com/video/${vm[1]}` : null;
-  if (!src) return <video src={url} controls playsInline preload="metadata" className="w-full block rounded-[5px]" title={title} />;
-  return (
-    <div className="relative w-full rounded-[5px] overflow-hidden" style={{ paddingTop: '56.25%', background: NAVY }}>
-      <iframe src={src} title={title} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
     </div>
   );
 }

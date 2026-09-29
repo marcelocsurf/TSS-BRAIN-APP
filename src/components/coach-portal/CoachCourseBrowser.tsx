@@ -6,9 +6,10 @@
 // láminas de esa cinta para elegir una). Tocar una lámina la pone en pantalla.
 
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Presentation } from 'lucide-react';
+import { ArrowLeft, Presentation, Play, X } from 'lucide-react';
 import type { CourseTabMap, CourseItem } from '@/lib/coach/course-map';
 import { LaminaPresenter, type PresentedLamina } from './LaminaPresenter';
+import { VideoList, type CourseVideo } from './VideoEmbed';
 
 const INK = '#061C2B';
 const TEXT = '#10263B';
@@ -37,12 +38,14 @@ export function CoachCourseBrowser({ token, tabs, initialBelt, initialView }: {
 }) {
   const [tabKey, setTabKeyState] = useState<CourseTabMap['key']>(
     (tabs.find((t) => t.key === initialBelt)?.key) ?? tabs[0]?.key ?? 'pre');
-  const [view, setViewState] = useState<'course' | 'plates'>(initialView === 'plates' ? 'plates' : 'course');
+  const [view, setViewState] = useState<'course' | 'plates' | 'videos'>(initialView === 'plates' ? 'plates' : initialView === 'videos' ? 'videos' : 'course');
+  // Videos de una fila en un panel encima (se cierra con ×).
+  const [watch, setWatch] = useState<{ title: string; videos: CourseVideo[] } | null>(null);
   const remember = (belt: string, v: string) => {
     try { window.history.replaceState(window.history.state, '', `${window.location.pathname}?belt=${belt}&view=${v}`); } catch { /* nada */ }
   };
   const setTabKey = (k: CourseTabMap['key']) => { setTabKeyState(k); remember(k, view); };
-  const setView = (v: 'course' | 'plates') => { setViewState(v); remember(tabKey, v); };
+  const setView = (v: 'course' | 'plates' | 'videos') => { setViewState(v); remember(tabKey, v); };
   const [show, setShow] = useState<{ items: PresentedLamina[]; start: number } | null>(null);
   const tab = tabs.find((t) => t.key === tabKey) ?? tabs[0];
 
@@ -50,6 +53,8 @@ export function CoachCourseBrowser({ token, tabs, initialBelt, initialView }: {
   // una a la siguiente aunque sean de lecciones distintas.
   const plates = useMemo(() => (tab?.groups ?? []).flatMap((g) => g.items.flatMap((it) =>
     it.laminas.map((l) => ({ src: l.src, alt: l.alt, caption: l.caption, from: it.title, itemId: it.id })))), [tab]);
+  const withVideos = useMemo(() => (tab?.groups ?? []).flatMap((g) => g.items.filter((it) => it.videos.length > 0)), [tab]);
+  const videoCount = withVideos.reduce((n, it) => n + it.videos.length, 0);
   const present = (src: string, itemId: string) => {
     const start = Math.max(0, plates.findIndex((p) => p.src === src && p.itemId === itemId));
     setShow({ items: plates, start });
@@ -76,16 +81,29 @@ export function CoachCourseBrowser({ token, tabs, initialBelt, initialView }: {
         </div>
         {/* Vista */}
         <div className="inline-flex mt-3 rounded-full p-1" style={{ background: SAND }}>
-          {(['course', 'plates'] as const).map((v) => (
+          {(['course', 'plates', 'videos'] as const).map((v) => (
             <button key={v} type="button" onClick={() => setView(v)} aria-pressed={view === v}
               className="px-3.5 py-1.5 rounded-full text-[12.5px] font-semibold"
               style={view === v ? { background: '#fff', color: INK } : { background: 'transparent', color: MUTED }}>
-              {v === 'course' ? 'Course' : `Plates · ${plates.length}`}
+              {v === 'course' ? 'Course' : v === 'plates' ? `Plates · ${plates.length}` : `Videos · ${videoCount}`}
             </button>
           ))}
         </div>
 
-        {view === 'plates' ? (
+        {view === 'videos' ? (
+          withVideos.length === 0 ? (
+            <p className="mt-6 text-[14px]" style={{ color: MUTED }}>No videos in this belt yet.</p>
+          ) : (
+            <div className="mt-5 space-y-5">
+              {withVideos.map((it) => (
+                <section key={it.id} className="rounded-lg p-4" style={{ background: '#fff', border: `1px solid ${BORDER}` }}>
+                  <p className="text-[16px] font-bold leading-snug mb-2" style={{ color: INK }}>{it.title}</p>
+                  <VideoList videos={it.videos} />
+                </section>
+              ))}
+            </div>
+          )
+        ) : view === 'plates' ? (
           plates.length === 0 ? (
             <p className="mt-6 text-[14px]" style={{ color: MUTED }}>No plates in this belt yet.</p>
           ) : (
@@ -129,6 +147,11 @@ export function CoachCourseBrowser({ token, tabs, initialBelt, initialView }: {
                               <Presentation size={14} /> Show {it.laminas.length === 1 ? 'the plate' : `the ${it.laminas.length} plates`}
                             </button>
                           )}
+                          {it.videos.length > 0 && (
+                            <button type="button" onClick={() => setWatch({ title: it.title, videos: it.videos })} className="inline-flex items-center gap-1.5" style={{ color: LINK }}>
+                              <Play size={14} /> Watch{it.videos.length > 1 ? ` · ${it.videos.length}` : ''}
+                            </button>
+                          )}
                           {h.teach && <a href={h.teach} className="no-underline" style={{ color: LINK }}>Teach it →</a>}
                           <a href={h.open} className="no-underline" style={{ color: LINK }}>{h.openLabel} →</a>
                         </div>
@@ -142,6 +165,17 @@ export function CoachCourseBrowser({ token, tabs, initialBelt, initialView }: {
         )}
       </div>
       {show && <LaminaPresenter items={show.items} start={show.start} onClose={() => setShow(null)} />}
+      {watch && (
+        <div role="dialog" aria-modal="true" aria-label={`Videos · ${watch.title}`} className="fixed inset-0 z-[250] flex items-center justify-center p-3" style={{ background: 'rgba(6,28,43,.85)' }} onClick={() => setWatch(null)}>
+          <div className="w-full max-w-3xl rounded-lg p-4" style={{ background: '#F7F9FA' }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-3">
+              <p className="min-w-0 flex-1 text-[16px] font-bold leading-snug" style={{ color: INK }}>{watch.title}</p>
+              <button type="button" autoFocus onClick={() => setWatch(null)} aria-label="Close" className="p-1.5 rounded-full" style={{ color: INK }}><X size={20} /></button>
+            </div>
+            <VideoList videos={watch.videos} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

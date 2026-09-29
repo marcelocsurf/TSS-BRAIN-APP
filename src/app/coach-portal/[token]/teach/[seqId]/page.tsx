@@ -56,7 +56,7 @@ export default async function CoachTeachPage({ params, searchParams }: {
     ...((cfg as any).do?.missionId ? [(cfg as any).do.missionId] : []),
   ].filter(Boolean) as string[];
 
-  const [{ data: byStepRows }, { data: byIdRows }, { data: videoRow }, { data: coachRows }, { data: lessonRows }] = await Promise.all([
+  const [{ data: byStepRows }, { data: byIdRows }, { data: videoRows }, { data: coachRows }, { data: lessonRows }] = await Promise.all([
     admin.from('drills_missions')
       .select('id, type, title, description_md, key_words, time_estimate, reps_recommended')
       .eq('active', true).eq('coach_visible', true).in('step_id', cfg.stepIds),
@@ -69,12 +69,23 @@ export default async function CoachTeachPage({ params, searchParams }: {
     // que empieza por el id ("BB-SEQ-08 · Frontside Pumping").
     admin.from('coach_resources')
       .select('title, file_url').eq('kind', 'video').eq('active', true)
-      .ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      .ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(12),
     admin.from('lessons')
       .select('id, linked_step_id, coach_what_md, coach_deliver_md, coach_errors_md, coach_validate_md')
       .eq('active', true).like('id', 'COACH-%').in('linked_step_id', cfg.stepIds),
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),
   ]);
+
+  // Todos los videos de la secuencia (Marcelo 2026-09-29: "que tenga todo el
+  // material"): antes solo el más nuevo (Directional Turns tiene 4). El general
+  // primero; la etiqueta es lo que sigue al id en el título de Library.
+  const videos = ((videoRows ?? []) as any[])
+    .filter((r) => r.file_url)
+    .map((r) => {
+      const label = String(r.title).slice(cfg.id.length).replace(/^[\s·\-–—:]+/, '').trim();
+      return { url: r.file_url as string, title: r.title as string, label: label || 'Video' };
+    })
+    .sort((a, b) => Number(/\b(BS|FS|backside|frontside|goofy|regular)\b/i.test(a.label)) - Number(/\b(BS|FS|backside|frontside|goofy|regular)\b/i.test(b.label)));
 
   const seen = new Set<string>();
   const pieces: TeachPiece[] = [...(byStepRows ?? []), ...(byIdRows ?? [])]
@@ -110,7 +121,7 @@ export default async function CoachTeachPage({ params, searchParams }: {
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       {/* eslint-disable-next-line @next/next/no-css-tags */}
       <link rel="stylesheet" href="/tss/theme.css" />
-      <TeachKit cfg={cfg} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null}
+      <TeachKit cfg={cfg} videos={videos}
         pieces={pieces} layers={layers} cue={cue} token={token} waveDirection={waveDirection} focus={focus} />
     </div>
   );
