@@ -15,7 +15,7 @@ import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 
 async function assertOwner() {
   const ok = await isRealPlatformAdmin().catch(() => false);
-  if (!ok) throw new Error('Solo el dueño del método.');
+  if (!ok) throw new Error('Solo el administrador de la plataforma.');
 }
 
 import { MATERIAL_KINDS, type MaterialKind } from '@/lib/constants/doctrine';

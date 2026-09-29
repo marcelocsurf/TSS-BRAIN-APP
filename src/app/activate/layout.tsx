@@ -9,7 +9,7 @@ export default function ActivateLayout({ children }: { children: ReactNode }) {
           className="text-xl font-bold tracking-tight"
           style={{ color: 'var(--tss-navy, #0d2240)' }}
         >
-          TSS <span style={{ color: 'var(--tss-cyan, #00c2e0)' }}>·</span> Surf Academy
+          The Surf Sequence<span style={{ color: 'var(--tss-cyan, #00c2e0)' }}>®</span>
         </span>
       </header>
 
@@ -18,7 +18,7 @@ export default function ActivateLayout({ children }: { children: ReactNode }) {
       </main>
 
       <footer className="py-4 text-center text-xs text-gray-400">
-        © {new Date().getFullYear()} TSS Surf Academy. All rights reserved.
+        © {new Date().getFullYear()} Enkrateia, S.A. de C.V. · The Surf Sequence®. All rights reserved.
       </footer>
     </div>
   );

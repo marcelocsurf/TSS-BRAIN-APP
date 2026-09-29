@@ -23,7 +23,7 @@ const BUCKET = 'method-vault';
 
 async function assertOwner() {
   const ok = await isRealPlatformAdmin().catch(() => false);
-  if (!ok) throw new Error('Solo el dueño del método.');
+  if (!ok) throw new Error('Solo el administrador de la plataforma.');
 }
 
 export interface MethodDoc {
