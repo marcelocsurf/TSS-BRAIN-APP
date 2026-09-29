@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2 } from 'lucide-react';
 import { submitCoachIntake, type CoachProfile } from '@/lib/actions/coach-intake';
 import { PhotoUploader } from '@/components/shared/PhotoUploader';
-import { WaiverContent, WAIVER_VERSION } from '@/components/legal/WaiverContent';
+import { WaiverContent, COACH_WAIVER_VERSION } from '@/components/legal/WaiverContent';
 import { displayDate } from '@/lib/utils/tz';
 
 interface Props {
@@ -69,7 +69,7 @@ export function CoachProfileForm({ token, initial }: Props) {
         specialty_area: form.specialty_area || null,
         bio_short: form.bio_short || null,
         waiver_signed: form.waiver,
-        waiver_version: WAIVER_VERSION,
+        waiver_version: COACH_WAIVER_VERSION,
       });
       setSavedAt(res.intake_completed_at);
       router.refresh();

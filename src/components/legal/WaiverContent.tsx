@@ -11,6 +11,12 @@
 // sus socios...". Subir la versión hace que quien vuelva al intake firme de nuevo
 // solo el waiver (intake-form.tsx waiverStale); lo firmado antes sigue guardado.
 export const WAIVER_VERSION = 'tss-purosurf-2026-09';
+// Waiver del COACH (texto del alumno + C1–C3). 2026-09-29 (Marcelo): el Material
+// TSS es propiedad única y exclusiva de Enkrateia, S.A. de C.V.; Puro Surf y
+// cualquier academia lo usan bajo licencia (antes C1 decía "de las Partes
+// Liberadas"). Versión propia para que el cambio no le pida firmar de nuevo al
+// alumno, cuyo texto no cambió.
+export const COACH_WAIVER_VERSION = 'tss-purosurf-coach-2026-09-29';
 
 type Section = { n: number; es_t: string; en_t: string; es: string; en: string };
 
@@ -34,7 +40,7 @@ const SUMMARY_EN = [
 
 // Extra plain-language points shown only in the coach waiver.
 const COACH_SUMMARY_ES = [
-  'El método, materiales, videos y portal de The Surf Sequence® son confidenciales y propiedad de la empresa: no los copies, compartas ni enseñes fuera de tu rol.',
+  'El método, materiales, videos y portal de The Surf Sequence® son confidenciales y propiedad única y exclusiva de Enkrateia, S.A. de C.V. (Puro Surf los usa bajo licencia): no los copies, compartas ni enseñes fuera de tu rol.',
   'El acceso al material es exclusivo para miembros con membresía/certificación TSS activa y al día.',
   'Si tu membresía vence o termina tu relación, dejás de usar la marca, el método y los materiales.',
 ];
@@ -43,8 +49,8 @@ const COACH_SUMMARY_ES = [
 // never collide with the participant sections above.
 const COACH_SECTIONS: Section[] = [
   { n: 101, es_t: 'Confidencialidad y propiedad intelectual', en_t: 'Confidentiality and intellectual property',
-    es: 'Reconozco que el Método The Surf Sequence®, sus secuencias, drills, misiones, manuales, videos, evaluaciones, el portal y todo material relacionado (el “Material TSS”) son propiedad exclusiva de las Partes Liberadas y constituyen información confidencial y secretos comerciales. Me obligo a mantenerlos en estricta confidencialidad, a no copiarlos, reproducirlos, publicarlos, distribuirlos ni enseñarlos fuera de mi rol autorizado, y a no usarlos para crear métodos derivados ni para competir con las Partes Liberadas. Esta obligación se mantiene incluso después de terminar mi relación con ellas.',
-    en: 'I acknowledge that The Surf Sequence® Method, its sequences, drills, missions, manuals, videos, evaluations, the portal and all related material (the “TSS Material”) are the exclusive property of the Released Parties and constitute confidential information and trade secrets. I agree to keep them strictly confidential, not to copy, reproduce, publish, distribute or teach them outside my authorized role, and not to use them to create derivative methods or to compete with the Released Parties. This obligation survives the end of my relationship with them.' },
+    es: 'Reconozco que el Método The Surf Sequence®, sus secuencias, drills, misiones, manuales, videos, evaluaciones, el portal y todo material relacionado (el “Material TSS”) son propiedad única y exclusiva de Enkrateia, S.A. de C.V., y constituyen información confidencial y secretos comerciales. Puro Surf, Surfing Pacifica, S.A. de C.V. y cualquier otra academia usan el Material TSS únicamente bajo licencia de Enkrateia, S.A. de C.V., sin adquirir ningún derecho de propiedad sobre él. Me obligo a mantenerlo en estricta confidencialidad, a no copiarlo, reproducirlo, publicarlo, distribuirlo ni enseñarlo fuera de mi rol autorizado, y a no usarlo para crear métodos derivados ni para competir con Enkrateia, S.A. de C.V. o las demás Partes Liberadas. Esta obligación se mantiene incluso después de terminar mi relación con ellas.',
+    en: 'I acknowledge that The Surf Sequence® Method, its sequences, drills, missions, manuals, videos, evaluations, the portal and all related material (the “TSS Material”) are the sole and exclusive property of Enkrateia, S.A. de C.V., and constitute confidential information and trade secrets. Puro Surf, Surfing Pacifica, S.A. de C.V. and any other academy use the TSS Material solely under license from Enkrateia, S.A. de C.V., without acquiring any ownership right over it. I agree to keep it strictly confidential, not to copy, reproduce, publish, distribute or teach it outside my authorized role, and not to use it to create derivative methods or to compete with Enkrateia, S.A. de C.V. or the other Released Parties. This obligation survives the end of my relationship with them.' },
   { n: 102, es_t: 'Uso exclusivo para miembros / membresía al día', en_t: 'Members-only use / active membership',
     es: 'Reconozco que el acceso al Material TSS se otorga únicamente mientras mantenga una membresía y/o certificación TSS activa y al día. Si mi membresía vence, se suspende, o termina mi relación con las Partes Liberadas por cualquier causa, cesará de inmediato mi derecho a usar el Material TSS.',
     en: 'I acknowledge that access to the TSS Material is granted only while I maintain an active TSS membership and/or certification in good standing. If my membership expires, is suspended, or my relationship with the Released Parties ends for any reason, my right to use the TSS Material shall cease immediately.' },
