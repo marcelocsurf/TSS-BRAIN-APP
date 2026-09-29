@@ -24,6 +24,10 @@ Actualizada: 2026-09-17. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico
   - QR `/join` y la tarjeta de waiver del staff no guardan versión ni texto firmado; la tarjeta del staff es un resumen de 4 puntos que dice "aceptás el documento completo".
   - Los 4 textos del app nombran Puro Surf fijo: antes de sumar otra academia, sacar nombre y razón social de la fila de la academia.
   - Rodrigo (academy@purosurf.com) tiene el Guest Camp Agreement viejo (con "PURO SURF, S.A. DE C.V." y Marcelo en la liberación): reenviarle el corregido.
+- [ ] (2026-09-29) **El método es SOLO de Enkrateia, S.A. de C.V.** (Marcelo). Ya dice eso: waiver del coach C1, lecciones con "IP of…", /activate, contrato de licencia (Enkrateia única titular; firma su Representante Legal María Agustina Calvo Marenco), los dos Guest Camp Agreement y el app pública de TSS El Salvador (commit 93f9153). Para el abogado:
+  - Contrato de licencia, Décimo Primera 10 ("Son activos independientes", justo después de las acciones de Marcelo) y Décimo Cuarta 3 (licencia como ingreso de Marcelo): releer con Enkrateia como única titular.
+  - Términos §4 dicen que la IP es "de The Surf Sequence®" (marca): nombrar a Enkrateia sube TERMS_VERSION.
+  - Presentaciones/informes internos de Puro Surf 2.0 todavía dicen "IP de Marcelo Castellanos / Enkrateia" (no se tocaron).
 - [ ] Aceptar los DPA en los paneles de Supabase, Vercel y Resend y guardar copia.
 
 **Trámite**
