@@ -43,12 +43,13 @@ export function topicById(id: string): PlanTopic | null {
   return PLAN_TOPICS.find((t) => t.id === id) ?? null;
 }
 
-/** El MISMO tema, del lado del coach (paso 2 de unificar, 2026-09-29): el plan
- *  del día abre la lección exacta en su portal, igual que el "Study it" del
- *  alumno abre la suya. Los Tres Círculos van a su página de coach (Circle 1);
- *  el Infinite Circle todavía no tiene página del coach → sin link. */
+/** El MISMO tema, del lado del coach (pasos 2 y 3 de unificar, 2026-09-29):
+ *  el plan del día abre la lección exacta en su portal, igual que el "Study it"
+ *  del alumno abre la suya; los Tres Círculos y el Infinite Circle abren las
+ *  mismas páginas que ve el alumno, en modo coach. */
 export function coachTopicHref(topic: PlanTopic, token: string): string | null {
   if (topic.id.startsWith('lesson:')) return `/coach-portal/${token}?tab=courses&lesson=${topic.id.slice('lesson:'.length)}`;
-  if (topic.id === 'circles') return `/coach-portal/${token}/seq/CIRCLE-BODY`;
+  if (topic.id === 'circles') return `/coach-portal/${token}/circles`;
+  if (topic.id === 'loop') return `/coach-portal/${token}/loop`;
   return null;
 }

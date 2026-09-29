@@ -1254,9 +1254,18 @@ function CoursesTab({
             <div key={sq.id} className="rounded-[5px] px-3 py-2.5" style={{ background: '#061C2B', border: '1px solid rgba(247,249,250,.12)' }}>
               <p className="text-[10px] uppercase tracking-wider m-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>{sq.kind === 'circle' ? 'The Three Circles' : sq.eyebrow ?? `Sequence #${sq.number}`} · {sq.belt.replace('_belt', '')}</p>
               <a href={`/coach-portal/${token}/teach/${sq.id}`} className="block text-[14px] font-bold m-0 mt-0.5 no-underline" style={{ color: '#F7F9FA' }}>{sq.title} →</a>
-              <a href={`/coach-portal/${token}/seq/${sq.id}`} className="inline-block text-[11.5px] mt-1 no-underline" style={{ color: 'rgba(247,249,250,.55)' }}>as the student sees it</a>
+              {/* Un círculo: el alumno lo ve en la página de los Tres Círculos (paso 3). */}
+              <a href={sq.kind === 'circle' ? `/coach-portal/${token}/circles` : `/coach-portal/${token}/seq/${sq.id}`} className="inline-block text-[11.5px] mt-1 no-underline" style={{ color: 'rgba(247,249,250,.55)' }}>as the student sees it</a>
             </div>
           ))}
+          {/* The Infinite Circle (curso Blue): no tiene Teach it propio; la página del alumno en modo coach. */}
+          {teachRank >= 3 && (
+            <div className="rounded-[5px] px-3 py-2.5" style={{ background: '#061C2B', border: '1px solid rgba(247,249,250,.12)' }}>
+              <p className="text-[10px] uppercase tracking-wider m-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>The language of every sequence · blue</p>
+              <a href={`/coach-portal/${token}/loop`} className="block text-[14px] font-bold m-0 mt-0.5 no-underline" style={{ color: '#F7F9FA' }}>The Infinite Circle →</a>
+              <span className="inline-block text-[11.5px] mt-1" style={{ color: 'rgba(247,249,250,.55)' }}>as the student sees it</span>
+            </div>
+          )}
         </div>
       </div>
       <p className="text-[11px] px-1" style={{ ...F_LABEL, color: '#55666E' }}>Your certification path</p>

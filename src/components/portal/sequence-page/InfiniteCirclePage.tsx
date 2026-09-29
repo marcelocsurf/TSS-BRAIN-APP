@@ -52,14 +52,18 @@ function Card({ eyebrow, color, children }: { eyebrow: string; color?: string; c
   );
 }
 
-export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLessonId }: {
+export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLessonId, coach }: {
   token: string;
   video?: { url: string; title: string } | null;
   threeCirclesLessonId: string;
   loopLessonId: string | null;
+  /** Modo coach (paso 3 de unificar, 2026-09-29): misma página, links al
+   *  portal del coach, sin marcar leída. */
+  coach?: { backHref: string };
 }) {
   const [side, setSide] = useState<LoopSide['key']>('fs');
-  const portal = `/portal/${token}`;
+  const portal = coach ? `/coach-portal/${token}` : `/portal/${token}`;
+  const courseTab = coach ? 'courses' : 'course';
   const cur = LOOP_SIDES.find((s) => s.key === side)!;
 
   return (
@@ -69,7 +73,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
           <div className="tss-brand-row">
             <svg className="tss-logo" viewBox="180 183 960 269" role="img" aria-label="The Surf Sequence — Evolve through play"><image href="/tss/assets/tss-logo-original-white.png" width="1312" height="654" /></svg>
           </div>
-          <a className="tss-back" href={`${portal}?tab=course`}><ArrowLeft size={14} /> Course</a>
+          <a className="tss-back" href={coach ? coach.backHref : `${portal}?tab=course`}><ArrowLeft size={14} /> {coach ? 'Courses' : 'Course'}</a>
           <p style={{ ...F_M, color: CYAN }}>Blue belt · the language of every sequence</p>
           <h1>{LOOP_INTRO.title}</h1>
           <p className="tss-subtitle">{LOOP_INTRO.headline}</p>
@@ -142,7 +146,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
                 <p key={k.word} className="text-[13.5px] leading-snug" style={{ color: TEXT }}><span className="font-semibold" style={{ color: INK }}>{k.word}</span> · {k.note}</p>
               ))}
             </div>
-            <a href={`${portal}?tab=course&lesson=${threeCirclesLessonId}`} className="inline-block mt-3 text-[13px] font-semibold" style={{ color: CYAN }}>Go back to the Three Circles →</a>
+            <a href={`${portal}?tab=${courseTab}&lesson=${threeCirclesLessonId}`} className="inline-block mt-3 text-[13px] font-semibold" style={{ color: CYAN }}>Go back to the Three Circles →</a>
           </Card>
 
           <Card eyebrow="04 · New in Blue · the words the circle adds" color={CYAN}>
@@ -192,7 +196,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
                       ))}
                     </ul>
                     <p className="mt-2 text-[12.5px]"><span style={{ color: MUTED }}>Key words · </span><span className="font-mono" style={{ color: INK }}>{st.keyWords.join(' · ')}</span></p>
-                    <a href={`${portal}?tab=course&lesson=${st.lessonId}`} className="inline-block mt-2 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {st.lessonLabel}</a>
+                    <a href={`${portal}?tab=${courseTab}&lesson=${st.lessonId}`} className="inline-block mt-2 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {st.lessonLabel}</a>
                   </div>
                 </details>
               ))}
@@ -209,7 +213,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
           </Card>
 
           {/* Marcar leída acá mismo, sin ir a la lección (2026-09-11). */}
-          {loopLessonId && <MarkReadButton token={token} lessonId={loopLessonId} portal={portal} />}
+          {loopLessonId && !coach && <MarkReadButton token={token} lessonId={loopLessonId} portal={portal} />}
         </div>
 
         <p className="text-[11px] mt-8 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: MUTED }}>

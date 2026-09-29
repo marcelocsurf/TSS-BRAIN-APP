@@ -117,18 +117,23 @@ function Icon({ name }: { name: 'home' | 'course' | 'play' | 'back' | 'link' | '
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{p[name]}</svg>;
 }
 
-export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
+export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, coach }: {
   token: string;
   pieces: Record<string, PieceRow>;
   canTrack: boolean;
   video?: { url: string; title: string } | null;
   lessonId: string;
+  /** Modo coach (paso 3 de unificar, 2026-09-29): la MISMA página que ve el
+   *  alumno, con los links al portal del coach, "Teach it" en vez de "Play it"
+   *  y sin marcar leída ni la barra del alumno. */
+  coach?: { backHref: string };
 }) {
   // La portada es una pantalla propia (Marcelo 2026-09-24): antes vivía
   // dentro del círculo 1 y se mezclaba con él. Ahora se entra desde ella.
   const [key, setKey] = useState<Circle['key'] | 'intro'>('intro');
   const [pos, setPos] = useState<'P1' | 'P2' | 'P3'>('P2');
-  const portal = `/portal/${token}`;
+  const portal = coach ? `/coach-portal/${token}` : `/portal/${token}`;
+  const courseTab = coach ? 'courses' : 'course';
   const isIntro = key === 'intro';
   const cur = CIRCLES.find((c) => c.key === key) ?? CIRCLES[0];
   const feet = cur.feet ?? [];
@@ -141,9 +146,18 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
           <div className="tss-brand-row">
             <svg className="tss-logo" viewBox="180 183 960 269" role="img" aria-label="The Surf Sequence — Evolve through play"><image href="/tss/assets/tss-logo-original-white.png" width="1312" height="654" /></svg>
           </div>
-          <a className="tss-back" href={`${portal}?tab=course`}><Icon name="back" />Course</a>
+          <a className="tss-back" href={coach ? coach.backHref : `${portal}?tab=course`}><Icon name="back" />{coach ? 'Courses' : 'Course'}</a>
           <h1>{isIntro ? 'The Three Circles of Power' : `0${cur.n} / ${cur.label}`}</h1>
           <p className="tss-subtitle">{isIntro ? 'Body · board · wave. Where the three overlap, you get flow.' : SUBTITLE[cur.key]}</p>
+          {/* Coach: el mismo material + a un toque, cómo enseñarlo (Teach it). */}
+          {coach && (
+            <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-bold mb-1" style={{ color: CYAN }}>
+              <span style={{ ...MONO, color: CYAN }}>Teach it</span>
+              {CIRCLES.map((c) => (
+                <a key={c.key} href={`${portal}/teach/CIRCLE-${c.key.toUpperCase()}`} className="no-underline" style={{ color: CYAN }}>{`Circle ${c.n} · ${c.label} →`}</a>
+              ))}
+            </p>
+          )}
           {!isIntro && (
             <button type="button" onClick={() => setKey('intro')}
                     className="inline-flex items-center gap-1.5 text-[13px] font-bold mb-1"
@@ -228,8 +242,8 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                 )}
                 <p className="mt-3" style={{ ...MONO, color: MUTED }}>Feel it · on land</p>
                 {m.feel.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
-                {(m.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={portal} />)}
-                <a href={`${portal}?tab=course&lesson=${m.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {m.lessonLabel}</a>
+                {(m.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={coach ? undefined : portal} />)}
+                <a href={`${portal}?tab=${courseTab}&lesson=${m.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {m.lessonLabel}</a>
               </Acc>
             ))}
           </Card>
@@ -297,8 +311,8 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
             <Card title="Feel it · on land and on the skate" id="feel">
               <Acc title="Open the drills">
                 {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
-                {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={portal} />)}
-                <a href={`${portal}?tab=course&lesson=${cur.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
+                {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={coach ? undefined : portal} />)}
+                <a href={`${portal}?tab=${courseTab}&lesson=${cur.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
               </Acc>
             </Card>
           </>
@@ -354,8 +368,8 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
                 <div className="tss-timing mt-3"><div><h3>The rule</h3><p style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 700, lineHeight: 1.35 }}>{cur.game.rule}</p></div></div>
                 <p className="text-[14px] mt-3 leading-[1.45]" style={{ color: MUTED }}>{cur.game.how}</p>
                 {/* El juego general de los Tres Círculos (Marcelo 2026-09-17): pocket y espuma con todas las herramientas. */}
-                {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={portal} />)}
-                <a href={`${portal}?tab=course&lesson=${cur.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
+                {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={coach ? undefined : portal} />)}
+                <a href={`${portal}?tab=${courseTab}&lesson=${cur.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
                 </Acc>
               </Card>
             )}
@@ -386,16 +400,16 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId }: {
           </Acc>
           {/* El botón de marcar como leído NO se pliega: si se esconde, el
               alumno no encuentra cómo completar la lección. */}
-          <div className="mt-3"><MarkReadButton token={token} lessonId={lessonId} portal={portal} /></div>
+          {!coach && <div className="mt-3"><MarkReadButton token={token} lessonId={lessonId} portal={portal} /></div>}
         </Card>
       </div>
 
-      {/* Nav inferior blanca: los mismos destinos del portal. */}
-      <nav className="tss-bottom-nav" aria-label="Main navigation"><div className="tss-bottom-nav-inner">
+      {/* Nav inferior blanca: los mismos destinos del portal (el coach no la usa). */}
+      {!coach && <nav className="tss-bottom-nav" aria-label="Main navigation"><div className="tss-bottom-nav-inner">
         <a href={`${portal}?tab=home`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="home" />Home</a>
         <a href={`${portal}?tab=course`} aria-current="page" className="relative flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase" style={{ color: INK, letterSpacing: '0.055em' }}><span style={{ color: CYAN }}><Icon name="course" /></span>Course<span className="absolute bottom-[5px] w-[72%] h-1 rounded-full" style={{ background: CYAN }} /></a>
         <a href={`${portal}?tab=sequence`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="play" />Let&apos;s Play</a>
-      </div></nav>
+      </div></nav>}
     </section>
   );
 }
