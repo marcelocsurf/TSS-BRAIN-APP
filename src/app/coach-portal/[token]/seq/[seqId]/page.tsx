@@ -9,7 +9,8 @@ import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { coachTeachRank } from '@/lib/coach/teach-rank';
-import { sequencePageRank } from '@/lib/coach/course-access';
+import { sequencePageRank, BELT_RANK } from '@/lib/coach/course-access';
+import { entryPageForCourse } from '@/lib/sequence-pages/bb-entry';
 import { SequencePage, type LessonBits, type PieceRow, type CoachStepLayer } from '@/components/portal/sequence-page/SequencePage';
 import { pickSequenceVideos, resolveSequenceVideo } from '@/lib/sequence-pages/videos';
 
@@ -27,7 +28,7 @@ function section(md: string | null | undefined, heading: string): string {
   return (m?.[1] ?? '').trim();
 }
 
-export default async function CoachSequencePageRoute({ params, searchParams }: { params: Promise<{ token: string; seqId: string }>; searchParams?: Promise<{ tab?: string }> }) {
+export default async function CoachSequencePageRoute({ params, searchParams }: { params: Promise<{ token: string; seqId: string }>; searchParams?: Promise<{ tab?: string; course?: string }> }) {
   const { token, seqId } = await params;
   const sp = searchParams ? await searchParams : {};
   const initialTab = sp.tab === 'feel' || sp.tab === 'do' || sp.tab === 'review' || sp.tab === 'think' ? sp.tab : null;
@@ -39,7 +40,16 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
   // Alcance sin cursos (2026-09-26): el material del método tampoco se abre.
   if (!coach || !coach.course_access_granted || (coach as any).course_access_scope === 'none') notFound();
   // Hasta su cinta (+ la de sus camps), 2026-09-29.
-  if (sequencePageRank(cfg) > await coachTeachRank(admin, coach as any)) notFound();
+  const rank = await coachTeachRank(admin, coach as any);
+  if (sequencePageRank(cfg) > rank) notFound();
+  // Una página de entrada de Blue vista desde Yellow (?course=yellow_belt, o un
+  // coach que llega solo hasta Yellow) habla con la voz de Yellow, como la ve
+  // el alumno de Yellow (entryPageForCourse).
+  const beltRank = (k: string) => BELT_RANK[k.replace(/_belt$/, '')] ?? 6;
+  const viewKey = sp.course && (cfg.alsoCourseKeys ?? []).includes(sp.course) ? sp.course
+    : beltRank(cfg.courseKey) > rank ? ((cfg.alsoCourseKeys ?? []).find((k) => beltRank(k) <= rank) ?? cfg.courseKey)
+    : cfg.courseKey;
+  const pageCfg = viewKey !== cfg.courseKey ? entryPageForCourse(cfg, viewKey) : cfg;
 
   const [{ data: lessonRows }, { data: pieceRows }, { data: videoRows }, { data: coachRows }] = await Promise.all([
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),
@@ -77,7 +87,7 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
       {/* eslint-disable-next-line @next/next/no-css-tags */}
       <link rel="stylesheet" href="/tss/theme.css" />
       <SequencePage
-        cfg={cfg} lessons={lessons} pieces={pieces} token={token} canTrack={false}
+        cfg={pageCfg} lessons={lessons} pieces={pieces} token={token} canTrack={false}
         video={resolveSequenceVideo(videos, null, null)} videos={videos} stance={null}
         progress={null} initialTab={initialTab} flip={sequenceSide(cfg.id) === 'bs'}
         coach={{ layers, backHref: `/coach-portal/${token}?tab=courses` }}

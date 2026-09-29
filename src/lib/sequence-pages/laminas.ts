@@ -60,12 +60,13 @@ export const INFINITE_CIRCLE_LAMINAS: Lamina[] = [
   { src: '/uploads/fotos/learning-blocks.webp', caption: 'The eight learning blocks', alt: 'Learning Blocks — the eight blocks of the method, from preparation to the infinite circle.' },
 ];
 
-/** Las láminas de una lección: cada imagen de /uploads/fotos en su markdown,
- *  en orden (sola en su línea, como las dibuja MarkdownContent). */
+/** Las láminas de una lección: las imágenes que dibuja MarkdownContent (una
+ *  imagen SOLA en su línea, mismo patrón), en orden. */
 export function laminasInMarkdown(md: string | null | undefined): Lamina[] {
   const out: Lamina[] = [];
-  for (const m of String(md ?? '').matchAll(/!\[([^\]]*)\]\((\/uploads\/fotos\/[^)\s]+)\)/g)) {
-    out.push({ src: m[2], alt: m[1] || 'Plate', caption: m[1] || undefined });
+  for (const line of String(md ?? '').split('\n')) {
+    const m = line.trim().match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/);
+    if (m) out.push({ src: m[2], alt: m[1] || 'Plate', caption: m[1] || undefined });
   }
   return out;
 }

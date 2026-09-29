@@ -49,7 +49,7 @@ export async function buildCoachCourseMap(db: ReturnType<typeof createAdminClien
     .from('lessons')
     .select('id, title, course_section, pc_section_id, display_order, description_md')
     .eq('active', true)
-    .in('course_section', ['pre_course_fundamentals', 'pre_course_values', 'yb_onboarding', 'bb_onboarding', 'white_belt', 'yellow_belt'])
+    .in('course_section', ['pre_course_fundamentals', 'pre_course_values', 'wb_onboarding', 'yb_onboarding', 'bb_onboarding', 'white_belt', 'yellow_belt'])
     .order('display_order');
   const rows = (data ?? []) as any[];
   const byId = new Map(rows.map((r) => [r.id as string, r]));
@@ -79,6 +79,7 @@ export async function buildCoachCourseMap(db: ReturnType<typeof createAdminClien
     tabs.push({
       key: 'white', label: 'White',
       groups: nonEmpty([
+        { title: 'Start Here', items: lessonsIn((r) => r.course_section === 'wb_onboarding') },
         { title: 'Sequences', items: pagesOf('white_belt').filter((c) => sequencePageRank(c) <= rank).map(pageItem) },
         { title: 'Tools · techniques you use at every belt', items: tools.filter((t) => t.id === 'STP-019') },
       ]),
@@ -96,7 +97,7 @@ export async function buildCoachCourseMap(db: ReturnType<typeof createAdminClien
         { title: 'Tools · techniques you use at every belt', items: tools },
         { title: 'Going out, picking your line', items: entry },
         { title: 'Sequences', items: pagesOf('yellow_belt').map(pageItem) },
-        { title: 'The complete ride', items: lessonsIn((r) => r.course_section === 'yellow_belt' && String(r.id).startsWith('YB-MOD')) },
+        { title: 'Integration & Certification', items: lessonsIn((r) => r.course_section === 'yellow_belt' && String(r.id).startsWith('YB-MOD')) },
       ]),
     });
   }
@@ -108,8 +109,8 @@ export async function buildCoachCourseMap(db: ReturnType<typeof createAdminClien
       key: 'blue', label: 'Blue',
       groups: nonEmpty([
         { title: 'Start Here', items: bbStart },
-        { title: 'Fundamentals', items: [circles, loop] },
         { title: 'Tools · techniques you use at every belt', items: tools },
+        { title: 'Fundamentals', items: [circles, loop] },
         { title: 'Going out, catching the wave, picking your line', items: prelude },
         { title: 'Sequences', items: pagesOf('blue_belt', (id) => !['BB-NAV', 'BB-CATCH', 'BB-LINE'].includes(id)).map(pageItem) },
       ]),

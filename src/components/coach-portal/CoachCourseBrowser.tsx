@@ -19,17 +19,30 @@ const CYAN = '#00D2FF';
 const LINK = '#005F79';
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' };
 
-function hrefsFor(item: CourseItem, token: string) {
+function hrefsFor(item: CourseItem, token: string, tabKey: CourseTabMap['key']) {
   const base = `/coach-portal/${token}`;
   if (item.kind === 'lesson') return { open: `${base}?tab=courses&lesson=${item.id}`, openLabel: 'Open the lesson', teach: null };
-  if (item.kind === 'page') return { open: `${base}/seq/${item.id}`, openLabel: 'As the student sees it', teach: `${base}/teach/${item.id}` };
+  // Desde Yellow, las páginas de entrada de Blue se leen con la voz de Yellow.
+  if (item.kind === 'page') return { open: `${base}/seq/${item.id}${tabKey === 'yellow' ? '?course=yellow_belt' : ''}`, openLabel: 'As the student sees it', teach: `${base}/teach/${item.id}` };
   if (item.kind === 'circles') return { open: `${base}/circles`, openLabel: 'As the student sees it', teach: `${base}/teach/CIRCLE-BODY` };
   return { open: `${base}/loop`, openLabel: 'As the student sees it', teach: null };
 }
 
-export function CoachCourseBrowser({ token, tabs }: { token: string; tabs: CourseTabMap[] }) {
-  const [tabKey, setTabKey] = useState<CourseTabMap['key']>(tabs[0]?.key ?? 'pre');
-  const [view, setView] = useState<'course' | 'plates'>('course');
+export function CoachCourseBrowser({ token, tabs, initialBelt, initialView }: {
+  token: string;
+  tabs: CourseTabMap[];
+  /** ?belt= y ?view= de la URL: volver de una lección no resetea la pantalla. */
+  initialBelt?: string | null;
+  initialView?: string | null;
+}) {
+  const [tabKey, setTabKeyState] = useState<CourseTabMap['key']>(
+    (tabs.find((t) => t.key === initialBelt)?.key) ?? tabs[0]?.key ?? 'pre');
+  const [view, setViewState] = useState<'course' | 'plates'>(initialView === 'plates' ? 'plates' : 'course');
+  const remember = (belt: string, v: string) => {
+    try { window.history.replaceState(window.history.state, '', `${window.location.pathname}?belt=${belt}&view=${v}`); } catch { /* nada */ }
+  };
+  const setTabKey = (k: CourseTabMap['key']) => { setTabKeyState(k); remember(k, view); };
+  const setView = (v: 'course' | 'plates') => { setViewState(v); remember(tabKey, v); };
   const [show, setShow] = useState<{ items: PresentedLamina[]; start: number } | null>(null);
   const tab = tabs.find((t) => t.key === tabKey) ?? tabs[0];
 
@@ -94,7 +107,7 @@ export function CoachCourseBrowser({ token, tabs }: { token: string; tabs: Cours
                 <p style={{ ...MONO, color: MUTED }}>{g.title}</p>
                 <div className="mt-2 rounded-lg overflow-hidden" style={{ background: '#fff', border: `1px solid ${BORDER}` }}>
                   {g.items.map((it, idx) => {
-                    const h = hrefsFor(it, token);
+                    const h = hrefsFor(it, token, tab.key);
                     return (
                       <div key={it.id} className="px-4 py-3" style={{ borderTop: idx ? `1px solid ${BORDER}` : undefined }}>
                         {it.kind === 'page' && <p style={{ ...MONO, fontSize: 10, color: '#0090B0' }}>{it.eyebrow}</p>}

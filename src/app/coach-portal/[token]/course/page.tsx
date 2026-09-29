@@ -17,8 +17,9 @@ const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function CoachCoursePage({ params }: { params: Promise<{ token: string }> }) {
+export default async function CoachCoursePage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<{ belt?: string; view?: string }> }) {
   const { token } = await params;
+  const sp = searchParams ? await searchParams : {};
   if (!UUID_RE.test(token)) notFound();
   const admin = createAdminClient();
   const { data: coach } = await admin.from('coaches').select('id, course_access_granted, course_access_scope, max_belt_permission').eq('portal_token', token).maybeSingle();
@@ -26,7 +27,7 @@ export default async function CoachCoursePage({ params }: { params: Promise<{ to
   const tabs = await buildCoachCourseMap(admin, await coachTeachRank(admin, coach as any));
   return (
     <div className={`${archivo.variable} ${plexMono.variable}`}>
-      <CoachCourseBrowser token={token} tabs={tabs} />
+      <CoachCourseBrowser token={token} tabs={tabs} initialBelt={sp.belt ?? null} initialView={sp.view ?? null} />
     </div>
   );
 }
