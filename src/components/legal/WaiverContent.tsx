@@ -5,7 +5,12 @@
 // in collapsible sections so the signer isn't hit with a wall of text.
 // NOTE: this text is a DRAFT and must be reviewed by an attorney before use.
 
-export const WAIVER_VERSION = 'tss-purosurf-2026-07';
+// 2026-09-29 (Marcelo): sección 1 sin persona física y con la sociedad que
+// opera Puro Surf. Antes (tss-purosurf-2026-07): "...Puro Surf y Puro Surf
+// Academy (y la sociedad que las opera); el señor Marcelo Castellanos; y todos
+// sus socios...". Subir la versión hace que quien vuelva al intake firme de nuevo
+// solo el waiver (intake-form.tsx waiverStale); lo firmado antes sigue guardado.
+export const WAIVER_VERSION = 'tss-purosurf-2026-09';
 
 type Section = { n: number; es_t: string; en_t: string; es: string; en: string };
 
@@ -50,8 +55,8 @@ const COACH_SECTIONS: Section[] = [
 
 const SECTIONS: Section[] = [
   { n: 1, es_t: 'Partes liberadas', en_t: 'Released parties',
-    es: 'Este acuerdo se otorga a favor de: Enkrateia, S.A. de C.V.; The Surf Sequence®; Puro Surf y Puro Surf Academy (y la sociedad que las opera); el señor Marcelo Castellanos; y todos sus socios, directores, empleados, entrenadores, instructores, contratistas, voluntarios, agentes y representantes (en conjunto, las “Partes Liberadas”).',
-    en: 'This agreement is granted in favor of: Enkrateia, S.A. de C.V.; The Surf Sequence®; Puro Surf and Puro Surf Academy (and their operating company); Mr. Marcelo Castellanos; and all of their partners, directors, employees, coaches, instructors, contractors, volunteers, agents and representatives (collectively, the “Released Parties”).' },
+    es: 'Este acuerdo se otorga a favor de: Enkrateia, S.A. de C.V.; The Surf Sequence®; Puro Surf y Puro Surf Academy; Surfing Pacifica, S.A. de C.V., sociedad que las opera; y todos sus socios, directores, empleados, entrenadores, instructores, contratistas, voluntarios, agentes y representantes (en conjunto, las “Partes Liberadas”).',
+    en: 'This agreement is granted in favor of: Enkrateia, S.A. de C.V.; The Surf Sequence®; Puro Surf and Puro Surf Academy; Surfing Pacifica, S.A. de C.V., the company that operates them; and all of their partners, directors, employees, coaches, instructors, contractors, volunteers, agents and representatives (collectively, the “Released Parties”).' },
   { n: 2, es_t: 'Actividades cubiertas', en_t: 'Covered activities',
     es: 'Este acuerdo cubre toda actividad organizada, impartida o supervisada por las Partes Liberadas, incluyendo: clases y entrenamientos de surf en el mar y en tierra, evaluaciones y exámenes de nivel, entrenamiento físico (gimnasio, playa, piscina), campamentos, competencias, uso de equipo (tablas, quillas, leashes, licras), transporte relacionado con las actividades, y cualquier actividad conexa (en conjunto, las “Actividades”).',
     en: 'This agreement covers any activity organized, taught or supervised by the Released Parties, including: surf lessons and training in the ocean and on land, level assessments and exams, physical training (gym, beach, pool), camps, competitions, use of equipment (boards, fins, leashes, rash guards), transportation related to the activities, and any related activity (collectively, the “Activities”).' },
