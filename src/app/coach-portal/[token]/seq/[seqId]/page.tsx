@@ -13,6 +13,8 @@ import { sequencePageRank, BELT_RANK } from '@/lib/coach/course-access';
 import { entryPageForCourse } from '@/lib/sequence-pages/bb-entry';
 import { SequencePage, type LessonBits, type PieceRow, type CoachStepLayer } from '@/components/portal/sequence-page/SequencePage';
 import { pickSequenceVideos, resolveSequenceVideo } from '@/lib/sequence-pages/videos';
+import { loadCourseMedia } from '@/lib/coach/course-media';
+import { detailForFocus } from '@/lib/sequence-pages/focus';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -27,11 +29,18 @@ function section(md: string | null | undefined, heading: string): string {
   const m = md.match(re);
   return (m?.[1] ?? '').trim();
 }
+/** Igual que en Teach it: corta también en '### ' (el cue de la #8 sigue con "### Drill 1"). */
+function sectionTight(md: string | null | undefined, heading: string): string {
+  if (!md) return '';
+  const m = md.match(new RegExp(`^## ${heading}\\s*$([\\s\\S]*?)(?=^#{2,3} |\\Z)`, 'm'));
+  return (m?.[1] ?? '').trim();
+}
 
-export default async function CoachSequencePageRoute({ params, searchParams }: { params: Promise<{ token: string; seqId: string }>; searchParams?: Promise<{ tab?: string; course?: string }> }) {
+export default async function CoachSequencePageRoute({ params, searchParams }: { params: Promise<{ token: string; seqId: string }>; searchParams?: Promise<{ tab?: string; course?: string; focus?: string; from?: string }> }) {
   const { token, seqId } = await params;
   const sp = searchParams ? await searchParams : {};
-  const initialTab = sp.tab === 'feel' || sp.tab === 'do' || sp.tab === 'review' || sp.tab === 'think' ? sp.tab : null;
+  // Con ?focus (el puente del plan / cierre) la página abre en Review.
+  const initialTab = sp.tab === 'feel' || sp.tab === 'do' || sp.tab === 'review' || sp.tab === 'think' ? sp.tab : sp.focus ? 'review' : null;
   const cfg = sequencePageFor(seqId);
   if (!cfg || !UUID_RE.test(token)) notFound();
 
@@ -51,12 +60,22 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
     : cfg.courseKey;
   const pageCfg = viewKey !== cfg.courseKey ? entryPageForCourse(cfg, viewKey) : cfg;
 
-  const [{ data: lessonRows }, { data: pieceRows }, { data: videoRows }, { data: coachRows }] = await Promise.all([
+  // Los juegos, drills y misiones que la config nombra por id (como Teach it).
+  const playIds = [
+    ...((cfg as any).play ?? []),
+    ...(((cfg as any).think?.moves ?? []).flatMap((m: any) => m.play ?? [])),
+    ...(((cfg as any).feel?.land ?? [])),
+    ...(((cfg as any).feel?.skate ?? [])),
+    ...((cfg as any).do?.missionId ? [(cfg as any).do.missionId] : []),
+  ].filter(Boolean) as string[];
+  const PIECE = 'id, type, title, description_md, key_words, time_estimate, reps_recommended, student_visible';
+  const [{ data: lessonRows }, { data: pieceRows }, { data: playRows }, { data: videoRows }, { data: coachRows }, media] = await Promise.all([
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),
-    // El coach ve también lo que está en su catálogo (coach_visible), no solo lo del alumno.
-    admin.from('drills_missions').select('id, type, title, description_md, key_words, time_estimate, reps_recommended').eq('active', true).in('step_id', cfg.stepIds),
-    admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(6),
+    admin.from('drills_missions').select(PIECE).eq('active', true).in('step_id', cfg.stepIds),
+    playIds.length ? admin.from('drills_missions').select(PIECE).eq('active', true).in('id', playIds) : Promise.resolve({ data: [] as any[] }),
+    admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(20),
     admin.from('lessons').select('id, linked_step_id, coach_what_md, coach_deliver_md, coach_errors_md, coach_validate_md').eq('active', true).like('id', 'COACH-%').in('linked_step_id', cfg.stepIds),
+    loadCourseMedia(admin, cfg.stepIds),
   ]);
 
   const videos = pickSequenceVideos(videoRows as any, cfg.id);
@@ -73,8 +92,27 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
       cue: section(l.description_md, 'The cue you will hear'),
     };
   }
+  // "View as student" = EXACTAMENTE lo que ve el alumno: en su página solo lo
+  // student_visible (como la ruta del alumno). Lo solo-coach va aparte, a
+  // "Coach · run it" (antes se mezclaba en la vista del alumno).
   const pieces: Record<string, PieceRow> = {};
-  for (const p of pieceRows ?? []) pieces[p.id] = p as PieceRow;
+  for (const p of (pieceRows ?? []) as any[]) if (p.student_visible) pieces[p.id] = p as PieceRow;
+  const seenExtra = new Set<string>();
+  const extraPieces: PieceRow[] = [...((pieceRows ?? []) as any[]), ...((playRows ?? []) as any[])]
+    .filter((p) => !pieces[p.id] && (seenExtra.has(p.id) ? false : (seenExtra.add(p.id), true)))
+    .map((p) => p as PieceRow);
+
+  // Coach · say it: las palabras numeradas y el cue de la lección del cuerpo.
+  const bodyLessonId = (cfg as any).think?.bodyFromLesson ?? cfg.stepIds[cfg.stepIds.length - 1];
+  const cue = sectionTight(((lessonRows ?? []) as any[]).find((l) => l.id === bodyLessonId)?.description_md, 'The cue you will hear');
+  const words: string[] = (pageCfg as any).think?.keyWords?.[0]?.words ?? [];
+
+  // El puente del plan / cierre (?focus=paso|elemento&from=…).
+  const stepTitle = sp.focus ? (((lessonRows ?? []) as any[]).find((l) => l.id === sp.focus)?.title ?? null) : null;
+  const match = sp.focus ? detailForFocus(cfg, sp.focus, stepTitle) : null;
+  const focus = match?.title ? { key: match.key, title: match.title, from: sp.from || undefined } : null;
+  // Volver al índice, en la cinta desde la que se mira.
+  const backBelt = viewKey.replace(/_belt$/, '');
 
   const byStep = new Map((coachRows ?? []).map((c: any) => [c.linked_step_id as string, c]));
   const layers: CoachStepLayer[] = cfg.stepIds.filter((id) => byStep.has(id)).map((id) => {
@@ -90,7 +128,11 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
         cfg={pageCfg} lessons={lessons} pieces={pieces} token={token} canTrack={false}
         video={resolveSequenceVideo(videos, null, null)} videos={videos} stance={null}
         progress={null} initialTab={initialTab} flip={sequenceSide(cfg.id) === 'bs'}
-        coach={{ layers, backHref: `/coach-portal/${token}?tab=courses` }}
+        coach={{
+          layers, backHref: `/coach-portal/${token}/course?belt=${backBelt}`,
+          extraPieces, allVideos: media.videosOfPage(cfg), laminas: media.laminasOfPage(cfg),
+          sayIt: { words, cue }, focus,
+        }}
       />
     </div>
   );

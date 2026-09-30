@@ -12,6 +12,7 @@ import { SEQUENCE_LAMINAS, THREE_CIRCLES_LAMINAS, INFINITE_CIRCLE_LAMINAS, lamin
 import { THREE_CIRCLES_LESSON_ID } from '@/lib/constants/learning-blocks';
 import { BELT_RANK, sequencePageRank } from './course-access';
 import type { CourseVideo } from '@/components/coach-portal/VideoEmbed';
+import { loadCourseMedia, dedupeVideos } from './course-media';
 
 // Cada fila trae también TODOS sus videos (Marcelo 2026-09-29: "que tenga todo
 // el material del curso"): los de la lección, el de la secuencia en Library
@@ -40,11 +41,6 @@ function pagesOf(courseKey: string, filter: (id: string) => boolean = () => true
     .filter((c) => c.kind !== 'circle' && c.courseKey === courseKey && filter(c.id))
     .sort((a, b) => a.number - b.number || a.id.localeCompare(b.id));
 }
-const isVideo = (m: string | null | undefined) => !m || m === 'video';
-function dedupe(vs: CourseVideo[]): CourseVideo[] {
-  const seen = new Set<string>();
-  return vs.filter((v) => (seen.has(v.url) ? false : (seen.add(v.url), true)));
-}
 
 export async function buildCoachCourseMap(db: ReturnType<typeof createAdminClient>, rank: number): Promise<CourseTabMap[]> {
   const { data } = await db
@@ -56,51 +52,16 @@ export async function buildCoachCourseMap(db: ReturnType<typeof createAdminClien
   const rows = (data ?? []) as any[];
   const byId = new Map(rows.map((r) => [r.id as string, r]));
 
-  // ── Videos: una consulta por fuente, después se reparten por fila ──
+  // ── Videos y láminas: la fuente única (course-media.ts) ──
   const pageSteps = Object.values(SEQUENCE_PAGES).flatMap((c) => c.stepIds);
-  const stepIds = Array.from(new Set([...rows.map((r) => r.id as string), ...pageSteps, THREE_CIRCLES_LESSON_ID, LOOP_LESSON_ID]));
-  const [{ data: stepLessons }, { data: lessonCv }, { data: stepCv }, { data: drills }, { data: resources }] = await Promise.all([
-    db.from('lessons').select('id, title, video_url').in('id', stepIds),
-    db.from('content_videos').select('lesson_id, url, label, media_type, display_order').in('lesson_id', stepIds).order('display_order'),
-    db.from('content_videos').select('step_id, url, label, media_type, display_order').in('step_id', stepIds).order('display_order'),
-    db.from('drills_missions').select('id, step_id, title').eq('active', true).in('step_id', stepIds),
-    db.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).order('created_at', { ascending: false }),
-  ]);
-  const drillIds = ((drills ?? []) as any[]).map((d) => d.id as string);
-  const { data: drillCv } = drillIds.length
-    ? await db.from('content_videos').select('drill_mission_id, url, label, media_type, display_order').in('drill_mission_id', drillIds).order('display_order')
-    : { data: [] as any[] };
-  const titleOf = new Map(((stepLessons ?? []) as any[]).map((l) => [l.id as string, l.title as string]));
-  const ownUrl = new Map(((stepLessons ?? []) as any[]).filter((l) => l.video_url).map((l) => [l.id as string, l.video_url as string]));
-  const drillsByStep = new Map<string, any[]>();
-  for (const d of (drills ?? []) as any[]) drillsByStep.set(d.step_id, [...(drillsByStep.get(d.step_id) ?? []), d]);
-
-  /** Los videos de una lección o paso: los suyos, su video_url, los del paso y los de sus drills. */
-  const videosOfLesson = (id: string): CourseVideo[] => {
-    const t = titleOf.get(id) ?? id;
-    const out: CourseVideo[] = [];
-    for (const v of (lessonCv ?? []) as any[]) if (v.lesson_id === id && isVideo(v.media_type)) out.push({ url: v.url, title: t, label: v.label || t });
-    const own = ownUrl.get(id); if (own) out.push({ url: own, title: t, label: t });
-    for (const v of (stepCv ?? []) as any[]) if (v.step_id === id && isVideo(v.media_type)) out.push({ url: v.url, title: t, label: v.label || t });
-    for (const d of drillsByStep.get(id) ?? []) {
-      for (const v of (drillCv ?? []) as any[]) if (v.drill_mission_id === d.id && isVideo(v.media_type)) out.push({ url: v.url, title: d.title, label: v.label || d.title });
-    }
-    return dedupe(out);
-  };
-  /** Los videos de Library cuyo título empieza por el prefijo (id de la secuencia). El general primero. */
-  const libraryVideos = (prefix: string): CourseVideo[] => ((resources ?? []) as any[])
-    .filter((r) => r.file_url && String(r.title).toUpperCase().startsWith(prefix.toUpperCase()))
-    .map((r) => {
-      const label = String(r.title).slice(prefix.length).replace(/^[\s·\-–—:]+/, '').trim();
-      return { url: r.file_url as string, title: r.title as string, label: label || 'Video' };
-    })
-    .sort((a, b) => Number(/\b(BS|FS|backside|frontside|goofy|regular)\b/i.test(a.label ?? '')) - Number(/\b(BS|FS|backside|frontside|goofy|regular)\b/i.test(b.label ?? '')));
+  const media = await loadCourseMedia(db, [...rows.map((r) => r.id as string), ...pageSteps, THREE_CIRCLES_LESSON_ID, LOOP_LESSON_ID]);
+  const { videosOfLesson, libraryVideos } = media;
 
   const pageItem = (c: (typeof SEQUENCE_PAGES)[string]): CourseItem => ({
     kind: 'page', id: c.id, title: c.title,
     eyebrow: c.eyebrow ?? `Sequence #${c.number}`,
     laminas: SEQUENCE_LAMINAS[c.id] ?? [],
-    videos: dedupe([...libraryVideos(c.id), ...c.stepIds.flatMap(videosOfLesson)]),
+    videos: media.videosOfPage(c),
   });
   const lesson = (id: string): CourseItem | null => {
     const r = byId.get(id);
@@ -108,8 +69,8 @@ export async function buildCoachCourseMap(db: ReturnType<typeof createAdminClien
   };
   const lessonsIn = (pred: (r: any) => boolean) => rows.filter(pred).map((r) => lesson(r.id)!).filter(Boolean);
   const tools = TOOLS.map(lesson).filter(Boolean) as CourseItem[];
-  const circles: CourseItem = { kind: 'circles', id: 'circles', title: 'The Three Circles of Power', laminas: THREE_CIRCLES_LAMINAS, videos: dedupe([...libraryVideos('YB-CIRCLES'), ...videosOfLesson(THREE_CIRCLES_LESSON_ID)]) };
-  const loop: CourseItem = { kind: 'loop', id: 'loop', title: 'The Infinite Circle', laminas: INFINITE_CIRCLE_LAMINAS, videos: dedupe([...libraryVideos('BB-LOOP'), ...videosOfLesson(LOOP_LESSON_ID)]) };
+  const circles: CourseItem = { kind: 'circles', id: 'circles', title: 'The Three Circles of Power', laminas: THREE_CIRCLES_LAMINAS, videos: dedupeVideos([...libraryVideos('YB-CIRCLES'), ...videosOfLesson(THREE_CIRCLES_LESSON_ID)]) };
+  const loop: CourseItem = { kind: 'loop', id: 'loop', title: 'The Infinite Circle', laminas: INFINITE_CIRCLE_LAMINAS, videos: dedupeVideos([...libraryVideos('BB-LOOP'), ...videosOfLesson(LOOP_LESSON_ID)]) };
   const nonEmpty = (gs: CourseGroup[]) => gs.filter((g) => g.items.length > 0);
 
   const tabs: CourseTabMap[] = [];

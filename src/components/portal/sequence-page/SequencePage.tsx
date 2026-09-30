@@ -22,6 +22,9 @@ import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { SEQUENCE_LAMINAS } from '@/lib/sequence-pages/laminas';
 import { hasStanceVideos, resolveSequenceVideo, type SequenceVideos, type Stance } from '@/lib/sequence-pages/videos';
 import { ZoomImage } from '@/components/shared/ImageLightbox';
+import { LaminaPresenter } from '@/components/coach-portal/LaminaPresenter';
+import { VideoList, type CourseVideo } from '@/components/coach-portal/VideoEmbed';
+import type { Lamina as LaminaT } from '@/lib/sequence-pages/laminas';
 
 // Tokens del paquete (public/tss/tokens.css) + semánticos legibles sobre crema.
 /** Una lámina del método: el mapa de la secuencia de una sola mirada. Se
@@ -96,7 +99,22 @@ export function SequencePage({
   /** Modo coach (Marcelo 2026-09-17): la MISMA página que ve el alumno, más
    *  una capa plegada por paso con cómo lo enseño / corrijo / valido, y un
    *  interruptor "View as student" que la apaga. */
-  coach?: { layers: CoachStepLayer[]; backHref: string } | null;
+  coach?: {
+    layers: CoachStepLayer[];
+    backHref: string;
+    /** Paso 2 de "una página por secuencia" (2026-09-30): lo que antes solo
+     *  tenía Teach it, sobre la página del alumno. Todo se apaga con "View as student". */
+    /** Drills, misiones y juegos que el alumno NO ve en su página (solo-coach). */
+    extraPieces?: PieceRow[];
+    /** TODOS los videos: Library (general, lado, stance) + cada paso + sus drills. */
+    allVideos?: CourseVideo[];
+    /** Las láminas de la secuencia y de las lecciones de sus pasos. */
+    laminas?: LaminaT[];
+    /** Las palabras numeradas y el cue que va a escuchar el alumno. */
+    sayIt?: { words: string[]; cue: string } | null;
+    /** El puente del plan / cierre: el detalle que se abre en Review. */
+    focus?: { key: string | null; title: string; from?: string } | null;
+  } | null;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? 'think');
   // Backside · Frontside (Marcelo 2026-09-25): un toque, y la página muestra
@@ -122,6 +140,12 @@ export function SequencePage({
   const shownVideo = resolveSequenceVideo(videos, side, hasStanceVideos(videos) ? stanceSel : null) ?? (side ? null : video);
   const [coachOn, setCoachOn] = useState(true);
   const coachLayers = coach && coachOn ? coach.layers : [];
+  // La barra del coach: láminas en pantalla y todos los videos.
+  const [presenting, setPresenting] = useState(false);
+  const [watching, setWatching] = useState(false);
+  const coachLaminas = coach?.laminas ?? [];
+  const coachVideos = coach?.allVideos ?? [];
+  const coachFocus = coach?.focus ?? null;
   // Foco opcional dentro de la misión (Marcelo 2026-09-09): la misión es
   // siempre la línea completa; el detalle se elige, o no.
   const [focus, setFocus] = useState<string | null>(null);
@@ -154,6 +178,21 @@ export function SequencePage({
               <button type="button" onClick={() => setCoachOn((v) => !v)} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-bold" style={{ background: coachOn ? '#F7F9FA' : CYAN, color: NAVY }}>
                 {coachOn ? 'View as student' : 'Show coach layer'}
               </button>
+            </div>
+          )}
+          {/* La barra del coach: poner las láminas en pantalla y todos los videos. */}
+          {coach && coachOn && (coachLaminas.length > 0 || coachVideos.length > 0) && (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {coachLaminas.length > 0 && (
+                <button type="button" onClick={() => setPresenting(true)} className="rounded-[5px] px-3.5 min-h-[40px] text-[13px] font-black uppercase tracking-wide" style={{ background: CYAN, color: NAVY }}>
+                  Present · {coachLaminas.length}
+                </button>
+              )}
+              {coachVideos.length > 0 && (
+                <button type="button" onClick={() => setWatching(true)} className="rounded-[5px] px-3.5 min-h-[40px] text-[13px] font-bold inline-flex items-center gap-1.5" style={{ background: 'transparent', color: PAPER, border: '1px solid rgba(247,249,250,.45)' }}>
+                  <Play size={13} /> Videos · {coachVideos.length}
+                </button>
+              )}
             </div>
           )}
           <p className="mt-2" style={{ ...MONO, color: CYAN }}>{cfg.eyebrow ?? `Sequence #${cfg.number}`}{cfg.alsoCourseKeys?.length ? '' : ` · ${cfg.belt.replace('_belt', ' belt')}`}</p>
@@ -249,6 +288,10 @@ export function SequencePage({
         {/* ── THINK ── */}
         {tab === 'think' && (
           <div className="mt-3">
+            {/* Coach · say it, lo primero de Think: las palabras y el cue a mano. */}
+            {coach && coachOn && coach.sayIt && (coach.sayIt.words.length > 0 || coach.sayIt.cue) && (
+              <div className="mb-3"><CoachSay words={coach.sayIt.words} cue={coach.sayIt.cue} /></div>
+            )}
             {(SEQUENCE_LAMINAS[cfg.id] ?? []).map((l) => (
               <Lamina key={l.src} src={l.src} alt={l.alt} caption={l.caption} />
             ))}
@@ -345,6 +388,13 @@ export function SequencePage({
         {/* ── FEEL ── */}
         {tab === 'think' && coachLayers.length > 0 && (
           <CoachCard title="Coach · how you teach it" layers={coachLayers} field="deliver" intro="What each step is, and how you deliver it — explain, demonstrate, participate, feedback." />
+        )}
+        {tab === 'do' && coach && coachOn && (coach.extraPieces?.length ?? 0) > 0 && (
+          <section className="tss-card mt-3" style={{ background: NAVY, border: '1px solid rgba(0,210,255,.45)', borderTop: `4px solid ${CYAN}` }}>
+            <h2 className="tss-section-title" style={{ color: PAPER, borderColor: 'rgba(255,255,255,.12)' }}>Coach · run it</h2>
+            <p className="text-[13px] mt-0 mb-1" style={{ color: ON_DARK }}>Drills, missions and games from your catalogue for these steps. The student does not see these on their page.</p>
+            {coach.extraPieces!.map((p) => <Piece key={p.id} p={p} canTrack={false} />)}
+          </section>
         )}
         {tab === 'do' && coachLayers.length > 0 && (
           <CoachCard title="Coach · how you validate it" layers={coachLayers} field="validate" intro="The criteria of the mission, as you see them in the water." />
@@ -453,10 +503,18 @@ export function SequencePage({
         {/* ── REVIEW ── */}
         {tab === 'review' && (
           <div className="mt-3">
-            <Card title="How you know you have it" color={GREEN_BRIGHT} collapsible defaultOpen={false}>
+            {coach && coachOn && coachFocus && (
+              <div className="rounded-[5px] px-3 py-2.5 mb-3" style={{ background: '#FFF6E0', border: '1.5px solid #E0A62B' }}>
+                <p className="m-0 mb-1" style={{ ...MONO, color: '#9A6A12' }}>You came here for{coachFocus.from ? ` · ${coachFocus.from}` : ''}</p>
+                <p className="text-[17px] font-extrabold leading-snug m-0" style={{ color: INK }}>{coachFocus.title}</p>
+                <p className="text-[13px] mt-1 mb-0" style={{ color: MUTED }}>{coachFocus.key ? 'Open below: what it looks like when it breaks, and the sentence that fixes it.' : 'Everything for this sequence is below.'}</p>
+              </div>
+            )}
+            <Card title="How you know you have it" color={GREEN_BRIGHT} collapsible defaultOpen={!!(coach && coachOn && coachFocus?.key)}>
               <p className="text-[14px] mt-0 mb-2" style={{ color: INK }}>One topic per step of the sequence. Open only the one you want to check.</p>
               {cfg.details.map((d) => (
-                <details key={d.key} className="tss-accordion">
+                <details key={d.key} className="tss-accordion" open={!!(coach && coachOn && coachFocus?.key === d.key)}
+                  style={coach && coachOn && coachFocus?.key === d.key ? { borderColor: '#E0A62B', borderWidth: 1.5 } : undefined}>
                   <summary>
                     <span className="inline-flex items-center gap-2.5 flex-1">
                       {d.command && <i className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} />}
@@ -506,6 +564,20 @@ export function SequencePage({
       </div>
 
       {/* Nav inferior blanca: los mismos destinos del portal. */}
+      {coach && presenting && coachLaminas.length > 0 && (
+        <LaminaPresenter items={coachLaminas.map((l) => ({ src: l.src, alt: l.alt, caption: l.caption, from: cfg.title }))} onClose={() => setPresenting(false)} />
+      )}
+      {coach && watching && coachVideos.length > 0 && (
+        <div role="dialog" aria-modal="true" aria-label={`Videos · ${cfg.title}`} className="fixed inset-0 z-[250] flex items-center justify-center p-3" style={{ background: 'rgba(6,28,43,.85)' }} onClick={() => setWatching(false)}>
+          <div className="w-full max-w-3xl rounded-lg p-4" style={{ background: PAPER }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-3">
+              <p className="min-w-0 flex-1 text-[16px] font-bold leading-snug m-0" style={{ color: INK }}>{cfg.title} · all videos</p>
+              <button type="button" autoFocus onClick={() => setWatching(false)} aria-label="Close" className="px-2 py-1 text-[20px] leading-none" style={{ color: INK }}>×</button>
+            </div>
+            <VideoList videos={coachVideos} />
+          </div>
+        </div>
+      )}
       {!coach && <nav className="tss-bottom-nav" aria-label="Main navigation"><div className="tss-bottom-nav-inner">
         <a href={`${portal}?tab=home`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="home" />Home</a>
         <a href={`${portal}?tab=course`} aria-current="page" className="relative flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><span style={{ color: CYAN }}><Icon name="course" /></span>Course<span className="absolute bottom-[5px] w-[72%] h-1 rounded-full" style={{ background: CYAN }} /></a>
@@ -653,6 +725,31 @@ function Icon({ name }: { name: 'home' | 'course' | 'play' | 'back' | 'arrow' })
     arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
   };
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{p[name]}</svg>;
+}
+
+/** Coach · say it: las palabras numeradas y el cue (lo que antes solo tenía Teach it). */
+function CoachSay({ words, cue }: { words: string[]; cue: string }) {
+  return (
+    <section className="tss-card mt-3" style={{ background: NAVY, border: '1px solid rgba(0,210,255,.45)', borderTop: `4px solid ${CYAN}` }}>
+      <h2 className="tss-section-title" style={{ color: PAPER, borderColor: 'rgba(255,255,255,.12)' }}>Coach · say it</h2>
+      {words.length > 0 && (
+        <ol className="m-0 p-0 list-none">
+          {words.map((w, i) => (
+            <li key={`${w}:${i}`} className="flex items-center gap-2.5 py-1.5">
+              <span className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-black" style={{ background: CYAN, color: NAVY }}>{i + 1}</span>
+              <span className="text-[16px] font-bold" style={{ color: PAPER }}>{w}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+      {cue && (
+        <div className="mt-2 seq-dark">
+          <p className="m-0 mb-1" style={{ ...MONO, color: CYAN }}>The cue they will hear</p>
+          <CoachMd md={cue} />
+        </div>
+      )}
+    </section>
+  );
 }
 
 /** Capa del coach: una tarjeta ink con un acordeón por paso. */
