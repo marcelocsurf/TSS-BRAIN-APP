@@ -21,9 +21,10 @@ export function movementVideos(media: CourseMedia): Record<string, CourseVideo[]
   return Object.fromEntries(MOVE_LESSON_IDS.map((id) => [id, media.ownVideosOfLesson(id)]));
 }
 /** Todos los videos de los Tres Círculos (la barra del coach y el índice del
- *  curso): Library YB-CIRCLES + la lección + los de cada movimiento. */
+ *  curso, solo coach): Library YB-CIRCLES + la lección + los de cada movimiento
+ *  con su material de coach (visual aids del paso y drills). */
 export function threeCirclesVideos(media: CourseMedia): CourseVideo[] {
-  return dedupeVideos([...media.libraryVideos('YB-CIRCLES'), ...media.videosOfLesson(THREE_CIRCLES_LESSON_ID), ...MOVE_LESSON_IDS.flatMap((id) => media.ownVideosOfLesson(id))]);
+  return dedupeVideos([...media.libraryVideos('YB-CIRCLES'), ...media.videosOfLesson(THREE_CIRCLES_LESSON_ID), ...MOVE_LESSON_IDS.flatMap((id) => media.videosOfLesson(id))]);
 }
 
 // Cada fila trae también TODOS sus videos (Marcelo 2026-09-29: "que tenga todo
