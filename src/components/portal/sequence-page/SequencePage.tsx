@@ -883,8 +883,11 @@ function StepSheet({ d, laminas, videos, layer, cue, drill, mission, lessonHref,
         <H n={3} t="Run it" />
         {drill || mission ? (
           <>
-            {drill && <details className="tss-accordion" style={{ background: PAPER }}><summary><span className="flex-1">Drill · {drill.title}</span><Chevron /></summary><div className="px-2 pb-2"><Piece p={drill} canTrack={false} /></div></details>}
-            {mission && <details className="tss-accordion mt-2" style={{ background: PAPER }}><summary><span className="flex-1">Mission · {mission.title}</span><Chevron /></summary><div className="px-2 pb-2"><Piece p={mission} canTrack={false} /></div></details>}
+            {/* En el idioma del método (Marcelo 2026-09-30): el drill es Feel it (sin
+                ola: en tierra, skate, visualización) y la misión es Do it (en el agua).
+                El nombre va en INK: sobre el papel, el blanco de la hoja no se veía. */}
+            {drill && <details className="tss-accordion" style={{ background: PAPER }}><summary style={{ color: INK }}><span className="flex-1"><span className="block" style={{ ...MONO, fontSize: 10, color: '#0090B0' }}>Feel it · drill · no wave</span>{drill.title}</span><Chevron /></summary><div className="px-2 pb-2"><Piece p={drill} canTrack={false} /></div></details>}
+            {mission && <details className="tss-accordion mt-2" style={{ background: PAPER }}><summary style={{ color: INK }}><span className="flex-1"><span className="block" style={{ ...MONO, fontSize: 10, color: '#0090B0' }}>Do it · mission · in the water</span>{mission.title}</span><Chevron /></summary><div className="px-2 pb-2"><Piece p={mission} canTrack={false} /></div></details>}
           </>
         ) : <p className="text-[13px] m-0" style={{ color: ON_DARK }}>No drill or mission linked to this step. Run the whole line.</p>}
         {lessonHref && <a href={lessonHref} className="inline-flex items-center min-h-[40px] mt-1 text-[13px] font-semibold no-underline" style={{ color: CYAN }}>Open the lesson · {d.deeper?.label ?? title} →</a>}

@@ -98,7 +98,8 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
       rules: cut >= 0 ? bodyFull.slice(cut + '**The rules that hold it together**'.length).trim() : '',
       mistakes: section(l.description_md, 'Common mistakes'),
       // Corta en '### ' también: en los pasos de Blue el cue sigue con "### Drill 1".
-      cue: sectionTight(l.description_md, 'The cue you will hear'),
+      // En White y Yellow el cue del paso son sus 5 palabras (`DEPTH · PAUSE · …`).
+      cue: sectionTight(l.description_md, 'The cue you will hear') || (section(l.description_md, 'The 5 words of this step').match(/`([^`]+)`/)?.[1] ?? ''),
     };
   }
   // "View as student" = EXACTAMENTE lo que ve el alumno: en su página solo lo
