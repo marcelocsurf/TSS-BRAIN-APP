@@ -10,6 +10,9 @@ import { COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
 import { WaveGuide } from './WaveGuide';
 import { InfinityCircle } from './InfinityCircle';
 import { ZoomImage } from '@/components/shared/ImageLightbox';
+import { circlePlate, type Lamina } from '@/lib/sequence-pages/laminas';
+import { CoachMediaBar } from '@/components/coach-portal/CoachMediaBar';
+import type { CourseVideo } from '@/components/coach-portal/VideoEmbed';
 import { LOOP_INTRO, LOOP_SIDES, type LoopSide, type LoopStep } from '@/lib/sequence-pages/infinite-circle';
 
 // Paleta v10.1 — la misma que ThreeCirclesPage (Marcelo 2026-09-24). Antes
@@ -59,7 +62,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
   loopLessonId: string | null;
   /** Modo coach (paso 3 de unificar, 2026-09-29): misma página, links al
    *  portal del coach, sin marcar leída. */
-  coach?: { backHref: string };
+  coach?: { backHref: string; laminas?: Lamina[]; videos?: CourseVideo[] };
 }) {
   const [side, setSide] = useState<LoopSide['key']>('fs');
   const portal = coach ? `/coach-portal/${token}` : `/portal/${token}`;
@@ -77,6 +80,8 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
           <p style={{ ...F_M, color: CYAN }}>Blue belt · the language of every sequence</p>
           <h1>{LOOP_INTRO.title}</h1>
           <p className="tss-subtitle">{LOOP_INTRO.headline}</p>
+          {/* La barra del coach (paso 5, 2026-09-30). */}
+          {coach && <CoachMediaBar title="The Infinite Circle" laminas={coach.laminas ?? []} videos={coach.videos ?? []} />}
         </header>
 
         {/* Arriba: el video si existe; si no, la imagen del círculo (Marcelo 2026-09-09). */}
@@ -115,8 +120,8 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
                 los ocho bloques, y el 08 es este. Se toca y se abre grande: en
                 el teléfono la letra de cada bloque no se lee de otro modo. */}
             <figure className="m-0 mt-3">
-              <ZoomImage src="/uploads/fotos/learning-blocks.webp" width={1672} height={941}
-                alt="Learning Blocks — the eight blocks of the method. 01 preparation and positioning; 02 the wave entry; 03 pop-up and connect with the board; 04 power posture; 05 rotation and bottom turn, frontside and backside; 06 projection; 06 maneuvers; and 08 the infinite circle concept, which carries the sweet spot, chasing the wave, the paddling angle, cobra plus pick your line, and the pop-up with feet positioning."
+              <ZoomImage src={circlePlate('learning-blocks').src} width={1672} height={941}
+                alt={circlePlate('learning-blocks').alt}
                 className="rounded-[5px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }} />
               <figcaption className="mt-1.5" style={{ ...F_M, color: MUTED }}>Where this sits · the eight blocks</figcaption>
             </figure>

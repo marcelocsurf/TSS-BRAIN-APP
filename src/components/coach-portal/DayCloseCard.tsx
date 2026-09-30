@@ -418,7 +418,7 @@ export function DayCloseCard({
             {/* El puente (Marcelo 2026-09-24): del veredicto al material.
                 Lleva el momento que se rompió para abrir ahí. */}
             {line?.seqId && (
-              <a href={`/coach-portal/${token}/${SEQUENCE_PAGES[line.seqId]?.kind === 'circle' ? 'teach' : 'seq'}/${line.seqId}${lineMoments[0] ? `?focus=${encodeURIComponent(lineMoments[0])}&from=${encodeURIComponent('the close')}` : ''}`}
+              <a href={`/coach-portal/${token}/seq/${line.seqId}${lineMoments[0] ? `?focus=${encodeURIComponent(lineMoments[0])}&from=${encodeURIComponent('the close')}` : ''}`}
                 className="inline-flex items-center gap-1.5 text-[13px] font-bold mt-2 no-underline" style={{ color: '#00D2FF' }}>
                 How to teach this →
               </a>

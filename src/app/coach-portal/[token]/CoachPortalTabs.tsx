@@ -12,7 +12,7 @@ import { getServicePlan, coachQuickTransport, type ServicePlanData } from '@/lib
 import { SURF_SPOT_OPTIONS } from '@/lib/constants/brand';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { LessonFigure } from '@/components/course/LessonFigure';
-import { LaminaPresenter } from '@/components/coach-portal/LaminaPresenter';
+import { CoachMediaBar } from '@/components/coach-portal/CoachMediaBar';
 import { laminasInMarkdown } from '@/lib/sequence-pages/laminas';
 import { PendingAssignments } from './PendingAssignments';
 import { PendingStaffInvites } from './PendingStaffInvites';
@@ -870,8 +870,8 @@ function CoursesTab({
   teachRank?: number;
 }) {
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
-  // Poner en pantalla las láminas de la lección abierta (2026-09-29).
-  const [presenting, setPresenting] = useState(false);
+  // La capa del coach en una lección-paso (2026-09-30): se apaga con "View as student".
+  const [layerOn, setLayerOn] = useState(true);
   // Vino por link (?lesson=ID desde una página de secuencia): "Back" vuelve a
   // esa página en vez de a la lista de cursos. Se guarda al montar: el padre
   // limpia el link apenas se consume.
@@ -906,7 +906,7 @@ function CoursesTab({
   const closeLesson = () => {
     setOpenLessonId(null);
     setDetail(null);
-    setPresenting(false);
+    setLayerOn(true);
     // Sin ?lesson= en la URL: recargar no vuelve a abrir la lección cerrada.
     try {
       const u = new URL(window.location.href);
@@ -1059,19 +1059,34 @@ function CoursesTab({
                 )}
                 {detail.lesson.description_md ? (
                   <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] px-5 py-6">
-                    {/* Lección del alumno con láminas: mostrarlas a la clase. */}
-                    {detail.studentLesson && laminasInMarkdown(detail.lesson.description_md).length > 0 && (
-                      <button type="button" onClick={() => setPresenting(true)}
-                        className="mb-4 w-full min-h-[44px] rounded-[5px] text-[14px] font-bold"
-                        style={{ background: '#061C2B', color: '#F7F9FA' }}>
-                        Show the plates on screen · {laminasInMarkdown(detail.lesson.description_md).length}
-                      </button>
-                    )}
-                    {presenting && (
-                      <LaminaPresenter
-                        items={laminasInMarkdown(detail.lesson.description_md).map((l) => ({ src: l.src, alt: l.alt, caption: l.caption, from: detail.lesson.title }))}
-                        onClose={() => setPresenting(false)}
-                      />
+                    {/* Lección del alumno: la barra del coach (Present con sus láminas;
+                        los videos ya están arriba) y, si es un paso, su capa. */}
+                    {detail.studentLesson && (
+                      <div className="mb-4">
+                        <CoachMediaBar tone="light" title={detail.lesson.title}
+                          laminas={laminasInMarkdown(detail.lesson.description_md).map((l) => ({ ...l, caption: detail.lesson.title }))}
+                          videos={[]} />
+                        {detail.coachLayer && (
+                          <div className="mt-3 rounded-lg p-3" style={{ background: '#061C2B', borderTop: '4px solid #00D2FF' }}>
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="m-0 text-[11px] uppercase tracking-[0.14em]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>{layerOn ? 'Coach layer · on' : 'Student view · exactly what they read'}</p>
+                              <button type="button" onClick={() => setLayerOn((v) => !v)} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-bold" style={{ background: layerOn ? '#F7F9FA' : '#00D2FF', color: '#061C2B' }}>
+                                {layerOn ? 'View as student' : 'Show coach layer'}
+                              </button>
+                            </div>
+                            {layerOn && ([
+                              ['How you teach it', [detail.coachLayer.what, detail.coachLayer.deliver].filter(Boolean).join('\n\n')],
+                              ['How you validate it', detail.coachLayer.validate],
+                              ['How you correct it', detail.coachLayer.errors],
+                            ] as [string, string][]).filter(([, md]) => md).map(([t, md]) => (
+                              <details key={t} className="mt-2 rounded-[5px]" style={{ background: 'rgba(247,249,250,.06)', border: '1px solid rgba(255,255,255,.14)' }}>
+                                <summary className="cursor-pointer px-3 py-2.5 text-[14px] font-bold" style={{ color: '#F7F9FA' }}>{t}</summary>
+                                <div className="px-3 pb-3 rounded-b-[5px]" style={{ background: '#E9E2D2' }}><MarkdownContent markdown={md} /></div>
+                              </details>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
                     {/* Lección del alumno: su figura (si tiene) y los '## temas'
                         plegables, igual que en su curso (LessonViewer). */}

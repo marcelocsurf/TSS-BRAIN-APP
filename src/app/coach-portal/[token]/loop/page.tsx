@@ -8,6 +8,8 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { THREE_CIRCLES_LESSON_ID } from '@/lib/constants/learning-blocks';
 import { InfiniteCirclePage } from '@/components/portal/sequence-page/InfiniteCirclePage';
 import { coachTeachRank } from '@/lib/coach/teach-rank';
+import { loadCourseMedia, dedupeVideos } from '@/lib/coach/course-media';
+import { INFINITE_CIRCLE_LAMINAS } from '@/lib/sequence-pages/laminas';
 import { BELT_RANK } from '@/lib/coach/course-access';
 
 export const dynamic = 'force-dynamic';
@@ -27,6 +29,8 @@ export default async function CoachLoopPage({ params }: { params: Promise<{ toke
 
   const { data: videoRow } = await admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', 'BB-LOOP%').order('created_at', { ascending: false }).limit(1).maybeSingle();
 
+  // Todos los videos (Library + la lección) y las láminas, de la fuente única.
+  const media = await loadCourseMedia(admin, ['BB-FND-INF']);
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       {/* eslint-disable-next-line @next/next/no-css-tags */}
@@ -36,7 +40,7 @@ export default async function CoachLoopPage({ params }: { params: Promise<{ toke
         video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null}
         threeCirclesLessonId={THREE_CIRCLES_LESSON_ID}
         loopLessonId={null}
-        coach={{ backHref: `/coach-portal/${token}?tab=courses` }}
+        coach={{ backHref: `/coach-portal/${token}/course?belt=blue`, laminas: INFINITE_CIRCLE_LAMINAS, videos: dedupeVideos([...media.libraryVideos('BB-LOOP'), ...media.videosOfLesson('BB-FND-INF')]) }}
       />
     </div>
   );

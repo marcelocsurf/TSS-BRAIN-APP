@@ -818,6 +818,9 @@ export interface CoachLessonDetail {
   /** Lección del curso del ALUMNO (no coach_*): el coach la lee tal cual, sin
    *  marcar progreso propio ni rendir su quiz (paso 1 de unificar, 2026-09-29). */
   studentLesson: boolean;
+  /** Lección del alumno que es un paso (STP-*): su capa del coach (COACH-STP
+   *  por linked_step_id) — cómo enseñarlo, validarlo y corregirlo (2026-09-30). */
+  coachLayer?: { what: string; deliver: string; errors: string; validate: string } | null;
   // The drill + mission for the linked STP (pulled from drills_missions)
   linkedDrill: LinkedTool | null;
   linkedMission: LinkedTool | null;
@@ -962,6 +965,14 @@ export async function getCoachLessonDetail(
     videos,
     progress: progress ?? null,
     studentLesson,
+    coachLayer: studentLesson ? await (async () => {
+      const { data: c } = await admin
+        .from('lessons')
+        .select('coach_what_md, coach_deliver_md, coach_errors_md, coach_validate_md')
+        .eq('active', true).like('id', 'COACH-%').eq('linked_step_id', lessonId)
+        .limit(1).maybeSingle();
+      return c ? { what: (c as any).coach_what_md ?? '', deliver: (c as any).coach_deliver_md ?? '', errors: (c as any).coach_errors_md ?? '', validate: (c as any).coach_validate_md ?? '' } : null;
+    })() : null,
     // Strip the answer key: solo mandamos el texto de cada opción al navegador.
     quizzes: (quizzes ?? []).map((q: any) => ({
       id: q.id,

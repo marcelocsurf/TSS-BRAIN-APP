@@ -18,6 +18,9 @@ import { CIRCLES, CIRCLES_INTRO, gameContext, type Circle } from '@/lib/sequence
 import type { WaveBoardData } from '@/lib/sequence-pages/types';
 import type { PieceRow } from './SequencePage';
 import { ZoomImage } from '@/components/shared/ImageLightbox';
+import { circlePlate, type Lamina } from '@/lib/sequence-pages/laminas';
+import { CoachMediaBar } from '@/components/coach-portal/CoachMediaBar';
+import type { CourseVideo } from '@/components/coach-portal/VideoEmbed';
 
 const INK = '#10263B', NAVY = '#061C2B', CYAN = '#00D2FF', MUTED = '#55666E', PAPER = '#F7F9FA', BORDER = '#DCD7C6';
 const CIRCLE_COLOR: Record<Circle['key'], string> = { body: 'var(--tss-circle-body)', board: 'var(--tss-circle-board)', wave: 'var(--tss-circle-wave)' };
@@ -126,7 +129,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, coa
   /** Modo coach (paso 3 de unificar, 2026-09-29): la MISMA página que ve el
    *  alumno, con los links al portal del coach, "Teach it" en vez de "Play it"
    *  y sin marcar leída ni la barra del alumno. */
-  coach?: { backHref: string };
+  coach?: { backHref: string; laminas?: Lamina[]; videos?: CourseVideo[] };
 }) {
   // La portada es una pantalla propia (Marcelo 2026-09-24): antes vivía
   // dentro del círculo 1 y se mezclaba con él. Ahora se entra desde ella.
@@ -154,10 +157,12 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, coa
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-bold mb-1" style={{ color: CYAN }}>
               <span style={{ ...MONO, color: CYAN }}>Teach it</span>
               {CIRCLES.map((c) => (
-                <a key={c.key} href={`${portal}/teach/CIRCLE-${c.key.toUpperCase()}`} className="no-underline" style={{ color: CYAN }}>{`Circle ${c.n} · ${c.label} →`}</a>
+                <a key={c.key} href={`${portal}/seq/CIRCLE-${c.key.toUpperCase()}`} className="no-underline" style={{ color: CYAN }}>{`Circle ${c.n} · ${c.label} →`}</a>
               ))}
             </p>
           )}
+          {/* La barra del coach (paso 5, 2026-09-30): las láminas en pantalla y todos los videos. */}
+          {coach && <CoachMediaBar title="The Three Circles of Power" laminas={coach.laminas ?? []} videos={coach.videos ?? []} />}
           {!isIntro && (
             <button type="button" onClick={() => setKey('intro')}
                     className="inline-flex items-center gap-1.5 text-[13px] font-bold mb-1"
@@ -221,8 +226,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, coa
         {!isIntro && cur.moves && (
           <Card title="Think it · the four movements" color={CIRCLE_COLOR.body}>
             {/* El mapa del círculo antes de abrir los movimientos uno por uno. */}
-            <Lamina src="/uploads/fotos/circle-1-basic-movements.webp"
-                    alt="Circle 1 · Basic Movements: the three circles overlap into flow — the four movements P·R·C·H, the feet on the board, and the dynamic of the wave — with the kinetic chain of the rotation: sight, neck and head, torso, hip, ankles." />
+            <Lamina src={circlePlate('circle-1').src} alt={circlePlate('circle-1').alt} />
             {/* La pregunta y la entrada del círculo vivían en la portada;
                 al separarla vuelven acá, plegadas como en los otros dos. */}
             <Acc title="Read it in words">
@@ -253,8 +257,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, coa
         {!isIntro && cur.feet && (
           <>
             <Card color={CIRCLE_COLOR.board}>
-              <Lamina src="/uploads/fotos/circle-2-foot-position.webp"
-                      alt="Circle 2 · Foot Position on the Board: FP3 forward gives most speed and least maneuverability, FP2 neutral is ready for what comes next, FP1 at the tail is most maneuverable and least speed. The weight always stays on the front foot; the back foot only follows the rails." />
+              <Lamina src={circlePlate('circle-2-feet').src} alt={circlePlate('circle-2-feet').alt} />
               <Acc title="Read it in words">
               <p className="tss-intro">Your back foot changes the line.<br />Your front foot controls how the rail responds.</p>
               <p className="text-[14px] leading-[1.45] mb-3" style={{ color: INK }}>{cur.intro}</p>
@@ -279,8 +282,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, coa
             </Card>
             {cur.response && (
               <Card title="How the board answers · brake and accelerator" color={CIRCLE_COLOR.board}>
-                <Lamina src="/uploads/fotos/circle-2-brake-accelerator.webp"
-                        alt="How the board answers · brake and accelerator. Press the back foot and the board brakes: the tail sinks and you slow down on purpose. Stay forward and the board runs. Every board accelerates most at its widest and thickest part, around the centre: it is a direction, not a spot. The closer your weight gets to it, the more speed." />
+                <Lamina src={circlePlate('circle-2-brake').src} alt={circlePlate('circle-2-brake').alt} />
                 <Acc title="Read it in words">
                 <p className="text-[17px] font-extrabold leading-tight mb-1.5" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: INK }}>
                   Press to brake. Stay forward to run.
@@ -300,8 +302,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, coa
               </Card>
             )}
             <Card title="The front foot · centre and rails" color={CIRCLE_COLOR.board}>
-              <Lamina src="/uploads/fotos/circle-2-front-foot.webp"
-                      alt="The front foot · centre and rails. The front foot lands centred on the stringer: that is neutral, and you can press the same with the toes and with the heel. The closer the foot is to a rail, the more that rail sinks. FP1, FP2 and FP3 always describe the back foot. The rule that surprises people: Circle 1 cannot rescue Circle 2." />
+              <Lamina src={circlePlate('circle-2-front').src} alt={circlePlate('circle-2-front').alt} />
               <Acc title="Read it in words">
                 <ul className="space-y-2 text-[14px] leading-[1.45]" style={{ color: INK }}>
                   {cur.frontFoot!.map((b, j) => <li key={j} className="flex gap-2"><span style={{ color: '#B8860B' }}>•</span><span>{b}</span></li>)}
@@ -322,8 +323,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, coa
         {!isIntro && cur.reads && (
           <>
             <Card title="Think it" color={CIRCLE_COLOR.wave}>
-              <Lamina src="/uploads/fotos/circle-3-wave-dynamics.webp"
-                      alt="Circle 3 · Wave Dynamics: combine them at the right moment — when one energy is running out, add the other. The wave's energy times what your body generates is the line you can draw. On the wave face, go down and go up between the four zones: Z1 low by the flat, Z2 lower middle, Z3 upper middle, Z4 high. The energy lives by the pocket; down at the flat there is none, only resistance." />
+              <Lamina src={circlePlate('circle-3').src} alt={circlePlate('circle-3').alt} />
               <Acc title="Read it in words">
               <p className="text-[14px] leading-[1.45] mb-3" style={{ color: INK }}>{cur.intro}</p>
               {cur.energy?.map((e, i) => {

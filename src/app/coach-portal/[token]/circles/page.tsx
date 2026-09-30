@@ -12,6 +12,8 @@ import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 import { ThreeCirclesPage } from '@/components/portal/sequence-page/ThreeCirclesPage';
 import type { PieceRow } from '@/components/portal/sequence-page/SequencePage';
 import { coachTeachRank } from '@/lib/coach/teach-rank';
+import { loadCourseMedia, dedupeVideos } from '@/lib/coach/course-media';
+import { THREE_CIRCLES_LAMINAS } from '@/lib/sequence-pages/laminas';
 import { sequencePageRank } from '@/lib/coach/course-access';
 
 export const dynamic = 'force-dynamic';
@@ -38,6 +40,8 @@ export default async function CoachCirclesPage({ params }: { params: Promise<{ t
   const pieces: Record<string, PieceRow> = {};
   for (const p of pieceRows ?? []) pieces[p.id] = p as PieceRow;
 
+  // Todos los videos (Library + la lección) y las láminas, de la fuente única.
+  const media = await loadCourseMedia(admin, [THREE_CIRCLES_LESSON_ID]);
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       {/* eslint-disable-next-line @next/next/no-css-tags */}
@@ -48,7 +52,7 @@ export default async function CoachCirclesPage({ params }: { params: Promise<{ t
         canTrack={false}
         video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null}
         lessonId={THREE_CIRCLES_LESSON_ID}
-        coach={{ backHref: `/coach-portal/${token}?tab=courses` }}
+        coach={{ backHref: `/coach-portal/${token}/course?belt=yellow`, laminas: THREE_CIRCLES_LAMINAS, videos: dedupeVideos([...media.libraryVideos('YB-CIRCLES'), ...media.videosOfLesson(THREE_CIRCLES_LESSON_ID)]) }}
       />
     </div>
   );

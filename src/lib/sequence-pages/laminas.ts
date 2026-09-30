@@ -8,6 +8,8 @@
 // tocar ningún componente.
 
 export type Lamina = {
+  /** Clave estable para las láminas de las páginas propias (círculos). */
+  key?: string;
   src: string;
   /** Lo que lee alguien que no puede ver la imagen. Describe el contenido,
    *  no la forma: es la única vía a esta información sin la vista. */
@@ -46,19 +48,24 @@ export const SEQUENCE_LAMINAS: Record<string, Lamina[]> = {
 };
 
 // ═══ Láminas de las páginas propias (Tres Círculos, Infinite Circle) ═══
-// Las mismas que dibujan ThreeCirclesPage e InfiniteCirclePage; acá para que
-// el coach pueda elegirlas y mostrarlas en pantalla (2026-09-29). Si cambia
-// una lámina en esas páginas, cambiarla también acá.
+// FUENTE ÚNICA (2026-09-30): las dibujan ThreeCirclesPage e InfiniteCirclePage
+// y las usa el coach para ponerlas en pantalla. Para cambiar una, se cambia acá.
 export const THREE_CIRCLES_LAMINAS: Lamina[] = [
-  { src: '/uploads/fotos/circle-1-basic-movements.webp', caption: 'Circle 1 · Basic movements', alt: 'Circle 1 · Basic Movements: the four movements P·R·C·H, the feet on the board and the dynamic of the wave, with the kinetic chain of the rotation.' },
-  { src: '/uploads/fotos/circle-2-foot-position.webp', caption: 'Circle 2 · Foot position', alt: 'Circle 2 · Foot Position on the Board: FP3 forward, FP2 neutral, FP1 at the tail.' },
-  { src: '/uploads/fotos/circle-2-brake-accelerator.webp', caption: 'Circle 2 · Brake and accelerator', alt: 'How the board answers: press the back foot and the board brakes; stay forward and the board runs.' },
-  { src: '/uploads/fotos/circle-2-front-foot.webp', caption: 'Circle 2 · The front foot', alt: 'The front foot: centred on the stringer is neutral; the closer to a rail, the more that rail sinks.' },
-  { src: '/uploads/fotos/circle-3-wave-dynamics.webp', caption: 'Circle 3 · Wave dynamics', alt: 'Circle 3 · Wave Dynamics: combine the wave energy with what your body generates; the four zones of the face.' },
+  { key: 'circle-1', src: '/uploads/fotos/circle-1-basic-movements.webp', caption: 'Circle 1 · Basic movements', alt: 'Circle 1 · Basic Movements: the three circles overlap into flow — the four movements P·R·C·H, the feet on the board, and the dynamic of the wave — with the kinetic chain of the rotation: sight, neck and head, torso, hip, ankles.' },
+  { key: 'circle-2-feet', src: '/uploads/fotos/circle-2-foot-position.webp', caption: 'Circle 2 · Foot position', alt: 'Circle 2 · Foot Position on the Board: FP3 forward gives most speed and least maneuverability, FP2 neutral is ready for what comes next, FP1 at the tail is most maneuverable and least speed. The weight always stays on the front foot; the back foot only follows the rails.' },
+  { key: 'circle-2-brake', src: '/uploads/fotos/circle-2-brake-accelerator.webp', caption: 'Circle 2 · Brake and accelerator', alt: 'How the board answers · brake and accelerator. Press the back foot and the board brakes: the tail sinks and you slow down on purpose. Stay forward and the board runs. Every board accelerates most at its widest and thickest part, around the centre: it is a direction, not a spot. The closer your weight gets to it, the more speed.' },
+  { key: 'circle-2-front', src: '/uploads/fotos/circle-2-front-foot.webp', caption: 'Circle 2 · The front foot', alt: 'The front foot · centre and rails. The front foot lands centred on the stringer: that is neutral, and you can press the same with the toes and with the heel. The closer the foot is to a rail, the more that rail sinks. FP1, FP2 and FP3 always describe the back foot. The rule that surprises people: Circle 1 cannot rescue Circle 2.' },
+  { key: 'circle-3', src: '/uploads/fotos/circle-3-wave-dynamics.webp', caption: 'Circle 3 · Wave dynamics', alt: "Circle 3 · Wave Dynamics: combine them at the right moment — when one energy is running out, add the other. The wave's energy times what your body generates is the line you can draw. On the wave face, go down and go up between the four zones: Z1 low by the flat, Z2 lower middle, Z3 upper middle, Z4 high. The energy lives by the pocket; down at the flat there is none, only resistance." },
 ];
 export const INFINITE_CIRCLE_LAMINAS: Lamina[] = [
-  { src: '/uploads/fotos/learning-blocks.webp', caption: 'The eight learning blocks', alt: 'Learning Blocks — the eight blocks of the method, from preparation to the infinite circle.' },
+  { key: 'learning-blocks', src: '/uploads/fotos/learning-blocks.webp', caption: 'The eight learning blocks', alt: 'Learning Blocks — the eight blocks of the method. 01 preparation and positioning; 02 the wave entry; 03 pop-up and connect with the board; 04 power posture; 05 rotation and bottom turn, frontside and backside; 06 projection; 06 maneuvers; and 08 the infinite circle concept, which carries the sweet spot, chasing the wave, the paddling angle, cobra plus pick your line, and the pop-up with feet positioning.' },
 ];
+/** Una lámina de los círculos por su clave (la dibuja la página del alumno). */
+export function circlePlate(key: string): Lamina {
+  const l = [...THREE_CIRCLES_LAMINAS, ...INFINITE_CIRCLE_LAMINAS].find((x) => x.key === key);
+  if (!l) throw new Error(`Unknown circle plate: ${key}`);
+  return l;
+}
 
 /** Las láminas de una lección: las imágenes que dibuja MarkdownContent (una
  *  imagen SOLA en su línea, mismo patrón), en orden. */
