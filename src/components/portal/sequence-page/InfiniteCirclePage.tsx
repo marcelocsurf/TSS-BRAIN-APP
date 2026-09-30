@@ -193,6 +193,11 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
                     <span className="transition-transform group-open:rotate-90" style={{ color: MUTED }}>›</span>
                   </summary>
                   <div className="pb-4 pl-5">
+                    {/* La lámina del paso arriba, sola y sin texto (se toca y se abre grande). */}
+                    {st.plate && (
+                      <ZoomImage src={circlePlate(st.plate).src} width={1672} height={941} alt={circlePlate(st.plate).alt}
+                        className="mb-3 rounded-[5px] overflow-hidden" style={{ border: `1px solid ${BORDER}` }} />
+                    )}
                     <p style={{ ...F_M, color: COMMAND_COLORS[st.command] }}>{st.commandLabel}{st.hold ? ' · hold' : ''}</p>
                     <p className="text-[14px] mt-1.5 leading-relaxed" style={{ color: TEXT }}>{st.whatIs}</p>
                     <ul className="mt-2 space-y-1.5">

@@ -33,6 +33,8 @@ export interface LoopStep {
   /** La lección del paso, para ir más adentro. */
   lessonId: string;
   lessonLabel: string;
+  /** Una lámina arriba del paso (clave de INFINITE_CIRCLE_LAMINAS), sola y sin texto. */
+  plate?: string;
 }
 
 export interface LoopSide {
@@ -124,6 +126,7 @@ export const LOOP_SIDES: LoopSide[] = [
         body: ['Weight front.', 'Elbow and forearm to the water — the whole forearm goes low, not just the fingers.', 'Palm down.', 'Oblique — that is what turns the lean into a real rotation and puts you on the rail.', 'Hold. You feel the centrifugal force pulling you to the flat; rail, fins and your body position hold that energy so you can project it toward the line you want. The bottom turn ends when the projection begins; there is no gap.'],
         keyWords: ['Weight front', 'Elbow and forearm to the water', 'Palm down', 'Oblique', 'Hold'],
         lessonId: 'STP-039', lessonLabel: 'Bottom Turn Medium — Frontside',
+        plate: 'bottom-turn-types',
       },
       {
         key: 'projection', command: 'projection', name: 'Projection', commandLabel: 'Projection', known: 'new',
@@ -175,6 +178,7 @@ export const LOOP_SIDES: LoopSide[] = [
         body: ['Weight front.', 'Front arm at shoulder height, aimed where you are going.', 'Fingertips skimming the water: the arm stays high at the shoulder and only the fingertips graze.', 'Oblique, and hold: fight the centrifugal force with rail, fins and body position, keep the energy for the Choke. The bottom turn ends when the Choke begins.'],
         keyWords: ['Weight front', 'Front arm', 'Fingertips', 'Oblique', 'Hold'],
         lessonId: 'STP-039B', lessonLabel: 'Bottom Turn Medium — Backside',
+        plate: 'bottom-turn-types',
       },
       {
         key: 'choke', command: 'projection', name: 'Projection · the Choke', commandLabel: 'Projection', known: 'new',

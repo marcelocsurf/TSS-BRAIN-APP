@@ -58,6 +58,8 @@ export const THREE_CIRCLES_LAMINAS: Lamina[] = [
   { key: 'circle-3', src: '/uploads/fotos/circle-3-wave-dynamics.webp', caption: 'Circle 3 · Wave dynamics', alt: "Circle 3 · Wave Dynamics: combine them at the right moment — when one energy is running out, add the other. The wave's energy times what your body generates is the line you can draw. On the wave face, go down and go up between the four zones: Z1 low by the flat, Z2 lower middle, Z3 upper middle, Z4 high. The energy lives by the pocket; down at the flat there is none, only resistance." },
 ];
 export const INFINITE_CIRCLE_LAMINAS: Lamina[] = [
+  // Marcelo 2026-09-30: arriba del paso "Rotation + hold · the bottom turn" (los dos lados).
+  { key: 'bottom-turn-types', src: '/uploads/fotos/types-of-bottom-turns.webp', caption: 'Types of bottom turns', alt: "Types of Bottom Turns: the bottom turn is always a U, at different depths — long or tight, mid-face, almost at the flat, or out onto the flat. Be aware of the wave's flat section: reaching it costs speed, and sometimes that is exactly what you want. The bottom turn ends when the projection is executed." },
   { key: 'learning-blocks', src: '/uploads/fotos/learning-blocks.webp', caption: 'The eight learning blocks', alt: 'Learning Blocks — the eight blocks of the method. 01 preparation and positioning; 02 the wave entry; 03 pop-up and connect with the board; 04 power posture; 05 rotation and bottom turn, frontside and backside; 06 projection; 06 maneuvers; and 08 the infinite circle concept, which carries the sweet spot, chasing the wave, the paddling angle, cobra plus pick your line, and the pop-up with feet positioning.' },
 ];
 /** Una lámina de los círculos por su clave (la dibuja la página del alumno). */
