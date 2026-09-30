@@ -6,10 +6,10 @@
 // láminas de esa cinta para elegir una). Tocar una lámina la pone en pantalla.
 
 import { useMemo, useState } from 'react';
-import { ArrowLeft, Presentation, Play, X } from 'lucide-react';
+import { ArrowLeft, Presentation, Play } from 'lucide-react';
 import type { CourseTabMap, CourseItem } from '@/lib/coach/course-map';
 import { LaminaPresenter, type PresentedLamina } from './LaminaPresenter';
-import { VideoList, type CourseVideo } from './VideoEmbed';
+import { VideoList, VideosDialog, type CourseVideo } from './VideoEmbed';
 
 const INK = '#061C2B';
 const TEXT = '#10263B';
@@ -166,17 +166,7 @@ export function CoachCourseBrowser({ token, tabs, initialBelt, initialView }: {
         )}
       </div>
       {show && <LaminaPresenter items={show.items} start={show.start} onClose={() => setShow(null)} />}
-      {watch && (
-        <div role="dialog" aria-modal="true" aria-label={`Videos · ${watch.title}`} className="fixed inset-0 z-[250] flex items-center justify-center p-3" style={{ background: 'rgba(6,28,43,.85)' }} onClick={() => setWatch(null)}>
-          <div className="w-full max-w-3xl rounded-lg p-4" style={{ background: '#F7F9FA' }} onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-3">
-              <p className="min-w-0 flex-1 text-[16px] font-bold leading-snug" style={{ color: INK }}>{watch.title}</p>
-              <button type="button" autoFocus onClick={() => setWatch(null)} aria-label="Close" className="p-1.5 rounded-full" style={{ color: INK }}><X size={20} /></button>
-            </div>
-            <VideoList videos={watch.videos} />
-          </div>
-        </div>
-      )}
+      {watch && <VideosDialog title={watch.title} videos={watch.videos} onClose={() => setWatch(null)} />}
     </div>
   );
 }

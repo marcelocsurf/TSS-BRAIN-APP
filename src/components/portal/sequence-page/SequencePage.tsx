@@ -12,7 +12,7 @@
 // cyan, nav inferior blanca. La ola es el Wave Guide ilustrado con el
 // recorrido ORIGINAL de cada secuencia. TODO el contenido (textos, orden,
 // links, lógica de Let's Play) es el mismo de antes: solo cambia cómo se ve.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Lock, Play } from 'lucide-react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { WaveGuide, WAVE_KIT_SEQUENCE } from './WaveGuide';
@@ -23,7 +23,7 @@ import { SEQUENCE_LAMINAS } from '@/lib/sequence-pages/laminas';
 import { hasStanceVideos, resolveSequenceVideo, type SequenceVideos, type Stance } from '@/lib/sequence-pages/videos';
 import { ZoomImage } from '@/components/shared/ImageLightbox';
 import { ClassDeck, type DeckSlide } from '@/components/coach-portal/ClassDeck';
-import { VideoList, type CourseVideo } from '@/components/coach-portal/VideoEmbed';
+import { VideoList, VideosDialog, type CourseVideo } from '@/components/coach-portal/VideoEmbed';
 import type { Lamina as LaminaT } from '@/lib/sequence-pages/laminas';
 
 // Tokens del paquete (public/tss/tokens.css) + semánticos legibles sobre crema.
@@ -116,6 +116,9 @@ export function SequencePage({
     focus?: { key: string | null; title: string; from?: string } | null;
     /** Lo de cada paso (por id de lección) para su hoja: láminas y videos. */
     stepMedia?: Record<string, { laminas: LaminaT[]; videos: CourseVideo[] }>;
+    /** Para la hoja: la capa y las piezas del "Go deeper" que no es paso de la secuencia. */
+    sheetLayers?: CoachStepLayer[];
+    sheetPieces?: Record<string, PieceRow>;
   } | null;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? 'think');
@@ -124,10 +127,18 @@ export function SequencePage({
   // El valor guardado se lee DESPUÉS de montar: si se leyera al inicializar,
   // el servidor pintaría un lado y el navegador otro (error de hidratación).
   const [side, setSideState] = useState<'bs' | 'fs' | null>(cfg.sideOfStep ? 'bs' : null);
+  // El coach que llega del plan con un paso de un lado (?focus) ve ESE lado
+  // (sin guardarlo); si no, el que eligió la última vez.
+  const focusSide = (() => {
+    const fk = coach?.focus?.key;
+    const fd = fk ? cfg.details.find((d) => d.key === fk) : null;
+    return fd?.deeper?.lessonId && cfg.sideOfStep ? cfg.sideOfStep[fd.deeper.lessonId] ?? null : null;
+  })();
   useEffect(() => {
     if (!cfg.sideOfStep) return;
+    if (focusSide) { setSideState(focusSide); return; }
     try { const v = window.localStorage.getItem(`tss:side:${cfg.id}`); if (v === 'fs' || v === 'bs') setSideState(v); } catch {}
-  }, [cfg.id, cfg.sideOfStep]);
+  }, [cfg.id, cfg.sideOfStep, focusSide]);
   const setSide = (v: 'bs' | 'fs') => { setSideState(v); try { window.localStorage.setItem(`tss:side:${cfg.id}`, v); } catch {} };
   const sideOf = (stepId: string | null | undefined): 'fs' | 'bs' | null => (stepId && cfg.sideOfStep ? cfg.sideOfStep[stepId] ?? null : null);
   const onSide = (stepId: string | null | undefined) => !side || !sideOf(stepId) || sideOf(stepId) === side;
@@ -162,7 +173,13 @@ export function SequencePage({
   const body = lessons[cfg.think.bodyFromLesson];
   const order: Tab[] = ['think', 'feel', 'do', 'review'];
   const next = order[order.indexOf(tab) + 1];
-  const go = (t: Tab) => { setTab(t); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  // El coach tiene su barra arriba: al cambiar de pestaña cae en las pestañas, no en el tope.
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+  const go = (t: Tab) => {
+    setTab(t);
+    if (coach && tabsRef.current) tabsRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    else window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   // Solo la dirección del dibujo cambia con el stance; el nombre de la maniobra no.
   const waveDirection = flip ? 'left' : 'right';
   const stripStep = (t: string) => t.replace(/^\d+ · /, '').replace(/ · .*$/, '');
@@ -173,10 +190,14 @@ export function SequencePage({
 
   // ── El modo presentación (un solo deck, 2026-09-30) ──
   // La secuencia: título → láminas → palabras → la línea en la ola → el cue → la misión.
+  // Un cue en letra grande: sin marcas de markdown (citas, listas, títulos, comillas).
+  const cleanCue = (md: string) => md.replace(/^>\s*/gm, '').replace(/^\s*[-*]\s+/gm, '').replace(/^#+\s*/gm, '').replace(/[`"“”*_]/g, '').trim();
   const sequenceSlides = (): DeckSlide[] => {
     const words = coach?.sayIt?.words ?? [];
-    const cue = (coach?.sayIt?.cue ?? '').replace(/^>\s*/gm, '').replace(/["“”*_]/g, '').trim();
-    const missions = Object.values(allPieces).filter((p) => p.type === 'mission').slice(0, 3);
+    const cue = cleanCue(coach?.sayIt?.cue ?? '');
+    // La misión de la secuencia primero; después las de sus pasos, en orden y del lado elegido.
+    const missionIds = [cfg.do?.missionId, ...cfg.details.filter((d) => onSide(d.deeper?.lessonId)).map((d) => d.deeper?.missionId)];
+    const missions = [...new Set(missionIds.filter(Boolean) as string[])].map((id) => allPieces[id]).filter((p): p is PieceRow => !!p && p.type === 'mission').slice(0, 3);
     return [
       { kind: 'text', eyebrow: cfg.eyebrow ?? `Sequence #${cfg.number}`, big: cfg.title, small: cfg.think.whatIs.headline },
       ...coachLaminas.map((l): DeckSlide => ({ kind: 'plate', src: l.src, alt: l.alt, from: cfg.title })),
@@ -189,7 +210,7 @@ export function SequencePage({
   };
   // Un paso: su nombre → sus láminas → su cue → qué mirar (✓ ✗ fix) → sus videos.
   const stepSlides = (d: SequencePageConfig['details'][number], m: { laminas: LaminaT[]; videos: CourseVideo[] }, stepCue: string): DeckSlide[] => {
-    const cue = stepCue.replace(/^>\s*/gm, '').replace(/["“”*_]/g, '').trim();
+    const cue = cleanCue(stepCue);
     return [
       { kind: 'text', eyebrow: cfg.title, big: stripStep(d.title), small: d.symptom ? `Where it breaks: ${d.symptom}` : undefined },
       ...m.laminas.map((l): DeckSlide => ({ kind: 'plate', src: l.src, alt: l.alt, from: stripStep(d.title) })),
@@ -232,10 +253,11 @@ export function SequencePage({
           {coach && coachOn && cfg.details.length > 0 && (
             <div className="mt-2">
               <p className="m-0 mb-1" style={{ ...MONO, color: 'rgba(247,249,250,.7)' }}>Teach a step</p>
-              <div className="flex flex-wrap gap-1.5">
+              {/* Una sola fila que se desliza: los pasos no empujan el título hacia abajo. */}
+              <div className="flex flex-nowrap overflow-x-auto gap-1.5 pb-1 -mx-1 px-1">
                 {cfg.details.filter((d) => onSide(d.deeper?.lessonId)).map((d) => (
                   <button key={d.key} type="button" onClick={() => setSheetKey(d.key)} aria-pressed={sheetKey === d.key}
-                    className="inline-flex items-center gap-2 min-h-[40px] px-3 rounded-full text-[13px] font-semibold"
+                    className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 min-h-[40px] px-3 rounded-full text-[13px] font-semibold"
                     style={sheetKey === d.key ? { background: CYAN, color: NAVY } : { background: 'rgba(247,249,250,.08)', color: PAPER, border: '1px solid rgba(247,249,250,.25)' }}>
                     {d.command && <i className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} />}
                     {stripStep(d.title)}
@@ -320,7 +342,7 @@ export function SequencePage({
         </Card>
 
         {/* Pestañas */}
-        <div className="sticky top-0 z-10 -mx-1 px-1 pt-2 pb-1" style={{ background: NAVY }}>
+        <div ref={tabsRef} className="sticky top-0 z-10 -mx-1 px-1 pt-2 pb-1" style={{ background: NAVY }}>
           <nav className="grid grid-cols-4 gap-1" role="tablist" aria-label="Think it · Feel it · Do it · Review">
             {TABS.map((t) => (
               <button key={t.key} type="button" role="tab" aria-selected={tab === t.key} onClick={() => go(t.key)}
@@ -623,13 +645,14 @@ export function SequencePage({
         const key = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
         const own = coachLaminas.filter((l) => l.caption && key(l.caption) === key(stripStep(d.title)));
         const m = { videos: base.videos, laminas: [...own, ...base.laminas.filter((l) => !own.some((o) => o.src === l.src))] };
-        const layer = stepId ? coach.layers.find((l) => l.stepId === stepId) ?? null : null;
+        const layer = stepId ? coach.layers.find((l) => l.stepId === stepId) ?? coach.sheetLayers?.find((l) => l.stepId === stepId) ?? null : null;
+        const pieceOf = (id?: string) => (id ? allPieces[id] ?? coach.sheetPieces?.[id] : undefined);
         const stepCue = stepId ? lessons[stepId]?.cue ?? '' : '';
         return (
           <StepSheet
             d={d} laminas={m.laminas} videos={m.videos} layer={layer} cue={stepCue}
-            drill={d.deeper?.drillId ? allPieces[d.deeper.drillId] : undefined}
-            mission={d.deeper?.missionId ? allPieces[d.deeper.missionId] : undefined}
+            drill={pieceOf(d.deeper?.drillId)}
+            mission={pieceOf(d.deeper?.missionId)}
             lessonHref={stepId ? `${portal}?tab=${courseTab}&lesson=${stepId}` : null}
             onClose={() => setSheetKey(null)}
             onPresent={(start) => setDeck({ slides: stepSlides(d, m, stepCue), start, title: stripStep(d.title) })}
@@ -637,17 +660,7 @@ export function SequencePage({
         );
       })()}
       {coach && deck && <ClassDeck slides={deck.slides} start={deck.start} title={deck.title} onClose={() => setDeck(null)} />}
-      {coach && watching && coachVideos.length > 0 && (
-        <div role="dialog" aria-modal="true" aria-label={`Videos · ${cfg.title}`} className="fixed inset-0 z-[250] flex items-center justify-center p-3" style={{ background: 'rgba(6,28,43,.85)' }} onClick={() => setWatching(false)}>
-          <div className="w-full max-w-3xl rounded-lg p-4" style={{ background: PAPER }} onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-3">
-              <p className="min-w-0 flex-1 text-[16px] font-bold leading-snug m-0" style={{ color: INK }}>{cfg.title} · all videos</p>
-              <button type="button" autoFocus onClick={() => setWatching(false)} aria-label="Close" className="px-2 py-1 text-[20px] leading-none" style={{ color: INK }}>×</button>
-            </div>
-            <VideoList videos={coachVideos} />
-          </div>
-        </div>
-      )}
+      {coach && watching && coachVideos.length > 0 && <VideosDialog title={`${cfg.title} · all videos`} videos={coachVideos} onClose={() => setWatching(false)} />}
       {!coach && <nav className="tss-bottom-nav" aria-label="Main navigation"><div className="tss-bottom-nav-inner">
         <a href={`${portal}?tab=home`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="home" />Home</a>
         <a href={`${portal}?tab=course`} aria-current="page" className="relative flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><span style={{ color: CYAN }}><Icon name="course" /></span>Course<span className="absolute bottom-[5px] w-[72%] h-1 rounded-full" style={{ background: CYAN }} /></a>
@@ -813,10 +826,13 @@ function StepSheet({ d, laminas, videos, layer, cue, drill, mission, lessonHref,
   onPresent: (start: number) => void;
 }) {
   useEffect(() => {
+    // La página de atrás no se mueve mientras la hoja está abierta.
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
     // Con el modo presentación abierto encima, Esc cierra solo ese.
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('[role=dialog][aria-label$="on screen"]')) onClose(); };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
   }, [onClose]);
   const H = ({ n, t }: { n: number; t: string }) => (
     <p className="m-0 mt-4 mb-1.5 flex items-center gap-2" style={{ ...MONO, color: CYAN }}>
@@ -825,8 +841,9 @@ function StepSheet({ d, laminas, videos, layer, cue, drill, mission, lessonHref,
   );
   const title = d.title.replace(/^\d+ · /, '');
   return (
-    <div role="dialog" aria-modal="true" aria-label={`Teach · ${title}`} className="fixed inset-0 z-[240] flex items-end md:items-stretch md:justify-end" style={{ background: 'rgba(6,28,43,.6)' }} onClick={onClose}>
-      <div className="w-full md:w-[440px] max-h-[88vh] md:max-h-none overflow-y-auto rounded-t-[14px] md:rounded-none px-4 pt-3 pb-6" style={{ background: NAVY, borderTop: `4px solid ${CYAN}` }} onClick={(e) => e.stopPropagation()}>
+    <div role="dialog" aria-modal="true" aria-label={`Teach · ${title}`} className="fixed inset-0 z-[240] flex items-end md:items-stretch md:justify-end" style={{ background: 'rgba(6,28,43,.6)', overscrollBehavior: 'contain' }} onClick={onClose}>
+      {/* Con la app instalada, respeta la barra de inicio del iPhone y la de estado del iPad. */}
+      <div className="w-full md:w-[440px] max-h-[88vh] md:max-h-none overflow-y-auto overscroll-contain rounded-t-[14px] md:rounded-none px-4 pt-3 md:pt-[calc(12px+env(safe-area-inset-top))] pb-[calc(24px+env(safe-area-inset-bottom))]" style={{ background: NAVY, borderTop: `4px solid ${CYAN}` }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             <p className="m-0" style={{ ...MONO, color: 'rgba(247,249,250,.65)' }}>Teach this step</p>
@@ -870,7 +887,7 @@ function StepSheet({ d, laminas, videos, layer, cue, drill, mission, lessonHref,
             {mission && <details className="tss-accordion mt-2" style={{ background: PAPER }}><summary><span className="flex-1">Mission · {mission.title}</span><Chevron /></summary><div className="px-2 pb-2"><Piece p={mission} canTrack={false} /></div></details>}
           </>
         ) : <p className="text-[13px] m-0" style={{ color: ON_DARK }}>No drill or mission linked to this step. Run the whole line.</p>}
-        {lessonHref && <a href={lessonHref} className="inline-block mt-2 text-[13px] font-semibold no-underline" style={{ color: CYAN }}>Open the lesson · {d.deeper?.label ?? title} →</a>}
+        {lessonHref && <a href={lessonHref} className="inline-flex items-center min-h-[40px] mt-1 text-[13px] font-semibold no-underline" style={{ color: CYAN }}>Open the lesson · {d.deeper?.label ?? title} →</a>}
 
         <H n={4} t="Watch for" />
         {d.symptom && <p className="text-[13px] m-0 mb-2" style={{ color: ON_DARK }}>Where it breaks: {d.symptom}</p>}

@@ -5,7 +5,8 @@
 // it (una idea por pantalla, letra grande). Una diapositiva puede ser una
 // lámina, una idea en grande, la línea sobre la ola, "qué mirar" (✓ ✗ fix) o
 // un video. Se pasa con los botones de abajo, las flechas / PageDown (los
-// controles de presentación), o deslizando (menos en un video, que es suyo).
+// controles de presentación), o deslizando (menos en un video, que es suyo, y
+// sobre algo que se desplaza de costado, como la ola del kit en el teléfono).
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Maximize2, X } from 'lucide-react';
@@ -50,10 +51,26 @@ export function ClassDeck({ slides, start = 0, title, onClose }: { slides: DeckS
   }, [go, close]);
 
   useEffect(() => {
+    // Al cerrar, el foco vuelve a lo que lo abrió (no se cae detrás de la hoja).
+    const opener = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
     const d = document as any;
     setCanFullscreen(!!(d.fullscreenEnabled || d.webkitFullscreenEnabled));
+    return () => { try { if (opener && opener.isConnected) opener.focus(); } catch { /* nada */ } };
   }, []);
+
+  // ¿El toque empezó sobre algo que se desplaza de costado? Entonces es suyo.
+  const inSideScroller = (el: EventTarget | null) => {
+    let n = el as HTMLElement | null;
+    while (n && n !== rootRef.current) {
+      if (n.scrollWidth > n.clientWidth + 1) {
+        const ox = window.getComputedStyle(n).overflowX;
+        if (ox === 'auto' || ox === 'scroll') return true;
+      }
+      n = n.parentElement;
+    }
+    return false;
+  };
 
   // Las láminas vecinas ya cargadas: sin destello al pasar.
   useEffect(() => {
@@ -78,7 +95,7 @@ export function ClassDeck({ slides, start = 0, title, onClose }: { slides: DeckS
       aria-label={title ? `${title} · on screen` : 'On screen'}
       className="fixed inset-0 z-[300] flex flex-col"
       style={{ background: s.kind === 'plate' ? '#000' : INK, paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
-      onTouchStart={(e) => { touchX.current = s.kind !== 'video' && e.touches.length === 1 ? (e.touches[0]?.clientX ?? null) : null; }}
+      onTouchStart={(e) => { touchX.current = s.kind !== 'video' && e.touches.length === 1 && !inSideScroller(e.target) ? (e.touches[0]?.clientX ?? null) : null; }}
       onTouchMove={(e) => { if (e.touches.length > 1) touchX.current = null; }}
       onTouchEnd={(e) => {
         const x0 = touchX.current; touchX.current = null;
@@ -96,7 +113,9 @@ export function ClassDeck({ slides, start = 0, title, onClose }: { slides: DeckS
         <button ref={closeRef} type="button" onClick={close} aria-label="Close" className="w-11 h-11 inline-flex items-center justify-center rounded-full" style={{ background: 'rgba(247,249,250,.1)', color: PAPER }}><X size={20} /></button>
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col justify-center px-4 sm:px-8 overflow-hidden">
+      {/* Una diapositiva más alta que la pantalla (la ola + su texto en un
+          teléfono) empieza arriba y se desplaza: nada queda cortado. */}
+      <div className="flex-1 min-h-0 flex flex-col px-4 sm:px-8 overflow-y-auto overscroll-contain">
         {s.kind === 'plate' && (
           <div className="flex-1 min-h-0 flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -104,26 +123,26 @@ export function ClassDeck({ slides, start = 0, title, onClose }: { slides: DeckS
           </div>
         )}
         {s.kind === 'text' && (
-          <>
+          <div className="my-auto py-2">
             <p className="m-0" style={{ ...DISPLAY, fontWeight: 900, color: PAPER, fontSize: 'clamp(30px, 8vw, 60px)', lineHeight: 1.04 }}>{s.big}</p>
             {s.small && <p className="text-[17px] leading-snug mt-4 mb-0" style={{ color: 'rgba(247,249,250,.8)' }}>{s.small}</p>}
-          </>
+          </div>
         )}
         {s.kind === 'node' && (
-          <>
+          <div className="my-auto py-2">
             {s.node}
             {s.small && <p className="text-[16px] leading-snug mt-4 mb-0" style={{ color: 'rgba(247,249,250,.8)' }}>{s.small}</p>}
-          </>
+          </div>
         )}
         {s.kind === 'check' && (
-          <div className="space-y-4">
+          <div className="my-auto py-2 space-y-4">
             <p className="m-0" style={{ ...DISPLAY, fontWeight: 800, color: '#7BE0A6', fontSize: 'clamp(22px, 5vw, 38px)', lineHeight: 1.12 }}>✓ {s.ok}</p>
             <p className="m-0" style={{ ...DISPLAY, fontWeight: 700, color: '#FF9B9B', fontSize: 'clamp(19px, 4.2vw, 30px)', lineHeight: 1.15 }}>✗ {s.no}</p>
             <p className="m-0" style={{ ...DISPLAY, fontWeight: 800, color: CYAN, fontSize: 'clamp(22px, 5vw, 38px)', lineHeight: 1.12 }}>→ {s.fix}</p>
           </div>
         )}
         {s.kind === 'video' && (
-          <div className="w-full max-w-4xl mx-auto"><VideoEmbed key={s.url} url={s.url} title={s.title} /></div>
+          <div className="my-auto w-full mx-auto" style={{ maxWidth: 'min(56rem, calc((100dvh - 170px) * 16 / 9))' }}><VideoEmbed key={s.url} url={s.url} title={s.title} /></div>
         )}
       </div>
 

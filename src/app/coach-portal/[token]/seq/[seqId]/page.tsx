@@ -68,15 +68,22 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
     ...(((cfg as any).feel?.skate ?? [])),
     ...((cfg as any).do?.missionId ? [(cfg as any).do.missionId] : []),
   ].filter(Boolean) as string[];
-  const PIECE = 'id, type, title, description_md, key_words, time_estimate, reps_recommended, student_visible';
-  const [{ data: lessonRows }, { data: pieceRows }, { data: playRows }, { data: videoRows }, { data: coachRows }, media] = await Promise.all([
-    admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),
+  const PIECE = 'id, type, title, description_md, key_words, time_estimate, reps_recommended, student_visible, coach_visible';
+  // La hoja de cada paso lee también la lección, el drill y la misión de su
+  // "Go deeper", aunque no sea un paso de esta secuencia (Grenade → STP-042 en la #12).
+  const sheetIds = [...new Set([...cfg.stepIds, ...cfg.details.map((d) => d.deeper?.lessonId).filter(Boolean) as string[]])];
+  const sheetPieceIds = [...new Set(cfg.details.flatMap((d) => [d.deeper?.drillId, d.deeper?.missionId]).filter(Boolean) as string[])];
+  const [{ data: lessonRows }, { data: pieceRows }, { data: playRows }, { data: videoRows }, { data: coachRows }, { data: sheetRows }, media] = await Promise.all([
+    admin.from('lessons').select('id, title, description_md').in('id', sheetIds),
     admin.from('drills_missions').select(PIECE).eq('active', true).in('step_id', cfg.stepIds),
     playIds.length ? admin.from('drills_missions').select(PIECE).eq('active', true).in('id', playIds) : Promise.resolve({ data: [] as any[] }),
-    admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(20),
-    admin.from('lessons').select('id, linked_step_id, coach_what_md, coach_deliver_md, coach_errors_md, coach_validate_md').eq('active', true).like('id', 'COACH-%').in('linked_step_id', cfg.stepIds),
+    // Igual que la ruta del alumno (limit 6): "View as student" elige el mismo video.
+    // La lista completa del coach sale de course-media (videosOfPage).
+    admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(6),
+    admin.from('lessons').select('id, linked_step_id, coach_what_md, coach_deliver_md, coach_errors_md, coach_validate_md').eq('active', true).like('id', 'COACH-%').in('linked_step_id', sheetIds),
+    sheetPieceIds.length ? admin.from('drills_missions').select(PIECE).eq('active', true).in('id', sheetPieceIds) : Promise.resolve({ data: [] as any[] }),
     // Los pasos y las lecciones de "Go deeper" de cada detalle (la hoja del paso).
-    loadCourseMedia(admin, [...cfg.stepIds, ...cfg.details.map((d) => d.deeper?.lessonId ?? '')]),
+    loadCourseMedia(admin, sheetIds),
   ]);
 
   const videos = pickSequenceVideos(videoRows as any, cfg.id);
@@ -90,7 +97,8 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
       body: cut >= 0 ? bodyFull.slice(0, cut).trim() : bodyFull,
       rules: cut >= 0 ? bodyFull.slice(cut + '**The rules that hold it together**'.length).trim() : '',
       mistakes: section(l.description_md, 'Common mistakes'),
-      cue: section(l.description_md, 'The cue you will hear'),
+      // Corta en '### ' también: en los pasos de Blue el cue sigue con "### Drill 1".
+      cue: sectionTight(l.description_md, 'The cue you will hear'),
     };
   }
   // "View as student" = EXACTAMENTE lo que ve el alumno: en su página solo lo
@@ -99,9 +107,14 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
   const pieces: Record<string, PieceRow> = {};
   for (const p of (pieceRows ?? []) as any[]) if (p.student_visible) pieces[p.id] = p as PieceRow;
   const seenExtra = new Set<string>();
-  const extraPieces: PieceRow[] = [...((pieceRows ?? []) as any[]), ...((playRows ?? []) as any[])]
+  // coach_visible = false es "solo directorio" en /drill-library: no se usa en clase.
+  const extraPieces: PieceRow[] = [...((pieceRows ?? []) as any[]).filter((p) => p.coach_visible !== false), ...((playRows ?? []) as any[])]
     .filter((p) => !pieces[p.id] && (seenExtra.has(p.id) ? false : (seenExtra.add(p.id), true)))
     .map((p) => p as PieceRow);
+  // Los drills / misiones del "Go deeper" de cada detalle, solo para su hoja
+  // (no entran en "Coach · run it" ni en el deck de la secuencia).
+  const sheetPieces: Record<string, PieceRow> = {};
+  for (const p of (sheetRows ?? []) as any[]) if (p.coach_visible !== false) sheetPieces[p.id] = p as PieceRow;
 
   // Coach · say it: las palabras numeradas y el cue de la lección del cuerpo.
   const bodyLessonId = (cfg as any).think?.bodyFromLesson ?? cfg.stepIds[cfg.stepIds.length - 1];
@@ -114,17 +127,20 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
   const focus = match?.title ? { key: match.key, title: match.title, from: sp.from || undefined } : null;
   // Lo de cada paso para su hoja (Show it): sus láminas y sus videos.
   const stepMedia: Record<string, { laminas: ReturnType<typeof media.laminasOfLesson>; videos: ReturnType<typeof media.videosOfLesson> }> = {};
-  for (const id of new Set([...cfg.stepIds, ...cfg.details.map((d) => d.deeper?.lessonId).filter(Boolean) as string[]])) {
+  for (const id of sheetIds) {
     stepMedia[id] = { laminas: media.laminasOfLesson(id), videos: media.videosOfLesson(id) };
   }
   // Volver al índice, en la cinta desde la que se mira.
   const backBelt = viewKey.replace(/_belt$/, '');
 
   const byStep = new Map((coachRows ?? []).map((c: any) => [c.linked_step_id as string, c]));
-  const layers: CoachStepLayer[] = cfg.stepIds.filter((id) => byStep.has(id)).map((id) => {
+  const layerOf = (id: string): CoachStepLayer => {
     const c = byStep.get(id)!;
     return { stepId: id, title: lessons[id]?.title ?? id, what: c.coach_what_md ?? '', deliver: c.coach_deliver_md ?? '', errors: c.coach_errors_md ?? '', validate: c.coach_validate_md ?? '' };
-  });
+  };
+  // Las tarjetas de la página: los pasos de la secuencia. La hoja: también los de "Go deeper".
+  const layers: CoachStepLayer[] = cfg.stepIds.filter((id) => byStep.has(id)).map(layerOf);
+  const sheetLayers: CoachStepLayer[] = sheetIds.filter((id) => !cfg.stepIds.includes(id) && byStep.has(id)).map(layerOf);
 
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
@@ -137,7 +153,7 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
         coach={{
           layers, backHref: `/coach-portal/${token}/course?belt=${backBelt}`,
           extraPieces, allVideos: media.videosOfPage(cfg), laminas: media.laminasOfPage(cfg),
-          sayIt: { words, cue }, focus, stepMedia,
+          sayIt: { words, cue }, focus, stepMedia, sheetLayers, sheetPieces,
         }}
       />
     </div>

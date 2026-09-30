@@ -6,7 +6,7 @@
 // Vimeo, un archivo de Google Drive (vista previa) o un archivo directo.
 // Con varios videos, chips arriba para elegir cuál se ve.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface CourseVideo { url: string; title: string; label?: string | null }
 
@@ -40,7 +40,7 @@ export function VideoList({ videos }: { videos: CourseVideo[] }) {
         <div className="flex flex-wrap gap-1.5 mb-2">
           {videos.map((v, k) => (
             <button key={`${v.url}:${k}`} type="button" aria-pressed={k === i} onClick={() => setI(k)}
-              className="px-3 py-1.5 rounded-full text-[12px] font-semibold border"
+              className="min-h-[40px] px-3 py-1.5 rounded-full text-[12px] font-semibold border"
               style={k === i ? { background: '#061C2B', borderColor: '#061C2B', color: '#F7F9FA' } : { background: '#fff', borderColor: '#DCD7C6', color: '#061C2B' }}>
               {v.label || v.title}
             </button>
@@ -48,6 +48,33 @@ export function VideoList({ videos }: { videos: CourseVideo[] }) {
         </div>
       )}
       <VideoEmbed key={cur.url} url={cur.url} title={cur.title} />
+    </div>
+  );
+}
+
+/** Todos los videos en un panel encima (el mismo en la secuencia, los
+ *  círculos, el lector y el índice del curso). Esc o × lo cierran; la página
+ *  de atrás no se mueve; con el teléfono acostado, el panel se desplaza. */
+export function VideosDialog({ title, videos, onClose }: { title: string; videos: CourseVideo[]; onClose: () => void }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [onClose]);
+  return (
+    <div role="dialog" aria-modal="true" aria-label={`Videos · ${title}`} className="fixed inset-0 z-[250] flex items-start sm:items-center justify-center p-3 overflow-y-auto overscroll-contain" style={{ background: 'rgba(6,28,43,.85)' }} onClick={onClose}>
+      <div className="w-full max-w-3xl rounded-lg p-4 max-h-[calc(100dvh-24px)] overflow-y-auto overscroll-contain" style={{ background: '#F7F9FA' }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-3">
+          <p className="min-w-0 flex-1 text-[16px] font-bold leading-snug m-0" style={{ color: '#061C2B' }}>{title}</p>
+          <button type="button" autoFocus onClick={onClose} aria-label="Close" className="w-11 h-11 shrink-0 inline-flex items-center justify-center rounded-full text-[24px] leading-none" style={{ color: '#061C2B' }}>×</button>
+        </div>
+        {/* El video no pasa del alto de la pantalla (teléfono acostado). */}
+        <div className="mx-auto" style={{ maxWidth: 'min(48rem, calc((100dvh - 150px) * 16 / 9))' }}>
+          <VideoList videos={videos} />
+        </div>
+      </div>
     </div>
   );
 }
