@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sequencePageFor, SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
+import { detailForFocus } from '@/lib/sequence-pages/focus';
 import { coachTeachRank } from '@/lib/coach/teach-rank';
 import { sequencePageRank } from '@/lib/coach/course-access';
 import { boardFlip } from '@/lib/stance';
@@ -114,8 +115,12 @@ export default async function CoachTeachPage({ params, searchParams }: {
   // El puente: el coach llega desde un veredicto ("lo frenó la rotación") y
   // el ?focus trae el id del momento. Se traduce al título con la misma
   // fuente que usa el plan, para que diga exactamente lo que él ya leyó.
-  const focusTitle = sp.focus ? elementTitle(cfg, sp.focus, null) : null;
-  const focus = focusTitle ? { title: focusTitle, from: sp.from || undefined } : null;
+  // detailForFocus (2026-09-30): busca el detalle por el paso o el elemento;
+  // elementTitle solo traducía círculos y el puente llegaba vacío en 14 de 19.
+  const stepTitle = sp.focus ? (((lessonRows ?? []) as any[]).find((l) => l.id === sp.focus)?.title ?? null) : null;
+  const match = sp.focus ? detailForFocus(cfg, sp.focus, stepTitle) : null;
+  const focusTitle = match?.title ?? (sp.focus ? elementTitle(cfg, sp.focus, stepTitle) : null);
+  const focus = focusTitle ? { title: focusTitle, from: sp.from || undefined, key: match?.key ?? null } : null;
 
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>

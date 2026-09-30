@@ -17,6 +17,7 @@
 // secuencia, drills_missions, coach_resources y la capa COACH-* de lessons).
 
 import { VideoList, type CourseVideo } from './VideoEmbed';
+import { detailByTitle } from '@/lib/sequence-pages/focus';
 import { useState } from 'react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { WaveGuide, WAVE_KIT_SEQUENCE } from '@/components/portal/sequence-page/WaveGuide';
@@ -52,7 +53,8 @@ export function TeachKit({
   waveDirection?: 'left' | 'right';
   /** El puente (Marcelo 2026-09-24): el coach llegó desde un veredicto —
    *  "lo frenó la rotación" — y esta pantalla tiene que abrirse en eso. */
-  focus?: { title: string; from?: string } | null;
+  /** key: el detalle ya resuelto por el servidor (detailForFocus). */
+  focus?: { title: string; from?: string; key?: string | null } | null;
 }) {
   const [present, setPresent] = useState(false);
 
@@ -61,17 +63,9 @@ export function TeachKit({
   // oblique"); los detalles tienen el suyo ("1 · Rotation · lead with the
   // oblique · get on the rail"). Se abre el que más palabras comparte: no
   // hay ids que casen entre las dos listas y no quiero inventar un mapa.
-  const norm = (t: string) => new Set(String(t).toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length > 3));
-  const focusKey = (() => {
-    if (!focus?.title) return null;
-    const want = norm(focus.title);
-    let best: { key: string; score: number } | null = null;
-    for (const d of (cfg.details ?? []) as any[]) {
-      const score = [...norm(d.title)].filter((w) => want.has(w)).length;
-      if (score >= 2 && (!best || score > best.score)) best = { key: d.key, score };
-    }
-    return best?.key ?? null;
-  })();
+  // El detalle a abrir lo resuelve el servidor por id (focus.ts); si no vino,
+  // por palabras del título, como antes.
+  const focusKey = focus?.key ?? (focus?.title ? detailByTitle(cfg, focus.title) : null);
   const drills = pieces.filter((p) => p.type === 'drill');
   const missions = pieces.filter((p) => p.type === 'mission');
   const games = pieces.filter((p) => p.type === 'game');

@@ -349,3 +349,30 @@ describe('displayDate', () => {
     expect(displayDate('2026-09-30T03:00:00Z')).toBe('29/09/2026'); // 9 PM del 29 en El Salvador
   });
 });
+
+// El puente del plan/cierre a Teach it: ?focus=<paso|elemento> abre el detalle (2026-09-30).
+describe('detailForFocus', () => {
+  it('finds the detail of a step through its "Go deeper" lesson', async () => {
+    const { detailForFocus } = await import('@/lib/sequence-pages/focus');
+    const cfg = SEQUENCE_PAGES['WB-SEQ-3'];
+    const step = cfg.details.find((d) => d.deeper?.lessonId)!.deeper!.lessonId;
+    const m = detailForFocus(cfg, step);
+    expect(m?.key).toBeTruthy();
+    expect(m?.title).toBeTruthy();
+  });
+  it('an element keeps its own title', async () => {
+    const { detailForFocus } = await import('@/lib/sequence-pages/focus');
+    const cfg = SEQUENCE_PAGES['CIRCLE-BOARD'];
+    const el = cfg.elements![0];
+    expect(detailForFocus(cfg, el.id)?.title).toBe(el.title);
+  });
+  it('every page opens a detail for most of its steps, and unknown ids give nothing', async () => {
+    const { detailForFocus } = await import('@/lib/sequence-pages/focus');
+    for (const c of Object.values(SEQUENCE_PAGES)) {
+      const ids = [...c.stepIds, ...(c.elements ?? []).map((e) => e.id)];
+      const hit = ids.filter((id) => detailForFocus(c, id)?.key).length;
+      expect(hit, c.id).toBeGreaterThan(0);
+      expect(detailForFocus(c, 'NOPE-999')).toBeNull();
+    }
+  });
+});

@@ -41,8 +41,6 @@ import { BoardInventoryManager } from '@/components/board-inventory/BoardInvento
 import { VenueScoutLauncher } from '@/components/venue-scout/VenueScoutLauncher';
 import { RoleSwitch } from '@/components/shared/RoleSwitch';
 import { BELT_DISPLAY, type BeltLevel } from '@/lib/constants/belts';
-import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
-import { sequencePageRank } from '@/lib/coach/course-access';
 import {
   Home,
   BookOpen,
@@ -1256,44 +1254,29 @@ function CoursesTab({
 
   return (
     <div className="space-y-4 pb-4">
-      {/* El curso del alumno a mano + elegir la lámina (Marcelo 2026-09-29). */}
-      <a href={`/coach-portal/${token}/course`} className="block rounded-lg p-4 no-underline" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
-        <p className="text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#0090B0' }}>The course · as your students see it</p>
-        <p className="text-[18px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#061C2B' }}>Teach from the course →</p>
-        <p className="text-[13px] mt-1" style={{ color: '#55666E' }}>Every lesson in order. Pick a plate and put it on screen for the class.</p>
-      </a>
-      {/* Secuencias como las ve el alumno + capa del coach (Marcelo 2026-09-17). */}
-      <div className="rounded-lg p-4" style={{ background: '#0A2532', border: '1px solid rgba(0,210,255,.25)' }}>
-        <p className="text-[11px] uppercase tracking-[0.18em] mb-1" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>Teach it · everything for that class</p>
-        <p className="text-[12.5px] mb-3" style={{ color: 'rgba(247,249,250,.75)' }}>Tap one and you get what you say, what you show, what you put them to do and what you watch for. The student&rsquo;s own page is one tap further in.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {/* Los Tres Círculos entran acá también (Marcelo 2026-09-24: "el coach
-              los explica siempre y no los tenía"). Orden: círculos primero,
-              después White 1–5 · Yellow 6–7 · Blue entrada (0) y 8–13. */}
-          {/* Hasta su cinta (+ la de sus camps), Marcelo 2026-09-29. */}
-          {Object.values(SEQUENCE_PAGES).filter((sq) => sequencePageRank(sq) <= teachRank).sort((a, b) => {
-            const rank = (c: any) => (c.kind === 'circle' ? 0 : 1);
-            const belt = (k: string) => ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'].indexOf(k);
-            return rank(a) - rank(b) || belt(a.belt) - belt(b.belt) || a.number - b.number || (a.eyebrow ?? '').localeCompare(b.eyebrow ?? '');
-          }).map((sq) => (
-            <div key={sq.id} className="rounded-[5px] px-3 py-2.5" style={{ background: '#061C2B', border: '1px solid rgba(247,249,250,.12)' }}>
-              <p className="text-[10px] uppercase tracking-wider m-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>{sq.kind === 'circle' ? 'The Three Circles' : sq.eyebrow ?? `Sequence #${sq.number}`} · {sq.belt.replace('_belt', '')}</p>
-              <a href={`/coach-portal/${token}/teach/${sq.id}`} className="block text-[14px] font-bold m-0 mt-0.5 no-underline" style={{ color: '#F7F9FA' }}>{sq.title} →</a>
-              {/* Un círculo: el alumno lo ve en la página de los Tres Círculos (paso 3). */}
-              <a href={sq.kind === 'circle' ? `/coach-portal/${token}/circles` : `/coach-portal/${token}/seq/${sq.id}`} className="inline-block text-[11.5px] mt-1 no-underline" style={{ color: 'rgba(247,249,250,.55)' }}>as the student sees it</a>
-            </div>
-          ))}
-          {/* The Infinite Circle (curso Blue): no tiene Teach it propio; la página del alumno en modo coach. */}
-          {teachRank >= 3 && (
-            <div className="rounded-[5px] px-3 py-2.5" style={{ background: '#061C2B', border: '1px solid rgba(247,249,250,.12)' }}>
-              <p className="text-[10px] uppercase tracking-wider m-0" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>The language of every sequence · blue</p>
-              <a href={`/coach-portal/${token}/loop`} className="block text-[14px] font-bold m-0 mt-0.5 no-underline" style={{ color: '#F7F9FA' }}>The Infinite Circle →</a>
-              <span className="inline-block text-[11.5px] mt-1" style={{ color: 'rgba(247,249,250,.55)' }}>as the student sees it</span>
-            </div>
-          )}
+      {/* UNA sola puerta al curso del alumno (Marcelo 2026-09-30: "siento que
+          hay una duplicación"). Antes había una tarjeta al índice y un bloque
+          oscuro con las mismas secuencias; ahora el índice por cinta, hasta su
+          cinta (+ la de sus camps). Cada secuencia sigue abriendo Teach it y
+          la página del alumno desde el índice. */}
+      <div className="rounded-lg p-4" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
+        <p className="text-[11px] uppercase tracking-[0.18em]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#0090B0' }}>Teach the course</p>
+        <p className="text-[18px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#061C2B' }}>As your students see it</p>
+        <p className="text-[13px] mt-1" style={{ color: '#55666E' }}>Every lesson and sequence in order, with its plates and videos. Pick a belt.</p>
+        <div className="flex flex-wrap gap-2 mt-3">
+          {([['pre', 'Pre-Course', 1], ['white', 'White', 1], ['yellow', 'Yellow', 2], ['blue', 'Blue', 3]] as const)
+            .filter(([, , r]) => r <= teachRank)
+            .map(([k, label]) => (
+              <a key={k} href={`/coach-portal/${token}/course?belt=${k}`}
+                className="inline-flex items-center min-h-[40px] px-4 rounded-full text-[14px] font-semibold no-underline"
+                style={{ background: '#061C2B', color: '#F7F9FA' }}>
+                {label}
+              </a>
+            ))}
         </div>
       </div>
-      <p className="text-[11px] px-1" style={{ ...F_LABEL, color: '#55666E' }}>Your certification path</p>
+      {/* Lo de abajo es para él, no para la clase: su propia certificación. */}
+      <p className="text-[11px] px-1 pt-2" style={{ ...F_LABEL, color: '#55666E' }}>For you · your certification</p>
 
       {/* Progress hero (M141) — overall count + continue-where-you-left-off. */}
       <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] shadow-sm px-4 py-5">
