@@ -10,6 +10,7 @@ import { getAcceptedAssistantCampIds } from '@/lib/actions/service-staff';
 import { revalidatePath } from 'next/cache';
 import { coachTeachRank } from '@/lib/coach/teach-rank';
 import { studentSectionRank, lessonInVisiblePage } from '@/lib/coach/course-access';
+import { coachMayOpenCoachLesson, isCoachSection, isCoachToolLesson } from '@/lib/coach/coach-lessons';
 
 // Coach reports an incident (general or student-specific) from their portal.
 // Token-gated like the rest of the coach portal. Lands in session_incidents
@@ -748,34 +749,9 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
 // coach_lesson_progress row for this coach+lesson pair so the UI can
 // show "read / not read" state.
 
-// ═══ QUÉ LECCIÓN DEL COACH PUEDE ABRIR ESTE COACH (fuente única, 2026-09-29) ═══
-// La MISMA regla arma su lista de cursos (getCoachPortalData) y protege
-// abrir por link (?lesson=), rendir el quiz y marcar leída: antes solo la
-// lista filtraba y un link abría un examen de otra cinta.
-const COACH_SECTION_BELT: Record<string, string> = {
-  coach_wb: 'white', coach_wb_master: 'white', coach_yb: 'yellow',
-  coach_bb: 'blue', coach_pb: 'purple', coach_brb: 'brown', coach_blb: 'black',
-};
-const BELT_RANK_SHORT: Record<string, number> = { white: 1, yellow: 2, blue: 3, purple: 4, brown: 5, black: 6 };
-function coachMayOpenCoachLesson(
-  coach: { course_access_scope?: string | null; max_belt_permission?: string | null },
-  lesson: { id: string; course_section?: string | null },
-): boolean {
-  // Sin cursos (2026-09-26, Walter · Apnea): instructor de un servicio que
-  // no es surf. Ve su portal (reservas, plan, espacios) pero ningún curso.
-  if (coach.course_access_scope === 'none') return false;
-  // Alcance restringido: instructores en formación inicial ven SOLO
-  // Safety Canon + Foundations (método) hasta que se les abra el resto.
-  if (coach.course_access_scope === 'safety_method') {
-    return lesson.id.startsWith('COACH-SAFETY-') || lesson.id.startsWith('COACH-FOUND-');
-  }
-  const belt = COACH_SECTION_BELT[lesson.course_section ?? ''];
-  if (!belt) return true; // universal course
-  // Sin cinta cargada = la más restrictiva (white): se gana por nivel.
-  const my = BELT_RANK_SHORT[(coach.max_belt_permission || '').replace('_belt', '')] ?? 1;
-  return (BELT_RANK_SHORT[belt] ?? 1) <= my;
-}
-const isCoachSection = (s: string | null | undefined) => String(s ?? '').startsWith('coach');
+// ═══ QUÉ LECCIÓN DEL COACH PUEDE ABRIR ESTE COACH ═══
+// La regla vive en src/lib/coach/coach-lessons.ts (pura, con prueba): la
+// MISMA arma su lista de cursos y protege el link, el quiz y marcar leída.
 /** Progreso/quiz del coach: solo lecciones del COACH, activas y abiertas para
  *  él. Leer el curso del alumno nunca cuenta como certificación. */
 async function assertCoachLessonOpen(admin: ReturnType<typeof createAdminClient>, coach: any, lessonId: string): Promise<void> {
@@ -818,6 +794,9 @@ export interface CoachLessonDetail {
   /** Lección del curso del ALUMNO (no coach_*): el coach la lee tal cual, sin
    *  marcar progreso propio ni rendir su quiz (paso 1 de unificar, 2026-09-29). */
   studentLesson: boolean;
+  /** Curso de herramienta del coach (coach_tools, 2026-09-30): sus láminas
+   *  van en una tira con Present, y sus temas se pliegan. */
+  coachTool: boolean;
   /** Lección del alumno que es un paso (STP-*): su capa del coach (COACH-STP
    *  por linked_step_id) — cómo enseñarlo, validarlo y corregirlo (2026-09-30). */
   coachLayer?: { what: string; deliver: string; errors: string; validate: string } | null;
@@ -965,6 +944,7 @@ export async function getCoachLessonDetail(
     videos,
     progress: progress ?? null,
     studentLesson,
+    coachTool: isCoachToolLesson(lesson as any),
     coachLayer: studentLesson ? await (async () => {
       const { data: c } = await admin
         .from('lessons')

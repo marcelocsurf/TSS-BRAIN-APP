@@ -13,7 +13,8 @@ import { SURF_SPOT_OPTIONS } from '@/lib/constants/brand';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { LessonFigure } from '@/components/course/LessonFigure';
 import { CoachMediaBar } from '@/components/coach-portal/CoachMediaBar';
-import { laminasInMarkdown } from '@/lib/sequence-pages/laminas';
+import { laminasInMarkdown, stripLaminas } from '@/lib/sequence-pages/laminas';
+import { splitCoachCourses, groupToolCourses } from '@/lib/coach/coach-lessons';
 import { PendingAssignments } from './PendingAssignments';
 import { PendingStaffInvites } from './PendingStaffInvites';
 import { CoachGuide } from './CoachGuide';
@@ -586,8 +587,10 @@ function HomeTab({
   const avg = stats.avgRating;
   const fullStars = avg ? Math.round(avg) : 0;
   const coachingHours = stats.coachingHours ?? 0;
-  const totalLessons = coachCourses.length;
-  const completedLessons = coachCourses.filter((l: any) => courseProgress[l.id]?.completed).length;
+  // Solo la certificación: los cursos de herramientas van aparte (2026-09-30).
+  const certLessons = splitCoachCourses(coachCourses as any[]).cert;
+  const totalLessons = certLessons.length;
+  const completedLessons = certLessons.filter((l: any) => courseProgress[l.id]?.completed).length;
   const coursePct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   // Certification progression (L1–L5) — drives the hero ring, mirroring the
@@ -996,7 +999,7 @@ function CoursesTab({
           <>
             <div className="bg-[var(--tss-navy)] text-white rounded-lg px-5 py-6 shadow-md">
               <p className="text-[11px] font-mono text-white/50 mb-1 uppercase tracking-wider">
-                {detail.studentLesson ? 'Student course · as your students read it · ' : ''}{detail.lesson.id} · ~{detail.lesson.estimated_minutes ?? '?'} min
+                {detail.studentLesson ? 'Student course · as your students read it · ' : detail.coachTool ? 'Coaching tool · ' : ''}{detail.lesson.id} · ~{detail.lesson.estimated_minutes ?? '?'} min
               </p>
               <h2
                 className="text-2xl font-bold leading-tight"
@@ -1091,7 +1094,17 @@ function CoursesTab({
                     {/* Lección del alumno: su figura (si tiene) y los '## temas'
                         plegables, igual que en su curso (LessonViewer). */}
                     {detail.studentLesson && <LessonFigure lessonId={detail.lesson.id} />}
-                    <MarkdownContent markdown={detail.lesson.description_md} collapsible={detail.studentLesson} />
+                    {/* Curso de herramienta: las láminas en una tira arriba (tocar una la
+                        pone en pantalla, Present las pasa todas) y el texto abajo, con
+                        sus temas plegados. Las láminas no se repiten abajo. */}
+                    {detail.coachTool && (
+                      <div className="mb-4">
+                        <CoachMediaBar tone="light" thumbs title={detail.lesson.title}
+                          laminas={laminasInMarkdown(detail.lesson.description_md).map((l) => ({ ...l, caption: detail.lesson.title }))}
+                          videos={[]} />
+                      </div>
+                    )}
+                    <MarkdownContent markdown={detail.coachTool ? stripLaminas(detail.lesson.description_md) : detail.lesson.description_md} collapsible={detail.studentLesson || detail.coachTool} />
                   </div>
                 ) : detail.lesson.lesson_type === 'test' ? null : (
                   <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] px-5 py-6 text-sm text-[#55666E] italic">
@@ -1146,6 +1159,21 @@ function CoursesTab({
                 </button>
               )
             )}
+            {/* Curso de herramienta: seguir con la próxima lección del mismo curso. */}
+            {detail.coachTool && (() => {
+              const same = groupToolCourses(splitCoachCourses(courses).tools).find((g) => g.lessons.some((l) => l.id === detail.lesson.id));
+              const i = same ? same.lessons.findIndex((l) => l.id === detail.lesson.id) : -1;
+              const nextLesson = same && i >= 0 ? same.lessons[i + 1] : undefined;
+              if (!nextLesson) return null;
+              return (
+                <button type="button" onClick={() => openLesson(nextLesson.id)}
+                  className="w-full min-h-[44px] rounded-[5px] text-[13px] font-semibold border border-[#DCD7C6] bg-[#F7F9FA] text-left px-4 flex items-center justify-between gap-2"
+                  style={{ color: '#061C2B' }}>
+                  <span className="min-w-0 truncate">Next · {nextLesson.title}</span>
+                  <ChevronRight size={15} className="shrink-0 text-[#55666E]" />
+                </button>
+              );
+            })()}
           </>
         )}
       </div>
@@ -1153,7 +1181,13 @@ function CoursesTab({
   }
 
   // ── List view (grouped into the 5 tiers) ──────────────────
-  const completedCount = courses.filter((c) => completedSet.has(c.id)).length;
+  // La certificación y los cursos de herramientas van aparte (Marcelo
+  // 2026-09-30): las herramientas tienen su propio avance y no cuentan en el
+  // "X of N", en Continue ni en el Home. `courses` sigue completo: el link
+  // ?lesson= tiene que poder abrir también una lección de herramienta.
+  const { cert: certCourses, tools: toolCourses } = splitCoachCourses(courses);
+  const toolGroups = groupToolCourses(toolCourses);
+  const completedCount = certCourses.filter((c) => completedSet.has(c.id)).length;
 
   // The restructured coach_wb course groups by ID prefix into 5 tiers.
   const byPrefix = (prefix: string) => courses.filter((c) => c.id.startsWith(prefix));
@@ -1290,6 +1324,17 @@ function CoursesTab({
             ))}
         </div>
       </div>
+      {/* Cursos de herramientas (Marcelo 2026-09-30): para que el coach estudie
+          y entienda una herramienta —visualización, respiración…— y la pueda
+          usar. Aparte de la certificación: su propio avance, sin examen. */}
+      {toolGroups.length > 0 && (
+        <>
+          <p className="text-[11px] px-1 pt-2" style={{ ...F_LABEL, color: '#55666E' }}>For you · coaching tools</p>
+          {toolGroups.map((g) => (
+            <TierGroup key={g.key} label={g.title} sub={g.sub} items={g.lessons} done={doneIn(g.lessons)} render={renderCard} accent="#7B4FBE" defaultOpen />
+          ))}
+        </>
+      )}
       {/* Lo de abajo es para él, no para la clase: su propia certificación. */}
       <p className="text-[11px] px-1 pt-2" style={{ ...F_LABEL, color: '#55666E' }}>For you · your certification</p>
 
@@ -1300,15 +1345,15 @@ function CoursesTab({
           {coach.certification_level ? ` · ${coach.certification_level}` : ''}
         </p>
         <h2 className="text-[21px]" style={{ ...F_DISPLAY, color: '#061C2B' }}>
-          {completedCount} of {courses.length} lessons
+          {completedCount} of {certCourses.length} lessons
         </h2>
-        {courses.length > 0 && (
+        {certCourses.length > 0 && (
           <div className="h-1.5 rounded-full overflow-hidden mt-3" style={{ background: 'rgba(6,28,43,.08)' }}>
-            <div className="h-full rounded-full transition-all" style={{ width: `${(completedCount / courses.length) * 100}%`, background: '#00D2FF' }} />
+            <div className="h-full rounded-full transition-all" style={{ width: `${(completedCount / certCourses.length) * 100}%`, background: '#00D2FF' }} />
           </div>
         )}
         {(() => {
-          const next = courses.find((c: any) =>
+          const next = certCourses.find((c: any) =>
             !completedSet.has(c.id) && !((c.prerequisites ?? []) as string[]).some((pid) => !completedSet.has(pid))
           );
           if (!next) return null;
@@ -1331,7 +1376,7 @@ function CoursesTab({
       {/* Presentations granted to this coach (admin-controlled) */}
       <CoachPresentations token={token} />
 
-      {courses.length === 0 ? (
+      {certCourses.length === 0 ? (
         <div className="rounded-lg p-8 text-center" style={{ background: '#0A2532' }}>
           <BookOpen size={36} strokeWidth={1.5} className="mx-auto mb-2 text-white/30" />
           <p className="text-sm text-white/50">No coach courses published yet.</p>
@@ -1461,6 +1506,7 @@ function TierGroup({
   render,
   done = 0,
   accent,
+  defaultOpen = false,
 }: {
   label: string;
   sub: string;
@@ -1468,11 +1514,13 @@ function TierGroup({
   render: (c: any) => React.ReactNode;
   done?: number;
   accent?: string; // e.g. coral for the Safety tier
+  /** Abierto de entrada (un curso corto, como los de herramientas). */
+  defaultOpen?: boolean;
 }) {
   // Open by default only when the tier is in progress — finished and
   // untouched tiers stay folded so the path reads at a glance (M141).
   const inProgress = done > 0 && done < items.length;
-  const [open, setOpen] = useState(inProgress);
+  const [open, setOpen] = useState(defaultOpen || inProgress);
   if (items.length === 0) return null;
   const complete = done === items.length;
   return (

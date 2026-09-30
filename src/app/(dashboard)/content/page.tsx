@@ -106,6 +106,8 @@ export default async function ContentAdminPage({
   const ybTierIntegration = ybCoach.filter(
     (l: any) => l.id === 'COACH-YB-MOD-7' || l.id === 'COACH-YB-MOD-8',
   );
+  // Cursos de herramientas del coach (Visualization…, 2026-09-30): aparte de la certificación.
+  const toolCoach = coachLessons.filter((l: any) => l.course_section === 'coach_tools');
 
   const drills = drillsMissions.filter((d: any) => d.type === 'drill');
   const missions = drillsMissions.filter((d: any) => d.type === 'mission');
@@ -333,6 +335,14 @@ export default async function ContentAdminPage({
         icon={ShieldCheck}
         subtitle="Coach the 11-stage integration · administer the YB Exit Test"
         items={ybTierIntegration}
+        kind="lesson"
+      />
+
+      <Section
+        title="Coach · Coaching tools"
+        icon={BookOpen}
+        subtitle="Short courses for coaches (Visualization…) · apart from certification"
+        items={toolCoach}
         kind="lesson"
       />
         </>

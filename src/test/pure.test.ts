@@ -5,6 +5,8 @@ import { takesRunStar, selfStarsThatCount } from '@/lib/stars';
 import { sequenceStarChanges } from '@/lib/evaluation/sequence-stars';
 import { BB_LINE, BB_NAV, entryPageForCourse } from '@/lib/sequence-pages/bb-entry';
 import { beltRankOf, sequencePageRank, studentSectionRank, lessonInVisiblePage } from '@/lib/coach/course-access';
+import { coachMayOpenCoachLesson, splitCoachCourses, groupToolCourses, toolCourseKey } from '@/lib/coach/coach-lessons';
+import { laminasInMarkdown, stripLaminas } from '@/lib/sequence-pages/laminas';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 import { dobError } from '@/lib/utils/dob';
 import { suggestCorrectedEmail } from '@/lib/utils/email-typo';
@@ -337,6 +339,38 @@ describe('coach course access by belt', () => {
     expect(lessonInVisiblePage('STP-016', 1)).toBe(true);
     expect(lessonInVisiblePage('STP-035', 1)).toBe(false);
     expect(lessonInVisiblePage('STP-035', 2)).toBe(true); // BB-NAV sale en Yellow
+  });
+});
+
+// Cursos de herramientas del coach (Marcelo 2026-09-30): aparte de la
+// certificación; los ven los coaches con cursos completos, no los que están
+// en formación ni los que no tienen cursos ("no le des accesos a ellos").
+describe('coaching tool courses', () => {
+  const tool = { id: 'COACH-TOOL-VIS-01', course_section: 'coach_tools' };
+  it('open for full-scope coaches at any belt', () => {
+    expect(coachMayOpenCoachLesson({ course_access_scope: 'full', max_belt_permission: 'white_belt' }, tool)).toBe(true);
+    expect(coachMayOpenCoachLesson({ course_access_scope: null, max_belt_permission: null }, tool)).toBe(true);
+  });
+  it('closed for coaches in formation and for coaches without courses', () => {
+    expect(coachMayOpenCoachLesson({ course_access_scope: 'safety_method' }, tool)).toBe(false);
+    expect(coachMayOpenCoachLesson({ course_access_scope: 'none' }, tool)).toBe(false);
+    // lo de antes sigue igual
+    expect(coachMayOpenCoachLesson({ course_access_scope: 'safety_method' }, { id: 'COACH-SAFETY-01', course_section: 'coach_wb' })).toBe(true);
+    expect(coachMayOpenCoachLesson({ course_access_scope: 'full', max_belt_permission: 'white_belt' }, { id: 'COACH-BB-SEQ8', course_section: 'coach_bb' })).toBe(false);
+  });
+  it('never count in the certification', () => {
+    const { cert, tools } = splitCoachCourses([
+      { id: 'COACH-FOUND-00', course_section: 'coach_wb' }, tool,
+      { id: 'COACH-TOOL-VIS-02', course_section: 'coach_tools' },
+    ]);
+    expect(cert.map((c) => c.id)).toEqual(['COACH-FOUND-00']);
+    expect(groupToolCourses(tools)).toEqual([{ key: 'VIS', title: 'Visualization', sub: expect.any(String), lessons: tools }]);
+    expect(toolCourseKey('COACH-TOOL-BREATH-01')).toBe('BREATH');
+  });
+  it('the slides leave the text once they go in the strip', () => {
+    const md = '![Slide 1](/uploads/fotos/tools/visualization/vis-01.webp)\n![Slide 2](/uploads/fotos/tools/visualization/vis-02.webp)\n\n## Why it matters\nText.';
+    expect(laminasInMarkdown(md)).toHaveLength(2);
+    expect(stripLaminas(md)).toBe('## Why it matters\nText.');
   });
 });
 

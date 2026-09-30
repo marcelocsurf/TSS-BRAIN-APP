@@ -4,6 +4,8 @@
 // Present (las láminas en pantalla, con el modo presentación único) y Videos
 // (todos, para elegir). La usan los Tres Círculos, el Infinite Circle y el
 // lector de lecciones; la página de la secuencia tiene la suya, más completa.
+// Con `thumbs` (los cursos de herramientas, 2026-09-30) las láminas van también
+// en una tira de miniaturas: tocar una abre el modo presentación en esa.
 
 import { useState } from 'react';
 import { Play } from 'lucide-react';
@@ -11,14 +13,17 @@ import { ClassDeck } from './ClassDeck';
 import { VideosDialog, type CourseVideo } from './VideoEmbed';
 import type { Lamina } from '@/lib/sequence-pages/laminas';
 
-export function CoachMediaBar({ title, laminas, videos, tone = 'dark' }: {
+export function CoachMediaBar({ title, laminas, videos, tone = 'dark', thumbs = false }: {
   title: string;
   laminas: Lamina[];
   videos: CourseVideo[];
   /** 'dark' sobre navy (páginas del alumno); 'light' sobre fondo claro. */
   tone?: 'dark' | 'light';
+  /** Las láminas también en una tira de miniaturas (sin texto). */
+  thumbs?: boolean;
 }) {
-  const [deck, setDeck] = useState(false);
+  // En qué lámina abre el modo presentación (null = cerrado).
+  const [deck, setDeck] = useState<number | null>(null);
   const [watch, setWatch] = useState(false);
   if (laminas.length === 0 && videos.length === 0) return null;
   const dark = tone === 'dark';
@@ -26,7 +31,7 @@ export function CoachMediaBar({ title, laminas, videos, tone = 'dark' }: {
     <>
       <div className="mt-2 flex flex-wrap gap-2">
         {laminas.length > 0 && (
-          <button type="button" onClick={() => setDeck(true)} className="rounded-[5px] px-3.5 min-h-[40px] text-[13px] font-black uppercase tracking-wide" style={{ background: '#00D2FF', color: '#061C2B' }}>
+          <button type="button" onClick={() => setDeck(0)} className="rounded-[5px] px-3.5 min-h-[40px] text-[13px] font-black uppercase tracking-wide" style={{ background: '#00D2FF', color: '#061C2B' }}>
             Present · {laminas.length}
           </button>
         )}
@@ -37,8 +42,19 @@ export function CoachMediaBar({ title, laminas, videos, tone = 'dark' }: {
           </button>
         )}
       </div>
-      {deck && (
-        <ClassDeck title={title} slides={laminas.map((l) => ({ kind: 'plate' as const, src: l.src, alt: l.alt, from: l.caption ?? title }))} onClose={() => setDeck(false)} />
+      {thumbs && laminas.length > 0 && (
+        <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+          {laminas.map((l, i) => (
+            <button key={`${l.src}:${i}`} type="button" onClick={() => setDeck(i)} aria-label={`Show on screen · ${i + 1} of ${laminas.length}`}
+              className="shrink-0 rounded-[5px] overflow-hidden" style={{ border: `1px solid ${dark ? 'rgba(247,249,250,.25)' : '#DCD7C6'}` }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={l.src} alt="" loading="lazy" className="h-[72px] w-[128px] object-cover block" style={{ background: '#061C2B' }} />
+            </button>
+          ))}
+        </div>
+      )}
+      {deck !== null && (
+        <ClassDeck title={title} start={deck} slides={laminas.map((l) => ({ kind: 'plate' as const, src: l.src, alt: l.alt, from: l.caption ?? title }))} onClose={() => setDeck(null)} />
       )}
       {watch && <VideosDialog title={`${title} · all videos`} videos={videos} onClose={() => setWatch(false)} />}
     </>

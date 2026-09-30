@@ -79,3 +79,10 @@ export function laminasInMarkdown(md: string | null | undefined): Lamina[] {
   }
   return out;
 }
+
+/** El texto de la lección sin sus láminas (las mismas líneas que junta
+ *  laminasInMarkdown): cuando las láminas van en una tira aparte, no se
+ *  dibujan otra vez una abajo de la otra. */
+export function stripLaminas(md: string | null | undefined): string {
+  return String(md ?? '').split('\n').filter((line) => !/^!\[([^\]]*)\]\(([^)\s]+)\)$/.test(line.trim())).join('\n').replace(/^\s+/, '');
+}
