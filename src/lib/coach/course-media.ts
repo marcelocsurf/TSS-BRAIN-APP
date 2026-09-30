@@ -25,6 +25,7 @@ export function dedupeLaminas(ls: Lamina[]): Lamina[] {
 
 export interface CourseMedia {
   videosOfLesson: (id: string) => CourseVideo[];
+  laminasOfLesson: (id: string) => Lamina[];
   libraryVideos: (prefix: string) => CourseVideo[];
   videosOfPage: (cfg: Pick<SequencePageConfig, 'id' | 'stepIds'>) => CourseVideo[];
   laminasOfPage: (cfg: Pick<SequencePageConfig, 'id' | 'stepIds'>) => Lamina[];
@@ -73,5 +74,6 @@ export async function loadCourseMedia(db: ReturnType<typeof createAdminClient>, 
     ...(SEQUENCE_LAMINAS[cfg.id] ?? []),
     ...cfg.stepIds.flatMap((id) => laminasInMarkdown(lessonById.get(id)?.description_md)),
   ]);
-  return { videosOfLesson, libraryVideos, videosOfPage, laminasOfPage };
+  const laminasOfLesson = (id: string) => laminasInMarkdown(lessonById.get(id)?.description_md);
+  return { videosOfLesson, laminasOfLesson, libraryVideos, videosOfPage, laminasOfPage };
 }

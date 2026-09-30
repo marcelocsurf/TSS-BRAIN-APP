@@ -75,7 +75,8 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
     playIds.length ? admin.from('drills_missions').select(PIECE).eq('active', true).in('id', playIds) : Promise.resolve({ data: [] as any[] }),
     admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(20),
     admin.from('lessons').select('id, linked_step_id, coach_what_md, coach_deliver_md, coach_errors_md, coach_validate_md').eq('active', true).like('id', 'COACH-%').in('linked_step_id', cfg.stepIds),
-    loadCourseMedia(admin, cfg.stepIds),
+    // Los pasos y las lecciones de "Go deeper" de cada detalle (la hoja del paso).
+    loadCourseMedia(admin, [...cfg.stepIds, ...cfg.details.map((d) => d.deeper?.lessonId ?? '')]),
   ]);
 
   const videos = pickSequenceVideos(videoRows as any, cfg.id);
@@ -111,6 +112,11 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
   const stepTitle = sp.focus ? (((lessonRows ?? []) as any[]).find((l) => l.id === sp.focus)?.title ?? null) : null;
   const match = sp.focus ? detailForFocus(cfg, sp.focus, stepTitle) : null;
   const focus = match?.title ? { key: match.key, title: match.title, from: sp.from || undefined } : null;
+  // Lo de cada paso para su hoja (Show it): sus láminas y sus videos.
+  const stepMedia: Record<string, { laminas: ReturnType<typeof media.laminasOfLesson>; videos: ReturnType<typeof media.videosOfLesson> }> = {};
+  for (const id of new Set([...cfg.stepIds, ...cfg.details.map((d) => d.deeper?.lessonId).filter(Boolean) as string[]])) {
+    stepMedia[id] = { laminas: media.laminasOfLesson(id), videos: media.videosOfLesson(id) };
+  }
   // Volver al índice, en la cinta desde la que se mira.
   const backBelt = viewKey.replace(/_belt$/, '');
 
@@ -131,7 +137,7 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
         coach={{
           layers, backHref: `/coach-portal/${token}/course?belt=${backBelt}`,
           extraPieces, allVideos: media.videosOfPage(cfg), laminas: media.laminasOfPage(cfg),
-          sayIt: { words, cue }, focus,
+          sayIt: { words, cue }, focus, stepMedia,
         }}
       />
     </div>

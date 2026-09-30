@@ -22,7 +22,7 @@ import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { SEQUENCE_LAMINAS } from '@/lib/sequence-pages/laminas';
 import { hasStanceVideos, resolveSequenceVideo, type SequenceVideos, type Stance } from '@/lib/sequence-pages/videos';
 import { ZoomImage } from '@/components/shared/ImageLightbox';
-import { LaminaPresenter } from '@/components/coach-portal/LaminaPresenter';
+import { ClassDeck, type DeckSlide } from '@/components/coach-portal/ClassDeck';
 import { VideoList, type CourseVideo } from '@/components/coach-portal/VideoEmbed';
 import type { Lamina as LaminaT } from '@/lib/sequence-pages/laminas';
 
@@ -114,6 +114,8 @@ export function SequencePage({
     sayIt?: { words: string[]; cue: string } | null;
     /** El puente del plan / cierre: el detalle que se abre en Review. */
     focus?: { key: string | null; title: string; from?: string } | null;
+    /** Lo de cada paso (por id de lección) para su hoja: láminas y videos. */
+    stepMedia?: Record<string, { laminas: LaminaT[]; videos: CourseVideo[] }>;
   } | null;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? 'think');
@@ -140,12 +142,17 @@ export function SequencePage({
   const shownVideo = resolveSequenceVideo(videos, side, hasStanceVideos(videos) ? stanceSel : null) ?? (side ? null : video);
   const [coachOn, setCoachOn] = useState(true);
   const coachLayers = coach && coachOn ? coach.layers : [];
-  // La barra del coach: láminas en pantalla y todos los videos.
-  const [presenting, setPresenting] = useState(false);
+  // La barra del coach: el modo presentación, todos los videos y la hoja de un paso.
+  const [deck, setDeck] = useState<{ slides: DeckSlide[]; start: number; title: string } | null>(null);
   const [watching, setWatching] = useState(false);
   const coachLaminas = coach?.laminas ?? [];
   const coachVideos = coach?.allVideos ?? [];
   const coachFocus = coach?.focus ?? null;
+  // La hoja de un paso: se abre tocando su chip, o sola si vino del plan (?focus).
+  const [sheetKey, setSheetKey] = useState<string | null>(coach?.focus?.key ?? null);
+  // Todas las piezas que el coach puede usar (las del alumno + las solo-coach).
+  const allPieces: Record<string, PieceRow> = { ...pieces };
+  for (const p of coach?.extraPieces ?? []) allPieces[p.id] = p;
   // Foco opcional dentro de la misión (Marcelo 2026-09-09): la misión es
   // siempre la línea completa; el detalle se elige, o no.
   const [focus, setFocus] = useState<string | null>(null);
@@ -164,6 +171,34 @@ export function SequencePage({
   const stepGroupsAll: { ids: string[]; title: string; note?: string }[] = cfg.stepGroups ?? cfg.stepIds.map((id) => ({ ids: [id], title: shortLesson(lessons[id]?.title ?? id) }));
   const stepGroups = stepGroupsAll.filter((g) => g.ids.some((id) => onSide(id)));
 
+  // ── El modo presentación (un solo deck, 2026-09-30) ──
+  // La secuencia: título → láminas → palabras → la línea en la ola → el cue → la misión.
+  const sequenceSlides = (): DeckSlide[] => {
+    const words = coach?.sayIt?.words ?? [];
+    const cue = (coach?.sayIt?.cue ?? '').replace(/^>\s*/gm, '').replace(/["“”*_]/g, '').trim();
+    const missions = Object.values(allPieces).filter((p) => p.type === 'mission').slice(0, 3);
+    return [
+      { kind: 'text', eyebrow: cfg.eyebrow ?? `Sequence #${cfg.number}`, big: cfg.title, small: cfg.think.whatIs.headline },
+      ...coachLaminas.map((l): DeckSlide => ({ kind: 'plate', src: l.src, alt: l.alt, from: cfg.title })),
+      ...words.map((w, k): DeckSlide => ({ kind: 'text', eyebrow: `${k + 1} of ${words.length}`, big: w })),
+      ...(cfg.think.board ? [{ kind: 'node', eyebrow: 'The line you are drawing', small: cfg.think.whatIs.line,
+        node: <WaveGuide data={cfg.think.board} title={`${cfg.title} on the wave face`} waveDirection={waveDirection} kitSequence={WAVE_KIT_SEQUENCE[cfg.id]} legendColor="rgba(247,249,250,.8)" /> } as DeckSlide] : []),
+      ...(cue ? [{ kind: 'text', eyebrow: 'The cue', big: cue } as DeckSlide] : []),
+      ...missions.map((p): DeckSlide => ({ kind: 'text', eyebrow: 'In the water', big: p.title, small: (p.description_md ?? '').replace(/[#*>`]/g, '').split('\n').filter(Boolean)[1] ?? '' })),
+    ];
+  };
+  // Un paso: su nombre → sus láminas → su cue → qué mirar (✓ ✗ fix) → sus videos.
+  const stepSlides = (d: SequencePageConfig['details'][number], m: { laminas: LaminaT[]; videos: CourseVideo[] }, stepCue: string): DeckSlide[] => {
+    const cue = stepCue.replace(/^>\s*/gm, '').replace(/["“”*_]/g, '').trim();
+    return [
+      { kind: 'text', eyebrow: cfg.title, big: stripStep(d.title), small: d.symptom ? `Where it breaks: ${d.symptom}` : undefined },
+      ...m.laminas.map((l): DeckSlide => ({ kind: 'plate', src: l.src, alt: l.alt, from: stripStep(d.title) })),
+      ...(cue ? [{ kind: 'text', eyebrow: 'The cue', big: cue } as DeckSlide] : []),
+      ...d.indicators.map((ind, k): DeckSlide => ({ kind: 'check', eyebrow: `Watch for · ${k + 1} of ${d.indicators.length}`, ok: ind.ok, no: ind.no, fix: ind.fix })),
+      ...m.videos.map((v): DeckSlide => ({ kind: 'video', eyebrow: v.label ?? v.title, url: v.url, title: v.title })),
+    ];
+  };
+
   return (
     <section className="tss" data-screen="sequence">
       <div className="tss-main pb-6">
@@ -181,18 +216,32 @@ export function SequencePage({
             </div>
           )}
           {/* La barra del coach: poner las láminas en pantalla y todos los videos. */}
-          {coach && coachOn && (coachLaminas.length > 0 || coachVideos.length > 0) && (
+          {coach && coachOn && (
             <div className="mt-2 flex flex-wrap gap-2">
-              {coachLaminas.length > 0 && (
-                <button type="button" onClick={() => setPresenting(true)} className="rounded-[5px] px-3.5 min-h-[40px] text-[13px] font-black uppercase tracking-wide" style={{ background: CYAN, color: NAVY }}>
-                  Present · {coachLaminas.length}
-                </button>
-              )}
+              <button type="button" onClick={() => setDeck({ slides: sequenceSlides(), start: 0, title: cfg.title })} className="rounded-[5px] px-3.5 min-h-[40px] text-[13px] font-black uppercase tracking-wide" style={{ background: CYAN, color: NAVY }}>
+                Present
+              </button>
               {coachVideos.length > 0 && (
                 <button type="button" onClick={() => setWatching(true)} className="rounded-[5px] px-3.5 min-h-[40px] text-[13px] font-bold inline-flex items-center gap-1.5" style={{ background: 'transparent', color: PAPER, border: '1px solid rgba(247,249,250,.45)' }}>
                   <Play size={13} /> Videos · {coachVideos.length}
                 </button>
               )}
+            </div>
+          )}
+          {/* Elegir el paso (paso 3, 2026-09-30): cada chip abre su hoja. */}
+          {coach && coachOn && cfg.details.length > 0 && (
+            <div className="mt-2">
+              <p className="m-0 mb-1" style={{ ...MONO, color: 'rgba(247,249,250,.7)' }}>Teach a step</p>
+              <div className="flex flex-wrap gap-1.5">
+                {cfg.details.filter((d) => onSide(d.deeper?.lessonId)).map((d) => (
+                  <button key={d.key} type="button" onClick={() => setSheetKey(d.key)} aria-pressed={sheetKey === d.key}
+                    className="inline-flex items-center gap-2 min-h-[40px] px-3 rounded-full text-[13px] font-semibold"
+                    style={sheetKey === d.key ? { background: CYAN, color: NAVY } : { background: 'rgba(247,249,250,.08)', color: PAPER, border: '1px solid rgba(247,249,250,.25)' }}>
+                    {d.command && <i className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} />}
+                    {stripStep(d.title)}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           <p className="mt-2" style={{ ...MONO, color: CYAN }}>{cfg.eyebrow ?? `Sequence #${cfg.number}`}{cfg.alsoCourseKeys?.length ? '' : ` · ${cfg.belt.replace('_belt', ' belt')}`}</p>
@@ -564,9 +613,30 @@ export function SequencePage({
       </div>
 
       {/* Nav inferior blanca: los mismos destinos del portal. */}
-      {coach && presenting && coachLaminas.length > 0 && (
-        <LaminaPresenter items={coachLaminas.map((l) => ({ src: l.src, alt: l.alt, caption: l.caption, from: cfg.title }))} onClose={() => setPresenting(false)} />
-      )}
+      {coach && coachOn && sheetKey && (() => {
+        const d = cfg.details.find((x) => x.key === sheetKey);
+        if (!d) return null;
+        const stepId = d.deeper?.lessonId ?? null;
+        const base = (stepId && coach.stepMedia?.[stepId]) || { laminas: [], videos: [] };
+        // Una lámina de la secuencia cuyo nombre es el del paso ("Paddle with the
+        // correct angle") también es de ese paso.
+        const key = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        const own = coachLaminas.filter((l) => l.caption && key(l.caption) === key(stripStep(d.title)));
+        const m = { videos: base.videos, laminas: [...own, ...base.laminas.filter((l) => !own.some((o) => o.src === l.src))] };
+        const layer = stepId ? coach.layers.find((l) => l.stepId === stepId) ?? null : null;
+        const stepCue = stepId ? lessons[stepId]?.cue ?? '' : '';
+        return (
+          <StepSheet
+            d={d} laminas={m.laminas} videos={m.videos} layer={layer} cue={stepCue}
+            drill={d.deeper?.drillId ? allPieces[d.deeper.drillId] : undefined}
+            mission={d.deeper?.missionId ? allPieces[d.deeper.missionId] : undefined}
+            lessonHref={stepId ? `${portal}?tab=${courseTab}&lesson=${stepId}` : null}
+            onClose={() => setSheetKey(null)}
+            onPresent={(start) => setDeck({ slides: stepSlides(d, m, stepCue), start, title: stripStep(d.title) })}
+          />
+        );
+      })()}
+      {coach && deck && <ClassDeck slides={deck.slides} start={deck.start} title={deck.title} onClose={() => setDeck(null)} />}
       {coach && watching && coachVideos.length > 0 && (
         <div role="dialog" aria-modal="true" aria-label={`Videos · ${cfg.title}`} className="fixed inset-0 z-[250] flex items-center justify-center p-3" style={{ background: 'rgba(6,28,43,.85)' }} onClick={() => setWatching(false)}>
           <div className="w-full max-w-3xl rounded-lg p-4" style={{ background: PAPER }} onClick={(e) => e.stopPropagation()}>
@@ -725,6 +795,97 @@ function Icon({ name }: { name: 'home' | 'course' | 'play' | 'back' | 'arrow' })
     arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
   };
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{p[name]}</svg>;
+}
+
+/** La hoja de un paso (paso 3, 2026-09-30): el orden de Teach it que Marcelo
+ *  aprobó — Say it · Show it · Run it · Watch for — para ESE paso. Abajo en el
+ *  teléfono, a la derecha en el iPad. */
+function StepSheet({ d, laminas, videos, layer, cue, drill, mission, lessonHref, onClose, onPresent }: {
+  d: SequencePageConfig['details'][number];
+  laminas: LaminaT[];
+  videos: CourseVideo[];
+  layer: CoachStepLayer | null;
+  cue: string;
+  drill?: PieceRow;
+  mission?: PieceRow;
+  lessonHref: string | null;
+  onClose: () => void;
+  onPresent: (start: number) => void;
+}) {
+  useEffect(() => {
+    // Con el modo presentación abierto encima, Esc cierra solo ese.
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('[role=dialog][aria-label$="on screen"]')) onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  const H = ({ n, t }: { n: number; t: string }) => (
+    <p className="m-0 mt-4 mb-1.5 flex items-center gap-2" style={{ ...MONO, color: CYAN }}>
+      <span className="w-5 h-5 rounded-full inline-flex items-center justify-center text-[11px] font-black" style={{ background: CYAN, color: NAVY }}>{n}</span>{t}
+    </p>
+  );
+  const title = d.title.replace(/^\d+ · /, '');
+  return (
+    <div role="dialog" aria-modal="true" aria-label={`Teach · ${title}`} className="fixed inset-0 z-[240] flex items-end md:items-stretch md:justify-end" style={{ background: 'rgba(6,28,43,.6)' }} onClick={onClose}>
+      <div className="w-full md:w-[440px] max-h-[88vh] md:max-h-none overflow-y-auto rounded-t-[14px] md:rounded-none px-4 pt-3 pb-6" style={{ background: NAVY, borderTop: `4px solid ${CYAN}` }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="m-0" style={{ ...MONO, color: 'rgba(247,249,250,.65)' }}>Teach this step</p>
+            <p className="m-0 mt-0.5 text-[20px] font-extrabold leading-tight inline-flex items-center gap-2" style={{ color: PAPER }}>
+              {d.command && <i className="inline-block w-3 h-3 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} />}{title}
+            </p>
+          </div>
+          <button type="button" autoFocus onClick={onClose} aria-label="Close" className="w-10 h-10 inline-flex items-center justify-center rounded-full text-[22px] leading-none" style={{ background: 'rgba(247,249,250,.1)', color: PAPER }}>×</button>
+        </div>
+        <button type="button" onClick={() => onPresent(0)} className="mt-3 w-full min-h-[44px] rounded-[5px] text-[14px] font-black uppercase tracking-wide" style={{ background: CYAN, color: NAVY }}>
+          Present this step
+        </button>
+
+        <H n={1} t="Say it" />
+        {cue ? <div className="seq-dark"><CoachMd md={cue} /></div> : <p className="text-[13px] m-0" style={{ color: ON_DARK }}>No cue written for this step yet.</p>}
+        {layer && (layer.what || layer.deliver) && (
+          <details className="tss-accordion mt-2" style={{ background: 'rgba(247,249,250,.06)', borderColor: 'rgba(255,255,255,.14)' }}>
+            <summary style={{ color: PAPER }}><span className="flex-1">How you teach it</span><Chevron /></summary>
+            <div className="px-3 pb-3 seq-dark"><CoachMd md={[layer.what, layer.deliver].filter(Boolean).join('\n\n')} /></div>
+          </details>
+        )}
+
+        <H n={2} t="Show it" />
+        {laminas.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {laminas.map((l, k) => (
+              <button key={l.src} type="button" onClick={() => onPresent(1 + k)} aria-label={`Show on screen: ${l.alt}`} className="shrink-0 rounded-[5px] overflow-hidden" style={{ border: '1px solid rgba(247,249,250,.25)' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={l.src} alt="" className="h-[72px] w-[112px] object-cover" style={{ background: '#000' }} />
+              </button>
+            ))}
+          </div>
+        )}
+        {videos.length > 0 && <div className="mt-2 rounded-[5px] p-2" style={{ background: PAPER }}><VideoList videos={videos} /></div>}
+        {laminas.length === 0 && videos.length === 0 && <p className="text-[13px] m-0" style={{ color: ON_DARK }}>No plate or video for this step yet. The wave drawing and the page still do the job.</p>}
+
+        <H n={3} t="Run it" />
+        {drill || mission ? (
+          <>
+            {drill && <details className="tss-accordion" style={{ background: PAPER }}><summary><span className="flex-1">Drill · {drill.title}</span><Chevron /></summary><div className="px-2 pb-2"><Piece p={drill} canTrack={false} /></div></details>}
+            {mission && <details className="tss-accordion mt-2" style={{ background: PAPER }}><summary><span className="flex-1">Mission · {mission.title}</span><Chevron /></summary><div className="px-2 pb-2"><Piece p={mission} canTrack={false} /></div></details>}
+          </>
+        ) : <p className="text-[13px] m-0" style={{ color: ON_DARK }}>No drill or mission linked to this step. Run the whole line.</p>}
+        {lessonHref && <a href={lessonHref} className="inline-block mt-2 text-[13px] font-semibold no-underline" style={{ color: CYAN }}>Open the lesson · {d.deeper?.label ?? title} →</a>}
+
+        <H n={4} t="Watch for" />
+        {d.symptom && <p className="text-[13px] m-0 mb-2" style={{ color: ON_DARK }}>Where it breaks: {d.symptom}</p>}
+        <div className="rounded-[5px] px-3 pb-2" style={{ background: PAPER }}>
+          {d.indicators.map((ind, k) => <Indicator key={k} ok={ind.ok} no={ind.no} fix={ind.fix} first={k === 0} />)}
+        </div>
+        {layer?.errors && (
+          <details className="tss-accordion mt-2" style={{ background: 'rgba(247,249,250,.06)', borderColor: 'rgba(255,255,255,.14)' }}>
+            <summary style={{ color: PAPER }}><span className="flex-1">How you correct it</span><Chevron /></summary>
+            <div className="px-3 pb-3 seq-dark"><CoachMd md={layer.errors} /></div>
+          </details>
+        )}
+      </div>
+    </div>
+  );
 }
 
 /** Coach · say it: las palabras numeradas y el cue (lo que antes solo tenía Teach it). */
