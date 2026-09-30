@@ -9,10 +9,22 @@
 import type { createAdminClient } from '@/lib/supabase/admin';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 import { SEQUENCE_LAMINAS, THREE_CIRCLES_LAMINAS, INFINITE_CIRCLE_LAMINAS, laminasInMarkdown, type Lamina } from '@/lib/sequence-pages/laminas';
+import { MOVE_LESSON_IDS } from '@/lib/sequence-pages/three-circles';
 import { THREE_CIRCLES_LESSON_ID } from '@/lib/constants/learning-blocks';
 import { BELT_RANK, sequencePageRank } from './course-access';
 import type { CourseVideo } from '@/components/coach-portal/VideoEmbed';
-import { loadCourseMedia, dedupeVideos } from './course-media';
+import { loadCourseMedia, dedupeVideos, type CourseMedia } from './course-media';
+
+/** Los videos de cada movimiento de los Tres Círculos: los de SU lección
+ *  (Posture → STP-018…). Los mismos para el alumno y el coach. */
+export function movementVideos(media: CourseMedia): Record<string, CourseVideo[]> {
+  return Object.fromEntries(MOVE_LESSON_IDS.map((id) => [id, media.ownVideosOfLesson(id)]));
+}
+/** Todos los videos de los Tres Círculos (la barra del coach y el índice del
+ *  curso): Library YB-CIRCLES + la lección + los de cada movimiento. */
+export function threeCirclesVideos(media: CourseMedia): CourseVideo[] {
+  return dedupeVideos([...media.libraryVideos('YB-CIRCLES'), ...media.videosOfLesson(THREE_CIRCLES_LESSON_ID), ...MOVE_LESSON_IDS.flatMap((id) => media.ownVideosOfLesson(id))]);
+}
 
 // Cada fila trae también TODOS sus videos (Marcelo 2026-09-29: "que tenga todo
 // el material del curso"): los de la lección, el de la secuencia en Library
@@ -54,7 +66,7 @@ export async function buildCoachCourseMap(db: ReturnType<typeof createAdminClien
 
   // ── Videos y láminas: la fuente única (course-media.ts) ──
   const pageSteps = Object.values(SEQUENCE_PAGES).flatMap((c) => c.stepIds);
-  const media = await loadCourseMedia(db, [...rows.map((r) => r.id as string), ...pageSteps, THREE_CIRCLES_LESSON_ID, LOOP_LESSON_ID]);
+  const media = await loadCourseMedia(db, [...rows.map((r) => r.id as string), ...pageSteps, THREE_CIRCLES_LESSON_ID, ...MOVE_LESSON_IDS, LOOP_LESSON_ID]);
   const { videosOfLesson, libraryVideos } = media;
 
   const pageItem = (c: (typeof SEQUENCE_PAGES)[string]): CourseItem => ({
@@ -69,7 +81,7 @@ export async function buildCoachCourseMap(db: ReturnType<typeof createAdminClien
   };
   const lessonsIn = (pred: (r: any) => boolean) => rows.filter(pred).map((r) => lesson(r.id)!).filter(Boolean);
   const tools = TOOLS.map(lesson).filter(Boolean) as CourseItem[];
-  const circles: CourseItem = { kind: 'circles', id: 'circles', title: 'The Three Circles of Power', laminas: THREE_CIRCLES_LAMINAS, videos: dedupeVideos([...libraryVideos('YB-CIRCLES'), ...videosOfLesson(THREE_CIRCLES_LESSON_ID)]) };
+  const circles: CourseItem = { kind: 'circles', id: 'circles', title: 'The Three Circles of Power', laminas: THREE_CIRCLES_LAMINAS, videos: threeCirclesVideos(media) };
   const loop: CourseItem = { kind: 'loop', id: 'loop', title: 'The Infinite Circle', laminas: INFINITE_CIRCLE_LAMINAS, videos: dedupeVideos([...libraryVideos('BB-LOOP'), ...videosOfLesson(LOOP_LESSON_ID)]) };
   const nonEmpty = (gs: CourseGroup[]) => gs.filter((g) => g.items.length > 0);
 

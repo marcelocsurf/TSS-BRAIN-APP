@@ -34,6 +34,9 @@ export interface CircleMove {
   /** Lección para ir más adentro. */
   lessonId: string;
   lessonLabel: string;
+  /** Mostrar arriba del movimiento los videos de SU lección. Solo donde
+   *  Marcelo lo pide (2026-09-30: Posture); no se prende solo en los demás. */
+  lessonVideos?: boolean;
 }
 
 export interface Circle {
@@ -126,6 +129,8 @@ export const CIRCLES: Circle[] = [
         feel: ['DRL-WB-018-A'],
         play: ['GAME-3C-POSTURE'],
         lessonId: 'STP-018', lessonLabel: 'Power Stance / Posture',
+        // Marcelo 2026-09-30: "este video en postura de los tres círculos" (vive en STP-018).
+        lessonVideos: true,
       },
       {
         key: 'rotation', command: 'rail', name: 'Rotation · the rail',
@@ -218,6 +223,11 @@ export const CIRCLES: Circle[] = [
     },
   },
 ];
+
+/** Las lecciones de los movimientos que muestran sus videos (lessonVideos):
+ *  el video vive en la lección del "Go deeper" y sale en la tarjeta del
+ *  movimiento (Marcelo 2026-09-30: el de Posture, que vive en STP-018). */
+export const MOVE_LESSON_IDS: string[] = CIRCLES.flatMap((c) => (c.moves ?? []).filter((m) => m.lessonVideos).map((m) => m.lessonId));
 
 /** Qué parte de los Tres Círculos trabaja un juego: círculo + subtema
  *  (Marcelo 2026-09-17: "que se entienda que se está trabajando una parte

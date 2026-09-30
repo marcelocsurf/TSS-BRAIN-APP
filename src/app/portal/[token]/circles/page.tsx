@@ -9,7 +9,9 @@ import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getStudentAccess } from '@/lib/portal/access';
 import { THREE_CIRCLES_LESSON_ID } from '@/lib/constants/learning-blocks';
-import { CIRCLES } from '@/lib/sequence-pages/three-circles';
+import { CIRCLES, MOVE_LESSON_IDS } from '@/lib/sequence-pages/three-circles';
+import { loadCourseMedia } from '@/lib/coach/course-media';
+import { movementVideos } from '@/lib/coach/course-map';
 import { ThreeCirclesPage } from '@/components/portal/sequence-page/ThreeCirclesPage';
 import type { PieceRow } from '@/components/portal/sequence-page/SequencePage';
 
@@ -38,10 +40,12 @@ export default async function CirclesPage({ params }: { params: Promise<{ token:
   }
 
   const drillIds = CIRCLES.flatMap((c) => [...(c.feel ?? []), ...(c.play ?? []), ...(c.moves ?? []).flatMap((m) => [...m.feel, ...(m.play ?? [])])]);
-  const [{ data: pieceRows }, access, { data: videoRow }] = await Promise.all([
+  const [{ data: pieceRows }, access, { data: videoRow }, media] = await Promise.all([
     admin.from('drills_missions').select('id, type, title, description_md, key_words, time_estimate, reps_recommended').eq('active', true).eq('student_visible', true).in('id', drillIds),
     getStudentAccess(student.id),
     admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', 'YB-CIRCLES%').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    // El video de cada movimiento = los de su lección (Posture → STP-018), sin los de drills.
+    loadCourseMedia(admin, MOVE_LESSON_IDS),
   ]);
   const pieces: Record<string, PieceRow> = {};
   for (const p of pieceRows ?? []) pieces[p.id] = p as PieceRow;
@@ -51,7 +55,7 @@ export default async function CirclesPage({ params }: { params: Promise<{ token:
       {/* Tema de la línea aprobada (TSS_Design_Handoff): reglas limitadas a .tss */}
       {/* eslint-disable-next-line @next/next/no-css-tags */}
       <link rel="stylesheet" href="/tss/theme.css" />
-      <ThreeCirclesPage token={token} pieces={pieces} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} lessonId={THREE_CIRCLES_LESSON_ID} />
+      <ThreeCirclesPage token={token} pieces={pieces} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} lessonId={THREE_CIRCLES_LESSON_ID} moveVideos={movementVideos(media)} />
     </div>
   );
 }

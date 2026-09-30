@@ -25,6 +25,10 @@ export function dedupeLaminas(ls: Lamina[]): Lamina[] {
 
 export interface CourseMedia {
   videosOfLesson: (id: string) => CourseVideo[];
+  /** Solo los de la lección misma (content_videos.lesson_id + lessons.video_url):
+   *  lo mismo que el alumno ve en su lector (getLessonDetail). Sin los de step_id
+   *  ("Visual aids · By STP", material del coach) ni los de sus drills. */
+  ownVideosOfLesson: (id: string) => CourseVideo[];
   laminasOfLesson: (id: string) => Lamina[];
   libraryVideos: (prefix: string) => CourseVideo[];
   videosOfPage: (cfg: Pick<SequencePageConfig, 'id' | 'stepIds'>) => CourseVideo[];
@@ -50,12 +54,18 @@ export async function loadCourseMedia(db: ReturnType<typeof createAdminClient>, 
   const drillsByStep = new Map<string, any[]>();
   for (const d of (drills ?? []) as any[]) drillsByStep.set(d.step_id, [...(drillsByStep.get(d.step_id) ?? []), d]);
 
-  const videosOfLesson = (id: string): CourseVideo[] => {
+  const ownVideosOfLesson = (id: string): CourseVideo[] => {
     const l = lessonById.get(id);
     const t = (l?.title as string) ?? id;
     const out: CourseVideo[] = [];
     for (const v of (lessonCv ?? []) as any[]) if (v.lesson_id === id && isVideo(v.media_type)) out.push({ url: v.url, title: t, label: v.label || t });
     if (l?.video_url) out.push({ url: l.video_url, title: t, label: t });
+    return dedupeVideos(out);
+  };
+  // Para el coach: lo de la lección + lo del paso (step_id) + lo de sus drills.
+  const videosOfLesson = (id: string): CourseVideo[] => {
+    const t = (lessonById.get(id)?.title as string) ?? id;
+    const out: CourseVideo[] = [...ownVideosOfLesson(id)];
     for (const v of (stepCv ?? []) as any[]) if (v.step_id === id && isVideo(v.media_type)) out.push({ url: v.url, title: t, label: v.label || t });
     for (const d of drillsByStep.get(id) ?? []) {
       for (const v of (drillCv ?? []) as any[]) if (v.drill_mission_id === d.id && isVideo(v.media_type)) out.push({ url: v.url, title: d.title, label: v.label || d.title });
@@ -75,5 +85,5 @@ export async function loadCourseMedia(db: ReturnType<typeof createAdminClient>, 
     ...cfg.stepIds.flatMap((id) => laminasInMarkdown(lessonById.get(id)?.description_md)),
   ]);
   const laminasOfLesson = (id: string) => laminasInMarkdown(lessonById.get(id)?.description_md);
-  return { videosOfLesson, laminasOfLesson, libraryVideos, videosOfPage, laminasOfPage };
+  return { videosOfLesson, ownVideosOfLesson, laminasOfLesson, libraryVideos, videosOfPage, laminasOfPage };
 }

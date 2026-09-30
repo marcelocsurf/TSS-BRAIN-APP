@@ -25,7 +25,7 @@ export function VideoEmbed({ url, title }: { url: string; title: string }) {
   if (!src) return <video src={url} controls playsInline preload="metadata" className="w-full block rounded-[5px]" title={title} />;
   return (
     <div className="relative w-full rounded-[5px] overflow-hidden" style={{ paddingTop: '56.25%', background: '#061C2B' }}>
-      <iframe src={src} title={title} className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
+      <iframe src={src} title={title} loading="lazy" className="absolute inset-0 w-full h-full" allow="autoplay; fullscreen; picture-in-picture" allowFullScreen />
     </div>
   );
 }

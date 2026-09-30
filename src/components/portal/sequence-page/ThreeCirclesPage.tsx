@@ -20,7 +20,7 @@ import type { PieceRow } from './SequencePage';
 import { ZoomImage } from '@/components/shared/ImageLightbox';
 import { circlePlate, type Lamina } from '@/lib/sequence-pages/laminas';
 import { CoachMediaBar } from '@/components/coach-portal/CoachMediaBar';
-import type { CourseVideo } from '@/components/coach-portal/VideoEmbed';
+import { VideoList, type CourseVideo } from '@/components/coach-portal/VideoEmbed';
 
 const INK = '#10263B', NAVY = '#061C2B', CYAN = '#00D2FF', MUTED = '#55666E', PAPER = '#F7F9FA', BORDER = '#DCD7C6';
 const CIRCLE_COLOR: Record<Circle['key'], string> = { body: 'var(--tss-circle-body)', board: 'var(--tss-circle-board)', wave: 'var(--tss-circle-wave)' };
@@ -95,11 +95,14 @@ function Card({ title, children, color, id }: { title?: string; children: React.
   );
 }
 
-function Acc({ title, open = false, children, lead }: { title: React.ReactNode; open?: boolean; children: React.ReactNode; lead?: React.ReactNode }) {
+function Acc({ title, open = false, children, lead, whenOpen }: { title: React.ReactNode; open?: boolean; children: React.ReactNode; lead?: React.ReactNode; whenOpen?: React.ReactNode }) {
+  // Lo de whenOpen (un video) existe solo con la tarjeta abierta: no se baja
+  // con la tarjeta cerrada y deja de sonar al cerrarla.
+  const [isOpen, setIsOpen] = useState(open);
   return (
-    <details className="tss-accordion" open={open}>
+    <details className="tss-accordion" open={open} onToggle={(e) => setIsOpen(e.currentTarget.open)}>
       <summary>{lead ? <span className="inline-flex items-center gap-2.5">{lead}{title}</span> : title}<Chevron /></summary>
-      <div className="px-3 pb-3 text-[14px] leading-[1.45]" style={{ color: INK }}>{children}</div>
+      <div className="px-3 pb-3 text-[14px] leading-[1.45]" style={{ color: INK }}>{isOpen && whenOpen}{children}</div>
     </details>
   );
 }
@@ -120,12 +123,14 @@ function Icon({ name }: { name: 'home' | 'course' | 'play' | 'back' | 'link' | '
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{p[name]}</svg>;
 }
 
-export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, coach }: {
+export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, moveVideos, coach }: {
   token: string;
   pieces: Record<string, PieceRow>;
   canTrack: boolean;
   video?: { url: string; title: string } | null;
   lessonId: string;
+  /** Los videos de cada movimiento, por la lección de su "Go deeper" (Posture → STP-018). */
+  moveVideos?: Record<string, CourseVideo[]>;
   /** Modo coach (paso 3 de unificar, 2026-09-29): la MISMA página que ve el
    *  alumno, con los links al portal del coach, "Teach it" en vez de "Play it"
    *  y sin marcar leída ni la barra del alumno. */
@@ -236,7 +241,9 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, coa
             {/* Todos cerrados (Marcelo 2026-09-24): arriba está la lámina con
                 todo; el alumno abre el movimiento que quiere. */}
             {cur.moves.map((m) => (
-              <Acc key={m.key} lead={<Dot command={m.command} hold={m.hold} />} title={m.name}>
+              <Acc key={m.key} lead={<Dot command={m.command} hold={m.hold} />} title={m.name}
+                // Watch primero (el molde Watch · Think · Do): el video de su lección.
+                whenOpen={m.lessonVideos && (moveVideos?.[m.lessonId]?.length ?? 0) > 0 ? <div className="mb-3"><VideoList videos={moveVideos![m.lessonId]} /></div> : null}>
                 <p>{m.what}</p>
                 <ul className="mt-2 space-y-1.5">
                   {m.think.map((b, j) => <li key={j} className="flex gap-2 leading-snug"><span style={{ color: m.hold ? HOLD_COLOR : COMMAND_COLORS[m.command] }}>•</span><span>{b}</span></li>)}
