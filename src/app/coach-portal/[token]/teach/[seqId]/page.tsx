@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { sequencePageFor, SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
@@ -47,6 +47,17 @@ export default async function CoachTeachPage({ params, searchParams }: {
   if (!coach || !coach.course_access_granted || (coach as any).course_access_scope === 'none') notFound();
   // Hasta su cinta (+ la de sus camps), 2026-09-29.
   if (sequencePageRank(cfg) > await coachTeachRank(admin, coach as any)) notFound();
+
+  // Paso 4 de "una página por secuencia" (2026-09-30): Teach it vive ahora en
+  // la página de la secuencia (barra del coach + hoja de cada paso). Los links
+  // viejos (WhatsApp, planes guardados) siguen andando: llevan ahí, con el
+  // paso que traían. Los Tres Círculos se quedan acá hasta el paso 5.
+  if (cfg.kind !== 'circle') {
+    const q = new URLSearchParams();
+    if (sp.focus) { q.set('tab', 'review'); q.set('focus', sp.focus); }
+    if (sp.from) q.set('from', sp.from);
+    redirect(`/coach-portal/${token}/seq/${cfg.id}${q.toString() ? `?${q.toString()}` : ''}`);
+  }
 
   // Los juegos de una secuencia 'circle' viven en su config (play), no por paso.
   const playIds = [
