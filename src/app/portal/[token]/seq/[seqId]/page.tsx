@@ -68,9 +68,11 @@ export default async function SequencePageRoute({ params, searchParams }: { para
     return (
       <main className="min-h-screen flex items-center justify-center px-4 py-10" style={{ background: '#061C2B' }}>
         <div className="w-full max-w-md rounded-lg px-6 py-6" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
-          <p className="m-0 text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em', color: '#55666E' }}>Part of the {course?.label ?? 'belt course'}</p>
+          <p className="m-0 text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em', color: '#55666E' }}>{cfg.kind === 'tool' ? 'Part of every belt course' : `Part of the ${course?.label ?? 'belt course'}`}</p>
           <h1 className="m-0 mt-1 text-[26px] leading-[1.06] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, letterSpacing: '-0.02em', color: '#10263B' }}>{cfg.title}</h1>
-          <p className="m-0 mt-3 text-[16px] leading-snug" style={{ color: '#10263B' }}>This sequence opens with the {course?.label ?? 'belt course'}. Your coach works it with you in the water; the full page unlocks when that course is yours.</p>
+          <p className="m-0 mt-3 text-[16px] leading-snug" style={{ color: '#10263B' }}>{cfg.kind === 'tool'
+            ? 'This tool opens with any belt course. Your coach works it with you in the water; the full page unlocks when a belt course is yours.'
+            : `This sequence opens with the ${course?.label ?? 'belt course'}. Your coach works it with you in the water; the full page unlocks when that course is yours.`}</p>
           <a href={`/portal/${token}`} className="mt-5 inline-flex w-full items-center justify-center h-12 rounded-[5px] text-[15px] font-extrabold uppercase tracking-wide no-underline" style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>Back to your portal →</a>
         </div>
       </main>

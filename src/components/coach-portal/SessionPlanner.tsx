@@ -1388,7 +1388,11 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             // Los Tres Círculos (secuencias 'circle') entran para Novice y arriba, primero: son la intro del lenguaje.
             const circlesOk = ['yellow', 'blue', 'purple', 'brown', 'black'].includes(belt);
             const kindRank = (c: SequencePageConfig) => (c.kind === 'circle' ? -2 : c.kind === 'entry' ? -1 : 0);
-            const seqs = Object.values(SEQUENCE_PAGES).filter((c) => c.kind === 'circle' ? circlesOk : c.belt === `${belt}_belt`).sort((x, y) => kindRank(x) - kindRank(y) || x.number - y.number);
+            // Las herramientas (Forward Momentum, 2026-09-30) no son una línea: no van
+            // en "Everyone works on" ni en la secuencia de cada alumno; se AGREGAN
+            // al día desde "+ another sequence today", en cualquier cinta.
+            const seqs = Object.values(SEQUENCE_PAGES).filter((c) => c.kind === 'tool' ? false : c.kind === 'circle' ? circlesOk : c.belt === `${belt}_belt`).sort((x, y) => kindRank(x) - kindRank(y) || x.number - y.number);
+            const tools = Object.values(SEQUENCE_PAGES).filter((c) => c.kind === 'tool');
             if (!seqs.length) return null;
             // La secuencia de CADA alumno (bloque 0): la de la plantilla o la que
             // puso el coach. La del grupo es la mayoría; un alumno puede quedarse
@@ -1398,9 +1402,10 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               // la primera secuencia de la plantilla del día (los bloques sembrados).
               const cfgOf = (b: ServicePlanBlock | undefined): SequencePageConfig | null => {
                 if (!b) return null;
-                if (b.sequence_id && b.sequence_id !== 'THREE-CIRCLES' && SEQUENCE_PAGES[b.sequence_id]) return SEQUENCE_PAGES[b.sequence_id];
+                // Una herramienta agregada nunca es la línea del alumno.
+                if (b.sequence_id && b.sequence_id !== 'THREE-CIRCLES' && SEQUENCE_PAGES[b.sequence_id]) return SEQUENCE_PAGES[b.sequence_id].kind === 'tool' ? null : SEQUENCE_PAGES[b.sequence_id];
                 const ids = b.step_ids ?? (b.step_id ? [b.step_id] : []);
-                return Object.values(SEQUENCE_PAGES).find((c) => ids.length === c.stepIds.length && c.stepIds.every((id) => ids.includes(id))) ?? null;
+                return Object.values(SEQUENCE_PAGES).find((c) => c.kind !== 'tool' && ids.length === c.stepIds.length && c.stepIds.every((id) => ids.includes(id))) ?? null;
               };
               const b0 = st.blocks.find((x) => x.order_index === 0);
               if (b0) return cfgOf(b0);
@@ -1432,7 +1437,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
             const lineBlockOf = (st: ServicePlanStudent): ServicePlanBlock | null => {
               const b0 = st.blocks.find((x) => x.order_index === 0);
               if (b0) return b0;
-              const w = waterSequencesOfBlocks(st.blocks as any, st.belt_level ?? null)[0];
+              const w = waterSequencesOfBlocks(st.blocks as any, st.belt_level ?? null).find((x) => x.cfg.kind !== 'tool');
               return w ? (st.blocks.find((x) => x.order_index === w.order) ?? null) : null;
             };
             const clearCarry = (b: ServicePlanBlock | null) => (b && isInternalBlockNote(b.notes_pre) ? { notes_pre: null } : {});
@@ -1458,14 +1463,16 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
               if (ms.length) return ms;
               return b?.focus_step_id && isElementOf(c, b.focus_step_id) ? [b.focus_step_id] : [];
             };
-            const missionsLabel = (list: string[], c: SequencePageConfig) => (list.length ? list.map((id, i) => `${list.length > 1 ? `${i + 1} ` : ''}${stepTitle(c, id)}`).join(' · ') : 'Whole line');
+            // En una herramienta, "todo" son los tres momentos (la misión completa).
+            const wholeLabel = (c: SequencePageConfig) => (c.kind === 'tool' ? 'All three moments' : 'Whole line');
+            const missionsLabel = (list: string[], c: SequencePageConfig) => (list.length ? list.map((id, i) => `${list.length > 1 ? `${i + 1} ` : ''}${stepTitle(c, id)}`).join(' · ') : wholeLabel(c));
             // Los chips de misiones, iguales para la línea y para lo agregado.
             const missionChips = (st: ServicePlanStudent, orderIndex: number, c: SequencePageConfig, list: string[], b: ServicePlanBlock | null) => (
               <div className="flex flex-wrap gap-1.5 mt-1.5">
                 <button type="button" onClick={() => setMissionsOn(st, orderIndex, c, [], b)} aria-pressed={!list.length}
                   className="px-2.5 py-1 rounded-full text-[11px] font-semibold border"
                   style={!list.length ? { background: '#061C2B', borderColor: '#061C2B', color: '#F7F9FA' } : { background: '#fff', borderColor: '#DCD7C6', color: '#10263B' }}>
-                  Whole line
+                  {wholeLabel(c)}
                 </button>
                 {sequenceElements(c, (id) => stpLabel(id)).map((el, i) => {
                   const pos = list.indexOf(el.id); const on = pos >= 0;
@@ -1478,7 +1485,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                     </button>
                   );
                 })}
-                <p className="basis-full text-[10px] text-[#55666E]">Tap up to three parts, in order. One star for the sequence; these are the missions.</p>
+                <p className="basis-full text-[10px] text-[#55666E]">{c.kind === 'tool'
+                  ? 'All three moments is the complete mission. Or pick one moment to work on its own.'
+                  : 'Tap up to three parts, in order. One star for the sequence; these are the missions.'}</p>
               </div>
             );
             const assignLine = (st: ServicePlanStudent, c: SequencePageConfig) => {
@@ -1756,7 +1765,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                               })}
                               <select value="" onChange={(e) => { if (e.target.value) addSeq(e.target.value); }} className="w-full px-2.5 py-2.5 border rounded-[5px] text-[14px] bg-white" style={{ borderColor: '#DCD7C6', color: '#10263B' }} aria-label={`Add a sequence for ${st.display_name}`}>
                                 <option value="">+ another sequence today</option>
-                                {seqs.filter((c) => c.id !== mySeq?.id && !others.some((w) => w.cfg.id === c.id)).map((c) => <option key={c.id} value={c.id}>{seqLabel(c)}</option>)}
+                                {/* La herramienta (Forward Momentum) al final, en cualquier cinta. */}
+                                {[...seqs, ...tools].filter((c) => c.id !== mySeq?.id && !others.some((w) => w.cfg.id === c.id)).map((c) => <option key={c.id} value={c.id}>{c.kind === 'tool' ? `${seqLabel(c)} · every belt` : seqLabel(c)}</option>)}
                               </select>
                             </div>
                           </details>
@@ -2171,7 +2181,8 @@ function GeneralPlanSummary({
                       {s.missions.map((m, j) => {
                         // "Circle 3 · Wave · focus: a · b" → secuencia + partes.
                         const cut = m.indexOf(' · focus: ');
-                        const seq = cut >= 0 ? m.slice(0, cut) : m.replace(/ · whole sequence$/, '');
+                        const allThree = cut < 0 && / · all three moments$/.test(m);
+                        const seq = cut >= 0 ? m.slice(0, cut) : m.replace(/ · (whole sequence|all three moments)$/, '');
                         const parts = cut >= 0 ? m.slice(cut + 10).split(' · ').map((x) => x.trim()).filter(Boolean) : [];
                         return (
                           <li key={j} className="flex items-start gap-2.5 px-3 py-2.5" style={{ borderTop: '1px solid #EDF0F2' }}>
@@ -2187,7 +2198,7 @@ function GeneralPlanSummary({
                                   ))}
                                 </span>
                               ) : (
-                                <span className="block text-[13px] mt-0.5" style={{ color: '#55666E' }}>The whole line, start to finish</span>
+                                <span className="block text-[13px] mt-0.5" style={{ color: '#55666E' }}>{allThree ? 'All three moments' : 'The whole line, start to finish'}</span>
                               )}
                             </span>
                           </li>
@@ -2863,7 +2874,7 @@ function workLabelOf(
     const seq = cfg.kind === 'circle' ? cfg.title : cfg.eyebrow ? `${cfg.eyebrow.split(' · ')[0]} · ${cfg.title}` : `Sequence ${sequenceDisplayName(cfg)}`;
     if (focusTxt) return `${seq} · focus: ${focusTxt}`;
     if (stepTitle && !txt.startsWith('Whole line')) return `${seq} · ${stepTitle}`;
-    return `${seq} · whole sequence`;
+    return cfg.kind === 'tool' ? `${seq} · all three moments` : `${seq} · whole sequence`;
   }
   const legacy = stripCode(tb?.mission?.title ?? tb?.mission_custom ?? null);
   if (stepTitle) return legacy ? `${stepTitle} · ${legacy}` : stepTitle;
@@ -3103,7 +3114,7 @@ function StudentEvalCard({
               };
               const beltOrder = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt'];
               const myBelt = beltOrder.indexOf(String(student.belt_level ?? 'white_belt'));
-              const pickable = Object.values(SEQUENCE_PAGES).filter((c) => beltOrder.indexOf(c.belt) <= Math.max(myBelt, 0) + 1).sort((a, b) => beltOrder.indexOf(a.belt) - beltOrder.indexOf(b.belt) || (a.kind === 'entry' ? -1 : 0) - (b.kind === 'entry' ? -1 : 0) || a.number - b.number);
+              const pickable = Object.values(SEQUENCE_PAGES).filter((c) => c.kind !== 'tool' && beltOrder.indexOf(c.belt) <= Math.max(myBelt, 0) + 1).sort((a, b) => beltOrder.indexOf(a.belt) - beltOrder.indexOf(b.belt) || (a.kind === 'entry' ? -1 : 0) - (b.kind === 'entry' ? -1 : 0) || a.number - b.number);
               return (
                 <div className="space-y-1.5">
                   {groups.map((g) => (

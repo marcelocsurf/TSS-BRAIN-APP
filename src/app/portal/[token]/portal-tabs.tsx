@@ -1493,7 +1493,7 @@ function HomeTab({
               const many = plansArr.length > 1;
               return (
                 <div className="mt-3 rounded-lg p-3.5" style={{ background: T_NAVY, border: '1px solid rgba(0,210,255,.35)' }}>
-                  <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{when}{c.coach?.display_name ? ` with ${c.coach.display_name}` : ''}{plansArr.length ? ' · you will work on' : ' · theory'}{many ? ` · ${plansArr.length} sequences, one at a time` : ''}</p>
+                  <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{when}{c.coach?.display_name ? ` with ${c.coach.display_name}` : ''}{plansArr.length ? ' · you will work on' : ' · theory'}{many ? ` · ${plansArr.length} ${plansArr.every((p: any) => p.kind !== 'tool') ? 'sequences' : 'things'}, one at a time` : ''}</p>
                   <div className={many ? 'mt-1 space-y-2.5' : 'mt-1'}>
                     {plansArr.map((pl: any, i: number) => {
                       const isGame = pl.kind === 'game';
@@ -1504,7 +1504,7 @@ function HomeTab({
                         <div key={`${pl.sequenceId}:${i}`} className={many ? 'rounded-[5px] px-3 py-2.5' : ''} style={many ? { background: 'rgba(247,249,250,.06)', border: '1px solid rgba(247,249,250,.14)' } : undefined}>
                           <p className="text-[20px] leading-tight" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{many ? `${i + 1} · ` : ''}{pl.label ?? (pl.kind === 'entry' ? pl.title : `#${pl.number} · ${pl.title}`)}</p>
                           <p className="mt-1.5 text-[13.5px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
-                            {pl.kind === 'game' ? 'One rule, the wave is the referee. You play it with your coach; your coach stars it. Tonight, learn the rule.' : pl.focus.length > 0 ? <><span className="font-bold" style={{ color: '#F7F9FA' }}>Your focus:</span> {pl.focus.join(' · ')}</> : 'The whole sequence, start to finish.'}
+                            {pl.kind === 'game' ? 'One rule, the wave is the referee. You play it with your coach; your coach stars it. Tonight, learn the rule.' : pl.focus.length > 0 ? <><span className="font-bold" style={{ color: '#F7F9FA' }}>Your focus:</span> {pl.focus.join(' · ')}</> : pl.kind === 'tool' ? 'All three moments.' : 'The whole sequence, start to finish.'}
                           </p>
                           {pl.notes && <p className="mt-1.5 text-[13px] italic" style={{ color: 'rgba(247,249,250,.75)' }}>"{pl.notes}"</p>}
                           {/* Durante el camp el entreno es CON el coach y lo califica el coach

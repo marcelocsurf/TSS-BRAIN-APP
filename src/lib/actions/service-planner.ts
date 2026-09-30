@@ -369,7 +369,8 @@ function firstWaterSequenceOfDay(blocks: any[], belt: string | null): { cfg: imp
     if (landOnly) continue;
     if (b.sequence_id === 'THREE-CIRCLES') continue;
     const cfg = (b.sequence_id && SEQUENCE_PAGES[b.sequence_id]) || resolveSequenceForSteps({ stepIds: b.step_ids, stepId: b.step_id }, belt);
-    if (!cfg) continue;
+    // Una herramienta (Forward Momentum) se AGREGA al día: nunca es la línea.
+    if (!cfg || cfg.kind === 'tool') continue;
     const withFocus = sorted.find((x) => {
       const c = (x.sequence_id && SEQUENCE_PAGES[x.sequence_id]) || resolveSequenceForSteps({ stepIds: x.step_ids, stepId: x.step_id }, belt);
       return c?.id === cfg.id && !!x.focus_step_id;
@@ -767,7 +768,8 @@ export async function getServicePlan(
       const byStudent: Record<string, { sequence_id: string | null; focus_step_id: string | null; focus_moments?: string[] | null }> = {};
       const hasBlocks: Record<string, boolean> = {};
       for (const sid of Object.keys(byStudentBlocks)) {
-        hasBlocks[sid] = byStudentBlocks[sid].length > 0;
+        // Un día que solo trae la herramienta agregada sigue siendo un día "sin línea".
+        hasBlocks[sid] = byStudentBlocks[sid].some((b: any) => SEQUENCE_PAGES[b.sequence_id]?.kind !== 'tool');
         const first = firstWaterSequenceOfDay(byStudentBlocks[sid], beltOf[sid] ?? null);
         if (first) byStudent[sid] = { sequence_id: first.cfg.id, focus_step_id: first.focusStepId, focus_moments: Array.isArray(first.block?.focus_moments) ? first.block.focus_moments.filter((x: string) => isElementOf(first.cfg, x)) : null };
       }
@@ -1453,7 +1455,7 @@ export async function carryStudentPlanToNextDay(
     .eq('camp_session_id', campSessionId).eq('student_id', studentId)
     .order('order_index');
   const today = (todays ?? []).find((b: any) => b.order_index === 0 && (b.sequence_id || b.step_id || (b.step_ids ?? []).length))
-    ?? (todays ?? []).find((b: any) => b.sequence_id && b.sequence_id !== 'THREE-CIRCLES');
+    ?? (todays ?? []).find((b: any) => b.sequence_id && b.sequence_id !== 'THREE-CIRCLES' && SEQUENCE_PAGES[b.sequence_id]?.kind !== 'tool');
   const moveTo = opts?.sequenceId ? SEQUENCE_PAGES[opts.sequenceId] ?? null : null;
   if (!today && !moveTo) return { ok: false, error: 'Nothing planned for this student today.' };
   const patch = moveTo ? {
@@ -2628,7 +2630,7 @@ export async function closeServicePlan(
   const setTomorrowFromLine = async (studentId: string, firstBlock: any, studentBlocks: any[]) => {
     if (!nextSess || nextClosed) return;
     const nf: string | null = firstBlock.next_focus_sequence_id ?? null;
-    if (!nf || !SEQUENCE_PAGES[nf]) return;
+    if (!nf || !SEQUENCE_PAGES[nf] || SEQUENCE_PAGES[nf].kind === 'tool') return;
     const ns: string | null = firstBlock.next_focus_step_id ?? null;
     const cfgN = SEQUENCE_PAGES[nf];
     // Misiones de mañana (hasta 3, en orden): viajan a focus_moments del bloque.
@@ -2641,7 +2643,8 @@ export async function closeServicePlan(
     const plannedFirst = firstWaterSequenceOfDay(nbs, belt);
     // Mañana tiene bloques pero ninguno es una secuencia de agua (día de examen,
     // teoría): ese día es así a propósito y no se pisa.
-    if (!plannedFirst && nbs.length > 0) return;
+    // (Un día con solo la herramienta agregada no cuenta como día armado.)
+    if (!plannedFirst && nbs.some((b: any) => SEQUENCE_PAGES[b.sequence_id]?.kind !== 'tool')) return;
     const plannedMissions = plannedFirst && Array.isArray(plannedFirst.block?.focus_moments) ? plannedFirst.block.focus_moments.filter((x: string) => isElementOf(plannedFirst.cfg, x)) : [];
     const differs = !plannedFirst || plannedFirst.cfg.id !== nf || (ns ?? null) !== (plannedFirst.focusStepId ?? null) || (missions ?? []).join('|') !== plannedMissions.join('|');
     if (!differs) return;

@@ -122,6 +122,9 @@ export function SequencePage({
   } | null;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? 'think');
+  // Herramienta de toda cinta (Forward Momentum, kind 'tool'): no es una
+  // secuencia — cambian las palabras, y no se entrena en Let's Play.
+  const isTool = cfg.kind === 'tool';
   // Backside · Frontside (Marcelo 2026-09-25): un toque, y la página muestra
   // los pasos y el video de ese lado. Se recuerda por secuencia.
   // El valor guardado se lee DESPUÉS de montar: si se leyera al inicializar,
@@ -311,7 +314,7 @@ export function SequencePage({
             </>
           )}
           {/* Los pasos del cuerpo, con el color del comando (los mismos de Review). */}
-          <h2 className="tss-section-title" style={{ marginTop: 26 }}>The steps that build it</h2>
+          <h2 className="tss-section-title" style={{ marginTop: 26 }}>{isTool ? 'The three moments' : 'The steps that build it'}</h2>
           <ol className="m-0 p-0 list-none">
             {cfg.details.filter((d) => onSide(d.deeper?.lessonId)).map((d, i) => (
               <li key={d.key} className="flex items-center gap-3 py-2.5" style={{ borderTop: `1px solid ${BORDER}` }}>
@@ -426,7 +429,7 @@ export function SequencePage({
               <Callout>{cfg.think.feet.rule}</Callout>
             </Card>
             )}
-            <Card title="03 · The sequence · how your body does it" collapsible defaultOpen={false}>
+            <Card title={isTool ? '03 · How your body does it' : '03 · The sequence · how your body does it'} collapsible defaultOpen={false}>
               {(cfg.think.bodyMarkdown ?? body?.body) ? <MarkdownContent markdown={cfg.think.bodyMarkdown ?? body!.body} /> : <p className="m-0" style={{ color: MUTED }}>Coming soon.</p>}
             </Card>
             <Card title="04 · The rules that hold it together" collapsible defaultOpen={false}>
@@ -442,7 +445,7 @@ export function SequencePage({
                     : <p className="m-0 flex flex-wrap gap-x-3 gap-y-1.5">{k.words.map((w, i) => <span key={`${w}-${i}`} className="text-[15px] font-bold" style={{ color: INK }}>{w}</span>)}</p>}
                 </div>
               ))}
-              {cfg.kind !== 'entry' && <p className="text-[13px] mt-2 mb-0" style={{ color: MUTED }}>The body words are the method&apos;s formula: posture → rotation on the rail → projection → maneuver → back to posture. Same colours as the line on the wave.</p>}
+              {cfg.kind !== 'entry' && !isTool && <p className="text-[13px] mt-2 mb-0" style={{ color: MUTED }}>The body words are the method&apos;s formula: posture → rotation on the rail → projection → maneuver → back to posture. Same colours as the line on the wave.</p>}
               <p className="text-[14px] mt-2 mb-0" style={{ color: INK }}>Learn them on land, in the drill, until you can run them without thinking. In the water you carry one: the mission, or the one word that is breaking.</p>
               <details className="tss-accordion mt-3">
                 <summary>Go deeper: each step as its own page<Chevron /></summary>
@@ -482,7 +485,7 @@ export function SequencePage({
             {/* La visualización de la LÍNEA COMPLETA; cada drill de abajo trae la
                 suya propia (Understand · Visualize · Simulate · The cue). El
                 rótulo lo dice para que no parezca repetido (Marcelo 2026-09-19). */}
-            <Card title="Visualize · the whole line" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
+            <Card title={isTool ? 'Visualize · the three moments' : 'Visualize · the whole line'} color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
               <p className="text-[15px] m-0 leading-snug" style={{ color: INK }}>{cfg.feel.visualize}</p>
             </Card>
             {/* Una tarjeta sin piezas (drills apagados o solo-coach) no se dibuja:
@@ -513,14 +516,28 @@ export function SequencePage({
                   objetivo de la sesión. La misión sola queda como opción. */}
               {(() => {
                 // Let's Play agrupa por wb_sequence_id: el mismo id de la página (BB-SEQ-09…).
-                const lp = trainAs?.id ?? cfg.id;
+                // Una herramienta no está en Let's Play: se registra con su misión.
+                const lp = isTool ? null : (trainAs?.id ?? cfg.id);
                 const chosen = focus ? cfg.details.find((d) => d.key === focus) : null;
                 const focusStep0 = chosen?.deeper?.lessonId ?? null;
                 // Desde otro curso, el foco solo si el paso vive en esa secuencia.
                 const focusStep = focusStep0 && (!trainAs || trainAs.stepIds.includes(focusStep0)) ? focusStep0 : null;
                 const word = chosen ? chosen.title.replace(/^\d+ · /, '') : '';
                 if (!canTrack) return <p className="inline-flex items-center gap-2 mt-3 mb-0 text-[13px]" style={{ color: MUTED }}><Lock size={13} /> Training and logging come with your training tool.</p>;
-                if (!lp) return pieces[cfg.do.missionId] ? <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="tss-primary no-underline">Start the mission in Let&apos;s Play</a> : null;
+                if (!lp) {
+                  // Herramienta: con un momento elegido que tiene su misión, esa; si no, la completa.
+                  const own = chosen?.deeper?.missionId && pieces[chosen.deeper.missionId] ? chosen.deeper.missionId : null;
+                  const mid = own ?? (pieces[cfg.do.missionId] ? cfg.do.missionId : null);
+                  if (!mid) return null;
+                  return (
+                    <div className="mt-1">
+                      <a href={`${portal}?tab=sequence&drill=${mid}`} className="tss-primary no-underline">{own ? `Start the mission in Let's Play · ${word}` : isTool ? "Start the mission in Let's Play · all three moments" : "Start the mission in Let's Play"}</a>
+                      {own && pieces[cfg.do.missionId] && (
+                        <div className="mt-2"><a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="text-[13px] no-underline" style={{ color: MUTED }}>or the complete mission · all three moments</a></div>
+                      )}
+                    </div>
+                  );
+                }
                 const runHref = `${portal}?tab=sequence&seq=${lp}&mode=sequence_run`;
                 const focusHref = focusStep ? `${portal}?tab=sequence&seq=${lp}&mode=step_focus&focus=${focusStep}&word=${encodeURIComponent(word)}` : null;
                 return (
@@ -539,7 +556,9 @@ export function SequencePage({
               })()}
             </Card>
             <Card title="Choose a focus · optional" collapsible defaultOpen={false}>
-              <p className="text-[14px] mt-0 mb-2" style={{ color: INK }}>The mission is always the whole sequence. These are the steps your body runs; if one of them is breaking, pick it and it rides along as your word for the session. Pick nothing and just surf the line.</p>
+              <p className="text-[14px] mt-0 mb-2" style={{ color: INK }}>{isTool
+                ? 'The complete mission is the three moments, on one wave. Right after the pop-up and after a maneuver can also be trained on their own: pick one and its mission is the one you start.'
+                : 'The mission is always the whole sequence. These are the steps your body runs; if one of them is breaking, pick it and it rides along as your word for the session. Pick nothing and just surf the line.'}</p>
               <div className="flex flex-wrap gap-2">
                 {cfg.details.map((d) => (
                   <button key={d.key} type="button" onClick={() => setFocus(focus === d.key ? null : d.key)} aria-pressed={focus === d.key}
@@ -564,7 +583,7 @@ export function SequencePage({
                 </div>
               ))}
             </Card>
-            <WhereYouAre progress={progress} portal={portal} />
+            <WhereYouAre progress={progress} portal={portal} tool={isTool} />
             <Card title="Competence · is it yours yet?" color={GREEN_BRIGHT} collapsible defaultOpen={false}>
               <p className="text-[14px] m-0 leading-snug" style={{ color: INK }}>{cfg.do.competence}</p>
             </Card>
@@ -578,11 +597,11 @@ export function SequencePage({
               <div className="rounded-[5px] px-3 py-2.5 mb-3" style={{ background: '#FFF6E0', border: '1.5px solid #E0A62B' }}>
                 <p className="m-0 mb-1" style={{ ...MONO, color: '#9A6A12' }}>You came here for{coachFocus.from ? ` · ${coachFocus.from}` : ''}</p>
                 <p className="text-[17px] font-extrabold leading-snug m-0" style={{ color: INK }}>{coachFocus.title}</p>
-                <p className="text-[13px] mt-1 mb-0" style={{ color: MUTED }}>{coachFocus.key ? 'Open below: what it looks like when it breaks, and the sentence that fixes it.' : 'Everything for this sequence is below.'}</p>
+                <p className="text-[13px] mt-1 mb-0" style={{ color: MUTED }}>{coachFocus.key ? 'Open below: what it looks like when it breaks, and the sentence that fixes it.' : isTool ? 'Everything for this tool is below.' : 'Everything for this sequence is below.'}</p>
               </div>
             )}
             <Card title="How you know you have it" color={GREEN_BRIGHT} collapsible defaultOpen={!!(coach && coachOn && coachFocus?.key)}>
-              <p className="text-[14px] mt-0 mb-2" style={{ color: INK }}>One topic per step of the sequence. Open only the one you want to check.</p>
+              <p className="text-[14px] mt-0 mb-2" style={{ color: INK }}>{isTool ? 'One topic per moment. Open only the one you want to check.' : 'One topic per step of the sequence. Open only the one you want to check.'}</p>
               {cfg.details.map((d) => (
                 <details key={d.key} className="tss-accordion" open={!!(coach && coachOn && coachFocus?.key === d.key)}
                   style={coach && coachOn && coachFocus?.key === d.key ? { borderColor: '#E0A62B', borderWidth: 1.5 } : undefined}>
@@ -610,7 +629,7 @@ export function SequencePage({
                 ) : null)}
               </Card>
             )}
-            <WhereYouAre progress={progress} portal={portal} />
+            <WhereYouAre progress={progress} portal={portal} tool={isTool} />
             <Card title="How it feels" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
               <p className="text-[14px] m-0 leading-snug" style={{ color: INK }}>{cfg.review.howItFeels}</p>
             </Card>
@@ -652,7 +671,8 @@ export function SequencePage({
           <StepSheet
             d={d} laminas={m.laminas} videos={m.videos} layer={layer} cue={stepCue}
             drill={pieceOf(d.deeper?.drillId)}
-            mission={pieceOf(d.deeper?.missionId)}
+            // Herramienta: el momento sin misión propia (cuando perdés velocidad) se corre con la completa.
+            mission={pieceOf(d.deeper?.missionId ?? (isTool ? cfg.do.missionId : undefined))}
             lessonHref={stepId ? `${portal}?tab=${courseTab}&lesson=${stepId}` : null}
             onClose={() => setSheetKey(null)}
             onPresent={(start) => setDeck({ slides: stepSlides(d, m, stepCue), start, title: stripStep(d.title) })}
@@ -671,8 +691,18 @@ export function SequencePage({
 }
 
 /** "Where you are · from Let's Play" — el mismo bloque en Do y en Review. */
-function WhereYouAre({ progress, portal }: { progress?: SequenceProgress | null; portal: string }) {
+function WhereYouAre({ progress, portal, tool = false }: { progress?: SequenceProgress | null; portal: string; tool?: boolean }) {
   if (!progress || !(progress.ratedSteps > 0 || progress.lastRun !== null)) return null;
+  // Una herramienta es UN paso: su estrella, sin "la secuencia vale su paso más flojo".
+  if (tool) {
+    const st = progress.steps[0];
+    if (!st || st.rating === null) return null;
+    return (
+      <Card title="Where you are" color={GOLD_BRIGHT} collapsible defaultOpen={false}>
+        <p className="text-[14px] m-0" style={{ color: INK }}><b>{st.rating}★</b>{st.coachRating != null ? ' from your coach' : ''}{st.selfRating != null && st.coachRating != null && st.selfRating !== st.coachRating ? ` · you ${st.selfRating}★` : ''}. 4★ and up, it is yours.</p>
+      </Card>
+    );
+  }
   return (
     <Card title="Where you are · from Let's Play" color={GOLD_BRIGHT} collapsible defaultOpen={false}>
       <div className="flex flex-wrap gap-x-5 gap-y-1 text-[14px]" style={{ color: INK }}>

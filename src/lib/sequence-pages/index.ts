@@ -9,6 +9,7 @@ import { BB_NAV, BB_CATCH, BB_LINE } from './bb-entry';
 import { YB_SEQ_6, YB_SEQ_7 } from './yb-seq';
 import { WB_SEQ_1, WB_SEQ_2, WB_SEQ_3, WB_SEQ_4, WB_SEQ_5 } from './wb-seq';
 import { CIRCLE_BODY, CIRCLE_BOARD, CIRCLE_WAVE } from './circles-seq';
+import { TOOL_MOMENTUM } from './tools-seq';
 
 /** Secuencias que ya tienen la página de 4 pestañas. Se agregan de a una. */
 export const SEQUENCE_PAGES: Record<string, SequencePageConfig> = {
@@ -34,8 +35,12 @@ export const SEQUENCE_PAGES: Record<string, SequencePageConfig> = {
   [CIRCLE_BODY.id]: CIRCLE_BODY,
   [CIRCLE_BOARD.id]: CIRCLE_BOARD,
   [CIRCLE_WAVE.id]: CIRCLE_WAVE,
+  // Herramientas de toda cinta (kind 'tool', 2026-09-30): Forward Momentum.
+  // Al final: nunca gana un empate de orden.
+  [TOOL_MOMENTUM.id]: TOOL_MOMENTUM,
 };
 export { isCircleSequence, CIRCLE_SEQUENCES, elementTitle } from './circles-seq';
+export { isToolPage } from './tools-seq';
 
 export function sequencePageFor(sequenceId: string | null | undefined): SequencePageConfig | null {
   if (!sequenceId) return null;

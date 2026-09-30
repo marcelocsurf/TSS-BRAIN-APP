@@ -23,8 +23,10 @@ export function resolveSequenceForSteps(
     const beltScore = bi === myBelt ? 0 : bi < myBelt ? 1 + (myBelt - bi) : 10 + (bi - myBelt);
     return beltScore * 2 + (c.kind === 'entry' ? 1 : 0);
   };
-  // Los círculos comparten pasos con las secuencias reales: nunca se resuelven por pasos.
-  const candidates = Object.values(SEQUENCE_PAGES).filter((c) => c.kind !== 'circle').sort((a, b) => rank(a) - rank(b));
+  // Los círculos y las herramientas comparten pasos con las secuencias reales:
+  // nunca se resuelven por pasos (un bloque viejo con STP-019 no pasa a ser
+  // Forward Momentum; la herramienta solo existe con sequence_id explícito).
+  const candidates = Object.values(SEQUENCE_PAGES).filter((c) => c.kind !== 'circle' && c.kind !== 'tool').sort((a, b) => rank(a) - rank(b));
   const ids = Array.isArray(input.stepIds) ? input.stepIds.filter(Boolean) : [];
   if (ids.length > 0) {
     return (

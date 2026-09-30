@@ -52,8 +52,11 @@ export interface SequenceDetail {
 export interface SequencePageConfig {
   id: string;
   /** 'loop' (default) = secuencia de maniobra con tablero y pies; 'entry' =
-   *  secuencia de entrada (bloques 1-3), sin tablero ni pies. */
-  kind?: 'loop' | 'entry' | 'circle';
+   *  secuencia de entrada (bloques 1-3), sin tablero ni pies. 'tool'
+   *  (2026-09-30) = herramienta de toda cinta (Forward Momentum): no es una
+   *  secuencia; el coach la AGREGA al día; nunca se resuelve por pasos ni es
+   *  la línea de mañana; no está en Let's Play (tools-seq.ts). */
+  kind?: 'loop' | 'entry' | 'circle' | 'tool';
   /** Círculos de poder como secuencia (2026-09-19): paso → su juego (Do it). */
   games?: Record<string, string>;
   /** Círculos de UN solo paso (Board, Wave · Marcelo 2026-09-21): los elementos
@@ -66,8 +69,9 @@ export interface SequencePageConfig {
   courseKey: string;
   /** Otros cursos que también abren esta página. Las de entrada (Navigate the
    *  Ocean · Pick Your Line + Pop-Up) son de Yellow y de Blue: Marcelo
-   *  2026-09-26 las quiere también en el curso Yellow. Solo la ruta lo lee;
-   *  no crea una secuencia nueva en planner, cierre ni Let's Play. */
+   *  2026-09-26 las quiere también en el curso Yellow. Lo leen la ruta, el
+   *  rango del coach (sequencePageRank) y el encabezado; no crea una
+   *  secuencia nueva en planner, cierre ni Let's Play. */
   alsoCourseKeys?: string[];
   /** Desde esos otros cursos, el botón de Let's Play entrena ESTA secuencia
    *  (curso → id). Let's Play arma BB-NAV/BB-LINE solo para Blue; un alumno

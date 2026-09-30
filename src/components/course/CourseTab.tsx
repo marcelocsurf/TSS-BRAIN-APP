@@ -91,7 +91,9 @@ const PC_SECTION_ICON: Record<string, LucideIcon> = {
   'M0-SAFEOCEAN': LifeBuoy, // Safety & Ocean (grupo de presentación)
   'M0-EQUIPMIND': Anchor,   // Equipment & Mindset (grupo de presentación)
   'YB-FUND': Brain,         // Fundamentals · 3 Circles (Yellow)
+  'YB-MOMENTUM': Rocket,    // Forward Momentum · herramienta (Yellow)
   'YB-TOOLS': Dumbbell,     // Tools (Yellow)
+  'BB-MOMENTUM': Rocket,    // Forward Momentum · herramienta (Blue)
   'BB-TOOLS': Dumbbell,     // Tools (Blue)
   // Yellow Belt onboarding sub-groups
   'YB-VALUE': Award,       // Belt Value
@@ -419,13 +421,17 @@ export function CourseTab({ data }: { data: CourseData }) {
   // TOOLS (Marcelo 2026-09-10): técnicas únicas que sirven en toda cinta —
   // Forward Momentum (la misma lección de White) y Duck Dive. Viven una vez y
   // aparecen en Yellow y Blue apuntando a la misma lección.
-  const toolsLessons = resolveSteps(['id:STP-019', 'id:YB-FND-03']);
+  // Desde 2026-09-30 Forward Momentum abre su PÁGINA de herramienta (los tres
+  // momentos, sus misiones; se receta en cualquier cinta) y va en su propia
+  // fila; Duck Dive sigue siendo una lección en "Tools".
+  const momentumLessons = resolveSteps(['id:STP-019']);
+  const toolsLessons = resolveSteps(['id:YB-FND-03']);
   // En White la herramienta es una sola (Marcelo 2026-09-24): Forward Momentum
   // salió de la secuencia #3 porque a esta altura el alumno está aprendiendo a
   // pararse y el foco tiene que estar ahí. El Duck Dive no entra: llega en
   // Yellow. White no tiene bloque "Start Here", así que esto se dibuja aparte,
   // después de las secuencias.
-  const whiteTools = activeCourse.key === 'white_belt' ? resolveSteps(['id:STP-019']) : [];
+  const whiteTools = activeCourse.key === 'white_belt' ? momentumLessons : [];
   type StartGroup = { id: string; name: string; order: number; lessons: LessonRow[] };
   let startGroups: StartGroup[] | null = startHereGroups;
   if (activeCourse.key === 'yellow_belt' && startHereGroups) {
@@ -434,7 +440,8 @@ export function CourseTab({ data }: { data: CourseData }) {
     startGroups = [
       value ? { ...value, name: 'Belt Value' } : null,
       circles.length ? { id: 'YB-FUND', name: 'Fundamentals · The 3 Circles of Power', order: 2, lessons: circles } : null,
-      toolsLessons.length ? { id: 'YB-TOOLS', name: 'Tools · techniques you use at every belt', order: 3, lessons: toolsLessons } : null,
+      momentumLessons.length ? { id: 'YB-MOMENTUM', name: 'Forward Momentum · a tool you use at every belt', order: 3, lessons: momentumLessons } : null,
+      toolsLessons.length ? { id: 'YB-TOOLS', name: 'Tools · techniques you use at every belt', order: 4, lessons: toolsLessons } : null,
     ].filter((g): g is StartGroup => !!g);
   }
   if (activeCourse.key === 'blue_belt') {
@@ -443,7 +450,8 @@ export function CourseTab({ data }: { data: CourseData }) {
     const prior = resolveSteps(['id:YB-ONB-01']);
     startGroups = [
       value ? { ...value, name: 'Belt Values · what you bring with you', lessons: [...prior, ...value.lessons] } : null,
-      toolsLessons.length ? { id: 'BB-TOOLS', name: 'Tools · techniques you use at every belt', order: 2, lessons: toolsLessons } : null,
+      momentumLessons.length ? { id: 'BB-MOMENTUM', name: 'Forward Momentum · a tool you use at every belt', order: 2, lessons: momentumLessons } : null,
+      toolsLessons.length ? { id: 'BB-TOOLS', name: 'Tools · techniques you use at every belt', order: 3, lessons: toolsLessons } : null,
     ].filter((g): g is StartGroup => !!g);
   }
 
@@ -723,7 +731,7 @@ export function CourseTab({ data }: { data: CourseData }) {
                 lessons={section.lessons}
                 onOpenLesson={(id) => openLesson(id)}
                 theme={beltTheme}
-                onePageHref={section.id === 'YB-FUND' ? `/portal/${data.portalToken}/circles` : null}
+                onePageHref={section.id === 'YB-FUND' ? `/portal/${data.portalToken}/circles` : (section.id === 'YB-MOMENTUM' || section.id === 'BB-MOMENTUM') ? `/portal/${data.portalToken}/seq/TOOL-MOMENTUM` : null}
               />
             ))
           ) : (
@@ -869,13 +877,14 @@ export function CourseTab({ data }: { data: CourseData }) {
             videoUrl={null}
           />
           <SectionBlock
-            title="Tools · techniques you use at every belt"
+            title="Forward Momentum · a tool you use at every belt"
             subtitle="Learn it here, then use it inside any sequence once that sequence holds."
             Icon={Rocket}
             badge={null}
             lessons={whiteTools}
             onOpenLesson={(id) => openLesson(id)}
             theme={beltTheme}
+            onePageHref={`/portal/${data.portalToken}/seq/TOOL-MOMENTUM`}
           />
         </div>
       )}

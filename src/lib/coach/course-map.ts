@@ -51,7 +51,7 @@ const LOOP_LESSON_ID = 'BB-FND-INF';
 
 function pagesOf(courseKey: string, filter: (id: string) => boolean = () => true) {
   return Object.values(SEQUENCE_PAGES)
-    .filter((c) => c.kind !== 'circle' && c.courseKey === courseKey && filter(c.id))
+    .filter((c) => c.kind !== 'circle' && c.kind !== 'tool' && c.courseKey === courseKey && filter(c.id))
     .sort((a, b) => a.number - b.number || a.id.localeCompare(b.id));
 }
 
@@ -81,7 +81,10 @@ export async function buildCoachCourseMap(db: ReturnType<typeof createAdminClien
     return r ? { kind: 'lesson', id: r.id, title: r.title, laminas: laminasInMarkdown(r.description_md), videos: videosOfLesson(r.id) } : null;
   };
   const lessonsIn = (pred: (r: any) => boolean) => rows.filter(pred).map((r) => lesson(r.id)!).filter(Boolean);
-  const tools = TOOLS.map(lesson).filter(Boolean) as CourseItem[];
+  // Forward Momentum abre su página de herramienta (se receta en cualquier
+  // cinta, 2026-09-30); Duck Dive sigue siendo una lección.
+  const momentum = SEQUENCE_PAGES['TOOL-MOMENTUM'];
+  const tools = [momentum ? pageItem(momentum) : lesson('STP-019'), lesson('YB-FND-03')].filter(Boolean) as CourseItem[];
   const circles: CourseItem = { kind: 'circles', id: 'circles', title: 'The Three Circles of Power', laminas: THREE_CIRCLES_LAMINAS, videos: threeCirclesVideos(media) };
   const loop: CourseItem = { kind: 'loop', id: 'loop', title: 'The Infinite Circle', laminas: INFINITE_CIRCLE_LAMINAS, videos: dedupeVideos([...libraryVideos('BB-LOOP'), ...videosOfLesson(LOOP_LESSON_ID)]) };
   const nonEmpty = (gs: CourseGroup[]) => gs.filter((g) => g.items.length > 0);
@@ -104,7 +107,7 @@ export async function buildCoachCourseMap(db: ReturnType<typeof createAdminClien
       groups: nonEmpty([
         { title: 'Start Here', items: lessonsIn((r) => r.course_section === 'wb_onboarding') },
         { title: 'Sequences', items: pagesOf('white_belt').filter((c) => sequencePageRank(c) <= rank).map(pageItem) },
-        { title: 'Tools · techniques you use at every belt', items: tools.filter((t) => t.id === 'STP-019') },
+        { title: 'Tools · techniques you use at every belt', items: tools.filter((t) => t.id === 'TOOL-MOMENTUM' || t.id === 'STP-019') },
       ]),
     });
   }

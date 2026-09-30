@@ -101,7 +101,7 @@ export function SequenceFields({
           <label className={LBL} style={LBL_STYLE}>Sequence</label>
           <select value={seqId} onChange={(e) => pickSequence(e.target.value)} className={SEL}>
             <option value="">— none · this block is not a sequence —</option>
-            {seqs.map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {beltWord(c.belt)}</option>)}
+            {seqs.map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.kind === 'tool' ? 'every belt' : beltWord(c.belt)}</option>)}
             <option value={THREE_CIRCLES_SEQUENCE_ID}>The Three Circles · games</option>
             {showPairs && SIDE_PAIR_IDS.map((pid) => <option key={pid} value={pid}>{sidePairLabel(pid)}</option>)}
           </select>
@@ -110,7 +110,7 @@ export function SequenceFields({
           <div>
             <label className={LBL} style={LBL_STYLE}>Focus</label>
             <select value={focus} onChange={(e) => pickFocus(e.target.value)} className={SEL}>
-              <option value="">{cfg.kind === 'circle' ? 'Whole circle · all its elements' : 'Whole sequence · start to finish'}</option>
+              <option value="">{cfg.kind === 'circle' ? 'Whole circle · all its elements' : cfg.kind === 'tool' ? 'All three moments · the complete mission' : 'Whole sequence · start to finish'}</option>
               {steps.map((s, i) => <option key={s.id} value={s.id}>{i + 1} · {s.title}</option>)}
             </select>
           </div>
@@ -122,7 +122,10 @@ export function SequenceFields({
       {cfg && cfg.kind === 'circle' && (
         <p className="text-[11px] text-[#55666E]">{focus ? `Element chosen · the game comes with it: ${THREE_CIRCLES_GAME_TITLES[cfg.games?.[focus] ?? ''] ?? '—'}.` : 'Pick the element (Focus) to work today; its game comes with it. Whole circle = all its games across the day.'}</p>
       )}
-      {cfg && cfg.kind !== 'circle' && !focus && (
+      {cfg && cfg.kind === 'tool' && !focus && (
+        <p className="text-[11px] text-[#55666E]">The student and the coach see “{seqTag(cfg)} · all three moments”. Pick one moment only when the day works it on its own.</p>
+      )}
+      {cfg && cfg.kind !== 'circle' && cfg.kind !== 'tool' && !focus && (
         <p className="text-[11px] text-[#55666E]">The student and the coach see “{seqTag(cfg)} · the whole line”. Pick a focus only when the day works one step of it.</p>
       )}
       {/* Tres Círculos: el bloque ES un juego (Marcelo 2026-09-19). Uno por
@@ -165,7 +168,8 @@ export function SequenceFields({
 
 /** Secuencia principal del día (cabecera del plan que lee el coach). Opcional: los bloques ya dicen lo suyo. */
 export function DaySequenceSelect({ value, belt, onChange }: { value: string | null | undefined; belt: string | null; onChange: (v: string | null) => void }) {
-  const seqs = sequencesFor(belt);
+  // La herramienta (Forward Momentum) se agrega a un bloque; nunca es la secuencia principal del día.
+  const seqs = sequencesFor(belt).filter((c) => c.kind !== 'tool');
   return (
     <div>
       <label className={LBL} style={LBL_STYLE}>Main sequence of the day · optional (the blocks below say the rest)</label>

@@ -111,7 +111,11 @@ export function deriveTomorrow(args: {
   if (seqs.length === 0) return null;
   const rated = seqs.map((s) => ({ s, star: starOf(s) }));
   if (rated.some((x) => !x.star)) return null;
-  const weak = rated
+  // La herramienta (Forward Momentum) lleva su estrella, pero no arma la línea
+  // de mañana: ni se repite, ni sigue, ni pasa a la siguiente (2026-09-30).
+  const lineRated = rated.filter((x) => x.s.cfg.kind !== 'tool');
+  if (lineRated.length === 0) return null;
+  const weak = lineRated
     .filter((x) => (x.star ?? 0) <= 3)
     .sort((a, b) => (a.star! - b.star!) || (b.s.order - a.s.order))[0];
   if (weak) {
@@ -125,7 +129,7 @@ export function deriveTomorrow(args: {
     const pm = (tomorrow?.planned?.focus_moments ?? []).filter((id) => isElementOf(SEQUENCE_PAGES[plannedId], id)).slice(0, 3);
     return { seqId: plannedId, stepId: pm[0] ?? tomorrow?.planned?.focus_step_id ?? null, why: 'plan', moments: pm.length ? pm : null };
   }
-  const last = seqs[seqs.length - 1];
+  const last = lineRated[lineRated.length - 1].s;
   // Mañana está planeado pero sin secuencia (examen, teoría): se sigue con la de hoy.
   if (!isLastDay && tomorrow?.hasBlocks) return { seqId: last.cfg.id, stepId: null, why: 'keep' };
   const next = nextSequenceAfter(last.cfg);
@@ -299,9 +303,12 @@ export function DayCloseCard({
   };
 
   const myBelt = Math.max(BELT_ORDER.indexOf(String(student.belt_level ?? 'white_belt')), BELT_ORDER.indexOf(String(campBelt ?? '')));
+  // La herramienta no es una línea: no va en "Worked something else" ni en
+  // "Change" de mañana; sí en "+ another sequence they also worked today".
   const pickable = Object.values(SEQUENCE_PAGES)
-    .filter((c) => c.id !== 'THREE-CIRCLES' && BELT_ORDER.indexOf(c.belt) <= Math.max(myBelt, 0) + 1)
+    .filter((c) => c.id !== 'THREE-CIRCLES' && c.kind !== 'tool' && BELT_ORDER.indexOf(c.belt) <= Math.max(myBelt, 0) + 1)
     .sort((a, b) => BELT_ORDER.indexOf(a.belt) - BELT_ORDER.indexOf(b.belt) || (a.kind === 'entry' ? -1 : 0) - (b.kind === 'entry' ? -1 : 0) || a.number - b.number);
+  const addable = [...pickable, ...Object.values(SEQUENCE_PAGES).filter((c) => c.kind === 'tool')];
   const changeCfg = changeSeq ? SEQUENCE_PAGES[changeSeq] ?? null : null;
 
   return (
@@ -327,17 +334,18 @@ export function DayCloseCard({
             <p className="text-[11px] font-mono uppercase tracking-[0.14em]" style={{ color: '#00A8CC' }}>{worked ? 'Worked instead' : 'You planned'}</p>
             <p className="text-[19px] font-extrabold text-[#10263B] leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>{seqTitle(s.cfg)}</p>
             <p className="text-[15px] text-[#10263B] mt-1 leading-snug">
-              {worked ? `Planned: ${seqTag(s.plannedCfg)}` : s.focusMoments.length > 1 ? `Missions: ${s.focusMoments.map((id, i) => `${i + 1} ${stepTitleOf(s.cfg, id)}`).join(' · ')}` : s.focusTitle ? `Focus: ${s.focusTitle}` : 'The whole line, start to finish'}
+              {worked ? `Planned: ${seqTag(s.plannedCfg)}` : s.focusMoments.length > 1 ? `Missions: ${s.focusMoments.map((id, i) => `${i + 1} ${stepTitleOf(s.cfg, id)}`).join(' · ')}` : s.focusTitle ? `Focus: ${s.focusTitle}` : s.cfg.kind === 'tool' ? 'All three moments' : 'The whole line, start to finish'}
             </p>
 
             {/* 2 · Estrella */}
             <div className="mt-2.5">
               <StarRating value={v} size="lg" variant="official" readOnly={isClosed} onChange={(n) => rate(s, n)} />
             </div>
-            <p className="text-[15px] mt-1.5 leading-snug" style={{ color: v ? '#10263B' : '#55666E' }}>{v ? `${v}★ · ${STAR_LABEL[v]}` : 'Tap a star. 4★ = the sequence is theirs.'}</p>
+            <p className="text-[15px] mt-1.5 leading-snug" style={{ color: v ? '#10263B' : '#55666E' }}>{v ? `${v}★ · ${s.cfg.kind === 'tool' && v === 4 ? 'Consistent · it is theirs' : STAR_LABEL[v]}` : s.cfg.kind === 'tool' ? 'Tap a star. 4★ = it is theirs.' : 'Tap a star. 4★ = the sequence is theirs.'}</p>
 
             {/* 3 · Solo con 1–3★: ¿dónde se rompió? Un toque, opcional. */}
-            {v !== null && v <= 3 && (
+            {/* La herramienta no arma la línea de mañana: su "dónde se rompió" no iría a ningún lado. */}
+            {v !== null && v <= 3 && s.cfg.kind !== 'tool' && (
               <div className="mt-2.5">
                 <p className="text-[11px] font-mono uppercase tracking-[0.14em] text-[#55666E]">Where did it break? · optional · tap the step</p>
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
@@ -381,7 +389,7 @@ export function DayCloseCard({
               onCommit(nextOrder, { sequence_id: c.id, worked_sequence_id: null, step_id: c.stepIds[0], step_ids: c.stepIds, focus_step_id: null, focus_moments: null, objective_text: `Whole line · ${seqTag(c)}`, water_drill_id: games ? (games[c.stepIds[0]] ?? null) : null, notes_pre: 'Added at the close.' } as any);
             }} className="mt-1.5 w-full px-2.5 py-2.5 border border-[#DCD7C6] rounded-lg text-[14px] bg-white">
             <option value="">— pick the sequence —</option>
-            {pickable.filter((c) => !seqs.some((s) => s.cfg.id === c.id || s.plannedCfg.id === c.id)).map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.belt.replace('_belt', '')}</option>)}
+            {addable.filter((c) => !seqs.some((s) => s.cfg.id === c.id || s.plannedCfg.id === c.id)).map((c) => <option key={c.id} value={c.id}>{seqTag(c)} · {c.kind === 'tool' ? 'every belt' : c.belt.replace('_belt', '')}</option>)}
           </select>
         </details>
       )}

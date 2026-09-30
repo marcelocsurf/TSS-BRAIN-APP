@@ -117,8 +117,11 @@ export function sequenceElements(cfg: SequencePageConfig, titleOf: (stepId: stri
   return cfg.stepIds.map((id) => ({ id, title: elementTitle(cfg, id, titleOf(id)) ?? id }));
 }
 
-/** ¿Este id es un paso o un sub-elemento de la secuencia? */
+/** ¿Este id es un paso o un sub-elemento de la secuencia? En una herramienta
+ *  (Forward Momentum) solo cuentan sus momentos: su paso (STP-019) como foco
+ *  es la herramienta entera, "All three moments" (2026-09-30). */
 export function isElementOf(cfg: SequencePageConfig | null | undefined, id: string | null | undefined): boolean {
   if (!cfg || !id) return false;
+  if (cfg.kind === 'tool') return !!cfg.elements?.some((e) => e.id === id);
   return cfg.stepIds.includes(id) || !!cfg.elements?.some((e) => e.id === id);
 }

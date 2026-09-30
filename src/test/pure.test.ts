@@ -384,6 +384,40 @@ describe('displayDate', () => {
   });
 });
 
+// Forward Momentum como herramienta de toda cinta (Marcelo 2026-09-30): no es una
+// secuencia; se receta en cualquier cinta; nunca se deduce por pasos.
+describe('TOOL-MOMENTUM · a tool, not a sequence', () => {
+  const T = SEQUENCE_PAGES['TOOL-MOMENTUM'];
+  it('is a tool on STP-019, open from any belt', () => {
+    expect(T.kind).toBe('tool');
+    expect(T.stepIds).toEqual(['STP-019']);
+    expect(sequencePageRank(T)).toBe(1);
+    expect(T.alsoCourseKeys).toEqual(expect.arrayContaining(['yellow_belt', 'blue_belt']));
+  });
+  it('is never picked from the steps of an old block', async () => {
+    const { resolveSequenceForSteps } = await import('@/lib/sequence-pages/resolve');
+    for (const belt of ['white_belt', 'yellow_belt', 'blue_belt']) {
+      expect(resolveSequenceForSteps({ stepId: 'STP-019' }, belt)?.id).not.toBe('TOOL-MOMENTUM');
+      expect(resolveSequenceForSteps({ stepIds: ['STP-019'] }, belt)?.id).not.toBe('TOOL-MOMENTUM');
+    }
+  });
+  it('the coach prescribes two moments on their own; the third lives only in the complete mission', async () => {
+    const { detailForFocus } = await import('@/lib/sequence-pages/focus');
+    expect((T.elements ?? []).map((e) => e.id)).toEqual(['TOOL-MOMENTUM:POPUP', 'TOOL-MOMENTUM:MANEUVER']);
+    expect(detailForFocus(T, 'TOOL-MOMENTUM:POPUP')?.key).toBe('popup');
+    expect(detailForFocus(T, 'TOOL-MOMENTUM:MANEUVER')?.key).toBe('maneuver');
+    expect(T.details.map((d) => d.key)).toEqual(['popup', 'maneuver', 'speed']);
+    expect(T.details.find((d) => d.key === 'speed')?.deeper?.missionId).toBeUndefined();
+    expect(T.do.missionId).toBe('MIS-WB-019-A');
+  });
+  it('offers "all three moments" and never "start the next one"', async () => {
+    const { focusOptionsForSequence } = await import('@/lib/sequence-pages/focus-options');
+    const g = focusOptionsForSequence(T, { 'STP-019': 'Forward Momentum' });
+    expect(g.options.some((o) => o.label.startsWith('All three moments'))).toBe(true);
+    expect(g.options.some((o) => o.label.startsWith('Start '))).toBe(false);
+  });
+});
+
 // El puente del plan/cierre a Teach it: ?focus=<paso|elemento> abre el detalle (2026-09-30).
 describe('detailForFocus', () => {
   it('finds the detail of a step through its "Go deeper" lesson', async () => {

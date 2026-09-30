@@ -24,8 +24,11 @@ function hrefsFor(item: CourseItem, token: string, tabKey: CourseTabMap['key']) 
   const base = `/coach-portal/${token}`;
   // Un solo "Open →" por fila (paso 4, 2026-09-30): la página ya trae Teach it.
   if (item.kind === 'lesson') return { open: `${base}?tab=courses&lesson=${item.id}`, openLabel: 'Open', teach: null };
-  // Desde Yellow, las páginas de entrada de Blue se leen con la voz de Yellow.
-  if (item.kind === 'page') return { open: `${base}/seq/${item.id}${tabKey === 'yellow' ? '?course=yellow_belt' : ''}`, openLabel: 'Open', teach: null };
+  // La cinta desde la que se abre viaja en ?course: las páginas de entrada de
+  // Blue se leen con la voz de Yellow desde Yellow, y una herramienta de toda
+  // cinta (Forward Momentum) vuelve a la pestaña de la que salió. La ruta solo
+  // lo usa si la página es de esa cinta (alsoCourseKeys); si no, se ignora.
+  if (item.kind === 'page') return { open: `${base}/seq/${item.id}${tabKey !== 'pre' ? `?course=${tabKey}_belt` : ''}`, openLabel: 'Open', teach: null };
   if (item.kind === 'circles') return { open: `${base}/circles`, openLabel: 'Open', teach: null };
   return { open: `${base}/loop`, openLabel: 'Open', teach: null };
 }

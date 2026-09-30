@@ -25,6 +25,11 @@ export function focusOptionsForSequence(c: SequencePageConfig, stepTitles: Recor
     for (const m of ms[st.id] ?? []) opts.push({ label: `${st.title} · ${m.short}`, text: `${seqTag(c)} · ${st.title} · ${m.short}` });
     if (!(ms[st.id] ?? []).length) opts.push({ label: st.title, text: `${seqTag(c)} · ${st.title}` });
   }
+  // Una herramienta (Forward Momentum): "todo" son los tres momentos, y no hay "siguiente".
+  if (c.kind === 'tool') {
+    opts.push({ label: `All three moments · ${seqTag(c)}`, text: `${seqTag(c)} · all three moments` });
+    return { title: seqTag(c), options: opts };
+  }
   opts.push({ label: `Whole sequence · ${seqTag(c)}`, text: `${seqTag(c)} · run the whole sequence` });
   const next = all.filter((n) => n.belt === c.belt && !n.eyebrow && n.number > c.number).sort((a, b) => a.number - b.number)[0];
   if (next) opts.push({ label: `Start ${seqTag(next)}`, text: `Start ${seqTag(next)} · ${seqTag(c)} is yours` });

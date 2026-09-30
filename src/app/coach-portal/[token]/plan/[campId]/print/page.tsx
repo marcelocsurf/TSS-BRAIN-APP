@@ -114,9 +114,12 @@ export default async function PrintPlanPage({ params, searchParams }: {
     const lines = water.map((w: any) => {
       const cfg = w.cfg;
       const blk = st.blocks.find((b: any) => b.order_index === w.order);
-      const ids: string[] = Array.isArray(blk?.focus_moments) ? blk.focus_moments : blk?.focus_step_id ? [blk.focus_step_id] : [];
+      const ids0: string[] = Array.isArray(blk?.focus_moments) ? blk.focus_moments : blk?.focus_step_id ? [blk.focus_step_id] : [];
+      // Una herramienta (Forward Momentum): solo sus momentos; su paso solo = los tres.
+      const tool = cfg.kind === 'tool';
+      const ids = tool ? ids0.filter((id) => (cfg.elements ?? []).some((e: any) => e.id === id)) : ids0;
       const missions = ids.map((id) => elementTitle(cfg, id, stepTitle.get(id) ?? null)).filter(Boolean) as string[];
-      return { seq: seqLabel(cfg), missions };
+      return { seq: seqLabel(cfg), missions, tool };
     });
     return { name: st.display_name, photo: st.photo_url as string | null, board, lines };
   });
@@ -223,7 +226,7 @@ export default async function PrintPlanPage({ params, searchParams }: {
                           ))}
                         </ul>
                       ) : (
-                        <p style={{ fontSize: 13.5, color: MUTED, margin: '3px 0 0' }}>The whole line, start to finish</p>
+                        <p style={{ fontSize: 13.5, color: MUTED, margin: '3px 0 0' }}>{(l as any).tool ? 'All three moments' : 'The whole line, start to finish'}</p>
                       )}
                     </div>
                   ))}
