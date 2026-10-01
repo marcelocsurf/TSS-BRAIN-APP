@@ -392,11 +392,13 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
             {tasks.map((t) => (
               <div key={t.id} className="rounded-[5px] px-3 py-2.5 flex items-center gap-3" style={{ background: '#F7F9FA', border: '1px solid #DCD7C6' }}>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-bold leading-snug" style={{ color: '#10263B' }}>{t.stepTitle}{t.detail ? <span className="font-normal" style={{ color: '#10263B' }}> · {t.detail}</span> : null}</p>
-                  <p className="text-[12px]" style={{ color: '#55666E' }}>{t.sequenceLabel}</p>
+                  <p className="text-[14px] font-bold leading-snug" style={{ color: '#10263B' }}>{t.stepId ? t.stepTitle : t.sequenceLabel}{t.detail ? <span className="font-normal" style={{ color: '#10263B' }}> · {t.detail}</span> : null}</p>
+                  <p className="text-[12px]" style={{ color: '#55666E' }}>{t.stepId ? t.sequenceLabel : t.stepTitle}</p>
                 </div>
                 {onTrainSequence && (
-                  <button type="button" onClick={() => onTrainSequence({ sequenceId: t.sequenceId, mode: 'step_focus', focusStepId: t.stepId, focusMoment: t.detail, intention: t.detail })}
+                  <button type="button" onClick={() => onTrainSequence(t.stepId
+                    ? { sequenceId: t.sequenceId, mode: 'step_focus', focusStepId: t.stepId, focusMoment: t.detail, intention: t.detail }
+                    : { sequenceId: t.sequenceId, mode: 'sequence_run' })}
                     className="shrink-0 h-11 px-3.5 rounded-[5px] text-[13px] font-black uppercase" style={{ background: CYAN, color: INK, letterSpacing: '0.03em' }}>Train it</button>
                 )}
                 <button type="button" aria-label="Mark done" onClick={async () => { await closeTask(portalToken, t.id, 'marked_done'); setTasks((p) => p.filter((x) => x.id !== t.id)); router.refresh(); }}

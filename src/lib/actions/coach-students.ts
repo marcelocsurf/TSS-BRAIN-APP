@@ -13,6 +13,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin';
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
+import { sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 import { waterRuleBlocker } from '@/lib/constants/graduation';
 import { anyMedicalNote } from '@/lib/constants/medical';
 import { buildStudentActivity, type StudentActivitySummary } from '@/lib/activity/build';
@@ -298,7 +299,7 @@ export async function getCoachStudentDetail(
   const sameDay = (iso: string) => lastAt != null && Math.abs(new Date(iso).getTime() - lastAt.getTime()) < 36 * 3600_000;
   const batch = (lastRated ?? []).filter((r: any) => r.coach_rated_at && sameDay(r.coach_rated_at));
   const focusIds = [(data as any).next_focus_step_id].filter(Boolean) as string[];
-  const stepIds = Array.from(new Set([...(assessed ?? []).map((r: any) => r.step_id), ...(tasks ?? []).map((t: any) => t.step_id), ...batch.map((r: any) => r.step_id), ...focusIds]));
+  const stepIds = Array.from(new Set([...(assessed ?? []).map((r: any) => r.step_id), ...(tasks ?? []).map((t: any) => t.step_id).filter(Boolean), ...batch.map((r: any) => r.step_id), ...focusIds]));
   const { data: lessons } = stepIds.length ? await admin.from('lessons').select('id, title, wb_sequence_id, wb_sequence_name').in('id', stepIds) : { data: [] as any[] };
   const title = new Map((lessons ?? []).map((l: any) => [l.id, l.title as string]));
   const seqOf = new Map((lessons ?? []).map((l: any) => [l.id, { id: l.wb_sequence_id as string | null, name: l.wb_sequence_name as string | null }]));
@@ -350,7 +351,8 @@ export async function getCoachStudentDetail(
     ready_to_confirm: readyToConfirm,
     returning,
     self_assessed: (assessed ?? []).map((r: any) => ({ step_id: r.step_id, title: title.get(r.step_id) ?? r.step_id, rating: r.current_rating, at: r.assessed_at ?? null })),
-    own_tasks: (tasks ?? []).map((t: any) => ({ step_title: title.get(t.step_id) ?? t.step_id, detail: t.detail ?? null, sequence_id: t.sequence_id })),
+    // step null = la secuencia entera (2026-10-01).
+    own_tasks: (tasks ?? []).map((t: any) => ({ step_title: t.step_id ? title.get(t.step_id) ?? t.step_id : `${SEQUENCE_PAGES[t.sequence_id] ? sequenceDisplayName(SEQUENCE_PAGES[t.sequence_id]) : t.sequence_id} · the whole sequence`, detail: t.detail ?? null, sequence_id: t.sequence_id })),
     open_session: open ? { name: open.drill_name ?? 'Session', planned_at: open.planned_at ?? null } : null,
     last_session_work: Array.from(work.values()).sort((a, b) => a.sequence_id.localeCompare(b.sequence_id)),
     last_session_by: lastBy,

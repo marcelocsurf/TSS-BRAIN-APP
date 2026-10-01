@@ -23,7 +23,7 @@ import {
   type NextFocus,
   type OpenSession,
 } from '@/lib/actions/lets-play';
-import { getWeeklyPracticeCount, getLastPracticeHint, type CriterionResult } from '@/lib/actions/sequence';
+import { getWeeklyPracticeCount, getLastPracticeHint, getMySequence, type CriterionResult } from '@/lib/actions/sequence';
 import { Target, Check, CircleDot, X, Flame, Dumbbell, Waves, Play, Clock, Repeat, ChevronDown, ChevronUp, Brain } from 'lucide-react';
 import { MAX_OPEN_TASKS } from '@/lib/stars';
 import { VenueScoutLauncher, type VenueCheckResult } from '@/components/venue-scout/VenueScoutLauncher';
@@ -213,7 +213,10 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<{ nextFocus: NextFocus; sequenceRating: number | null; stepsCounted: number } | null>(null);
   // Al cerrar: "¿qué trabajás la próxima?" — una tarea, o ninguna (Marcelo 2026-09-10).
-  const [taskState, setTaskState] = useState<{ saved: string | null; error: string | null; picking: boolean; saving: boolean }>({ saved: null, error: null, picking: false, saving: false });
+  const [taskState, setTaskState] = useState<{ saved: string | null; error: string | null; picking: false | 'detail' | 'sequence'; saving: boolean }>({ saved: null, error: null, picking: false, saving: false });
+  // "Another sequence" (Marcelo 2026-10-01): las secuencias del alumno, se
+  // cargan solo si abre la lista.
+  const [otherSeqs, setOtherSeqs] = useState<{ id: string; label: string; hint: string }[] | null>(null);
   const [weekCount, setWeekCount] = useState<number | null>(null);
 
   // ── BORRADOR de la evaluación en el teléfono (auditoría 2026-09-10) ──
@@ -318,6 +321,16 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   const isVirtualSeq = seq.id === THREE_CIRCLES_SEQUENCE_ID;
   const steps = data.steps;
   const moments = momentsByStep(seq.id, steps.map((s) => ({ id: s.step_id, title: s.title })));
+  // "What do you work on next?": cada momento de la línea; un paso sin
+  // momentos va entero. Los juegos de los Tres Círculos no son pasos del curso.
+  type DetailOption = { key: string; stepId: string; stepTitle: string; detail: string | null; command: Moment['command'] | null };
+  const detailOptions: DetailOption[] = seq.id === THREE_CIRCLES_SEQUENCE_ID ? [] : steps.flatMap((s): DetailOption[] => {
+    const stepTitle = s.title.replace(/ Operationalized at Blue Belt/, '');
+    const ms = moments[s.step_id] ?? [];
+    return ms.length
+      ? ms.map((m) => ({ key: `${s.step_id}:${m.key}`, stepId: s.step_id, stepTitle, detail: m.short, command: m.command ?? null }))
+      : [{ key: s.step_id, stepId: s.step_id, stepTitle, detail: null, command: null }];
+  });
   const focus: SequenceTrainingStep | null = !isRun ? steps.find((s) => s.step_id === focusId) ?? null : null;
   // El mismo rótulo que ve en todos lados (y el que se guarda en drill_name):
   // "#3 · Pop-Up", o "Foundation · …" para las que no son escalones numerados.
@@ -970,7 +983,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
             ) : (
               <>
                 <p className="text-[14px] font-bold" style={{ color: INK }}>{isRun ? 'Nothing held it back' : 'Keep it going'}</p>
-                <p className="text-[12px] text-[#55666E] mt-0.5">{isRun ? 'Run it again and raise the bar.' : 'Run the whole sequence next time and see if it holds.'}</p>
+                <p className="text-[12px] text-[#55666E] mt-0.5">{isRun ? 'Run it again and raise the bar.' : isVirtualSeq ? 'Play it again next time and see if it holds.' : 'Run the whole sequence next time and see if it holds.'}</p>
               </>
             )}
           </div>
@@ -994,23 +1007,67 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
                   {nf.stepTitle}{nf.criterionText ? <span className="font-normal text-[#55666E]"> · {nf.criterionText}</span> : null} <span className="text-[12px] text-[#55666E]">· suggested</span>
                 </button>
               )}
-              <button type="button" onClick={() => setTaskState((s) => ({ ...s, picking: !s.picking }))} className="w-full text-left px-3.5 py-2.5 rounded-[5px] text-[12.5px] border border-[#DCD7C6]" style={{ color: INK }}>
-                {taskState.picking ? 'Hide the details' : 'Pick another detail of this sequence ▾'}
-              </button>
-              {taskState.picking && (
+              {/* Un detalle de ESTA secuencia: sus momentos; un paso sin momentos
+                  se ofrece entero (antes la lista salía vacía). Los Tres
+                  Círculos no tienen pasos del curso: ahí no hay detalle. */}
+              {detailOptions.length > 0 && (
+                <button type="button" aria-expanded={taskState.picking === 'detail'} onClick={() => setTaskState((s) => ({ ...s, picking: s.picking === 'detail' ? false : 'detail' }))} className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-[5px] text-[12.5px] border border-[#DCD7C6] text-left" style={{ color: INK }}>
+                  <span>Another detail of this sequence</span>
+                  {taskState.picking === 'detail' ? <ChevronUp size={15} className="shrink-0 text-[#55666E]" /> : <ChevronDown size={15} className="shrink-0 text-[#55666E]" />}
+                </button>
+              )}
+              {taskState.picking === 'detail' && (
                 <div className="space-y-1.5">
-                  {steps.map((s) => (moments[s.step_id] ?? []).map((m) => (
-                    <button key={`${s.step_id}:${m.key}`} type="button" disabled={taskState.saving}
+                  {detailOptions.map((o) => (
+                    <button key={o.key} type="button" disabled={taskState.saving}
                       onClick={async () => {
                         setTaskState((st) => ({ ...st, saving: true, error: null }));
-                        const r = await addTask(portalToken, { sequenceId: seq.id, stepId: s.step_id, detail: m.short, belt });
-                        setTaskState({ saved: r.ok ? `${r.task.stepTitle} · ${m.short} (${r.openCount}/${MAX_OPEN_TASKS})` : null, error: r.ok ? null : r.error, picking: !r.ok, saving: false });
+                        const r = await addTask(portalToken, { sequenceId: seq.id, stepId: o.stepId, detail: o.detail, belt });
+                        setTaskState({ saved: r.ok ? `${r.task.stepTitle}${o.detail ? ` · ${o.detail}` : ''} (${r.openCount}/${MAX_OPEN_TASKS})` : null, error: r.ok ? null : r.error, picking: r.ok ? false : 'detail', saving: false });
                       }}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] text-left" style={{ background: '#F7F9FA', color: INK }}>
-                      <i className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ background: m.command ? COMMAND_COLORS[m.command] : '#55666E' }} />
-                      <span className="text-[#55666E] shrink-0">{s.title.replace(/ Operationalized at Blue Belt/, '')} ·</span> {m.short}
+                      <i className="inline-block w-1.5 h-1.5 rounded-full shrink-0" style={{ background: o.command ? COMMAND_COLORS[o.command] : '#55666E' }} />
+                      {o.detail ? <><span className="text-[#55666E] shrink-0">{o.stepTitle} ·</span> {o.detail}</> : <span className="font-semibold">{o.stepTitle}</span>}
                     </button>
-                  )))}
+                  ))}
+                </div>
+              )}
+              {/* OTRA secuencia entera (Marcelo 2026-10-01: "¿qué pasa si quiero
+                  trabajar en otra secuencia next?"). Train it la corre completa. */}
+              <button type="button" aria-expanded={taskState.picking === 'sequence'}
+                onClick={() => {
+                  setTaskState((s) => ({ ...s, picking: s.picking === 'sequence' ? false : 'sequence' }));
+                  if (otherSeqs === null) {
+                    getMySequence(portalToken, belt).then((d) => setOtherSeqs(d.sequences
+                      .filter((x) => x.id !== seq.id)
+                      .sort((a, b) => a.order - b.order)
+                      .map((x) => ({
+                        id: x.id,
+                        label: sequenceLabel(x.id, x.order, x.name),
+                        hint: x.state === 'owned' ? 'yours' : x.minRating != null ? `${x.minRating}★` : x.state === 'unrated' ? 'new' : 'in progress',
+                      })))).catch(() => setOtherSeqs([]));
+                  }
+                }}
+                className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-[5px] text-[12.5px] border border-[#DCD7C6] text-left" style={{ color: INK }}>
+                <span>Another sequence</span>
+                {taskState.picking === 'sequence' ? <ChevronUp size={15} className="shrink-0 text-[#55666E]" /> : <ChevronDown size={15} className="shrink-0 text-[#55666E]" />}
+              </button>
+              {taskState.picking === 'sequence' && (
+                <div className="space-y-1.5">
+                  {otherSeqs === null && <p className="text-[12px] text-[#55666E] px-1">Loading your sequences…</p>}
+                  {otherSeqs?.length === 0 && <p className="text-[12px] text-[#55666E] px-1">No other sequence open for you yet.</p>}
+                  {otherSeqs?.map((o) => (
+                    <button key={o.id} type="button" disabled={taskState.saving}
+                      onClick={async () => {
+                        setTaskState((st) => ({ ...st, saving: true, error: null }));
+                        const r = await addTask(portalToken, { sequenceId: o.id, stepId: null, belt });
+                        setTaskState({ saved: r.ok ? `${o.label} · the whole sequence (${r.openCount}/${MAX_OPEN_TASKS})` : null, error: r.ok ? null : r.error, picking: r.ok ? false : 'sequence', saving: false });
+                      }}
+                      className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-[12.5px] text-left" style={{ background: '#F7F9FA', color: INK }}>
+                      <span className="font-semibold min-w-0">{o.label}</span>
+                      <span className="text-[12px] text-[#55666E] shrink-0">{o.hint}</span>
+                    </button>
+                  ))}
                 </div>
               )}
               {taskState.error && <p className="text-[12px] text-[#B03A2E]">{taskState.error}</p>}

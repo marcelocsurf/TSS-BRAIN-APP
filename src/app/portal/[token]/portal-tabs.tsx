@@ -487,12 +487,15 @@ function nextMoveRows(
   const task = data.tasks?.[0] ?? null;
   if (task) {
     rows.push({
-      key: 'task', label: 'Your list', title: `${task.stepTitle}${task.detail ? ` · ${task.detail}` : ''}`, accent: '#FFD166',
-      reason: `You put it on your list · ${seqWord(task.sequenceLabel)}${(data.tasks?.length ?? 0) > 1 ? ` · ${data.tasks!.length} on the list` : ''}`,
+      // step null = la secuencia entera (2026-10-01): se corre completa.
+      key: 'task', label: 'Your list', title: task.stepId ? `${task.stepTitle}${task.detail ? ` · ${task.detail}` : ''}` : `${seqWord(task.sequenceLabel)} · ${task.stepTitle.toLowerCase()}`, accent: '#FFD166',
+      reason: `You put it on your list${task.stepId ? ` · ${seqWord(task.sequenceLabel)}` : ''}${(data.tasks?.length ?? 0) > 1 ? ` · ${data.tasks!.length} on the list` : ''}`,
       action: 'Train it →',
       onClick: () => {
-        if (onTrainSequence) onTrainSequence({ sequenceId: task.sequenceId, mode: 'step_focus', focusStepId: task.stepId, focusMoment: task.detail, intention: task.detail });
-        else onOpenStep?.(task.stepId);
+        if (onTrainSequence) onTrainSequence(task.stepId
+          ? { sequenceId: task.sequenceId, mode: 'step_focus', focusStepId: task.stepId, focusMoment: task.detail, intention: task.detail }
+          : { sequenceId: task.sequenceId, mode: 'sequence_run' });
+        else if (task.stepId) onOpenStep?.(task.stepId);
       },
       pageHref: seqPageHref(data, task.sequenceId),
     });

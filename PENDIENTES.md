@@ -1,8 +1,15 @@
 # PENDIENTES — TSS BRAIN / The Surf Sequence
 **Lista general del app y del proyecto.** Una sola lista, por bloques, para ir tachando.
-Actualizada: 2026-09-17. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico en `INFO_DECRETO722.md`; restauración en `RECUPERACION.md`.
+Actualizada: 2026-10-01. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico en `INFO_DECRETO722.md`; restauración en `RECUPERACION.md`.
 
 ---
+
+## EN CURSO — pedidos de Marcelo 2026-10-01 (uno por uno, en este orden)
+1. [ ] **Ley de datos de El Salvador**: validar la ley vigente y lo que cualquier app debe cumplir; qué hacer para evitar una demanda (cruza con §1 LEGAL y `AUDITORIA_LEGAL.md`).
+2. [ ] **Cierre del entreno · "What do you work on next?"**: el selector sale vacío (ej. Three Circles · Body · Rotation) y solo ofrece detalles de la misma secuencia → que se pueda elegir OTRA secuencia como próximo foco.
+3. [ ] **Aviso "Your session plan · I'm back — finish & evaluate"**: pasarlo al manual v10.1, sin letras con efecto glow.
+4. [ ] **Botones con continuidad**: cada "volver"/"siguiente" lleva a la pantalla lógica (de dónde vine), en portal del alumno y del coach.
+5. [ ] **Home del portal del alumno más pro**: propuesta de diseño primero (herramienta de diseño), Marcelo aprueba, después código.
 
 ## 0. LO QUE SOLO PUEDE HACER MARCELO — esta semana
 

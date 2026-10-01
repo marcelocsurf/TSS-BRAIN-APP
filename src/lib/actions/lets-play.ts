@@ -562,6 +562,11 @@ export async function saveSequenceSession(
           .eq('student_id', studentId).in('step_id', reached).eq('status', 'open');
       }
     }
+    // La secuencia entera en tu lista se cierra con una corrida a 4★.
+    if (runPassed && !isVirtual) {
+      await admin.from('student_tasks').update({ status: 'done', done_at: new Date().toISOString(), done_reason: 'reached_4' })
+        .eq('student_id', studentId).eq('sequence_id', seq.id).is('step_id', null).eq('status', 'open');
+    }
 
     return { ok: true, sessionId: session.id, nextFocus, sequenceRating: seqRating, stepsCounted };
   } catch (e) {
@@ -764,12 +769,16 @@ export type StudentTask = {
   id: string;
   sequenceId: string;
   sequenceLabel: string;
-  stepId: string;
+  /** null = la secuencia entera (Marcelo 2026-10-01: "otra secuencia next"). */
+  stepId: string | null;
   stepTitle: string;
   detail: string | null;
   source: 'self' | 'system';
   createdAt: string;
 };
+
+/** Rótulo de una tarea de secuencia entera. */
+const WHOLE_SEQUENCE_TASK = 'The whole sequence';
 
 export async function getTasks(portalToken: string): Promise<StudentTask[]> {
   try {
@@ -784,7 +793,7 @@ export async function getTasks(portalToken: string): Promise<StudentTask[]> {
       .order('created_at', { ascending: true })
       .limit(MAX_OPEN_TASKS);
     if (!rows?.length) return [];
-    const stepIds = Array.from(new Set(rows.map((r: any) => r.step_id)));
+    const stepIds = Array.from(new Set(rows.map((r: any) => r.step_id).filter(Boolean)));
     const seqIds = Array.from(new Set(rows.map((r: any) => r.sequence_id)));
     const [{ data: lessons }, { data: seqs }] = await Promise.all([
       admin.from('lessons').select('id, title').in('id', stepIds),
@@ -798,7 +807,7 @@ export async function getTasks(portalToken: string): Promise<StudentTask[]> {
       return {
         id: r.id, sequenceId: r.sequence_id,
         sequenceLabel: m ? sequenceLabel(r.sequence_id, m.order, m.name) : r.sequence_id,
-        stepId: r.step_id, stepTitle: title.get(r.step_id) ?? r.step_id,
+        stepId: r.step_id ?? null, stepTitle: r.step_id ? title.get(r.step_id) ?? r.step_id : WHOLE_SEQUENCE_TASK,
         detail: r.detail ?? null, source: r.source, createdAt: r.created_at,
       };
     });
@@ -809,7 +818,7 @@ export async function getTasks(portalToken: string): Promise<StudentTask[]> {
 
 export async function addTask(
   portalToken: string,
-  input: { sequenceId: string; stepId: string; detail?: string | null; belt: string }
+  input: { sequenceId: string; stepId: string | null; detail?: string | null; belt: string }
 ): Promise<{ ok: true; task: StudentTask; openCount: number } | { ok: false; error: string }> {
   try {
     const studentId = await studentIdFromPortalToken(portalToken);
@@ -817,22 +826,28 @@ export async function addTask(
     const safeBelt = await allowedBeltFor(studentId, input.belt);
     const { seq } = await loadSequence(portalToken, input.sequenceId, safeBelt, studentId);
     if (!seq) return { ok: false, error: 'Sequence not available yet.' };
-    const step = seq.items.find((i) => i.step_id === input.stepId);
-    if (!step) return { ok: false, error: 'Step not in this sequence.' };
-    const detail = typeof input.detail === 'string' && input.detail.trim() ? input.detail.trim().slice(0, 120) : null;
+    // Sin paso = la secuencia entera. La virtual de los Tres Círculos no
+    // tiene pasos del curso (sus "pasos" son juegos): ahí no hay lista.
+    const whole = !input.stepId;
+    if (whole && seq.id === THREE_CIRCLES_SEQUENCE_ID) return { ok: false, error: 'Not available for The Three Circles.' };
+    const step = whole ? null : seq.items.find((i) => i.step_id === input.stepId);
+    if (!whole && !step) return { ok: false, error: 'Step not in this sequence.' };
+    const detail = !whole && typeof input.detail === 'string' && input.detail.trim() ? input.detail.trim().slice(0, 120) : null;
     const admin = createAdminClient();
-    const { data: open } = await admin.from('student_tasks').select('id, step_id, detail').eq('student_id', studentId).eq('status', 'open');
-    const dup = (open ?? []).find((t: any) => t.step_id === input.stepId && (t.detail ?? null) === detail);
+    const { data: open } = await admin.from('student_tasks').select('id, sequence_id, step_id, detail').eq('student_id', studentId).eq('status', 'open');
+    const dup = (open ?? []).find((t: any) => whole
+      ? !t.step_id && t.sequence_id === seq.id
+      : t.step_id === input.stepId && (t.detail ?? null) === detail);
     if (dup) return { ok: false, error: 'That one is already on your list.' };
     if ((open ?? []).length >= MAX_OPEN_TASKS) return { ok: false, error: `Your list is full (${MAX_OPEN_TASKS}). Finish or drop one first.` };
     const { data: row, error } = await admin.from('student_tasks').insert({
-      student_id: studentId, sequence_id: seq.id, step_id: input.stepId, detail, source: 'self',
+      student_id: studentId, sequence_id: seq.id, step_id: whole ? null : input.stepId, detail, source: 'self',
     }).select('id, created_at').single();
     if (error || !row) return { ok: false, error: 'Could not save your task.' };
     return {
       ok: true,
       openCount: (open ?? []).length + 1,
-      task: { id: row.id, sequenceId: seq.id, sequenceLabel: sequenceLabel(seq.id, seq.order, seq.name), stepId: input.stepId, stepTitle: step.step_title, detail, source: 'self', createdAt: row.created_at },
+      task: { id: row.id, sequenceId: seq.id, sequenceLabel: sequenceLabel(seq.id, seq.order, seq.name), stepId: whole ? null : input.stepId, stepTitle: step?.step_title ?? WHOLE_SEQUENCE_TASK, detail, source: 'self', createdAt: row.created_at },
     };
   } catch {
     return { ok: false, error: 'Could not save your task.' };
