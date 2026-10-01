@@ -13,7 +13,7 @@
 // recorrido ORIGINAL de cada secuencia. TODO el contenido (textos, orden,
 // links, lógica de Let's Play) es el mismo de antes: solo cambia cómo se ve.
 import { useEffect, useRef, useState } from 'react';
-import { withFrom } from '@/lib/nav/origin';
+import { withFrom, type CoachFrom } from '@/lib/nav/origin';
 import { PortalBottomNav, type PortalNavTab } from './PortalBottomNav';
 import { ArrowRight, Lock, Play } from 'lucide-react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
@@ -126,6 +126,8 @@ export function SequencePage({
     /** Para la hoja: la capa y las piezas del "Go deeper" que no es paso de la secuencia. */
     sheetLayers?: CoachStepLayer[];
     sheetPieces?: Record<string, PieceRow>;
+    /** Lo que la página lleva al salir a una lección (voz, detalle abierto, su origen). */
+    self?: { course?: string; focus?: string; up?: Exclude<CoachFrom, { k: 'seq' }> };
   } | null;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? 'think');
@@ -207,7 +209,7 @@ export function SequencePage({
   const parent = navTab === 'home' ? 'home' as const : navTab === 'sequence' ? 'play' as const : undefined;
   const here = (t: Tab = tab) => ({ k: 'seq' as const, id: cfg.id, tab: t, ...(parent ? { parent } : {}) });
   // El coach vuelve a esta página (misma pestaña) desde la lección.
-  const lessonHref = (id: string) => withFrom(`${portal}?tab=${courseTab}&lesson=${id}`, coach ? { k: 'seq', id: cfg.id, tab } : here());
+  const lessonHref = (id: string) => withFrom(`${portal}?tab=${courseTab}&lesson=${id}`, coach ? { k: 'seq', id: cfg.id, tab, ...(coach.self ?? {}) } : here());
   const playHref = (q: string) => withFrom(`${portal}?tab=sequence&${q}`, here('do'));
   // Solo la dirección del dibujo cambia con el stance; el nombre de la maniobra no.
   const waveDirection = flip ? 'left' : 'right';

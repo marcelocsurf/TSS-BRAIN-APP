@@ -822,7 +822,9 @@ export function PortalTabs({
   // nuevo, así el Home y Let's Play lo muestran sin recargar. Antes quedaba el
   // de la carga de la página (o ninguno) hasta un refresh.
   const [openSessionLive, setOpenSessionLive] = useState<OpenSession | null>(data.openSession ?? null);
-  useEffect(() => { setOpenSessionLive(data.openSession ?? null); }, [data.openSession]);
+  // Cada refresh del servidor manda (también null → null: un plan que se
+  // evaluó acá ya no figura abierto aunque el valor no "cambie").
+  useEffect(() => { setOpenSessionLive(data.openSession ?? null); }, [data]);
   const liveData = useMemo(() => ({ ...data, openSession: openSessionLive }), [data, openSessionLive]);
 
   // Los parámetros de deep-link (?tab=, ?lesson=, ?drill=, ?step=, ?survey=)
@@ -897,10 +899,20 @@ export function PortalTabs({
     setShowCustomSession(false);
     setDeepStepId(null);
     setFlowFrom(null);
+    setStepFrom('play');
+    flowDoneRef.current = false;
   };
   // Cambiar de pantalla sin recargar, con la URL al día (?tab=). Sin __NA,
   // Next trataría el replaceState como navegación y remontaría el portal.
+  // Un flujo que ya terminó (sesión evaluada, pantalla "Session saved").
+  const flowDoneRef = useRef(false);
   const showTab = (t: Tab) => {
+    // Salir de Let's Play suelta el paso que había llegado de afuera y el flujo
+    // ya terminado: al volver, la lista (no un plan nuevo de lo que ya evaluó).
+    if (t !== 'sequence') {
+      setDeepStepId(null);
+      if (flowDoneRef.current) { flowDoneRef.current = false; setPendingSequence(null); setFlowFrom(null); }
+    }
     setActiveTab(t);
     savePortalState(data.token, { tab: t, lesson: null, lessonFrom: null });
     try {
@@ -933,8 +945,9 @@ export function PortalTabs({
     if (f.k === 'home') { showTab('home'); return; }
     if (f.k === 'step') { setDeepStepId(f.id); return; }
     if (f.k === 'course') { showTab('course'); return; }
-    // Otra página (la de la secuencia, los Tres Círculos, una lección): se va.
-    window.location.assign(studentBack(f, data.token, { k: 'play' }).href);
+    // Otra página (la de la secuencia, los Tres Círculos, una lección): se va,
+    // reemplazando esta entrada (el atrás del teléfono no pasa por una lista fantasma).
+    window.location.replace(studentBack(f, data.token, { k: 'play' }).href);
   };
   const flowBackLabel = !flowFrom || flowFrom.k === 'play' ? "Let's Play"
     : flowFrom.k === 'step' ? 'the step' : studentBack(flowFrom, data.token, { k: 'play' }).label;
@@ -972,6 +985,8 @@ export function PortalTabs({
   };
 
   const handlePracticeDrill = (drillMissionId: string) => {
+    // Desde la lista de Let's Play: Cancel vuelve a la lista (no a un origen viejo).
+    if (!pendingSequence) setFlowFrom({ k: 'play' });
     setPendingDrillMissionId(drillMissionId);
     // Stay on 'sequence' tab — Let's Play renders LinkedTrainingFlow inline.
     setActiveTab('sequence');
@@ -1060,7 +1075,7 @@ export function PortalTabs({
               onExit={(f) => {
                 if (f.k === 'home') showTab('home');
                 else if (f.k === 'play') showTab('sequence');
-                else window.location.assign(studentBack(f, data.token, { k: 'course' }).href);
+                else window.location.replace(studentBack(f, data.token, { k: 'course' }).href);
               }}
             />
             {/* Las presentaciones otorgadas viven en COURSE, no en el Home
@@ -1094,6 +1109,13 @@ export function PortalTabs({
                 onCancel={leaveFlow}
                 backLabel={flowBackLabel}
                 onPlanSaved={onPlanSaved}
+                onSessionClosed={(id) => {
+                  flowDoneRef.current = true;
+                  // Evaluada en esta visita: deja de figurar como abierta en el
+                  // Home y Let's Play no la vuelve a abrir en la evaluación.
+                  setOpenSessionLive((cur) => (cur?.id === id ? null : cur));
+                  setPendingSequence((p) => (p && p.sessionId === id ? { ...p, sessionId: null } : p));
+                }}
                 rehearseHref={(() => { const h = seqPageHref(data, pendingSequence.sequenceId, 'feel'); return h ? withFrom(h, { k: 'plan', seq: pendingSequence.sequenceId, mode: pendingSequence.mode, ...(pendingSequence.focusStepId ? { focus: pendingSequence.focusStepId } : {}) }) : null; })()}
                 otherOpenPlan={openSessionLive && openSessionLive.id !== pendingSequence.sessionId ? (openSessionLive.sequenceName || openSessionLive.sequenceLabel || 'another sequence') : null}
                 onDone={(next) => {
@@ -1104,6 +1126,7 @@ export function PortalTabs({
                   // nuevo. Ahora se navega EXPLÍCITO a la pestaña prometida.
                   setPendingSequence(null);
                   setFlowFrom(null);
+                  flowDoneRef.current = false;
                   goTab(next ?? 'sequence');
                   // El plan recién guardado tiene que verse YA en el Home
                   // (Marcelo 2026-09-18: "cierro el plan y no me sale"). La URL
@@ -1122,8 +1145,13 @@ export function PortalTabs({
               drillMissionId={pendingDrillMissionId}
               portalToken={data.token}
               studentBelt={student.belt_level || 'white_belt'}
-              onClearIncoming={() => setPendingDrillMissionId(null)}
-              onReturnToSequence={() => { setPendingDrillMissionId(null); setPendingSequence(null); }}
+              onClearIncoming={() => { setPendingDrillMissionId(null); if (!pendingSequence) setFlowFrom(null); }}
+              onReturnToSequence={() => { setPendingDrillMissionId(null); setPendingSequence(null); setFlowFrom(null); }}
+              // Cancel: el ensayo en tierra abierto DESDE un plan vuelve al plan;
+              // una misión abierta desde otra pantalla (la página de la
+              // secuencia) vuelve ahí.
+              onCancel={pendingSequence ? () => setPendingDrillMissionId(null) : leaveFlow}
+              backLabel={pendingSequence ? 'your plan' : flowBackLabel}
             />
           ) : pendingSequence ? null : showCustomSession ? (
             // 2) Custom Session escape hatch — free-form, doesn't count toward step mastery

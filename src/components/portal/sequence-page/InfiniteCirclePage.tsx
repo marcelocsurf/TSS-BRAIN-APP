@@ -88,7 +88,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
   const cur = LOOP_SIDES.find((s) => s.key === side)!;
   // Lo que sale de esta página lleva de dónde salió (y de dónde había llegado).
   const parent = navTab === 'home' ? 'home' as const : navTab === 'sequence' ? 'play' as const : undefined;
-  const here = { k: 'loop' as const, ...(parent ? { parent } : {}) };
+  const here = { k: 'loop' as const, side, ...(parent ? { parent } : {}) };
 
   return (
     <section className="tss">

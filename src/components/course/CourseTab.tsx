@@ -169,13 +169,18 @@ export function CourseTab({ data, onExit }: {
   // De dónde llegó la lección abierta (Marcelo 2026-10-01: continuidad). El
   // Back la cierra y vuelve ahí; sin origen, a la lista del curso.
   const [lessonFrom, setLessonFromState] = useState<StudentFrom | null>(null);
-  const setLessonFrom = (f: StudentFrom | null) => {
+  // Se guarda atado a la lección (lessonFromFor): un remount por "Mark as done"
+  // lo recupera solo para ESA lección, nunca para otra que se abra después.
+  const setLessonFrom = (f: StudentFrom | null, forId: string | null = null) => {
     setLessonFromState(f);
-    savePortalState(data.portalToken, { lessonFrom: f ? encodeFrom(f) : null });
+    savePortalState(data.portalToken, { lessonFrom: f ? encodeFrom(f) : null, lessonFromFor: f ? forId : null });
   };
   // Lecciones abiertas desde el banner de otra lección (STP-002 → Warm Up):
-  // el Back vuelve a la de antes, no a la lista.
+  // el Back vuelve a la de antes, no a la lista. También sobrevive al remount.
   const stackRef = useRef<string[]>([]);
+  const saveStack = (top: string | null) => savePortalState(data.portalToken, { lessonStack: top && stackRef.current.length ? { top, stack: stackRef.current } : null });
+  // Volver a la lista: no queda ni origen ni pila de antes.
+  const forgetTrail = () => { stackRef.current = []; setLessonFrom(null); saveStack(null); };
 
   const pathWithLesson = (id: string | null) => `${window.location.pathname}?tab=course${id ? `&lesson=${encodeURIComponent(id)}` : ''}`;
   const nextState = (extra: Record<string, unknown>) => {
@@ -189,7 +194,14 @@ export function CourseTab({ data, onExit }: {
     if (opts.stack && openLessonId) {
       // Una entrada nueva encima: el atrás del teléfono y el Back vuelven a la anterior.
       stackRef.current = [...stackRef.current, openLessonId];
+      saveStack(id);
       try {
+        // La de abajo llegó por link (sin entrada propia): se le pone su marca
+        // antes de apilar, así el atrás del teléfono vuelve a ELLA, no a la lista.
+        if (!pushedRef.current) {
+          window.history.replaceState(nextState({ tssLesson: openLessonId, tssDepth: 1 }), '', pathWithLesson(openLessonId));
+          depthRef.current = 1;
+        }
         depthRef.current = (depthRef.current || 0) + 1;
         window.history.pushState(nextState({ tssLesson: id, tssDepth: depthRef.current }), '', pathWithLesson(id));
         pushedRef.current = true;
@@ -200,6 +212,10 @@ export function CourseTab({ data, onExit }: {
       try { window.scrollTo(0, 0); } catch { /* nada */ }
       return;
     }
+    // Desde la lista: esta lección no trae origen de afuera ni pila.
+    if (openLessonId === null) forgetTrail();
+    // Next lesson con un origen: el origen sigue con la lección nueva.
+    else if (lessonFrom) setLessonFrom(lessonFrom, id);
     try {
       const already = openLessonId !== null;
       if (!already) scrollBeforeOpen.current = window.scrollY;
@@ -223,6 +239,7 @@ export function CourseTab({ data, onExit }: {
     if (stackRef.current.length) {
       const prev = stackRef.current[stackRef.current.length - 1];
       stackRef.current = stackRef.current.slice(0, -1);
+      saveStack(prev);
       if (pushedRef.current && depthRef.current > 1) {
         depthRef.current -= 1;
         try { window.history.back(); return; } catch { /* sigue abajo */ }
@@ -236,10 +253,14 @@ export function CourseTab({ data, onExit }: {
     // 2) Llegó desde otra pantalla (la página de la secuencia, el Home…): vuelve ahí.
     if (lessonFrom && onExit) {
       const f = lessonFrom;
-      setLessonFrom(null);
+      forgetTrail();
       pushedRef.current = false;
       depthRef.current = 0;
-      try { window.history.replaceState(nextState({ tssLesson: null, tssDepth: 0 }), '', pathWithLesson(null)); } catch { /* nada */ }
+      // Dentro del portal (Home, Let's Play) la entrada pasa a ser esa pestaña;
+      // a otra página se reemplaza esta entrada (sin una lista fantasma atrás).
+      if (f.k === 'home' || f.k === 'play' || f.k === 'course') {
+        try { window.history.replaceState(nextState({ tssLesson: null, tssDepth: 0 }), '', pathWithLesson(null)); } catch { /* nada */ }
+      }
       setOpenLessonId(null);
       onExit(f);
       return;
@@ -260,9 +281,11 @@ export function CourseTab({ data, onExit }: {
     const onPop = (e: PopStateEvent) => {
       const st = (e.state && typeof e.state === 'object') ? (e.state as any) : {};
       const id = st.tssLesson || null;
-      if (id && stackRef.current[stackRef.current.length - 1] === String(id)) stackRef.current = stackRef.current.slice(0, -1);
+      // El atrás del teléfono a una lección de la pila: la pila se corta ahí.
+      if (id) { const i = stackRef.current.lastIndexOf(String(id)); if (i >= 0) { stackRef.current = stackRef.current.slice(0, i); saveStack(String(id)); } }
       if (id) { setOpenLessonId(String(id)); pushedRef.current = true; depthRef.current = Number(st.tssDepth) || 1; }
-      else { pushedRef.current = false; depthRef.current = 0; restoreScrollRef.current = true; setOpenLessonId(null); }
+      // A la lista: ni origen ni pila de antes.
+      else { forgetTrail(); pushedRef.current = false; depthRef.current = 0; restoreScrollRef.current = true; setOpenLessonId(null); }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -284,10 +307,16 @@ export function CourseTab({ data, onExit }: {
       // Remount justo después de "Mark as done": la lección que se estaba
       // completando manda sobre la URL (que puede haber vuelto a la canónica).
       const completing = takeLessonCompleting(data.portalToken);
-      const keptFrom = parseFrom(loadPortalState(data.portalToken)?.lessonFrom ?? null, 'student');
+      const kept = loadPortalState(data.portalToken);
+      // El origen y la pila guardados valen solo para la lección a la que pertenecen.
+      const restoreTrail = (lessonId: string) => {
+        const f = kept?.lessonFromFor === lessonId ? parseFrom(kept?.lessonFrom ?? null, 'student') : null;
+        if (f) setLessonFromState(f);
+        if (kept?.lessonStack?.top === lessonId && Array.isArray(kept.lessonStack.stack)) stackRef.current = kept.lessonStack.stack.filter((x) => typeof x === 'string').slice(0, 5);
+      };
       if (completing) {
         setOpenLessonId(completing);
-        if (keptFrom) setLessonFromState(keptFrom);
+        restoreTrail(completing);
         const st = (window.history.state && typeof window.history.state === 'object') ? (window.history.state as any) : {};
         pushedRef.current = !!st.tssLesson; depthRef.current = Number(st.tssDepth) || (st.tssLesson ? 1 : 0);
         return;
@@ -300,7 +329,7 @@ export function CourseTab({ data, onExit }: {
         const rlLocked = !!data.courseLock && !!rl && !(SHARED_PRE_COURSE_SECTIONS as readonly string[]).includes(rl.course_section);
         if (!rlLocked) {
           setOpenLessonId(restoredEarly.lesson);
-          if (keptFrom) setLessonFromState(keptFrom);
+          restoreTrail(restoredEarly.lesson);
           const st = (window.history.state && typeof window.history.state === 'object') ? (window.history.state as any) : {};
           pushedRef.current = !!st.tssLesson; depthRef.current = Number(st.tssDepth) || (st.tssLesson ? 1 : 0);
           // La barra de direcciones vuelve a decir la lección que se ve (Next
@@ -318,7 +347,9 @@ export function CourseTab({ data, onExit }: {
         setOpenLessonId(id);
         // ?from= (src/lib/nav/origin.ts): de dónde vino este link a la lección.
         const f = parseFrom(new URLSearchParams(window.location.search).get('from'), 'student');
-        setLessonFrom(f && f.k !== 'course' && !(f.k === 'lesson' && f.id === id) ? f : null);
+        stackRef.current = [];
+        saveStack(null);
+        setLessonFrom(f && f.k !== 'course' && !(f.k === 'lesson' && f.id === id) ? f : null, id);
         // Si esta entrada del historial la creó openLesson (recarga o remount
         // por revalidación), el botón atrás sigue funcionando igual.
         const st = (window.history.state && typeof window.history.state === 'object') ? (window.history.state as any) : {};
@@ -327,7 +358,9 @@ export function CourseTab({ data, onExit }: {
       }
       // (2026-10-01) Ya no se reabre la última lección en una entrada nueva al
       // Course: el remount por refresh está cubierto arriba; acá reabría una
-      // lección que el alumno ya había dejado (auditoría de navegación).
+      // lección que el alumno ya había dejado (auditoría de navegación). Y una
+      // entrada nueva a la lista no arrastra el origen de otra visita.
+      savePortalState(data.portalToken, { lessonFrom: null, lessonFromFor: null, lessonStack: null });
     } catch { /* sin deep link */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -5,6 +5,7 @@
 // sus láminas en miniatura, abrir la lección / Teach it) y "Plates" (todas las
 // láminas de esa cinta para elegir una). Tocar una lámina la pone en pantalla.
 
+import { withFrom } from '@/lib/nav/origin';
 import { useMemo, useState } from 'react';
 import { ArrowLeft, Presentation, Play } from 'lucide-react';
 import type { CourseTabMap, CourseItem } from '@/lib/coach/course-map';
@@ -20,17 +21,19 @@ const CYAN = '#00D2FF';
 const LINK = '#005F79';
 const MONO: React.CSSProperties = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' };
 
-function hrefsFor(item: CourseItem, token: string, tabKey: CourseTabMap['key']) {
+function hrefsFor(item: CourseItem, token: string, tabKey: CourseTabMap['key'], view: 'course' | 'plates' | 'videos' = 'course') {
   const base = `/coach-portal/${token}`;
+  // Todo lo que se abre desde acá vuelve a ESTA cinta y ESTA vista (2026-10-01).
+  const here = { k: 'course' as const, belt: tabKey as any, ...(view !== 'course' ? { view } : {}) };
   // Un solo "Open →" por fila (paso 4, 2026-09-30): la página ya trae Teach it.
-  if (item.kind === 'lesson') return { open: `${base}?tab=courses&lesson=${item.id}`, openLabel: 'Open', teach: null };
+  if (item.kind === 'lesson') return { open: withFrom(`${base}?tab=courses&lesson=${item.id}`, here), openLabel: 'Open', teach: null };
   // La cinta desde la que se abre viaja en ?course: las páginas de entrada de
   // Blue se leen con la voz de Yellow desde Yellow, y una herramienta de toda
   // cinta (Forward Momentum) vuelve a la pestaña de la que salió. La ruta solo
   // lo usa si la página es de esa cinta (alsoCourseKeys); si no, se ignora.
-  if (item.kind === 'page') return { open: `${base}/seq/${item.id}${tabKey !== 'pre' ? `?course=${tabKey}_belt` : ''}`, openLabel: 'Open', teach: null };
-  if (item.kind === 'circles') return { open: `${base}/circles`, openLabel: 'Open', teach: null };
-  return { open: `${base}/loop`, openLabel: 'Open', teach: null };
+  if (item.kind === 'page') return { open: withFrom(`${base}/seq/${item.id}${tabKey !== 'pre' ? `?course=${tabKey}_belt` : ''}`, here), openLabel: 'Open', teach: null };
+  if (item.kind === 'circles') return { open: withFrom(`${base}/circles`, here), openLabel: 'Open', teach: null };
+  return { open: withFrom(`${base}/loop`, here), openLabel: 'Open', teach: null };
 }
 
 export function CoachCourseBrowser({ token, tabs, initialBelt, initialView }: {
@@ -129,7 +132,7 @@ export function CoachCourseBrowser({ token, tabs, initialBelt, initialView }: {
                 <p style={{ ...MONO, color: MUTED }}>{g.title}</p>
                 <div className="mt-2 rounded-lg overflow-hidden" style={{ background: '#fff', border: `1px solid ${BORDER}` }}>
                   {g.items.map((it, idx) => {
-                    const h = hrefsFor(it, token, tab.key);
+                    const h = hrefsFor(it, token, tab.key, view);
                     return (
                       <div key={it.id} className="px-4 py-3" style={{ borderTop: idx ? `1px solid ${BORDER}` : undefined }}>
                         {it.kind === 'page' && <p style={{ ...MONO, fontSize: 10, color: '#0090B0' }}>{it.eyebrow}</p>}

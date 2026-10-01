@@ -495,7 +495,7 @@ describe('nav · from', () => {
     const cases = [
       { k: 'home' }, { k: 'play' }, { k: 'course' }, { k: 'loop' },
       { k: 'seq', id: 'WB-SEQ-3', tab: 'do' }, { k: 'seq', id: 'YB-SEQ-7.0' }, { k: 'seq', id: 'BB-SEQ-11', tab: 'do', parent: 'play' },
-      { k: 'circles', circle: 'wave', parent: 'home' }, { k: 'loop', parent: 'course' },
+      { k: 'circles', circle: 'wave', parent: 'home' }, { k: 'loop', parent: 'course' }, { k: 'loop', side: 'bs', parent: 'play' }, { k: 'loop', side: 'fs' },
       { k: 'circles', circle: 'board' }, { k: 'circles' },
       { k: 'lesson', id: 'PC-WARMUP' },
       { k: 'plan', seq: 'BB-SEQ-11', mode: 'step_focus', focus: 'STP-040' },
@@ -506,6 +506,11 @@ describe('nav · from', () => {
       { k: 'plan', camp: '6d4049a4-0000-4000-8000-000000000001', day: 2, view: 'read', why: 'plan' },
       { k: 'plan', camp: '6d4049a4-0000-4000-8000-000000000001', view: 'run' },
       { k: 'course', belt: 'yellow' }, { k: 'circles', belt: 'blue' }, { k: 'home' }, { k: 'seq', id: 'BB-LINE', tab: 'review' },
+      { k: 'course', belt: 'pre', view: 'plates' }, { k: 'plans' },
+      { k: 'plan', camp: '6d4049a4-0000-4000-8000-000000000001', day: 3, view: 'run', why: 'today', home: true },
+      // La página del coach con su voz, su detalle abierto y su origen (el plan).
+      { k: 'seq', id: 'BB-LINE', tab: 'review', course: 'yellow_belt', focus: 'CIRCLE-BOARD:P1', up: { k: 'plan', camp: '6d4049a4-0000-4000-8000-000000000001', day: 2, view: 'read', why: 'plan' } },
+      { k: 'seq', id: 'WB-SEQ-3', up: { k: 'course', belt: 'white' } },
     ] as const;
     for (const c of coach) expect(parseFrom(encodeFrom(c as any), 'coach')).toEqual(c);
   });
@@ -523,5 +528,10 @@ describe('nav · from', () => {
     expect(studentBack({ k: 'seq', id: 'BB-SEQ-11', tab: 'do', parent: 'play' }, T, { k: 'course' }).href).toBe(`/portal/${T}/seq/BB-SEQ-11?tab=do&from=play`);
     expect(coachBack({ k: 'plan', camp: '6d4049a4-0000-4000-8000-000000000001', day: 2, view: 'read' }, T, { k: 'course', belt: 'white' }))
       .toEqual({ href: `/coach-portal/${T}?tab=plan&camp=6d4049a4-0000-4000-8000-000000000001&day=2&view=read`, label: 'The camp plan' });
+    // Volver a la página del coach la deja como estaba: voz, detalle y su propio Back al plan.
+    const back = coachBack({ k: 'seq', id: 'BB-LINE', tab: 'review', course: 'yellow_belt', focus: 'STP-016', up: { k: 'plan', camp: '6d4049a4-0000-4000-8000-000000000001', day: 2, view: 'read' } }, T, { k: 'home' });
+    expect(back.href).toBe(`/coach-portal/${T}/seq/BB-LINE?tab=review&course=yellow_belt&focus=STP-016&from=plan%3A6d4049a4-0000-4000-8000-000000000001%3A2%3Aread`);
+    // Una página dentro de otra página no encadena más de un nivel.
+    expect(parseFrom('seq:WB-SEQ-3::::seq:WB-SEQ-1', 'coach')).toEqual({ k: 'seq', id: 'WB-SEQ-3' });
   });
 });

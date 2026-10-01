@@ -161,7 +161,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
   // Lo que sale de esta página lleva de dónde salió (el círculo abierto).
   const parent = navTab === 'home' ? 'home' as const : navTab === 'sequence' ? 'play' as const : undefined;
   const here = { k: 'circles' as const, ...(key !== 'intro' ? { circle: key } : {}), ...(parent ? { parent } : {}) };
-  const lessonHref = (id: string) => (coach ? `/coach-portal/${token}?tab=courses&lesson=${id}` : withFrom(`/portal/${token}?tab=course&lesson=${id}`, here));
+  const lessonHref = (id: string) => (coach ? withFrom(`/coach-portal/${token}?tab=courses&lesson=${id}`, { k: 'circles' }) : withFrom(`/portal/${token}?tab=course&lesson=${id}`, here));
   const [pos, setPos] = useState<'P1' | 'P2' | 'P3'>('P2');
   const portal = coach ? `/coach-portal/${token}` : `/portal/${token}`;
   const courseTab = coach ? 'courses' : 'course';

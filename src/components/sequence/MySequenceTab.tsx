@@ -103,6 +103,10 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
   const [circles, setCircles] = useState<ThreeCirclesGameProgress[]>([]);
   useEffect(() => { let m = true; getThreeCirclesProgress(portalToken).then((c) => { if (m) setCircles(c); }).catch(() => {}); return () => { m = false; }; }, [portalToken]);
   const [openStepId, setOpenStepId] = useState<string | null>(initialStepId || null);
+  // El paso que llegó de afuera (Home, What it takes) vuelve afuera; uno que se
+  // abrió desde esta lista vuelve a la lista (revisión 2026-10-01).
+  const [stepFromOutside, setStepFromOutside] = useState(!!initialStepId);
+  const openFromList = (id: string) => { setStepFromOutside(false); setOpenStepId(id); };
   // Por secuencia es la entrada natural: es como se enseña en el curso.
   const [view, setView] = useState<'sequence' | 'all'>('sequence');
   // La que se abre sola: la primera que todavía tiene pasos sin evaluar. Es
@@ -154,11 +158,11 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
       <StepDetailView
         stepId={openStepId}
         portalToken={portalToken}
-        backLabel={stepBackLabel}
+        backLabel={stepFromOutside ? stepBackLabel : undefined}
         onBack={() => {
           setOpenStepId(null);
           refresh();
-          onStepBack?.();
+          if (stepFromOutside) { setStepFromOutside(false); onStepBack?.(); }
         }}
         onRatingChange={refresh}
         // "Practice this mission" entra por el MISMO flujo que la secuencia
@@ -471,7 +475,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               sideRatings={seq.sideRatings}
               defaultOpen={seq.id === focusSequenceId}
               items={seq.items}
-              onOpenStep={(id) => setOpenStepId(id)}
+              onOpenStep={(id) => openFromList(id)}
               onTrain={onTrainSequence}
               theme={theme}
               pageHref={pageHrefOf(seq.id)}
@@ -515,7 +519,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                 sideRatings={seq.sideRatings}
                 defaultOpen={false}
                 items={seq.items}
-                onOpenStep={(id) => setOpenStepId(id)}
+                onOpenStep={(id) => openFromList(id)}
                 onTrain={onTrainSequence}
                 theme={BELT_THEMES[beltLevelFromString(seq.belt)]}
                 pageHref={pageHrefOf(seq.id)}
@@ -538,7 +542,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           blockNumber={block.block_number}
           blockName={block.block_name}
           items={block.items}
-          onOpenStep={(id) => setOpenStepId(id)}
+          onOpenStep={(id) => openFromList(id)}
           theme={theme}
         />
       ))}

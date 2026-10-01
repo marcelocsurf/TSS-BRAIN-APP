@@ -43,6 +43,11 @@ interface Props {
   studentBelt?: string;
   onClearIncoming: () => void;
   onReturnToSequence: () => void;
+  /** Cancelar (antes de guardar): vuelve adonde se abrió (la página de la
+   *  secuencia, Let's Play…). Sin esto, como siempre: a Let's Play. */
+  onCancel?: () => void;
+  /** El nombre de esa pantalla para el botón de vuelta. */
+  backLabel?: string;
 }
 
 // ─── Brand Manual v10 ───
@@ -66,7 +71,10 @@ export function LinkedTrainingFlow({
   studentBelt = 'white_belt',
   onClearIncoming,
   onReturnToSequence,
+  onCancel,
+  backLabel = "Let's Play",
 }: Props) {
+  const cancel = onCancel ?? onClearIncoming;
   // Home/Course leen datos del servidor: sin refresh, las horas y los
   // drills practicados quedaban viejos hasta recargar (bug 2026-09-01).
   const router = useRouter();
@@ -157,7 +165,7 @@ export function LinkedTrainingFlow({
     return (
       <div className="text-center py-12">
         <p className="text-[#B03A2E] mb-2">{errorMsg || 'Something went wrong'}</p>
-        <button onClick={onClearIncoming} className="text-sm underline text-[#55666E]">← Back to Let&apos;s Play</button>
+        <button onClick={cancel} className="text-sm underline text-[#55666E]">← Back to {backLabel}</button>
       </div>
     );
   }
@@ -173,7 +181,7 @@ export function LinkedTrainingFlow({
   if (phase === 'plan') {
     const canStart = allSafe && plannedDuration >= 1 && plannedReps >= 1;
     return (
-      <Shell drill={drill} onCancel={onClearIncoming} step={1}>
+      <Shell drill={drill} onCancel={cancel} step={1}>
         {/* Misión: la protagonista, pre-cargada de My Sequence */}
         <div className="rounded-lg p-4" style={{ background: INK }}>
           <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>
@@ -296,7 +304,7 @@ export function LinkedTrainingFlow({
         </div>
 
         <div className="flex gap-2.5 pt-1">
-          <button onClick={onClearIncoming} className="flex-1 py-3.5 rounded-full border border-[#DCD7C6] text-sm font-medium text-[#55666E] active:scale-[0.98]">
+          <button onClick={cancel} className="flex-1 py-3.5 rounded-full border border-[#DCD7C6] text-sm font-medium text-[#55666E] active:scale-[0.98]">
             Cancel
           </button>
           <button onClick={() => setPhase('ready')} disabled={!canStart}
@@ -315,7 +323,7 @@ export function LinkedTrainingFlow({
   // ─── PANTALLA 2 · READY (warm-up + mantra + go) ───
   if (phase === 'ready') {
     return (
-      <Shell drill={drill} onCancel={onClearIncoming} step={2}>
+      <Shell drill={drill} onCancel={cancel} step={2}>
         <div className="rounded-lg p-5 text-center" style={{ background: INK }}>
           <p className="text-[9px]" style={{ ...F_M, color: CYAN }}>The Surf Sequence</p>
           <p className="text-[24px] mt-2" style={{ ...F_D, color: PAPER }}>Now go practice</p>
@@ -462,7 +470,7 @@ export function LinkedTrainingFlow({
     };
 
     return (
-      <Shell drill={drill} onCancel={onClearIncoming} step={3}>
+      <Shell drill={drill} onCancel={cancel} step={3}>
         <div>
           <p className="text-[9px]" style={{ ...F_M, color: '#00A8CC' }}>{isMission ? 'Honest evaluation' : 'Quick check'}</p>
           <h3 className="text-[20px] mt-1" style={{ ...F_D, color: INK }}>{isMission ? 'How did it go?' : 'Ready to take it to the water?'}</h3>

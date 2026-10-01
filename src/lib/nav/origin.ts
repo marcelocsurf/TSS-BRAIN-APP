@@ -24,7 +24,7 @@ export type StudentFrom =
   | { k: 'home' } | { k: 'play' } | { k: 'course' }
   | { k: 'seq'; id: string; tab?: SeqTab; parent?: Parent }
   | { k: 'circles'; circle?: Circle; parent?: Parent }
-  | { k: 'loop'; parent?: Parent }
+  | { k: 'loop'; side?: 'fs' | 'bs'; parent?: Parent }
   | { k: 'lesson'; id: string }
   | { k: 'plan'; seq: string; mode: 'sequence_run' | 'step_focus'; focus?: string };
 
@@ -32,11 +32,14 @@ export type CoachFrom =
   | { k: 'home' }
   /** La lista de clases de la pestaña Plan (sin una clase abierta). */
   | { k: 'plans' }
-  | { k: 'plan'; camp: string; day?: number; view: 'read' | 'run'; why?: 'plan' | 'today' | 'close' }
-  | { k: 'course'; belt: CoachBelt }
+  /** `home` = la clase se abrió desde el Home ("Run today"): su Back vuelve al Home. */
+  | { k: 'plan'; camp: string; day?: number; view: 'read' | 'run'; why?: 'plan' | 'today' | 'close'; home?: true }
+  | { k: 'course'; belt: CoachBelt | 'pre'; view?: 'course' | 'plates' | 'videos' }
   | { k: 'circles'; belt?: 'yellow' | 'blue' }
   | { k: 'loop' }
-  | { k: 'seq'; id: string; tab?: SeqTab };
+  /** La página de la secuencia con TODO lo suyo: la voz (course), el detalle
+   *  abierto (focus) y de dónde había llegado (up: el plan, el índice…). */
+  | { k: 'seq'; id: string; tab?: SeqTab; course?: string; focus?: string; up?: Exclude<CoachFrom, { k: 'seq' }> };
 
 export type AnyFrom = StudentFrom | CoachFrom;
 export type Back = { href: string; label: string };
@@ -50,6 +53,11 @@ const SEQ_TABS: SeqTab[] = ['think', 'feel', 'do', 'review'];
 const CIRCLES: Circle[] = ['body', 'board', 'wave'];
 const BELTS: CoachBelt[] = ['white', 'yellow', 'blue', 'purple', 'brown', 'black'];
 const PARENTS: Parent[] = ['home', 'play', 'course'];
+const COURSE_KEY_RE = /^(white|yellow|blue|purple|brown|black)_belt$/;
+// El foco puede llevar ":" (un elemento: "CIRCLE-BOARD:P1"); dentro del código
+// de la página del coach va con "_" para no partir el código.
+const escFocus = (f: string) => f.replace(/:/g, '_');
+const unescFocus = (f: string) => f.replace(/_/g, ':');
 
 const isSeq = (id: string | undefined): id is string => !!id && SEQ_RE.test(id) && !!SEQUENCE_PAGES[id];
 const pick = <T extends string>(v: string | undefined, list: readonly T[]): T | undefined => (v && (list as readonly string[]).includes(v) ? (v as T) : undefined);
@@ -58,12 +66,17 @@ const pick = <T extends string>(v: string | undefined, list: readonly T[]): T | 
 export function encodeFrom(o: AnyFrom): string {
   const parts: (string | number | undefined)[] = (() => {
     switch (o.k) {
-      case 'seq': return ['seq', o.id, o.tab, (o as any).parent];
+      case 'seq': {
+        const c = o as any;
+        // Coach: seq:ID:TAB:COURSE:FOCUS:<código de up>. Alumno: seq:ID:TAB:PARENT.
+        if (c.course || c.focus || c.up) return ['seq', o.id, o.tab, c.course, c.focus ? escFocus(c.focus) : undefined, ...(c.up ? [encodeFrom(c.up)] : [])];
+        return ['seq', o.id, o.tab, c.parent];
+      }
       case 'circles': return 'belt' in o ? ['circles', o.belt] : ['circles', (o as any).circle, (o as any).parent];
-      case 'loop': return ['loop', (o as any).parent];
+      case 'loop': return ['loop', (o as any).side, (o as any).parent];
       case 'lesson': return ['lesson', o.id];
-      case 'plan': return 'camp' in o ? ['plan', o.camp, o.day, o.view, o.why] : ['plan', o.seq, o.mode, o.focus];
-      case 'course': return 'belt' in o ? ['course', o.belt] : ['course'];
+      case 'plan': return 'camp' in o ? ['plan', o.camp, o.day, o.view, o.why, o.home ? 'home' : undefined] : ['plan', o.seq, o.mode, o.focus];
+      case 'course': return 'belt' in o ? ['course', o.belt, o.view] : ['course'];
       default: return [o.k];
     }
   })();
@@ -80,7 +93,12 @@ export function parseFrom(raw: unknown, portal: 'student' | 'coach'): AnyFrom | 
   if (portal === 'student') {
     switch (k) {
       case 'home': case 'play': case 'course': return a === undefined ? ({ k } as StudentFrom) : null;
-      case 'loop': return { k, ...(pick(a, PARENTS) ? { parent: pick(a, PARENTS) } : {}) };
+      case 'loop': {
+        // loop:SIDE:PARENT (antes loop:PARENT): el lado es opcional.
+        const side = pick(a, ['fs', 'bs'] as const);
+        const parent = pick(side || a === '' ? b : a, PARENTS);
+        return { k, ...(side ? { side } : {}), ...(parent ? { parent } : {}) };
+      }
       case 'seq': return isSeq(a) ? { k, id: a, ...(pick(b, SEQ_TABS) ? { tab: pick(b, SEQ_TABS) } : {}), ...(pick(c, PARENTS) ? { parent: pick(c, PARENTS) } : {}) } : null;
       case 'circles': return { k, ...(pick(a, CIRCLES) ? { circle: pick(a, CIRCLES) } : {}), ...(pick(b, PARENTS) ? { parent: pick(b, PARENTS) } : {}) };
       case 'lesson': return a && LESSON_RE.test(a) ? { k, id: a } : null;
@@ -102,11 +120,30 @@ export function parseFrom(raw: unknown, portal: 'student' | 'coach'): AnyFrom | 
       const day = b && /^\d{1,2}$/.test(b) && Number(b) >= 1 && Number(b) <= 90 ? Number(b) : undefined;
       const view = c === 'run' ? 'run' : 'read';
       const why = pick(d, ['plan', 'today', 'close'] as const);
-      return { k, camp: a.toLowerCase(), ...(day ? { day } : {}), view, ...(why ? { why } : {}) };
+      const home = raw.split(':')[5] === 'home';
+      return { k, camp: a.toLowerCase(), ...(day ? { day } : {}), view, ...(why ? { why } : {}), ...(home ? { home: true as const } : {}) };
     }
-    case 'course': { const belt = pick(a, BELTS); return belt ? { k, belt } : null; }
+    case 'course': {
+      const belt = a === 'pre' ? 'pre' as const : pick(a, BELTS);
+      const view = pick(b, ['course', 'plates', 'videos'] as const);
+      return belt ? { k, belt, ...(view ? { view } : {}) } : null;
+    }
     case 'circles': { const belt = pick(a, ['yellow', 'blue'] as const); return { k, ...(belt ? { belt } : {}) }; }
-    case 'seq': return isSeq(a) ? { k, id: a, ...(pick(b, SEQ_TABS) ? { tab: pick(b, SEQ_TABS) } : {}) } : null;
+    case 'seq': {
+      if (!isSeq(a)) return null;
+      const parts = raw.split(':');
+      const course = parts[3] && COURSE_KEY_RE.test(parts[3]) ? parts[3] : undefined;
+      const focus = parts[4] ? unescFocus(parts[4]) : undefined;
+      const upRaw = parts.slice(5).join(':');
+      const up = upRaw ? parseFrom(upRaw, 'coach') : null;
+      return {
+        k, id: a,
+        ...(pick(b, SEQ_TABS) ? { tab: pick(b, SEQ_TABS) } : {}),
+        ...(course ? { course } : {}),
+        ...(focus && STEP_RE.test(focus) ? { focus } : {}),
+        ...(up && up.k !== 'seq' ? { up } : {}),
+      };
+    }
     default: return null;
   }
 }
@@ -145,7 +182,7 @@ export function studentBack(o: StudentFrom | null, token: string, fallback: Stud
     case 'course': return { href: `${root}?tab=course`, label: 'Course' };
     case 'seq': return { href: withQuery(`${root}/seq/${encodeURIComponent(at.id)}`, { tab: at.tab, from: at.parent }), label: seqName(at.id) };
     case 'circles': return { href: withQuery(`${root}/circles`, { circle: at.circle, from: at.parent }), label: 'The Three Circles' };
-    case 'loop': return { href: withQuery(`${root}/loop`, { from: at.parent }), label: 'The Infinite Circle' };
+    case 'loop': return { href: withQuery(`${root}/loop`, { side: at.side, from: at.parent }), label: 'The Infinite Circle' };
     case 'lesson': return { href: `${root}?tab=course&lesson=${encodeURIComponent(at.id)}`, label: 'The lesson' };
     case 'plan': return {
       href: `${root}?tab=sequence&seq=${encodeURIComponent(at.seq)}&mode=${at.mode}${at.focus ? `&focus=${encodeURIComponent(at.focus)}` : ''}`,
@@ -163,12 +200,15 @@ export function coachBack(o: CoachFrom | null, token: string, fallback: CoachFro
     case 'home': return { href: `${root}?tab=home`, label: 'Home' };
     case 'plans': return { href: `${root}?tab=plan`, label: 'Your classes' };
     case 'plan': return {
-      href: `${root}?tab=plan&camp=${at.camp}${at.day ? `&day=${at.day}` : ''}&view=${at.view}`,
+      href: `${root}?tab=plan&camp=${at.camp}${at.day ? `&day=${at.day}` : ''}&view=${at.view}${at.home ? '&from=home' : ''}`,
       label: at.why === 'close' ? 'The close' : at.why === 'today' || at.view === 'run' ? "Today's plan" : 'The camp plan',
     };
-    case 'course': return { href: `${root}/course?belt=${at.belt}`, label: 'Courses' };
+    case 'course': return { href: withQuery(`${root}/course`, { belt: at.belt, view: at.view }), label: 'Courses' };
     case 'circles': return { href: `${root}/circles${at.belt ? `?belt=${at.belt}` : ''}`, label: 'The Three Circles' };
     case 'loop': return { href: `${root}/loop`, label: 'The Infinite Circle' };
-    case 'seq': return { href: `${root}/seq/${encodeURIComponent(at.id)}${at.tab ? `?tab=${at.tab}` : ''}`, label: seqName(at.id) };
+    case 'seq': return {
+      href: withQuery(`${root}/seq/${encodeURIComponent(at.id)}`, { tab: at.tab, course: at.course, focus: at.focus, from: at.up ? encodeFrom(at.up) : undefined }),
+      label: seqName(at.id),
+    };
   }
 }

@@ -20,8 +20,12 @@ const TTL_MS = 10 * 60_000;
 export interface PortalEphemeralState {
   tab?: string | null;
   lesson?: string | null;
-  /** De dónde vino la lección abierta (código de src/lib/nav/origin.ts). */
+  /** De dónde vino la lección abierta (código de src/lib/nav/origin.ts)… */
   lessonFrom?: string | null;
+  /** …y para qué lección vale ese origen. */
+  lessonFromFor?: string | null;
+  /** Lecciones abiertas desde un banner (STP-002 → Warm Up): la de arriba y las de abajo. */
+  lessonStack?: { top: string; stack: string[] } | null;
   t: number;
 }
 

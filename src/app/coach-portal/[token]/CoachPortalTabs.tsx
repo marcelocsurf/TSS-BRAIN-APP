@@ -101,6 +101,19 @@ function t12(t: string | null): string | null {
   return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 }
 
+// La URL "silenciosa" del portal (?tab=, ?camp=&day=&view=, 2026-10-01). Se
+// escribe con replaceState + __NA (sin navegación de Next); como un
+// router.refresh() de Next vuelve a poner la URL de la carga, el portal la
+// re-aplica después de cada refresh (efecto sobre `data`).
+let quietUrl: string | null = null;
+function writeQuietUrl(url: string) {
+  quietUrl = url;
+  try {
+    const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+    window.history.replaceState({ ...st, __NA: true }, '', url);
+  } catch { /* cosmético */ }
+}
+
 const TABS: { key: Tab; label: string; Icon: TabIconComponent }[] = [
   { key: 'home', label: 'Inicio', Icon: Home },
   { key: 'courses', label: 'Cursos', Icon: BookOpen },
@@ -138,11 +151,12 @@ export function CoachPortalTabs({
   // recarga o el Back de otra página vuelven a la misma pestaña.
   const setTab = (t: Tab) => {
     setActiveTab(t);
-    try {
-      const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
-      window.history.replaceState({ ...st, __NA: true }, '', `${window.location.pathname}?tab=${t}`);
-    } catch { /* cosmético */ }
+    writeQuietUrl(`${window.location.pathname}?tab=${t}`);
   };
+  // Después de un router.refresh(), la URL vuelve a decir dónde está el coach.
+  useEffect(() => {
+    try { if (quietUrl && `${window.location.pathname}${window.location.search}` !== quietUrl) writeQuietUrl(quietUrl); } catch { /* nada */ }
+  }, [data]);
   // When a class is open in the planner we switch to a focused, light-themed
   // full-screen mode: light background (not the dark portal shell) + the global
   // tab-nav hidden, so the planner isn't a light screen floating on black with
@@ -934,7 +948,7 @@ function CoursesTab({
     // Sin ?lesson= en la URL: recargar no vuelve a abrir la lección cerrada.
     try {
       const u = new URL(window.location.href);
-      if (u.searchParams.has('lesson')) { u.searchParams.delete('lesson'); window.history.replaceState(window.history.state, '', u.pathname + u.search); }
+      if (u.searchParams.has('lesson')) { u.searchParams.delete('lesson'); u.searchParams.delete('from'); writeQuietUrl(u.pathname + u.search); }
     } catch { /* nada */ }
   };
   // La lección que llegó por link vuelve a su origen (?from=, 2026-10-01): el
@@ -943,7 +957,7 @@ function CoursesTab({
   // el app instalado y en los links de WhatsApp.)
   const linkBack = fromLink && openLessonId === linkedId && initialFrom ? coachBack(initialFrom, token, { k: 'home' }) : null;
   const goBack = () => {
-    if (linkBack) { window.location.assign(linkBack.href); return; }
+    if (linkBack) { window.location.replace(linkBack.href); return; }
     setFromLink(false);
     closeLesson();
   };
@@ -1947,15 +1961,17 @@ function PlanTab({
   onBackHome?: () => void;
 }) {
   const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
-  const [openedFromHome, setOpenedFromHome] = useState(false);
+  const [openedFromHome, setOpenedFromHomeState] = useState(false);
+  // Ref al lado del estado: la URL se escribe en el mismo tick en que se abre.
+  const fromHomeRef = useRef(false);
+  const setOpenedFromHome = (v: boolean) => { fromHomeRef.current = v; setOpenedFromHomeState(v); };
   const [planDay, setPlanDay] = useState<number | null>(null);
   // La clase abierta queda en la URL (?camp=&day=&view=): el Back de Teach it
   // o de una lección vuelve a esta clase, este día, esta vista.
   const syncPlanUrl = (camp: string | null, day?: number | null, view?: 'read' | 'run') => {
     try {
-      const q = camp ? `?tab=plan&camp=${camp}${day ? `&day=${day}` : ''}&view=${view ?? 'read'}` : '?tab=plan';
-      const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
-      window.history.replaceState({ ...st, __NA: true }, '', `${window.location.pathname}${q}`);
+      const q = camp ? `?tab=plan&camp=${camp}${day ? `&day=${day}` : ''}&view=${view ?? 'read'}${fromHomeRef.current ? '&from=home' : ''}` : '?tab=plan';
+      writeQuietUrl(`${window.location.pathname}${q}`);
     } catch { /* cosmético */ }
   };
   // 🚐 Transporte en dos toques (sin abrir el planner): panel por servicio.
@@ -2128,11 +2144,12 @@ function PlanTab({
             instanceId={selectedCampId}
             coachToken={token}
             initialDay={planDay}
+            fromHome={openedFromHome}
             templatePlan={planData.templatePlan}
             templateMeta={planData.templateMeta}
           />
         ) : (
-          <SessionPlanner data={planData} token={token} onBack={close} onSwitchDay={switchDay} />
+          <SessionPlanner data={planData} token={token} onBack={close} onSwitchDay={switchDay} fromHome={openedFromHome} />
         )}
       </div>
     );

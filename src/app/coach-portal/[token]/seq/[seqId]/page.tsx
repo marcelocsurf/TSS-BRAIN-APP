@@ -170,6 +170,13 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
           layers, backHref: `/coach-portal/${token}/course?belt=${backBelt}`,
           extraPieces, allVideos: media.videosOfPage(cfg), laminas: media.laminasOfPage(cfg),
           sayIt: { words, cue }, focus, stepMedia, sheetLayers, sheetPieces,
+          // Lo que la página lleva al salir a una lección: su voz, su detalle
+          // abierto y de dónde había llegado (así la vuelta queda igual).
+          self: {
+            ...(sp.course && /^(white|yellow|blue|purple|brown|black)_belt$/.test(sp.course) ? { course: sp.course } : {}),
+            ...(sp.focus ? { focus: sp.focus } : {}),
+            ...(origin && origin.k !== 'seq' ? { up: origin } : {}),
+          },
         }}
       />
     </div>

@@ -102,9 +102,11 @@ interface SessionPlannerProps {
   // parent re-fetches getServicePlan with that day_number and passes
   // fresh data back via the data prop.
   onSwitchDay?: (dayNumber: number) => void;
+  /** La clase se abrió desde el Home: su Back vuelve al Home (y los links lo recuerdan). */
+  fromHome?: boolean;
 }
 
-export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlannerProps) {
+export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = false }: SessionPlannerProps) {
   const [plan, setPlan] = useState(data.plan);
   const [students, setStudents] = useState(data.students);
   const [pending, startTransition] = useTransition();
@@ -922,7 +924,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
         onClick={onBack}
         className="text-[12px] text-[var(--tss-navy)] hover:underline"
       >
-        ← Back to my classes
+        {fromHome ? '← Back to home' : '← Back to my classes'}
       </button>
 
       {/* Header */}
@@ -1672,7 +1674,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                           {differs && groupSeq && <p className="text-[13px] mt-1.5" style={{ color: '#9A6A12' }}>Stays here while the group works {seqLabel(groupSeq)}.</p>}
                           {/* El puente (Marcelo 2026-09-24): de la misión al
                               material para enseñarla, abierto en ese detalle. */}
-                          <a href={withFrom(`/coach-portal/${token}/seq/${mySeq.id}${missionList.length ? `?focus=${encodeURIComponent(missionList[0])}` : ''}`, { k: 'plan', camp: data.camp.id, day: data.selectedDay.day_number, view: 'run', why: 'today' })}
+                          <a href={withFrom(`/coach-portal/${token}/seq/${mySeq.id}${missionList.length ? `?focus=${encodeURIComponent(missionList[0])}` : ''}`, { k: 'plan', camp: data.camp.id, day: data.selectedDay.day_number, view: 'run', why: 'today', ...(fromHome ? { home: true as const } : {}) })}
                             className="inline-flex items-center gap-1.5 text-[13px] font-bold mt-2 no-underline" style={{ color: '#00789A' }}>
                             How to teach it →
                           </a>
@@ -1833,7 +1835,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 <DayCloseCard
                   key={s.student_id}
                   token={token}
-                  planFrom={{ k: 'plan', camp: data.camp.id, day: data.selectedDay.day_number, view: 'run', why: 'close' }}
+                  planFrom={{ k: 'plan', camp: data.camp.id, day: data.selectedDay.day_number, view: 'run', why: 'close', ...(fromHome ? { home: true as const } : {}) }}
                   student={s}
                   isClosed={isClosed}
                   isLastDay={isLastDay}

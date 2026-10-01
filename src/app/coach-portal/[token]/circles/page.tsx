@@ -3,6 +3,7 @@
 // (ThreeCirclesPage) en modo coach — mismas láminas, drills y juegos, con
 // "Teach it" por círculo. Hasta su cinta (+ la de sus camps): los Tres
 // Círculos son del curso Yellow.
+import { parseFrom, coachBack } from '@/lib/nav/origin';
 import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -24,7 +25,8 @@ const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function CoachCirclesPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function CoachCirclesPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<{ from?: string }> }) {
+  const sp = searchParams ? await searchParams : undefined;
   const { token } = await params;
   if (!UUID_RE.test(token)) notFound();
   const admin = createAdminClient();
@@ -54,7 +56,7 @@ export default async function CoachCirclesPage({ params }: { params: Promise<{ t
         video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null}
         lessonId={THREE_CIRCLES_LESSON_ID}
         moveVideos={movementVideos(media)}
-        coach={{ backHref: `/coach-portal/${token}/course?belt=yellow`, laminas: THREE_CIRCLES_LAMINAS, videos: threeCirclesVideos(media) }}
+        coach={{ backHref: coachBack(parseFrom(sp?.from, 'coach'), token, { k: 'course', belt: 'yellow' }).href, laminas: THREE_CIRCLES_LAMINAS, videos: threeCirclesVideos(media) }}
       />
     </div>
   );

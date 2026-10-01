@@ -55,6 +55,8 @@ interface Props {
   instanceDays?: number | null;
   /** Volver de "Teach it" / una lección (?day=): ese día abierto y a la vista. */
   initialDay?: number | null;
+  /** La clase se abrió desde el Home: los links lo recuerdan para la vuelta. */
+  fromHome?: boolean;
 }
 
 type Mode = 'summary' | 'detail';
@@ -109,6 +111,7 @@ export function CampPlanReader({
   templatePlan,
   templateMeta,
   initialDay = null,
+  fromHome = false,
 }: Props) {
   const [mode, setMode] = useState<Mode>('summary');
   const [expanded, setExpanded] = useState<Set<number>>(() => new Set(initialDay ? [initialDay] : []));
@@ -325,7 +328,7 @@ export function CampPlanReader({
                             </button>
                             {open && (
                               <div className="border-t border-[#DCD7C6] p-2">
-                                <BlockCard block={b} coachToken={coachToken} planFrom={instanceId ? { k: 'plan', camp: instanceId, day: d.day_number, view: 'read', why: 'plan' } : null} />
+                                <BlockCard block={b} coachToken={coachToken} planFrom={instanceId ? { k: 'plan', camp: instanceId, day: d.day_number, view: 'read', why: 'plan', ...(fromHome ? { home: true as const } : {}) } : null} />
                               </div>
                             )}
                           </div>

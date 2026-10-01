@@ -76,7 +76,7 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
   // el Plan abre esa clase en ese día y esa vista.
   const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const initialPlan = initialTab === 'plan' && camp && UUID.test(camp)
-    ? { campId: camp.toLowerCase(), day: day && /^\d{1,2}$/.test(day) && Number(day) >= 1 ? Number(day) : undefined, view: (view === 'run' ? 'run' : 'read') as 'read' | 'run' }
+    ? { campId: camp.toLowerCase(), day: day && /^\d{1,2}$/.test(day) && Number(day) >= 1 ? Number(day) : undefined, view: (view === 'run' ? 'run' : 'read') as 'read' | 'run', ...(from === 'home' ? { from: 'home' as const } : {}) }
     : null;
   // De dónde vino el link (?from=): el Back de la lección vuelve ahí.
   const initialFrom = parseFrom(from, 'coach');

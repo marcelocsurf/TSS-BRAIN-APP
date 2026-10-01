@@ -2,6 +2,7 @@
 // Paso 3 de unificar el curso (Marcelo 2026-09-29): la MISMA página del alumno
 // (InfiniteCirclePage) en modo coach. Es del curso Blue: hasta su cinta (+ la
 // de sus camps).
+import { parseFrom, coachBack } from '@/lib/nav/origin';
 import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -19,7 +20,8 @@ const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function CoachLoopPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function CoachLoopPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<{ from?: string }> }) {
+  const sp = searchParams ? await searchParams : undefined;
   const { token } = await params;
   if (!UUID_RE.test(token)) notFound();
   const admin = createAdminClient();
@@ -40,7 +42,7 @@ export default async function CoachLoopPage({ params }: { params: Promise<{ toke
         video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null}
         threeCirclesLessonId={THREE_CIRCLES_LESSON_ID}
         loopLessonId={null}
-        coach={{ backHref: `/coach-portal/${token}/course?belt=blue`, laminas: INFINITE_CIRCLE_LAMINAS, videos: dedupeVideos([...media.libraryVideos('BB-LOOP'), ...media.videosOfLesson('BB-FND-INF')]) }}
+        coach={{ backHref: coachBack(parseFrom(sp?.from, 'coach'), token, { k: 'course', belt: 'blue' }).href, laminas: INFINITE_CIRCLE_LAMINAS, videos: dedupeVideos([...media.libraryVideos('BB-LOOP'), ...media.videosOfLesson('BB-FND-INF')]) }}
       />
     </div>
   );

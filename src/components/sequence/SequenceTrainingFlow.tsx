@@ -147,9 +147,11 @@ interface Props {
   backLabel?: string;
   /** El plan quedó guardado: el portal lo muestra ya en el Home y en Let's Play. */
   onPlanSaved?: (sessionId: string) => void;
+  /** La sesión quedó evaluada (cerrada): el portal deja de mostrarla como abierta. */
+  onSessionClosed?: (sessionId: string) => void;
 }
 
-export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, initialFocusMoment = null, openSession = null, goofy = false, studentBelt: _studentBelt = 'white_belt', onCancel, rehearseHref = null, onDone, otherOpenPlan = null, backLabel = "Let's Play", onPlanSaved }: Props) {
+export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, initialFocusMoment = null, openSession = null, goofy = false, studentBelt: _studentBelt = 'white_belt', onCancel, rehearseHref = null, onDone, otherOpenPlan = null, backLabel = "Let's Play", onPlanSaved, onSessionClosed }: Props) {
   // El modo se elige EN el plan (toda la línea, o un paso/momento como foco).
   const [modeState, setModeState] = useState<TrainingMode>(openSession?.mode ?? mode);
   const isRun = modeState === 'sequence_run';
@@ -726,6 +728,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         try { sessionStorage.removeItem(draftKey); } catch { /* nada */ }
         setResult({ nextFocus: res.nextFocus, sequenceRating: res.sequenceRating, stepsCounted: res.stepsCounted ?? 0 });
         getWeeklyPracticeCount(portalToken).then(setWeekCount).catch(() => {});
+        if (sessionId) onSessionClosed?.(sessionId);
         setPhase('done');
       } catch {
         setErrorMsg('Could not save the session. Check your connection and try again.');
