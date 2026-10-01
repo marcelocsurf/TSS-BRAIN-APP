@@ -5,7 +5,7 @@ Actualizada: 2026-10-01. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico
 ---
 
 ## EN CURSO — pedidos de Marcelo 2026-10-01 (uno por uno, en este orden)
-0. [ ] **SEGURIDAD URGENTE (hallado 2026-10-01)** — el repo de GitHub es PÚBLICO y tiene 3 respaldos SIN cifrar (17, 20 y 27-sep: toda la base + archivos, con salud y documentos de identidad). Ya hecho por Claude: 4 cuentas de prueba con contraseña publicada (admin@/coordinator@/coach@/assistant@tss-brain.com) BLOQUEADAS (nunca entraron, sin registros en Auth); el backup ya no sube nada sin cifrar; `create_role_users.sql` fuera del repo. Falta (solo Marcelo): (a) GitHub → repo → Settings → Danger Zone → **Make private**; (b) secreto `BACKUP_PASSPHRASE`; (c) correr el backup a mano y, cuando salga el `.enc`, **borrar los 3 respaldos viejos**; (d) preguntar al abogado si cuenta como vulneración con aviso de 72 h (art. 25, Ley de Protección de Datos Personales).
+0. [ ] **Seguridad (2026-10-01)** — tareas de Marcelo en GitHub; el detalle está en el chat de ese día, no en este archivo.
 1. [ ] **Ley de datos de El Salvador**: validar la ley vigente y lo que cualquier app debe cumplir; qué hacer para evitar una demanda (cruza con §1 LEGAL y `AUDITORIA_LEGAL.md`).
 2. [ ] **Cierre del entreno · "What do you work on next?"**: el selector sale vacío (ej. Three Circles · Body · Rotation) y solo ofrece detalles de la misma secuencia → que se pueda elegir OTRA secuencia como próximo foco.
 3. [ ] **Aviso "Your session plan · I'm back — finish & evaluate"**: pasarlo al manual v10.1, sin letras con efecto glow.
