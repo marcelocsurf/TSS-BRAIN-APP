@@ -20,6 +20,7 @@ import { getMySequence } from '@/lib/actions/sequence';
 import { getCourseCatalog } from '@/lib/actions/course';
 import { GRADUATION_RULES, isWaterSelfSufficient } from '@/lib/constants/graduation';
 import { type BeltLevel } from '@/lib/constants/belts';
+import { TOOL_PAGES, TOOL_GROUP_ORDER } from '@/lib/sequence-pages/tools-seq';
 
 export interface RoadmapSequence {
   id: string;
@@ -34,6 +35,9 @@ export interface RoadmapSequence {
   weakestTitle: string | null;
   minRating: number | null;
   totalSteps: number;
+  /** Herramienta (Forward Momentum): no es secuencia; se entrena en Let's
+   *  Play con este id, no abriendo un paso. */
+  trainSequenceId?: string;
 }
 
 export interface BeltRoadmap {
@@ -176,6 +180,40 @@ export async function getBeltRoadmap(
   } catch {
     // Sin secuencias la guía igual sirve: el agua y el curso se muestran.
     sequences = [];
+  }
+
+  // Las herramientas (Forward Momentum, STP-019): la evaluación del coach las
+  // exige como cualquier paso del catálogo (4★), así que la guía también
+  // (Marcelo 2026-10-01: "todo lo que vamos incorporando… donde corresponda").
+  // Se lee la nota OFICIAL del coach, como en las secuencias.
+  try {
+    const tools = TOOL_PAGES.filter((t) => rule.sections.includes(t.courseKey));
+    const toolSteps = tools.flatMap((t) => t.stepIds);
+    if (toolSteps.length) {
+      const { data: tr } = await admin
+        .from('student_step_ratings')
+        .select('step_id, coach_rating')
+        .eq('student_id', (student as any).id)
+        .in('step_id', toolSteps);
+      const coachOf = new Map(((tr ?? []) as any[]).map((r) => [r.step_id, r.coach_rating as number | null]));
+      for (const t of tools) {
+        const stars = t.stepIds.map((id) => coachOf.get(id) ?? null);
+        const rated = stars.filter((v): v is number => v != null);
+        const min = rated.length ? Math.min(...rated) : null;
+        const state: RoadmapSequence['state'] = rated.length === 0 ? 'unrated' : rated.length < stars.length ? 'partial' : (min as number) >= rule.stpThreshold ? 'owned' : 'working';
+        const weakIdx = stars.findIndex((v) => v != null && v < rule.stpThreshold);
+        sequences.push({
+          id: t.id, order: TOOL_GROUP_ORDER, name: t.title, belt: t.belt, state,
+          weakestStepId: null,
+          weakestTitle: weakIdx >= 0 ? t.title : null,
+          minRating: min,
+          totalSteps: t.stepIds.length,
+          trainSequenceId: t.id,
+        });
+      }
+    }
+  } catch {
+    /* sin la nota, la guía sigue con las secuencias */
   }
 
   // El curso. No bloquea la cinta (decisión de Marcelo): se ve como requisito

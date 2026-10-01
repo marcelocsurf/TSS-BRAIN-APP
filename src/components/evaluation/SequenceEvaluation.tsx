@@ -58,6 +58,7 @@ import {
   SIDE_SHORT,
 } from '@/lib/constants/learning-blocks';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
+import { withToolSequences, isToolSequenceId } from '@/lib/sequence-pages/tools-seq';
 import { sequenceStarChanges } from '@/lib/evaluation/sequence-stars';
 import { COMMAND_COLORS } from '@/lib/sequence-pages/wave-kit';
 
@@ -94,7 +95,10 @@ export function SequenceEvaluation({
    *  así la comparación es directa. */
   studentSequenceRatings?: Record<string, { rating: number | null; heldBackStepId: string | null; at: string }>;
 }) {
-  const { groups, orphans } = groupBySequence(rows);
+  // Las herramientas (Forward Momentum, STP-019) no son secuencias, pero se
+  // evalúan igual que una: su propio bloque con La tiene / Le falta / No la
+  // vi y los tres momentos (withToolSequences, Marcelo 2026-10-01).
+  const { groups, orphans } = groupBySequence(withToolSequences(rows));
   const [open, setOpen] = useState<Record<string, boolean>>({});
   // "Le falta" / 1–3★ en la cabecera: recordar que el coach está buscando el
   // paso que frena, para mostrarle la pista arriba de la lista.
@@ -165,7 +169,9 @@ export function SequenceEvaluation({
             <div className="px-3 py-2.5 bg-[#F7F9FA]">
               <div className="flex items-baseline gap-2 flex-wrap">
                 <p className="text-[13px] font-semibold text-[#10263B]">{label}</p>
-                {side && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#DCD7C6] text-[#10263B]">{side === 'both' ? 'FS·BS' : SIDE_SHORT[side]}</span>}
+                {isToolSequenceId(g.id)
+                  ? <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#DCD7C6] text-[#10263B]">HERRAMIENTA · TODA CINTA</span>
+                  : side && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#DCD7C6] text-[#10263B]">{side === 'both' ? 'FS·BS' : SIDE_SHORT[side]}</span>}
                 {self && (self.rating != null || selfHeld) && (
                   <span className="text-[10px] text-amber-700">
                     alumno{self.rating != null ? ` ${self.rating}★` : ''}{selfHeld ? ` · lo frena ${selfHeld.step_title ?? selfHeld.step_id}` : ''}

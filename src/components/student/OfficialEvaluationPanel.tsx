@@ -7,6 +7,7 @@ import { SequenceEvaluation } from '@/components/evaluation/SequenceEvaluation';
 import { closeStudentEvaluation } from '@/lib/actions/student-evaluation';
 import { NextFocusPicker, focusLabel, EMPTY_FOCUS, type NextFocusValue, type NextFocusGroup } from '@/components/evaluation/NextFocusPicker';
 import { groupBySequence, isMethodSequence } from '@/lib/constants/learning-blocks';
+import { withToolSequences } from '@/lib/sequence-pages/tools-seq';
 
 // Coach-facing panel on /students/[id]. Lets the coach assign OFFICIAL
 // stars (1-5) to any active STP for the student. Persisted in
@@ -46,7 +47,7 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSeque
   // palabra. Es lo que el alumno ve y con lo que el próximo coach planea.
   // Foco ELEGIBLE (Marcelo 2026-09-16): secuencia + paso opcional + nota.
   const [focusSel, setFocusSel] = useState<NextFocusValue>(EMPTY_FOCUS);
-  const focusGroups: NextFocusGroup[] = groupBySequence(local).groups
+  const focusGroups: NextFocusGroup[] = groupBySequence(withToolSequences(local)).groups
     .filter((g) => isMethodSequence(g.id))
     .map((g) => ({ id: g.id, name: g.name, order: g.order, steps: g.rows.map((r) => ({ id: r.step_id, title: r.step_title ?? r.step_id })) }));
   const focus = focusLabel(focusGroups, focusSel);

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getMySequence, getThreeCirclesProgress, type SequenceData, type SequenceItem, type ThreeCirclesGameProgress } from '@/lib/actions/sequence';
+import { getMySequence, getThreeCirclesProgress, momentumSequence, type SequenceData, type SequenceItem, type ThreeCirclesGameProgress } from '@/lib/actions/sequence';
+import { MOMENTUM_SEQUENCE_ID } from '@/lib/sequence-pages/tools-seq';
 import { StarRating } from './StarRating';
 import { StepDetailView } from './StepDetailView';
 import { Dumbbell, Waves, Target } from 'lucide-react';
@@ -104,6 +105,10 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
   // requisito en la ola para Yellow y Blue. Se juegan desde acá y se registran.
   const [circles, setCircles] = useState<ThreeCirclesGameProgress[]>([]);
   useEffect(() => { let m = true; getThreeCirclesProgress(portalToken).then((c) => { if (m) setCircles(c); }).catch(() => {}); return () => { m = false; }; }, [portalToken]);
+  // Forward Momentum (Marcelo 2026-10-01): "un tubo con su propia autonomía" en
+  // Let's Play, para toda cinta. Sus 3 misiones con la última estrella de cada una.
+  const [momentum, setMomentum] = useState<SequenceData['sequences'][number] | null>(null);
+  useEffect(() => { let m = true; momentumSequence(portalToken).then((q) => { if (m) setMomentum(q); }).catch(() => {}); return () => { m = false; }; }, [portalToken]);
   const [openStepId, setOpenStepId] = useState<string | null>(initialStepId || null);
   // El paso que llegó de afuera (Home, What it takes) vuelve afuera; uno que se
   // abrió desde esta lista vuelve a la lista (revisión 2026-10-01).
@@ -395,6 +400,46 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           {!next && <p className="text-[12px] mt-2" style={{ color: '#55666E' }}>Every sequence of this belt is yours. Keep them alive — and ask your coach about the next belt.</p>}
         </div>
       )}
+
+      {/* FORWARD MOMENTUM · una herramienta de toda cinta (Marcelo 2026-10-01:
+          "como si fuera una secuencia aparte… un tubo con su propia autonomía").
+          Sus 3 misiones se entrenan con el plan de Let's Play; la estrella va a
+          su paso (STP-019). El coach también la receta desde el plan. */}
+      {momentum && momentum.items.length > 0 && (() => {
+        const items = momentum.items;
+        const done = items.filter((m) => (m.rating ?? 0) >= 4).length;
+        const played = items.filter((m) => (m.rating_count ?? 0) > 0).length;
+        const LABEL: Record<string, string> = {
+          'MIS-WB-019-A': 'Complete · all three moments, one wave',
+          'MIS-WB-019-B': 'Moment · right after the pop-up',
+          'MIS-WB-019-C': 'Moment · after your maneuver',
+        };
+        return (
+          <div className="rounded-lg p-4" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
+            <p className="text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: '#55666E' }}>Forward Momentum · a tool for every belt</p>
+            <p className="text-[23px] mt-1" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>{played === 0 ? 'Three moments · start here' : done === items.length ? 'All three at 4★' : `${done} of ${items.length} at 4★`}</p>
+            <p className="text-[13px] mt-1 leading-snug" style={{ color: '#10263B' }}>Keep the board moving: right after the pop-up, after your maneuver, and whenever it slows.</p>
+            <div className="mt-3 space-y-1.5">
+              {items.map((it, i) => (
+                <div key={it.step_id} className="flex items-center gap-2.5 rounded-[5px] px-3 py-2" style={{ background: PAPER, border: '1px solid #DCD7C6' }}>
+                  <span className="shrink-0 w-6 h-6 rounded-full inline-flex items-center justify-center text-[12px] font-black" style={{ background: (it.rating ?? 0) >= 4 ? '#00A8CC' : INK, color: '#F7F9FA' }}>{i + 1}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11px]" style={{ ...F_M, letterSpacing: '0.08em', color: '#00A8CC' }}>{LABEL[it.step_id] ?? 'Forward Momentum'}</p>
+                    <p className="text-[14px] font-bold leading-tight truncate" style={{ color: '#10263B' }}>{it.step_title}</p>
+                    <p className="text-[11px]" style={{ color: '#55666E' }}>{(it.rating_count ?? 0) === 0 ? 'Not trained yet' : `Last: ${it.rating ?? '—'}★ · trained ${it.rating_count}×`}</p>
+                  </div>
+                  {onTrainSequence && (
+                    <button type="button" onClick={() => onTrainSequence({ sequenceId: MOMENTUM_SEQUENCE_ID, mode: 'step_focus', focusStepId: it.step_id })} className="shrink-0 h-9 px-3 rounded-[5px] text-[12px] font-black uppercase" style={{ background: CYAN, color: INK, fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
+                      {(it.rating_count ?? 0) === 0 ? 'Train it' : 'Again'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {pageHrefOf(MOMENTUM_SEQUENCE_ID) && <a href={pageHrefOf(MOMENTUM_SEQUENCE_ID)!} className="inline-block mt-2.5 text-[13px] font-semibold underline underline-offset-2" style={{ color: '#10263B' }}>Open the Forward Momentum page</a>}
+          </div>
+        );
+      })()}
 
       {/* MY LIST (Marcelo 2026-09-10): las tareas que el alumno se dejó a sí
           mismo — paso + detalle, máximo tres. Se ofrecen, no se imponen. */}

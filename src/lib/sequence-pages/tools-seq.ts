@@ -7,8 +7,9 @@
 // Reglas (resolve.ts, SessionPlanner, DayCloseCard, service-planner):
 //  · nunca se resuelve por pasos: solo con sequence_id 'TOOL-MOMENTUM';
 //  · nunca es la línea del alumno ni la de mañana: se AGREGA al día;
-//  · no está en Let's Play (STP-019 sigue SIN wb_sequence_id): se registra
-//    con sus misiones (?drill=MIS-…), que mueven la estrella de STP-019;
+//  · STP-019 sigue SIN wb_sequence_id; desde 2026-10-01 vive en Let's Play
+//    como secuencia virtual (sus 3 misiones = los "pasos", ver abajo) y en la
+//    evaluación del nivel como bloque propio (withToolSequences);
 //  · la estrella del cierre cae en STP-019 (Marcelo: sí), como Circle 1 · Body.
 // Lo que se receta: la misión completa (los tres momentos, en UNA ola) o un
 // momento suelto: después del pop-up o después de una maniobra. El momento 3
@@ -144,3 +145,32 @@ Flexion stores energy, extension releases it ahead, and the board regains speed 
 
 /** ¿Es una herramienta (toda cinta, fuera de las secuencias)? */
 export const isToolPage = (c: { kind?: string } | null | undefined): boolean => c?.kind === 'tool';
+
+// ═══ Forward Momentum en Let's Play (Marcelo 2026-10-01: "me salió el planner
+// viejo") ═══ Una "secuencia virtual" como los Tres Círculos: sus 3 misiones son
+// los "pasos" del plan nuevo (plan → agua → I'm back → evaluar). La estrella va
+// al paso STP-019, como antes con el flujo de misión suelta.
+export const MOMENTUM_SEQUENCE_ID = 'TOOL-MOMENTUM';
+export const MOMENTUM_MISSION_IDS = ['MIS-WB-019-A', 'MIS-WB-019-B', 'MIS-WB-019-C'];
+export const MOMENTUM_STAR_STEP = 'STP-019';
+
+// ═══ Las herramientas en la evaluación del nivel (Marcelo 2026-10-01: "todo
+// lo que vamos incorporando debe ir también a la evaluación general del nivel
+// y donde corresponda") ═══ No son secuencias, pero se evalúan como una: su
+// paso suelto (STP-019, sin wb_sequence_id) se agrupa bajo el id de la
+// herramienta, después de las secuencias numeradas (orden 50; los Tres
+// Círculos van en 90+). La nota se sigue escribiendo en el paso: nada nuevo
+// que guardar, y la regla de aprobación (4★ en cada paso) no cambia.
+export const TOOL_PAGES: SequencePageConfig[] = [TOOL_MOMENTUM];
+export const TOOL_GROUP_ORDER = 50;
+export const isToolSequenceId = (id: string | null | undefined): boolean => !!id && TOOL_PAGES.some((t) => t.id === id);
+
+export function withToolSequences<T extends { step_id: string; sequence_id?: string | null }>(rows: T[]): T[] {
+  return rows.map((r) => {
+    if (r.sequence_id) return r;
+    const t = TOOL_PAGES.find((p) => p.stepIds.includes(r.step_id));
+    return t
+      ? { ...r, sequence_id: t.id, sequence_name: t.title, sequence_order: TOOL_GROUP_ORDER, sequence_step_order: t.stepIds.indexOf(r.step_id) + 1 }
+      : r;
+  });
+}

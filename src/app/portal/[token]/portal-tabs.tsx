@@ -815,7 +815,7 @@ export function PortalTabs({
   // De dónde arrancó el flujo de Let's Play (Marcelo 2026-10-01: "que pueda
   // regresar a la pantalla que es lógico"): Cancel vuelve ahí, no siempre a
   // la lista. 'step' = el detalle del paso desde el que se tocó Practice.
-  type FlowFrom = StudentFrom | { k: 'step'; id: string };
+  type FlowFrom = StudentFrom | { k: 'step'; id: string } | { k: 'roadmap' };
   const [flowFrom, setFlowFrom] = useState<FlowFrom | null>(initialTrain || initialDrillId ? initialFrom : null);
   // De dónde se abrió el detalle de un paso: su "Back" vuelve ahí.
   const [stepFrom, setStepFrom] = useState<'home' | 'play' | 'roadmap'>(initialStepId && initialFrom?.k === 'home' ? 'home' : 'play');
@@ -948,13 +948,14 @@ export function PortalTabs({
     if (!f || f.k === 'play') return;
     if (f.k === 'home') { showTab('home'); return; }
     if (f.k === 'step') { setDeepStepId(f.id); return; }
+    if (f.k === 'roadmap') { setRoadmapOpen(true); return; }
     if (f.k === 'course') { showTab('course'); return; }
     // Otra página (la de la secuencia, los Tres Círculos, una lección): se va,
     // reemplazando esta entrada (el atrás del teléfono no pasa por una lista fantasma).
     leaveTo(studentBack(f, data.token, { k: 'play' }).href);
   };
   const flowBackLabel = !flowFrom || flowFrom.k === 'play' ? "Let's Play"
-    : flowFrom.k === 'step' ? 'the step' : studentBack(flowFrom, data.token, { k: 'play' }).label;
+    : flowFrom.k === 'step' ? 'the step' : flowFrom.k === 'roadmap' ? 'What it takes' : studentBack(flowFrom, data.token, { k: 'play' }).label;
 
   // La sesión abierta (plan guardado antes del agua): cerrarla o descartarla.
   // Ir a una pestaña con datos frescos, SIN router.refresh(): refresh re-pide
@@ -1316,6 +1317,7 @@ export function PortalTabs({
             token={data.token}
             onClose={() => setRoadmapOpen(false)}
             onOpenStep={(id) => openStepInPlay(id, 'roadmap')}
+            onTrainSequence={(a) => { setRoadmapOpen(false); resetPlay(); setFlowFrom({ k: 'roadmap' }); setPendingSequence(a); showTab('sequence'); }}
             onOpenWater={() => setWaterOpen(true)}
           />
         )}

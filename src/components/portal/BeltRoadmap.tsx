@@ -111,12 +111,15 @@ export function BeltRoadmap({
   token,
   onClose,
   onOpenStep,
+  onTrainSequence,
   onOpenWater,
 }: {
   token: string;
   onClose: () => void;
   /** Abre el paso que frena una secuencia, en Let's Play. */
   onOpenStep?: (stepId: string) => void;
+  /** Abre el plan de Let's Play de una herramienta (Forward Momentum). */
+  onTrainSequence?: (args: { sequenceId: string; mode: 'step_focus' }) => void;
   /** Abre "Your water level" — la línea del agua, aparte de la cinta. */
   onOpenWater?: () => void;
 }) {
@@ -294,12 +297,16 @@ export function BeltRoadmap({
                       detail={
                         s.state === 'owned'
                           ? null
+                          : s.trainSequenceId
+                          ? `A tool for every belt · ${s.state === 'working' && s.minRating !== null ? `${s.minRating}★ — train the three moments` : "your coach hasn't rated it yet"}`
                           : s.state === 'working' && s.weakestTitle
                           ? `Holding it back: ${s.weakestTitle}${s.minRating !== null ? ` · ${s.minRating}★` : ''}`
                           : "Your coach hasn't rated this one yet"
                       }
                       onClick={
-                        s.weakestStepId && onOpenStep
+                        s.trainSequenceId && onTrainSequence
+                          ? () => onTrainSequence({ sequenceId: s.trainSequenceId!, mode: 'step_focus' })
+                          : s.weakestStepId && onOpenStep
                           ? () => {
                               onClose();
                               onOpenStep(s.weakestStepId!);

@@ -12,6 +12,7 @@
 import { FocusPicker, FlowPicker } from '@/components/portal/close-pickers';
 import { useEffect, useRef, useState } from 'react';
 import { THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
+import { MOMENTUM_SEQUENCE_ID } from '@/lib/sequence-pages/tools-seq';
 import {
   getSequenceTraining,
   saveSequenceSession,
@@ -276,7 +277,13 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         // Cerrar un plan guardado: directo a evaluar, con el plan tal cual se guardó.
         if (openSession) { setPhase('evaluation'); return; }
         const wanted = focusStepId ?? null;
-        const f = wanted && res.data.steps.some((s) => s.step_id === wanted) ? wanted : res.data.suggestedFocusStepId;
+        let f = wanted && res.data.steps.some((s) => s.step_id === wanted) ? wanted : res.data.suggestedFocusStepId;
+        // Forward Momentum no tiene "la secuencia entera": siempre una de sus
+        // misiones (la completa, por defecto).
+        if (res.data.sequence.id === MOMENTUM_SEQUENCE_ID) {
+          f = f ?? res.data.steps[0]?.step_id ?? null;
+          setModeState('step_focus');
+        }
         setFocusId(f);
         // Lo que quedó flojo la última vez ya es el objetivo de hoy.
         if (isRun) {
@@ -324,13 +331,14 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
 
   const seq = data.sequence;
   // La secuencia virtual de los Tres Círculos no mueve estrellas de paso.
-  const isVirtualSeq = seq.id === THREE_CIRCLES_SEQUENCE_ID;
+  const isMomentum = seq.id === MOMENTUM_SEQUENCE_ID;
+  const isVirtualSeq = seq.id === THREE_CIRCLES_SEQUENCE_ID || isMomentum;
   const steps = data.steps;
   const moments = momentsByStep(seq.id, steps.map((s) => ({ id: s.step_id, title: s.title })));
   // "What do you work on next?": cada momento de la línea; un paso sin
   // momentos va entero. Los juegos de los Tres Círculos no son pasos del curso.
   type DetailOption = { key: string; stepId: string; stepTitle: string; detail: string | null; command: Moment['command'] | null };
-  const detailOptions: DetailOption[] = seq.id === THREE_CIRCLES_SEQUENCE_ID ? [] : steps.flatMap((s): DetailOption[] => {
+  const detailOptions: DetailOption[] = isVirtualSeq ? [] : steps.flatMap((s): DetailOption[] => {
     const stepTitle = s.title.replace(/ Operationalized at Blue Belt/, '');
     const ms = moments[s.step_id] ?? [];
     return ms.length
@@ -444,12 +452,14 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
               })}
             </div>
           )}
+          {!isMomentum && (
           <button type="button" aria-pressed={isRun} onClick={pickWhole}
             className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-[5px] border-[1.5px] text-left active:scale-[0.99]"
             style={isRun ? { background: INK, borderColor: INK, color: PAPER } : { background: '#F7F9FA', borderColor: '#DCD7C6', color: INK }}>
             <Play size={14} strokeWidth={2.25} className="shrink-0" />
             <span className="text-[13px] font-semibold">The whole sequence · no specific focus</span>
           </button>
+          )}
           <ol className="space-y-1.5 mt-1.5">
             {steps.map((s, i) => {
               const on = !isRun && focusId === s.step_id;

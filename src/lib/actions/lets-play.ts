@@ -29,7 +29,8 @@ import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import { pickWeakestCriterion, type CriterionEvaluationItem, type CriterionResultValue } from '@/lib/utils/criteria';
 import { SEQUENCE_PASS_STARS, sequenceLabel, sequenceSide, SIDE_WORD } from '@/lib/constants/learning-blocks';
-import { getMySequence, threeCirclesSequence, type DrillMissionRow, type SequenceData } from './sequence';
+import { getMySequence, threeCirclesSequence, momentumSequence, type DrillMissionRow, type SequenceData } from './sequence';
+import { MOMENTUM_SEQUENCE_ID, MOMENTUM_STAR_STEP } from '@/lib/sequence-pages/tools-seq';
 import { THREE_CIRCLES_SEQUENCE_ID, gameContext } from '@/lib/sequence-pages/three-circles';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 import { sequenceDisplayName } from '@/lib/sequence-pages/resolve';
@@ -119,6 +120,11 @@ async function loadSequence(portalToken: string, sequenceId: string, belt: strin
     const seq = await threeCirclesSequence(portalToken);
     return { data: null as any, seq };
   }
+  // Forward Momentum: secuencia virtual de sus 3 misiones (2026-10-01).
+  if (sequenceId === MOMENTUM_SEQUENCE_ID) {
+    const seq = await momentumSequence(portalToken);
+    return { data: null as any, seq };
+  }
   let data = await getMySequence(portalToken, belt);
   let seq = data.sequences.find((s) => s.id === sequenceId) ?? null;
   // La secuencia pedida es de una cinta más alta que la pestaña abierta (la
@@ -174,7 +180,7 @@ export async function getSequenceTraining(
     const decided = new Set<string>();
     const { data: recent } = await admin
       .from('self_training_sessions')
-      .select('created_at, training_mode, linked_step_id, step_marks, criteria_evaluation')
+      .select('created_at, training_mode, linked_step_id, linked_drill_mission_id, step_marks, criteria_evaluation')
       .eq('student_id', studentId)
       .eq('status', 'done')
       .eq('linked_sequence_id', sequenceId)
@@ -197,7 +203,8 @@ export async function getSequenceTraining(
       if (r.training_mode === 'sequence_run') {
         for (const m of (r.step_marks ?? []) as StepMark[]) consider(m?.step_id ?? null, m?.criteria_evaluation, r.created_at, typeof m?.moment === 'string' ? m.moment : null);
       } else {
-        consider(r.linked_step_id ?? null, r.criteria_evaluation, r.created_at);
+        // Forward Momentum: los "pasos" son las misiones (el paso guardado es STP-019).
+        consider((sequenceId === MOMENTUM_SEQUENCE_ID ? r.linked_drill_mission_id : r.linked_step_id) ?? null, r.criteria_evaluation, r.created_at);
       }
     }
 
@@ -419,7 +426,10 @@ export async function saveSequenceSession(
         training_mode: input.mode,
         linked_sequence_id: seq.id,
         side,
-        linked_step_id: focus?.step_id ?? null,
+        // Forward Momentum: el "paso" es una misión; la sesión cuelga del
+        // paso STP-019 (la tarea del coach y la bitácora lo leen así) y la
+        // misión viaja en linked_drill_mission_id.
+        linked_step_id: seq.id === MOMENTUM_SEQUENCE_ID ? MOMENTUM_STAR_STEP : focus?.step_id ?? null,
         linked_drill_mission_id: focus?.mission?.id ?? null,
         // El nombre viaja con la sesión: Home, bitácora y planner lo leen.
         drill_name: `${isRun ? seqLabel : `${focus!.step_title} · ${seqLabel}`}${kind === 'both' && side ? ` · ${SIDE_WORD[side]}` : ''}`,
@@ -489,7 +499,7 @@ export async function saveSequenceSession(
     const keptFocus = heldBackForRating ?? (isRun ? (runPassed ? null : prev?.held_back_step_id ?? null) : (focusClearsHeld ? null : prev?.held_back_step_id ?? null));
     // La secuencia virtual de los Tres Círculos no mueve estrellas de
     // secuencia ni de paso: el registro del juego vive en la sesión.
-    const isVirtual = seq.id === THREE_CIRCLES_SEQUENCE_ID;
+    const isVirtual = seq.id === THREE_CIRCLES_SEQUENCE_ID || seq.id === MOMENTUM_SEQUENCE_ID;
     if (!isVirtual && (seqRating != null || keptFocus !== (prev?.held_back_step_id ?? null))) {
       const { error: seqErr } = await admin.from('student_sequence_ratings').upsert({
         student_id: studentId,
@@ -543,6 +553,9 @@ export async function saveSequenceSession(
       }
     }
     if (!isVirtual && !isRun && focus && execution) stepUpserts.push({ step_id: focus.step_id, rating: execution });
+    // Forward Momentum: la misión registrada mueve la estrella de STP-019 (como
+    // el flujo de misión suelta de antes).
+    if (seq.id === MOMENTUM_SEQUENCE_ID && !isRun && focus && execution) stepUpserts.push({ step_id: MOMENTUM_STAR_STEP, rating: execution });
     if (stepUpserts.length) {
       const now = new Date().toISOString();
       // UNA sola escritura para todos los pasos: entran todos o ninguno (antes
@@ -664,7 +677,7 @@ export async function planSequenceSession(
         completed: false,
         training_mode: input.mode,
         linked_sequence_id: seq.id,
-        linked_step_id: focus?.step_id ?? null,
+        linked_step_id: seq.id === MOMENTUM_SEQUENCE_ID ? MOMENTUM_STAR_STEP : focus?.step_id ?? null,
         linked_drill_mission_id: focus?.mission?.id ?? null,
         side,
         drill_name: `${isRun ? seqLabel : `${focus!.step_title} · ${seqLabel}`}${kind === 'both' && side ? ` · ${SIDE_WORD[side]}` : ''}`,
@@ -706,7 +719,7 @@ export async function getOpenSession(portalToken: string): Promise<OpenSession |
     const admin = createAdminClient();
     const { data: r } = await admin
       .from('self_training_sessions')
-      .select('id, linked_sequence_id, training_mode, linked_step_id, focus_moment, intention_text, side, measure, planned_duration_minutes, planned_reps, planned_at, created_at, drill_name')
+      .select('id, linked_sequence_id, training_mode, linked_step_id, linked_drill_mission_id, focus_moment, intention_text, side, measure, planned_duration_minutes, planned_reps, planned_at, created_at, drill_name')
       .eq('student_id', studentId)
       .eq('status', 'planned')
       .order('created_at', { ascending: false })
@@ -715,15 +728,18 @@ export async function getOpenSession(portalToken: string): Promise<OpenSession |
     if (!r || !r.linked_sequence_id) return null;
     // Los Tres Círculos: el "paso" es un juego (drills_missions), no una
     // lección — antes el aviso decía "the whole sequence" (2026-10-01).
-    const isCircles = r.linked_sequence_id === THREE_CIRCLES_SEQUENCE_ID;
+    // El "paso" es una misión o un juego (no una lección) en las virtuales.
+    const isCircles = r.linked_sequence_id === THREE_CIRCLES_SEQUENCE_ID || r.linked_sequence_id === MOMENTUM_SEQUENCE_ID;
+    // Forward Momentum guarda STP-019 como paso: el foco del plan es la misión.
+    const focusId: string | null = r.linked_sequence_id === MOMENTUM_SEQUENCE_ID ? r.linked_drill_mission_id ?? null : r.linked_step_id ?? null;
     let focusTitle: string | null = null;
-    if (r.linked_step_id) {
+    if (focusId) {
       if (isCircles) {
-        const { data: g } = await admin.from('drills_missions').select('title').eq('id', r.linked_step_id).maybeSingle();
-        const ctx = gameContext(r.linked_step_id);
+        const { data: g } = await admin.from('drills_missions').select('title').eq('id', focusId).maybeSingle();
+        const ctx = gameContext(focusId);
         focusTitle = g?.title ? (ctx ? `${ctx.label} — ${g.title}` : g.title) : ctx?.label ?? null;
       } else {
-        const { data: l } = await admin.from('lessons').select('title').eq('id', r.linked_step_id).maybeSingle();
+        const { data: l } = await admin.from('lessons').select('title').eq('id', focusId).maybeSingle();
         focusTitle = l?.title ?? null;
       }
     }
@@ -732,7 +748,7 @@ export async function getOpenSession(portalToken: string): Promise<OpenSession |
     // El nombre sale de la secuencia, no de partir drill_name (los títulos
     // de los juegos llevan " · " adentro y el aviso repetía palabras).
     const cfg = SEQUENCE_PAGES[r.linked_sequence_id];
-    const seqLbl = isCircles ? 'The Three Circles' : cfg ? sequenceDisplayName(cfg)
+    const seqLbl = r.linked_sequence_id === THREE_CIRCLES_SEQUENCE_ID ? 'The Three Circles' : r.linked_sequence_id === MOMENTUM_SEQUENCE_ID ? 'Forward Momentum' : cfg ? sequenceDisplayName(cfg)
       : label.includes(' · ') && r.linked_step_id ? label.split(' · ').slice(1, 2).join(' · ') : label.split(' · ').slice(0, 2).join(' · ');
     return {
       id: r.id,
@@ -740,7 +756,7 @@ export async function getOpenSession(portalToken: string): Promise<OpenSession |
       sequenceLabel: seqLbl,
       sequenceName: label,
       mode: (r.training_mode === 'step_focus' ? 'step_focus' : 'sequence_run') as TrainingMode,
-      focusStepId: r.linked_step_id ?? null,
+      focusStepId: focusId,
       focusTitle,
       focusMoment: r.focus_moment ?? null,
       intention: r.intention_text ?? null,
@@ -846,6 +862,7 @@ export async function addTask(
     // tiene pasos del curso (sus "pasos" son juegos): ahí no hay lista.
     const whole = !input.stepId;
     if (whole && seq.id === THREE_CIRCLES_SEQUENCE_ID) return { ok: false, error: 'Not available for The Three Circles.' };
+    if (seq.id === MOMENTUM_SEQUENCE_ID) return { ok: false, error: 'Forward Momentum lives in its own page.' };
     const step = whole ? null : seq.items.find((i) => i.step_id === input.stepId);
     if (!whole && !step) return { ok: false, error: 'Step not in this sequence.' };
     const detail = !whole && typeof input.detail === 'string' && input.detail.trim() ? input.detail.trim().slice(0, 120) : null;

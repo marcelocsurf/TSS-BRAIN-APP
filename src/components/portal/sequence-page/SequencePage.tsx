@@ -211,6 +211,9 @@ export function SequencePage({
   // El coach vuelve a esta página (misma pestaña) desde la lección.
   const lessonHref = (id: string) => withFrom(`${portal}?tab=${courseTab}&lesson=${id}`, coach ? { k: 'seq', id: cfg.id, tab, ...(coach.self ?? {}) } : here());
   const playHref = (q: string) => withFrom(`${portal}?tab=sequence&${q}`, here('do'));
+  // Una misión en Let's Play. En una herramienta (Forward Momentum) va por el
+  // planner nuevo como secuencia virtual (2026-10-01: antes abría el flujo viejo).
+  const missionHref = (mid: string) => (isTool ? playHref(`seq=${cfg.id}&mode=step_focus&focus=${mid}`) : playHref(`drill=${mid}`));
   // Solo la dirección del dibujo cambia con el stance; el nombre de la maniobra no.
   const waveDirection = flip ? 'left' : 'right';
   const stripStep = (t: string) => t.replace(/^\d+ · /, '').replace(/ · .*$/, '');
@@ -564,9 +567,9 @@ export function SequencePage({
                   if (!mid) return null;
                   return (
                     <div className="mt-1">
-                      <a href={playHref(`drill=${mid}`)} className="tss-primary no-underline">{own ? `Start the mission in Let's Play · ${word}` : isTool ? "Start the mission in Let's Play · all three moments" : "Start the mission in Let's Play"}</a>
+                      <a href={missionHref(mid)} className="tss-primary no-underline">{own ? `Start the mission in Let's Play · ${word}` : isTool ? "Start the mission in Let's Play · all three moments" : "Start the mission in Let's Play"}</a>
                       {own && pieces[cfg.do.missionId] && (
-                        <div className="mt-2"><a href={playHref(`drill=${cfg.do.missionId}`)} className="text-[13px] no-underline" style={{ color: MUTED }}>or the complete mission · all three moments</a></div>
+                        <div className="mt-2"><a href={missionHref(cfg.do.missionId)} className="text-[13px] no-underline" style={{ color: MUTED }}>or the complete mission · all three moments</a></div>
                       )}
                     </div>
                   );
@@ -582,7 +585,7 @@ export function SequencePage({
                     )}
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
                       {focusHref && <Go href={runHref} small>or the whole sequence, no focus</Go>}
-                      {pieces[cfg.do.missionId] && <a href={playHref(`drill=${cfg.do.missionId}`)} className="text-[13px] no-underline" style={{ color: MUTED }}>Log the mission only</a>}
+                      {pieces[cfg.do.missionId] && <a href={missionHref(cfg.do.missionId)} className="text-[13px] no-underline" style={{ color: MUTED }}>Log the mission only</a>}
                     </div>
                   </div>
                 );
@@ -610,7 +613,7 @@ export function SequencePage({
                     <div className="mt-2 flex flex-wrap gap-2 text-[13px]">
                       <a href={lessonHref(d.deeper.lessonId)} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: INK }}>Go deeper → {d.deeper.label}</a>
                       {d.deeper.drillId && pieces[d.deeper.drillId] && <button type="button" onClick={() => go('feel')} className="px-3 py-1.5 rounded-full font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: VIOLET }}>Drill: {pieces[d.deeper.drillId].title} · Feel it</button>}
-                      {canTrack && d.deeper.missionId && pieces[d.deeper.missionId] && <a href={playHref(`drill=${d.deeper.missionId}`)} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: GREEN }}>Mission: {pieces[d.deeper.missionId].title}</a>}
+                      {canTrack && d.deeper.missionId && pieces[d.deeper.missionId] && <a href={missionHref(d.deeper.missionId)} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: GREEN }}>Mission: {pieces[d.deeper.missionId].title}</a>}
                     </div>
                   )}
                 </div>

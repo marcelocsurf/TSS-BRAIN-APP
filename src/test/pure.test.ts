@@ -423,6 +423,21 @@ describe('TOOL-MOMENTUM · a tool, not a sequence', () => {
     expect(g.options.some((o) => o.label.startsWith('All three moments'))).toBe(true);
     expect(g.options.some((o) => o.label.startsWith('Start '))).toBe(false);
   });
+  it('counts as its own block in the belt evaluation (2026-10-01)', async () => {
+    const { withToolSequences } = await import('@/lib/sequence-pages/tools-seq');
+    const { groupBySequence } = await import('@/lib/constants/learning-blocks');
+    const rows = [
+      { step_id: 'STP-018', step_title: 'Posture', sequence_id: 'WB-SEQ-3', sequence_name: 'S3', sequence_order: 3, sequence_step_order: 1 },
+      { step_id: 'STP-019', step_title: 'Forward Momentum', sequence_id: null, sequence_name: null, sequence_order: null, sequence_step_order: null },
+      { step_id: 'STP-050', step_title: 'Loose', sequence_id: null, sequence_name: null, sequence_order: null, sequence_step_order: null },
+    ];
+    const { groups, orphans } = groupBySequence(withToolSequences(rows));
+    expect(groups.map((g) => g.id)).toEqual(['WB-SEQ-3', 'TOOL-MOMENTUM']);
+    expect(groups[1].rows.map((r) => r.step_id)).toEqual(['STP-019']);
+    expect(orphans.map((r) => r.step_id)).toEqual(['STP-050']);
+    // Una fila que ya tiene secuencia no se toca.
+    expect(withToolSequences([{ step_id: 'STP-019', sequence_id: 'CIRCLE-BODY' }])[0].sequence_id).toBe('CIRCLE-BODY');
+  });
 });
 
 // El puente del plan/cierre a Teach it: ?focus=<paso|elemento> abre el detalle (2026-09-30).

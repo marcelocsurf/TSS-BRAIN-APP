@@ -22,6 +22,7 @@ import { CopyIntakeLinkButton } from '@/components/student/CopyIntakeLinkButton'
 import { PlanSessionButton } from '@/components/student/PlanSessionButton';
 import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
 import { groupBySequence, sequenceVerdict, sequenceLabel } from '@/lib/constants/learning-blocks';
+import { withToolSequences } from '@/lib/sequence-pages/tools-seq';
 import { WaterTestsPanel } from '@/components/student/WaterTestsPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
@@ -326,7 +327,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     };
   });
   const focusSeq = (() => {
-    const { groups } = groupBySequence(officialEvalRows as any[]);
+    const { groups } = groupBySequence(withToolSequences(officialEvalRows) as any[]);
     for (const g of groups) {
       const stars = g.rows.map((r: any) => r.coach_rating ?? null);
       const v = sequenceVerdict(stars);

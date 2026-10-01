@@ -21,6 +21,7 @@ import { GRADUATION_RULES, type GraduationRule } from '@/lib/constants/graduatio
 import { OCEAN_LEVELS, OCEAN_LEVEL_INFO } from '@/lib/constants/ocean-levels';
 import { SequenceEvaluation } from '@/components/evaluation/SequenceEvaluation';
 import { groupBySequence, sequenceVerdict, isMethodSequence } from '@/lib/constants/learning-blocks';
+import { withToolSequences } from '@/lib/sequence-pages/tools-seq';
 import { CIRCLE_SEQUENCES } from '@/lib/sequence-pages';
 
 interface Props {
@@ -208,7 +209,8 @@ export function FinalCampEvaluation({
     });
     return rows.every(Boolean) ? (rows as typeof catalogRows) : [];
   });
-  const allRows = [...catalogRows, ...circleRows];
+  // Forward Momentum (herramienta, sin secuencia) cuenta como su propio bloque.
+  const allRows = withToolSequences([...catalogRows, ...circleRows]);
   // Las mismas secuencias que Let's Play: sin Foundation ni Closing (2026-09-10).
   const seqGroups = groupBySequence(allRows).groups.filter((g) => isMethodSequence(g.id));
 

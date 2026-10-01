@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { pickWeakestCriterion, type CriterionEvaluationItem } from '@/lib/utils/criteria';
 import { studentIdFromPortalToken } from '@/lib/portal/student-token';
 import { THREE_CIRCLES_GAME_IDS, THREE_CIRCLES_SEQUENCE_ID, gameContext } from '@/lib/sequence-pages/three-circles';
+import { MOMENTUM_SEQUENCE_ID, MOMENTUM_MISSION_IDS } from '@/lib/sequence-pages/tools-seq';
 import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import {
   COURSE_SEQUENCE_ORDER,
@@ -1225,6 +1226,54 @@ export async function threeCirclesSequence(portalToken: string): Promise<Sequenc
   const weakest = items.slice().sort((a, b) => (a.rating ?? 0) - (b.rating ?? 0))[0];
   return {
     id: THREE_CIRCLES_SEQUENCE_ID, order: 7.5, name: 'The Three Circles', promise: 'Board · Body · Wave — the base of every sequence.', belt: 'yellow',
+    items, state: ratings.length === 0 ? 'unrated' : ratings.length < items.length ? 'partial' : (minRating ?? 0) >= 4 ? 'owned' : 'working',
+    minRating, weakestStepId: weakest?.step_id ?? null, weakestTitle: weakest?.step_title ?? null, weakestIsOfficial: false,
+    selfSequenceRating: null, heldBackStepId: null, heldBackTitle: null, side: null, sideRatings: null,
+  } as SequenceData['sequences'][number];
+}
+
+/** Forward Momentum para Let's Play (2026-10-01): sus 3 misiones como "pasos"
+ *  de una secuencia virtual (la completa y los dos momentos que se recetan
+ *  sueltos). La estrella que se ve es la del último registro de cada misión;
+ *  la del paso STP-019 la mueve lets-play al guardar. */
+export async function momentumSequence(portalToken: string): Promise<SequenceData['sequences'][number] | null> {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return null;
+  const admin = createAdminClient();
+  const [{ data: missions }, { data: sessions }] = await Promise.all([
+    admin.from('drills_missions').select('*').in('id', MOMENTUM_MISSION_IDS).eq('active', true).eq('student_visible', true),
+    admin.from('self_training_sessions')
+      .select('linked_drill_mission_id, execution_rating, created_at')
+      .eq('student_id', studentId).eq('status', 'done').in('linked_drill_mission_id', MOMENTUM_MISSION_IDS)
+      .order('created_at', { ascending: false }).limit(60),
+  ]);
+  const map = new Map((missions ?? []).map((m: any) => [m.id, m]));
+  const last = new Map<string, any>();
+  const plays = new Map<string, number>();
+  for (const r of (sessions ?? []) as any[]) {
+    if (!last.has(r.linked_drill_mission_id)) last.set(r.linked_drill_mission_id, r);
+    plays.set(r.linked_drill_mission_id, (plays.get(r.linked_drill_mission_id) ?? 0) + 1);
+  }
+  const items: SequenceItem[] = MOMENTUM_MISSION_IDS.filter((id) => map.has(id)).map((id, i) => {
+    const m = map.get(id)!;
+    const row: DrillMissionRow = {
+      id: m.id, step_id: m.id, title: m.title, type: 'mission', time_estimate: m.time_estimate ?? null, reps_recommended: m.reps_recommended ?? null,
+      key_words: m.key_words ?? [], description_md: m.description_md ?? null, success_criteria: m.success_criteria ?? [], belt: m.belt ?? 'white',
+      block_number: 0, block_name: 'Forward Momentum', display_order: i,
+    };
+    const lr = last.get(id);
+    return {
+      step_id: m.id, step_title: m.title, pillar: null, belt: m.belt ?? 'white', block_number: 0, block_name: 'Forward Momentum', display_order: i,
+      drill: null, mission: row, rating: lr?.execution_rating ?? null, rating_count: plays.get(id) ?? 0, last_rated: lr?.created_at ?? null,
+      coach_rating: null, coach_rated_at: null, self_source: 'executed', last_practiced: lr?.created_at ?? null,
+    };
+  });
+  if (items.length === 0) return null;
+  const ratings = items.map((i) => i.rating).filter((r): r is number => r != null);
+  const minRating = ratings.length === items.length ? Math.min(...ratings) : null;
+  const weakest = items.slice().sort((a, b) => (a.rating ?? 0) - (b.rating ?? 0))[0];
+  return {
+    id: MOMENTUM_SEQUENCE_ID, order: 0, name: 'Forward Momentum', promise: 'Keep the board moving: after the pop-up, after a maneuver, and whenever it slows.', belt: 'white',
     items, state: ratings.length === 0 ? 'unrated' : ratings.length < items.length ? 'partial' : (minRating ?? 0) >= 4 ? 'owned' : 'working',
     minRating, weakestStepId: weakest?.step_id ?? null, weakestTitle: weakest?.step_title ?? null, weakestIsOfficial: false,
     selfSequenceRating: null, heldBackStepId: null, heldBackTitle: null, side: null, sideRatings: null,
