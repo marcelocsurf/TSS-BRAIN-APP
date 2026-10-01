@@ -47,7 +47,7 @@ const GOLD_BRIGHT = '#FFDC33', VIOLET_BRIGHT = '#BA69EE', GREEN_BRIGHT = '#06D6A
 const MONO: React.CSSProperties = { fontFamily: 'var(--tss-mono), var(--font-plex), IBM Plex Mono, monospace', fontSize: 12, fontWeight: 500, letterSpacing: '0.045em', textTransform: 'uppercase' };
 const H1: React.CSSProperties = { fontFamily: 'var(--tss-font), var(--font-archivo), Archivo, sans-serif' };
 
-export interface PieceRow { id: string; type: 'drill' | 'mission'; title: string; description_md: string | null; key_words: string[] | null; time_estimate: string | null; reps_recommended: string | null }
+export interface PieceRow { id: string; type: 'drill' | 'mission'; title: string; description_md: string | null; key_words: string[] | null; time_estimate: string | null; reps_recommended: string | null; success_criteria?: string[] | null }
 export interface LessonBits { id: string; title: string; whatIs: string; body: string; rules: string; mistakes: string; cue: string }
 /** Capa del coach por paso (lessons COACH-STP-xxx): enseñar · corregir · validar. */
 export interface CoachStepLayer { stepId: string; title: string; what: string; deliver: string; errors: string; validate: string }
@@ -167,6 +167,10 @@ export function SequencePage({
   // Todas las piezas que el coach puede usar (las del alumno + las solo-coach).
   const allPieces: Record<string, PieceRow> = { ...pieces };
   for (const p of coach?.extraPieces ?? []) allPieces[p.id] = p;
+  // Las piezas de la hoja de cada paso también cuentan (el deck elige sus misiones de acá).
+  for (const p of Object.values(coach?.sheetPieces ?? {})) if (!allPieces[p.id]) allPieces[p.id] = p;
+  // Vista del coach (capa encendida): cada drill y misión muestra sus criterios y key words.
+  const coachView = !!coach && coachOn;
   // Foco opcional dentro de la misión (Marcelo 2026-09-09): la misión es
   // siempre la línea completa; el detalle se elige, o no.
   const [focus, setFocus] = useState<string | null>(null);
@@ -466,8 +470,13 @@ export function SequencePage({
         {tab === 'do' && coach && coachOn && (coach.extraPieces?.length ?? 0) > 0 && (
           <section className="tss-card mt-3" style={{ background: NAVY, border: '1px solid rgba(0,210,255,.45)', borderTop: `4px solid ${CYAN}` }}>
             <h2 className="tss-section-title" style={{ color: PAPER, borderColor: 'rgba(255,255,255,.12)' }}>Coach · run it</h2>
-            <p className="text-[13px] mt-0 mb-1" style={{ color: ON_DARK }}>Drills, missions and games from your catalogue for these steps. The student does not see these on their page.</p>
-            {coach.extraPieces!.map((p) => <Piece key={p.id} p={p} canTrack={false} />)}
+            <p className="text-[13px] mt-0 mb-1" style={{ color: ON_DARK }}>Everything else in your catalogue for these steps — variants, the whole-line mission, coach-only drills and games — with their criteria. What is already in Feel it or in a step&apos;s sheet is not repeated.</p>
+            {coach.extraPieces!.map((p) => (
+              <details key={p.id} className="tss-accordion mt-2" style={{ background: PAPER }}>
+                <summary style={{ color: INK }}><span className="flex-1"><span className="block" style={{ ...MONO, fontSize: 10, color: '#0090B0' }}>{p.type === 'mission' ? 'Mission' : (p.type as string) === 'game' ? 'Game' : 'Drill'}</span>{p.title}</span><Chevron /></summary>
+                <div className="px-2 pb-2"><Piece p={p} canTrack={false} coachView /></div>
+              </details>
+            ))}
           </section>
         )}
         {tab === 'do' && coachLayers.length > 0 && (
@@ -492,12 +501,12 @@ export function SequencePage({
                 antes quedaba el rótulo vacío (auditoría 2026-09-25, Yellow #6). */}
             {cfg.feel.land.some((id) => pieces[id]) && (
               <Card title="Simulate · land, sand, pool or calm water" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
-                {cfg.feel.land.filter((id) => pieces[id]).map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
+                {cfg.feel.land.filter((id) => pieces[id]).map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} coachView={coachView} />)}
               </Card>
             )}
             {cfg.feel.skate.some((id) => pieces[id]) && (
               <Card title="Simulate · surf skate" color={VIOLET_BRIGHT} collapsible defaultOpen={false}>
-                {cfg.feel.skate.filter((id) => pieces[id]).map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
+                {cfg.feel.skate.filter((id) => pieces[id]).map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} coachView={coachView} />)}
               </Card>
             )}
             <p className="text-[13px] px-1 mt-3 mb-0" style={{ color: ON_DARK }}>Each drill closes with one question: ready to take it to the water?</p>
@@ -798,7 +807,7 @@ function Go({ href, children, small = false }: { href: string; children: React.R
   return <a href={href} className={`inline-flex items-center gap-1.5 font-bold no-underline ${small ? 'text-[13px] mt-1' : 'text-[15px]'}`} style={{ color: INK }}>{children} <ArrowRight size={small ? 13 : 15} /></a>;
 }
 
-function Piece({ p, href = null, canTrack }: { p?: PieceRow; href?: string | null; canTrack: boolean }) {
+function Piece({ p, href = null, canTrack, coachView = false }: { p?: PieceRow; href?: string | null; canTrack: boolean; coachView?: boolean }) {
   if (!p) return null;
   const md = (p.description_md ?? '').trim();
   return (
@@ -816,6 +825,19 @@ function Piece({ p, href = null, canTrack }: { p?: PieceRow; href?: string | nul
         {/* Los drills son ensayo: se hacen, no se registran (doctrina 2026-09-10). Solo las misiones llevan a Let's Play. */}
         {href ? (canTrack ? <a href={href} className="inline-flex items-center gap-1 font-bold no-underline" style={{ color: INK }}><Play size={12} /> Log it in Let&apos;s Play</a> : <span className="inline-flex items-center gap-1"><Lock size={11} /> with your training tool</span>) : <span>rehearsal · no need to log it</span>}
       </div>
+      {/* Solo el coach (2026-10-01, lo que antes daba la STP Library): los
+          criterios aprobados y las palabras de la pieza. El alumno no los ve aquí. */}
+      {coachView && (p.success_criteria?.length ?? 0) > 0 && (
+        <div className="mt-2 pt-2" style={{ borderTop: `1px solid ${BORDER}` }}>
+          <p className="m-0 mb-1" style={{ ...MONO, fontSize: 10, color: '#0090B0' }}>How you know · criteria</p>
+          <ul className="m-0 p-0 list-none space-y-1">
+            {p.success_criteria!.map((c, i) => <li key={i} className="flex gap-1.5 text-[13px] leading-snug" style={{ color: INK }}><span style={{ color: GREEN }}>✓</span><span>{c.replace(/^-\s*/, '')}</span></li>)}
+          </ul>
+        </div>
+      )}
+      {coachView && (p.key_words?.length ?? 0) > 0 && (
+        <p className="text-[12px] mt-1.5 mb-0"><span style={{ color: MUTED }}>Key words · </span><span style={{ ...MONO, fontSize: 11, color: INK, textTransform: 'none' }}>{p.key_words!.join(' · ')}</span></p>
+      )}
     </div>
   );
 }
@@ -916,8 +938,8 @@ function StepSheet({ d, laminas, videos, layer, cue, drill, mission, lessonHref,
             {/* En el idioma del método (Marcelo 2026-09-30): el drill es Feel it (sin
                 ola: en tierra, skate, visualización) y la misión es Do it (en el agua).
                 El nombre va en INK: sobre el papel, el blanco de la hoja no se veía. */}
-            {drill && <details className="tss-accordion" style={{ background: PAPER }}><summary style={{ color: INK }}><span className="flex-1"><span className="block" style={{ ...MONO, fontSize: 10, color: '#0090B0' }}>Feel it · drill · no wave</span>{drill.title}</span><Chevron /></summary><div className="px-2 pb-2"><Piece p={drill} canTrack={false} /></div></details>}
-            {mission && <details className="tss-accordion mt-2" style={{ background: PAPER }}><summary style={{ color: INK }}><span className="flex-1"><span className="block" style={{ ...MONO, fontSize: 10, color: '#0090B0' }}>Do it · mission · in the water</span>{mission.title}</span><Chevron /></summary><div className="px-2 pb-2"><Piece p={mission} canTrack={false} /></div></details>}
+            {drill && <details className="tss-accordion" style={{ background: PAPER }}><summary style={{ color: INK }}><span className="flex-1"><span className="block" style={{ ...MONO, fontSize: 10, color: '#0090B0' }}>Feel it · drill · no wave</span>{drill.title}</span><Chevron /></summary><div className="px-2 pb-2"><Piece p={drill} canTrack={false} coachView /></div></details>}
+            {mission && <details className="tss-accordion mt-2" style={{ background: PAPER }}><summary style={{ color: INK }}><span className="flex-1"><span className="block" style={{ ...MONO, fontSize: 10, color: '#0090B0' }}>Do it · mission · in the water</span>{mission.title}</span><Chevron /></summary><div className="px-2 pb-2"><Piece p={mission} canTrack={false} coachView /></div></details>}
           </>
         ) : <p className="text-[13px] m-0" style={{ color: ON_DARK }}>No drill or mission linked to this step. Run the whole line.</p>}
         {lessonHref && <a href={lessonHref} className="inline-flex items-center min-h-[40px] mt-1 text-[13px] font-semibold no-underline" style={{ color: CYAN }}>Open the lesson · {d.deeper?.label ?? title} →</a>}

@@ -5,12 +5,17 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { anyMedicalNote } from '@/lib/constants/medical';
 import { elSalvadorToday } from '@/lib/utils/tz';
 import { campEnrollmentClosed } from '@/lib/utils/camp-window';
-import { listCoachStps, type StpSummary } from '@/lib/actions/coach-tools';
 import { getAcceptedAssistantCampIds } from '@/lib/actions/service-staff';
 import { revalidatePath } from 'next/cache';
 import { coachTeachRank } from '@/lib/coach/teach-rank';
 import { studentSectionRank, lessonInVisiblePage } from '@/lib/coach/course-access';
 import { coachMayOpenCoachLesson, isCoachSection, isCoachToolLesson } from '@/lib/coach/coach-lessons';
+import { pageForStep } from '@/lib/sequence-pages/resolve';
+
+// Lecciones del alumno cuyo paso NO tiene página de secuencia (2026-10-01): la
+// rutina de cada sesión. Su capa del coach, sus drills y misiones y los videos
+// del paso viven en la lección (antes solo en la STP Library de Herramientas).
+const SESSION_STEP_OF_LESSON: Record<string, string> = { 'ONB-06': 'STP-001', 'PC-WARMUP': 'STP-002' };
 
 // Coach reports an incident (general or student-specific) from their portal.
 // Token-gated like the rest of the coach portal. Lands in session_incidents
@@ -118,8 +123,6 @@ export interface CoachPortalData {
   /** Hasta qué cinta ve el curso del ALUMNO (su cinta + la de sus camps). */
   teachRank: number;
   courseProgress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
-  availableDrills: any[];  // drills_missions filtered by max_belt_permission
-  stps: StpSummary[];  // STPs grouped by sequence for the Tools tab browser
   academyBranding: {
     name: string | null;
     logo_url: string | null;
@@ -169,7 +172,6 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     { count: totalServicesAsHead },
     surveysResult,
     coachCoursesResult,
-    drillsResult,
   ] = await Promise.all([
     admin
       .from('camp_instances')
@@ -200,13 +202,8 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
       .like('course_section', 'coach_%')
       .eq('active', true)
       .order('display_order'),
-    admin
-      .from('drills_missions')
-      .select('id, step_id, title, type, time_estimate, key_words, block_name, belt, description_md, success_criteria, reps_recommended')
-      .eq('active', true)
-      .eq('coach_visible', true)
-      .order('belt')
-      .order('display_order'),
+    // (2026-10-01) Ya no se cargan todos los drills en cada apertura del portal:
+    // eran para la STP Library de Herramientas, que se mudó a las páginas de secuencia.
   ]);
 
   // 3. Derive stats
@@ -243,21 +240,6 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     ? Math.round((ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length) * 10) / 10
     : null;
 
-  // 4. Filter drills by coach's belt permission (max_belt_permission >= drill.belt)
-  // Order is white < yellow < blue < purple < brown < black. drills_missions.belt
-  // uses short values ('white','yellow'); max_belt_permission is enum
-  // ('white_belt','yellow_belt'...). Normalize.
-  const beltRank: Record<string, number> = {
-    white: 1, yellow: 2, blue: 3, purple: 4, brown: 5, black: 6,
-  };
-  const myBeltShort = (coach.max_belt_permission || '').replace('_belt', '');
-  // Unset belt permission defaults to the MOST restrictive (white only) —
-  // content is earned per level, never granted by omission.
-  const myRank = beltRank[myBeltShort] ?? 1;
-  const availableDrills = (drillsResult.data ?? []).filter((d: any) => {
-    const r = beltRank[d.belt] ?? 1;
-    return r <= myRank;
-  });
 
   // 4b. Enrich upcoming + past with participant counts AND the roster
   // (one query). El roster viaja con cada servicio para que el coach vea
@@ -730,8 +712,6 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     coachCourses: (coachCoursesResult.data ?? []).filter((l: any) => coachMayOpenCoachLesson(coach as any, l)),
     teachRank: await coachTeachRank(admin, coach as any),
     courseProgress,
-    availableDrills,
-    stps: await listCoachStps(token),
     myStudents: Array.from(myStudentsMap.entries())
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name)),
@@ -800,6 +780,10 @@ export interface CoachLessonDetail {
   /** Lección del alumno que es un paso (STP-*): su capa del coach (COACH-STP
    *  por linked_step_id) — cómo enseñarlo, validarlo y corregirlo (2026-09-30). */
   coachLayer?: { what: string; deliver: string; errors: string; validate: string } | null;
+  /** Paso sin página (Venue Analysis, Warm Up): sus drills y misiones con
+   *  criterios, y los videos del paso (solo coach). */
+  coachPieces?: { id: string; type: string; title: string; description_md: string | null; key_words: string[] | null; success_criteria: string[] | null }[];
+  coachVideos?: { url: string; title: string; label: string | null }[];
   // The drill + mission for the linked STP (pulled from drills_missions)
   linkedDrill: LinkedTool | null;
   linkedMission: LinkedTool | null;
@@ -844,6 +828,11 @@ export async function getCoachLessonDetail(
   // Las lecciones del coach viven en course_section coach_* (coach_wb,
   // coach_wb_master, coach_yb, coach_bb). Todo lo demás es el curso del alumno.
   const studentLesson = !isCoachSection((lesson as any).course_section);
+  // El paso detrás de una lección del alumno sin página propia: el mapa de la
+  // rutina de sesión, o un STP suelto que ninguna página enseña.
+  const stepOfLesson: string | null = studentLesson
+    ? (SESSION_STEP_OF_LESSON[lessonId] ?? (/^STP-\d+[A-Z]?$/.test(lessonId) && !pageForStep({ stepId: lessonId }, null) ? lessonId : null))
+    : null;
   // Una lección del COACH por link: la misma regla que su lista (alcance y cinta).
   if (!studentLesson && !coachMayOpenCoachLesson(coach as any, lesson as any)) return null;
   // Una lección del ALUMNO: hasta su cinta (+ la de sus camps), o si sale en
@@ -949,10 +938,22 @@ export async function getCoachLessonDetail(
       const { data: c } = await admin
         .from('lessons')
         .select('coach_what_md, coach_deliver_md, coach_errors_md, coach_validate_md')
-        .eq('active', true).like('id', 'COACH-%').eq('linked_step_id', lessonId)
+        .eq('active', true).like('id', 'COACH-%').eq('linked_step_id', stepOfLesson ?? lessonId)
         .limit(1).maybeSingle();
       return c ? { what: (c as any).coach_what_md ?? '', deliver: (c as any).coach_deliver_md ?? '', errors: (c as any).coach_errors_md ?? '', validate: (c as any).coach_validate_md ?? '' } : null;
     })() : null,
+    ...(stepOfLesson ? await (async () => {
+      const [{ data: pcs }, { data: vids }] = await Promise.all([
+        admin.from('drills_missions').select('id, type, title, description_md, key_words, success_criteria')
+          .eq('active', true).eq('coach_visible', true).eq('step_id', stepOfLesson)
+          .order('display_order', { ascending: true }).order('id', { ascending: true }),
+        admin.from('content_videos').select('url, label, media_type').eq('step_id', stepOfLesson).order('display_order'),
+      ]);
+      return {
+        coachPieces: ((pcs ?? []) as any[]).map((p) => ({ id: p.id, type: p.type, title: p.title, description_md: p.description_md, key_words: p.key_words ?? null, success_criteria: p.success_criteria ?? null })),
+        coachVideos: ((vids ?? []) as any[]).filter((v) => !v.media_type || v.media_type === 'video').map((v) => ({ url: v.url, title: lesson.title, label: v.label ?? null })),
+      };
+    })() : {}),
     // Strip the answer key: solo mandamos el texto de cada opción al navegador.
     quizzes: (quizzes ?? []).map((q: any) => ({
       id: q.id,

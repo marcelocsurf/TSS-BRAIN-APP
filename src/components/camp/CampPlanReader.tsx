@@ -34,7 +34,7 @@ import {
 import type { ServicePlanData } from '@/lib/actions/service-planner';
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import { isElementOf } from '@/lib/sequence-pages/circles-seq';
-import { resolveSequenceForSteps, sequenceDisplayName } from '@/lib/sequence-pages/resolve';
+import { resolveSequenceForSteps, sequenceDisplayName, pageForStep } from '@/lib/sequence-pages/resolve';
 import { topicById } from '@/lib/sequence-pages/topics';
 import { gameContext } from '@/lib/sequence-pages/three-circles';
 
@@ -44,7 +44,7 @@ type Day = ServicePlanData['templatePlan'][number];
 interface Props {
   /** Camp instance ID — used to deep-link to per-day session pages */
   instanceId: string;
-  /** Coach portal token — for inline links to /coach-portal/[token]/tools/[stepId] */
+  /** Coach portal token — para el link de cada paso a su página (/seq) para enseñarlo */
   coachToken?: string | null;
   /** Already-resolved plan (drill + mission detail included). */
   templatePlan: ServicePlanData['templatePlan'];
@@ -472,16 +472,30 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
         </div>
       )}
 
-      {/* Linked STP — deep link to coach Tools tab */}
-      {block.step_id && coachToken && (
-        <Link
-          href={`/coach-portal/${coachToken}/tools/${block.step_id}`}
-          className="inline-flex items-center gap-1 text-[11px] text-[var(--tss-cyan)] hover:underline"
-        >
-          <ListChecks size={11} strokeWidth={1.75} />
-          {block.step_id}{block.step_title ? ` · ${block.step_title}` : ''} →
-        </Link>
-      )}
+      {/* El paso del bloque → su página para enseñarlo (2026-10-01): la misma
+          página de la secuencia del coach que abren "Dar la clase" y el cierre,
+          con el paso abierto. Antes iba a la STP Library de Herramientas. */}
+      {(block.step_id || (block as any).sequence_id) && coachToken && (() => {
+        const page = pageForStep({ sequenceId: (block as any).sequence_id ?? null, stepIds: block.step_ids ?? null, stepId: block.step_id }, null);
+        if (!page && !block.step_id) return null;
+        const q = new URLSearchParams({ tab: 'review', from: 'the camp plan' });
+        // En una herramienta el paso es la herramienta entera: sin foco.
+        const focusStep = (block as any).focus_step_id as string | null | undefined;
+        const focus = focusStep ?? block.step_id;
+        if (page && page.kind !== 'tool' && focus) q.set('focus', focus);
+        // Mismo nombre que la cabecera del bloque: el foco elegido, o el paso.
+        const focusTitle = page && focusStep && isElementOf(page, focusStep) ? elementTitle(page, focusStep, null) : null;
+        const href = page ? `/coach-portal/${coachToken}/seq/${page.id}?${q.toString()}` : `/coach-portal/${coachToken}?tab=courses&lesson=${block.step_id}`;
+        const label = page
+          ? `Teach it · ${sequenceDisplayName(page)}${focusTitle ? ` · ${focusTitle}` : !focusStep && block.step_id && block.step_title && page.kind !== 'tool' ? ` · ${block.step_title}` : ''}`
+          : `Open the lesson${block.step_title ? ` · ${block.step_title}` : ''}`;
+        return (
+          <Link href={href} className="inline-flex items-center gap-1 text-[11px] text-[var(--tss-cyan)] hover:underline">
+            <ListChecks size={11} strokeWidth={1.75} />
+            {label} →
+          </Link>
+        );
+      })()}
 
       {/* Per-block evaluation focus */}
       {block.evaluation_focus && (

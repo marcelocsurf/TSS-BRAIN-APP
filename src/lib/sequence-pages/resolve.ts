@@ -40,6 +40,23 @@ export function resolveSequenceForSteps(
   return null;
 }
 
+/**
+ * La página donde el coach enseña un paso (el puente del plan del camp y de
+ * los links viejos /tools/STP-xxx, 2026-10-01): la secuencia que trae el
+ * bloque; si no, la de sus pasos; si el paso es una herramienta de toda cinta
+ * (STP-019 → Forward Momentum), la página de la herramienta. null = no tiene
+ * página (Venue Analysis, Warm Up): se abre su lección.
+ */
+export function pageForStep(
+  input: { sequenceId?: string | null; stepIds?: string[] | null; stepId?: string | null },
+  belt: string | null | undefined,
+): SequencePageConfig | null {
+  const own = input.sequenceId ? SEQUENCE_PAGES[input.sequenceId] ?? null : null;
+  if (own) return own;
+  return resolveSequenceForSteps({ stepIds: input.stepIds, stepId: input.stepId }, belt)
+    ?? (input.stepId ? Object.values(SEQUENCE_PAGES).find((c) => c.kind === 'tool' && c.stepIds.includes(input.stepId!)) ?? null : null);
+}
+
 /** "#3 · Pop-Up" para las secuencias numeradas del curso (White 1-5,
  *  Yellow 6-7, Blue 8-13); solo el título para las entradas con rótulo
  *  propio ("Getting to the wave · 1 of 3"). Misma etiqueta para coach y

@@ -243,7 +243,7 @@ export default async function ContentAdminPage({
       {/* ─── Visual aids bucket ─── */}
       {show('visual_aids') && (
         <>
-      <SectionHeader title="Visual aids · By STP" subtitle="Media attached directly to a step (appears in the coach Tools tab)" />
+      <SectionHeader title="Visual aids · By STP" subtitle="Media attached directly to a step · coaches see its videos in that step's sheet on the sequence page (Show it); images and documents are not shown there yet" />
       <Section
         title="By STP — visual aids"
         icon={Waves}

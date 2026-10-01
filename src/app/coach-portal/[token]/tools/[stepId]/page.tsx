@@ -1,50 +1,38 @@
-import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import { getCoachToolsByStep } from '@/lib/actions/coach-tools';
-import { StpToolsClient } from './StpToolsClient';
+// ═══ /coach-portal/[token]/tools/[stepId] — ahora solo lleva a la página del paso ═══
+// Era la "STP Library" de Herramientas (drills, misiones y ayudas visuales por
+// paso). Desde el 2026-10-01 todo eso vive en Cursos › Teach the course, en la
+// página de la secuencia del coach (la hoja del paso, "Coach · run it" con los
+// criterios). Esta ruta se queda por los links guardados (planes, WhatsApp):
+// mismos chequeos de acceso que /teach, y lleva al paso en su página; un paso
+// sin página (Venue Analysis, Warm Up) abre su lección con la capa del coach.
+import { notFound, redirect } from 'next/navigation';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { pageForStep } from '@/lib/sequence-pages/resolve';
+import { coachTeachRank } from '@/lib/coach/teach-rank';
+import { sequencePageRank } from '@/lib/coach/course-access';
 
 export const dynamic = 'force-dynamic';
 
-interface Props {
-  params: Promise<{ token: string; stepId: string }>;
-}
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function CoachStpToolsPage({ params }: Props) {
+export default async function CoachStpToolsPage({ params }: { params: Promise<{ token: string; stepId: string }> }) {
   const { token, stepId } = await params;
-  const detail = await getCoachToolsByStep(token, stepId);
-  if (!detail) notFound();
+  if (!UUID_RE.test(token) || !/^STP-\d+[A-Z]?$/.test(stepId)) notFound();
 
-  return (
-    <div className="min-h-screen bg-[var(--tss-gray-50)] pb-20">
-      <div className="bg-[var(--tss-navy)] text-white px-4 py-5">
-        <Link
-          href={`/coach-portal/${token}?tab=tools`}
-          className="inline-flex items-center gap-1 text-xs text-white/60 hover:text-white mb-2"
-        >
-          <ArrowLeft size={12} /> Back to tools
-        </Link>
-        <p
-          className="text-[10px] tracking-[0.2em] uppercase text-white/60 mb-1"
-          style={{ fontFamily: 'DM Mono, monospace' }}
-        >
-          {detail.step.id} · {detail.step.belt === 'yellow' ? 'Yellow Belt' : 'White Belt'}
-          {detail.step.pillar ? ` · ${detail.step.pillar}` : ''}
-        </p>
-        <h1
-          className="text-2xl font-bold leading-tight"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          {detail.step.title}
-        </h1>
-        {detail.step.subtitle && (
-          <p className="text-sm text-white/70 italic mt-1">{detail.step.subtitle}</p>
-        )}
-      </div>
+  const admin = createAdminClient();
+  const { data: coach } = await admin
+    .from('coaches')
+    .select('id, course_access_granted, course_access_scope, max_belt_permission')
+    .eq('portal_token', token)
+    .maybeSingle();
+  if (!coach || !coach.course_access_granted || (coach as any).course_access_scope === 'none') notFound();
 
-      <div className="max-w-lg mx-auto px-4 py-4">
-        <StpToolsClient detail={detail} />
-      </div>
-    </div>
-  );
+  // La cinta más baja que tiene el paso (como el plan del camp): STP-016 → White #3, no la entrada de Blue.
+  const page = pageForStep({ stepId }, null);
+  if (page && sequencePageRank(page) <= await coachTeachRank(admin, coach as any)) {
+    const q = new URLSearchParams({ tab: 'review' });
+    if (page.kind !== 'tool') q.set('focus', stepId);
+    redirect(`/coach-portal/${token}/seq/${page.id}?${q.toString()}`);
+  }
+  redirect(`/coach-portal/${token}?tab=courses&lesson=${stepId}`);
 }

@@ -81,9 +81,10 @@ export function CoachGuide({ onClose, noCourses = false }: { onClose: () => void
           <Li k="Camp vacío">Si ya finalizaste a todos por separado, te queda el botón <strong>🏁 Finalize camp</strong> para cerrar el camp completo.</Li>
         </Sec>
 
-        <Sec icon="🛠" title="Herramientas — recursos">
-          <p>Guías de enseñanza por cinta, calculadora de tablas y materiales según tu nivel de certificación.</p>
-          <Li k="Presentaciones y libros">Los materiales que te otorgaron (presentaciones, el libro <strong>One Wave</strong>, PDFs de tu nivel) salen en orden de curso, numerados. El mismo orden que ve el alumno en su Course.</Li>
+        <Sec icon="🛠" title="Herramientas — para la playa y la clase">
+          <p>Lo que usás en el agua y alrededor: análisis de video, selector de tabla, Venue Scout (y el inventario de tablas si coordinación te dio permiso). Abajo, <strong>If something happens</strong>: el plan de emergencia, reportar un incidente y la guía para responder una queja.</p>
+          <Li k="Drills y misiones">Ya no están acá: viven en <strong>Cursos · Teach the course</strong>, en la página de cada secuencia (la hoja de cada paso y &quot;Coach · run it&quot;, con sus criterios).</Li>
+          <Li k="Presentaciones y libros">Los materiales que te otorgaron (presentaciones, el libro <strong>One Wave</strong>, PDFs de tu nivel) están en <strong>Cursos</strong>, en orden de curso, numerados.</Li>
         </Sec>
 
         <Sec icon="🏛" title="Espacios">

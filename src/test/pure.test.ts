@@ -410,6 +410,13 @@ describe('TOOL-MOMENTUM · a tool, not a sequence', () => {
     expect(T.details.find((d) => d.key === 'speed')?.deeper?.missionId).toBeUndefined();
     expect(T.do.missionId).toBe('MIS-WB-019-A');
   });
+  it('the camp plan and old /tools links find the page where a step is taught', async () => {
+    const { pageForStep } = await import('@/lib/sequence-pages/resolve');
+    expect(pageForStep({ stepId: 'STP-019' }, null)?.id).toBe('TOOL-MOMENTUM');
+    expect(pageForStep({ stepId: 'STP-016' }, 'white_belt')?.id).toBe('WB-SEQ-3');
+    expect(pageForStep({ stepId: 'STP-001' }, null)).toBeNull(); // Venue Analysis: abre su lección
+    expect(pageForStep({ sequenceId: 'CIRCLE-BODY', stepId: 'STP-019' }, null)?.id).toBe('CIRCLE-BODY');
+  });
   it('offers "all three moments" and never "start the next one"', async () => {
     const { focusOptionsForSequence } = await import('@/lib/sequence-pages/focus-options');
     const g = focusOptionsForSequence(T, { 'STP-019': 'Forward Momentum' });

@@ -68,7 +68,8 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
     ...(((cfg as any).feel?.skate ?? [])),
     ...((cfg as any).do?.missionId ? [(cfg as any).do.missionId] : []),
   ].filter(Boolean) as string[];
-  const PIECE = 'id, type, title, description_md, key_words, time_estimate, reps_recommended, student_visible, coach_visible';
+  // success_criteria: los criterios aprobados (2026-09-17) que antes solo se veían en la STP Library.
+  const PIECE = 'id, type, title, description_md, key_words, success_criteria, time_estimate, reps_recommended, student_visible, coach_visible';
   // La hoja de cada paso lee también la lección, el drill y la misión de su
   // "Go deeper", aunque no sea un paso de esta secuencia (Grenade → STP-042 en la #12).
   const sheetIds = [...new Set([...cfg.stepIds, ...cfg.details.map((d) => d.deeper?.lessonId).filter(Boolean) as string[]])];
@@ -107,10 +108,16 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
   // "Coach · run it" (antes se mezclaba en la vista del alumno).
   const pieces: Record<string, PieceRow> = {};
   for (const p of (pieceRows ?? []) as any[]) if (p.student_visible) pieces[p.id] = p as PieceRow;
+  // "Coach · run it" (2026-10-01, la STP Library se mudó acá): TODO lo activo
+  // de estos pasos que la página no muestra ya — las variantes, los drills
+  // vigentes que la página todavía no nombra, la misión de la línea completa
+  // con su texto, lo solo-coach. Lo que ya está en Feel it o en la hoja de un
+  // paso no se repite. coach_visible = false es "solo directorio": no va.
+  const shown = new Set<string>([...((cfg as any).feel?.land ?? []), ...((cfg as any).feel?.skate ?? [])].filter((id: string) => !!pieces[id]));
+  for (const d of cfg.details) for (const id of [d.deeper?.drillId, d.deeper?.missionId]) if (id) shown.add(id);
   const seenExtra = new Set<string>();
-  // coach_visible = false es "solo directorio" en /drill-library: no se usa en clase.
   const extraPieces: PieceRow[] = [...((pieceRows ?? []) as any[]).filter((p) => p.coach_visible !== false), ...((playRows ?? []) as any[])]
-    .filter((p) => !pieces[p.id] && (seenExtra.has(p.id) ? false : (seenExtra.add(p.id), true)))
+    .filter((p) => !shown.has(p.id) && (seenExtra.has(p.id) ? false : (seenExtra.add(p.id), true)))
     .map((p) => p as PieceRow);
   // Los drills / misiones del "Go deeper" de cada detalle, solo para su hoja
   // (no entran en "Coach · run it" ni en el deck de la secuencia).

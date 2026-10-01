@@ -1,6 +1,5 @@
 'use client';
 
-import { sequenceLabel } from '@/lib/constants/learning-blocks';
 import { useState, useEffect, useRef, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -13,6 +12,7 @@ import { SURF_SPOT_OPTIONS } from '@/lib/constants/brand';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { LessonFigure } from '@/components/course/LessonFigure';
 import { CoachMediaBar } from '@/components/coach-portal/CoachMediaBar';
+import { VideoList } from '@/components/coach-portal/VideoEmbed';
 import { laminasInMarkdown, stripLaminas } from '@/lib/sequence-pages/laminas';
 import { splitCoachCourses, groupToolCourses } from '@/lib/coach/coach-lessons';
 import { PendingAssignments } from './PendingAssignments';
@@ -226,7 +226,7 @@ export function CoachPortalTabs({
             teachRank={data.teachRank}
           />
         )}
-        {activeTab === 'tools' && <ToolsTab stps={data.stps} coach={coach} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} />}
+        {activeTab === 'tools' && <ToolsTab coach={coach} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoToCourses={() => setActiveTab('courses' as Tab)} />}
         {activeTab === 'spaces' && <PortalSpaces token={coach.portal_token} coachId={coach.id} />}
         {activeTab === 'inventory' && (
           <PortalInventory token={coach.portal_token} />
@@ -1069,7 +1069,7 @@ function CoursesTab({
                         <CoachMediaBar tone="light" title={detail.lesson.title}
                           laminas={laminasInMarkdown(detail.lesson.description_md).map((l) => ({ ...l, caption: detail.lesson.title }))}
                           videos={[]} />
-                        {detail.coachLayer && (
+                        {(detail.coachLayer || (detail.coachPieces?.length ?? 0) > 0 || (detail.coachVideos?.length ?? 0) > 0) && (
                           <div className="mt-3 rounded-lg p-3" style={{ background: '#061C2B', borderTop: '4px solid #00D2FF' }}>
                             <div className="flex items-center justify-between gap-3">
                               <p className="m-0 text-[11px] uppercase tracking-[0.14em]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#00D2FF' }}>{layerOn ? 'Coach layer · on' : 'Student view · exactly what they read'}</p>
@@ -1077,7 +1077,7 @@ function CoursesTab({
                                 {layerOn ? 'View as student' : 'Show coach layer'}
                               </button>
                             </div>
-                            {layerOn && ([
+                            {layerOn && detail.coachLayer && ([
                               ['How you teach it', [detail.coachLayer.what, detail.coachLayer.deliver].filter(Boolean).join('\n\n')],
                               ['How you validate it', detail.coachLayer.validate],
                               ['How you correct it', detail.coachLayer.errors],
@@ -1087,6 +1087,31 @@ function CoursesTab({
                                 <div className="px-3 pb-3 rounded-b-[5px]" style={{ background: '#E9E2D2' }}><MarkdownContent markdown={md} /></div>
                               </details>
                             ))}
+                            {/* Un paso sin página (Venue Analysis, Warm Up, 2026-10-01): sus
+                                drills y misiones con criterios, y los videos del paso — lo que
+                                antes solo daba la STP Library de Herramientas. */}
+                            {layerOn && (detail.coachPieces ?? []).map((p) => (
+                              <details key={p.id} className="mt-2 rounded-[5px]" style={{ background: 'rgba(247,249,250,.06)', border: '1px solid rgba(255,255,255,.14)' }}>
+                                <summary className="cursor-pointer px-3 py-2.5 text-[14px] font-bold" style={{ color: '#F7F9FA' }}>
+                                  <span className="block text-[10px] uppercase tracking-[0.14em]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#7DE3FF' }}>Coach · run it · {p.type === 'mission' ? 'mission' : 'drill'}</span>{p.title}
+                                </summary>
+                                <div className="px-3 pb-3 pt-1 rounded-b-[5px]" style={{ background: '#E9E2D2' }}>
+                                  {p.description_md && <MarkdownContent markdown={p.description_md} />}
+                                  {(p.success_criteria?.length ?? 0) > 0 && (
+                                    <div className="mt-2">
+                                      <p className="m-0 mb-1 text-[10px] uppercase tracking-[0.14em]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', color: '#0090B0' }}>How you know · criteria</p>
+                                      <ul className="m-0 p-0 list-none space-y-1">{p.success_criteria!.map((c, i) => <li key={i} className="text-[13px] leading-snug" style={{ color: '#10263B' }}>✓ {c.replace(/^-\s*/, '')}</li>)}</ul>
+                                    </div>
+                                  )}
+                                  {(p.key_words?.length ?? 0) > 0 && <p className="text-[12px] mt-1.5 mb-0" style={{ color: '#55666E' }}>Key words · <span style={{ color: '#10263B' }}>{p.key_words!.join(' · ')}</span></p>}
+                                </div>
+                              </details>
+                            ))}
+                            {layerOn && (detail.coachVideos?.length ?? 0) > 0 && (
+                              <div className="mt-2 rounded-[5px] p-2" style={{ background: '#F7F9FA' }}>
+                                <VideoList videos={detail.coachVideos!.map((v) => ({ url: v.url, title: v.title, label: v.label }))} />
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -1759,8 +1784,7 @@ function CoachQuizSection({
   );
 }
 
-function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
-  stps: any[];
+function ToolsTab({ coach, emergencyPlan, students, boards, onGoToCourses }: {
   coach: any;
   emergencyPlan?: {
     emergency_numbers: string | null;
@@ -1771,64 +1795,32 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
   } | null;
   students?: { id: string; name: string }[];
   boards?: { id: string; code: string }[];
+  onGoToCourses: () => void;
 }) {
   const hasEmergency = !!emergencyPlan && (
     emergencyPlan.emergency_numbers || emergencyPlan.nearest_hospital ||
     emergencyPlan.lifeguard_contact || emergencyPlan.emergency_address ||
     emergencyPlan.emergency_protocol
   );
-  // Group STPs by sequence (using wb_sequence_* data from lessons).
-  // STPs without sequence info fall into an "Other" bucket at the end.
-  const groups = new Map<string, { name: string; belt: 'white' | 'yellow'; order: number; items: any[] }>();
-  for (const s of stps) {
-    const key = s.sequence_id ?? `_${s.belt}_unsequenced`;
-    // El MISMO rótulo que la evaluación, el curso y la guía del alumno:
-    // "#6 · Reading & Earning the Wave". Antes esta pantalla mostraba el
-    // nombre pelado y el coach veía rótulos distintos al saltar de una a otra.
-    const name = s.sequence_id
-      ? sequenceLabel(s.sequence_id, s.sequence_order, s.sequence_name ?? '')
-      : (s.belt === 'yellow' ? 'Yellow Belt' : 'White Belt');
-    if (!groups.has(key)) {
-      groups.set(key, { name, belt: s.belt, order: s.sequence_order ?? 999, items: [] });
-    }
-    groups.get(key)!.items.push(s);
-  }
-  const sequences = Array.from(groups.entries())
-    .sort(([, a], [, b]) => {
-      if (a.belt !== b.belt) return a.belt === 'white' ? -1 : 1;
-      return a.order - b.order;
-    });
 
   return (
     <div className="space-y-4 pb-4">
       {/* Línea v10.1: título grande + rótulo mono; en iPad las listas van a dos columnas. */}
       <div className="px-1">
         <h2 className="text-[23px] leading-tight" style={{ ...F_DISPLAY, fontWeight: 900, color: '#10263B' }}>Your tools</h2>
-        <p className="text-[12px] mt-0.5" style={{ ...F_LABEL, color: '#55666E' }}>Coaching toolkit</p>
+        <p className="text-[12px] mt-0.5" style={{ ...F_LABEL, color: '#55666E' }}>For the beach and the class</p>
       </div>
 
-      {/* ── STP LIBRARY (hero) ── */}
-      <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] shadow-sm px-4 py-5">
-        <p className="text-[11px] mb-1.5" style={{ ...F_LABEL, color: '#00A8CC' }}>STP Library</p>
-        <h2 className="text-lg" style={{ ...F_DISPLAY, color: '#061C2B' }}>Browse by sequence</h2>
-        <p className="text-[11px] text-[#55666E] mt-1.5 leading-relaxed">
-          Pick a step to see its drills, missions and visual aids.
-          {' '}Filtered by your certification (<strong>up to {coach.max_belt_permission?.replace(/_/g, ' ')}</strong>).
-        </p>
-      </div>
-
-      <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
-        {sequences.map(([key, g]) => (
-          <SequenceGroup key={key} group={g} token={coach.portal_token} />
-        ))}
-      </div>
-
-      {stps.length === 0 && (
-        <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] p-8 text-center">
-          <Waves size={36} strokeWidth={1.5} className="mx-auto mb-2 text-[#DCD7C6]" />
-          <p className="text-sm text-[#55666E]">No steps available yet.</p>
-        </div>
-      )}
+      {/* La STP Library se fue (Marcelo 2026-10-01: "se duplica con Teach the
+          course"): pasos, drills, misiones y criterios viven en Cursos, en la
+          página de cada secuencia. Esta línea avisa adónde se mudaron. */}
+      <button type="button" onClick={onGoToCourses}
+        className="w-full text-left rounded-lg px-4 py-3 flex items-center gap-3"
+        style={{ background: '#E9E2D2', border: '1px solid #DCD7C6', color: '#061C2B' }}>
+        <BookOpen size={18} strokeWidth={1.75} className="shrink-0" style={{ color: '#00A8CC' }} />
+        <span className="min-w-0 flex-1 text-[13px] leading-snug">Drills, missions and their criteria now live in each sequence: <b>Cursos · Teach the course</b>.</span>
+        <ChevronRight size={15} className="text-[#55666E] shrink-0" />
+      </button>
 
       {/* ── FIELD TOOLS ── */}
       <h2 className="text-[23px] px-1 pt-3 leading-tight" style={{ ...F_DISPLAY, fontWeight: 900, color: '#10263B' }}>Field tools</h2>
@@ -1857,8 +1849,8 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
       {/* Breathwork: fuera por ahora (Marcelo 2026-09-16). */}
       </div>
 
-      {/* ── SAFETY ── */}
-      <h2 className="text-[23px] px-1 pt-3 leading-tight" style={{ ...F_DISPLAY, fontWeight: 900, color: '#B03A2E' }}>Safety</h2>
+      {/* ── SI ALGO PASA (antes "Safety"): plan de emergencia, reportar un incidente, una queja. ── */}
+      <h2 className="text-[23px] px-1 pt-3 leading-tight" style={{ ...F_DISPLAY, fontWeight: 900, color: '#B03A2E' }}>If something happens</h2>
       <div className="space-y-4 md:space-y-0 md:grid md:grid-cols-2 md:gap-4 md:items-start">
 
       {/* Emergency plan — coral-bordered, English copy (brand rule) */}
@@ -1893,7 +1885,7 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
       {/* Report an incident */}
       <IncidentReporter token={coach.portal_token} students={students} boards={boards} />
 
-      {/* Problem Protocol — reference PDF */}
+      {/* Problem Protocol — la guía para responder una queja (PDF, "Resolver problemas") */}
       <a
         href="/docs/sistema-resolver-problemas.pdf"
         target="_blank"
@@ -1901,58 +1893,11 @@ function ToolsTab({ stps, coach, emergencyPlan, students, boards }: {
         className="w-full text-left bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] shadow-sm px-4 py-3 hover:shadow-md transition-shadow flex items-center gap-3"
       >
         <FileText size={18} strokeWidth={1.75} className="shrink-0" style={{ color: '#061C2B' }} />
-        <span className="min-w-0 flex-1 text-sm font-semibold truncate" style={{ color: '#061C2B' }}>Problem Protocol — reference guide</span>
+        <span className="min-w-0 flex-1 text-sm font-semibold truncate" style={{ color: '#061C2B' }}>Handling a complaint · Problem Protocol</span>
         <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-md bg-[#F7F9FA] text-[#55666E]" style={{ ...F_LABEL }}>PDF</span>
         <ChevronRight size={15} className="text-[#DCD7C6] shrink-0" />
       </a>
       </div>
-    </div>
-  );
-}
-
-function SequenceGroup({
-  group,
-  token,
-}: {
-  group: { name: string; belt: 'white' | 'yellow'; items: any[] };
-  token: string;
-}) {
-  const [open, setOpen] = useState(true);
-  // Color de cinta del manual (no los de Tailwind): amarilla #F5C518; la blanca lleva cyan porque #E8E8E8 no se ve.
-  const beltAccent = group.belt === 'yellow' ? '#F5C518' : '#00D2FF';
-  return (
-    <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between px-4 py-3 border-l-4"
-        style={{ borderLeftColor: beltAccent }}
-      >
-        <div className="text-left min-w-0">
-          <p className="text-[11px]" style={{ ...F_LABEL, color: '#55666E' }}>
-            {group.belt === 'yellow' ? 'Yellow Belt' : 'White Belt'} · {group.items.length} steps
-          </p>
-          <p className="text-[13px] mt-0.5 truncate" style={{ ...F_LABEL, color: '#061C2B', letterSpacing: '0.1em' }}>{group.name}</p>
-        </div>
-        <ChevronDown size={14} className={`text-[#55666E] transition shrink-0 ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="divide-y divide-[#DCD7C6]">
-          {group.items.map((s) => (
-            <Link
-              key={s.id}
-              href={`/coach-portal/${token}/tools/${s.id}`}
-              className="flex items-center justify-between px-4 py-3 hover:bg-[#F7F9FA]"
-            >
-              <div className="min-w-0 flex items-baseline gap-2">
-                <span className="text-[11px] shrink-0" style={{ ...F_LABEL, color: '#00A8CC' }}>{s.id}</span>
-                <span className="text-sm font-medium truncate" style={{ color: '#061C2B' }}>{s.title}</span>
-              </div>
-              <ChevronRight size={14} className="text-[#DCD7C6] shrink-0" />
-            </Link>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
