@@ -13,6 +13,7 @@
 // criterios de la misión, foco 0–3, flow, estado a mano, "mandar a otra
 // secuencia" y los botones "mañana igual / avanzar".
 
+import { withFrom, type CoachFrom } from '@/lib/nav/origin';
 import { useState, type ReactNode } from 'react';
 import { StarRating } from '@/components/sequence/StarRating';
 import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
@@ -154,9 +155,12 @@ export function DayCloseCard({
   tomorrow = null,
   campBelt = null,
   token,
+  planFrom = null,
 }: {
   /** Para el puente: del veredicto al material para enseñarlo. */
   token: string;
+  /** De dónde sale el puente (este camp, este día, el cierre): el Back de la página vuelve acá. */
+  planFrom?: CoachFrom | null;
   student: ServicePlanStudent;
   isClosed: boolean;
   isLastDay: boolean;
@@ -426,7 +430,7 @@ export function DayCloseCard({
             {/* El puente (Marcelo 2026-09-24): del veredicto al material.
                 Lleva el momento que se rompió para abrir ahí. */}
             {line?.seqId && (
-              <a href={`/coach-portal/${token}/seq/${line.seqId}${lineMoments[0] ? `?focus=${encodeURIComponent(lineMoments[0])}&from=${encodeURIComponent('the close')}` : ''}`}
+              <a href={withFrom(`/coach-portal/${token}/seq/${line.seqId}${lineMoments[0] ? `?focus=${encodeURIComponent(lineMoments[0])}` : ''}`, planFrom)}
                 className="inline-flex items-center gap-1.5 text-[13px] font-bold mt-2 no-underline" style={{ color: '#00D2FF' }}>
                 How to teach this →
               </a>

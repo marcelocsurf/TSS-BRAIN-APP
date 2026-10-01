@@ -11,7 +11,8 @@
 // own data — receives the already-resolved templatePlan from
 // getServicePlan() / getCustomizedPlan().
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { withFrom, type CoachFrom } from '@/lib/nav/origin';
 import { isSidePair, sidePairLabel } from '@/lib/sequence-pages/side-pairs';
 import Link from 'next/link';
 import {
@@ -52,6 +53,8 @@ interface Props {
   /** Días reales de ESTA instancia. La plantilla es compartida: si al servicio
    *  se le agregó un día, el encabezado tiene que decir la verdad. */
   instanceDays?: number | null;
+  /** Volver de "Teach it" / una lección (?day=): ese día abierto y a la vista. */
+  initialDay?: number | null;
 }
 
 type Mode = 'summary' | 'detail';
@@ -105,9 +108,16 @@ export function CampPlanReader({
   instanceDays,
   templatePlan,
   templateMeta,
+  initialDay = null,
 }: Props) {
   const [mode, setMode] = useState<Mode>('summary');
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const [expanded, setExpanded] = useState<Set<number>>(() => new Set(initialDay ? [initialDay] : []));
+  // Al volver, el día del que salió el coach queda a la vista.
+  useEffect(() => {
+    if (!initialDay) return;
+    try { document.getElementById(`plan-day-${initialDay}`)?.scrollIntoView({ block: 'start' }); } catch { /* nada */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Acordeón por bloque dentro del día (vista light): cerrado por defecto.
   const [openBlocks, setOpenBlocks] = useState<Set<string>>(new Set());
   const toggleBlock = (k: string) =>
@@ -187,6 +197,7 @@ export function CampPlanReader({
           return (
             <div
               key={d.day_number}
+              id={`plan-day-${d.day_number}`}
               className="bg-[#E9E2D2] rounded-lg border border-[#DCD7C6] shadow-sm overflow-hidden"
             >
               {/* Day header — always visible */}
@@ -314,7 +325,7 @@ export function CampPlanReader({
                             </button>
                             {open && (
                               <div className="border-t border-[#DCD7C6] p-2">
-                                <BlockCard block={b} coachToken={coachToken} />
+                                <BlockCard block={b} coachToken={coachToken} planFrom={instanceId ? { k: 'plan', camp: instanceId, day: d.day_number, view: 'read', why: 'plan' } : null} />
                               </div>
                             )}
                           </div>
@@ -339,7 +350,7 @@ export function CampPlanReader({
 }
 
 // ── A single block (Activity), rendered with type-specific visuals ──
-function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | null }) {
+function BlockCard({ block, coachToken, planFrom = null }: { block: Block; coachToken?: string | null; planFrom?: CoachFrom | null }) {
   const activityType =
     ACTIVITY_TYPES.find((t) => t.value === block.block_type) ??
     ACTIVITY_TYPES.find((t) => t.value === 'custom')!;
@@ -478,22 +489,25 @@ function BlockCard({ block, coachToken }: { block: Block; coachToken?: string | 
       {(block.step_id || (block as any).sequence_id) && coachToken && (() => {
         const page = pageForStep({ sequenceId: (block as any).sequence_id ?? null, stepIds: block.step_ids ?? null, stepId: block.step_id }, null);
         if (!page && !block.step_id) return null;
-        const q = new URLSearchParams({ tab: 'review', from: 'the camp plan' });
+        const q = new URLSearchParams({ tab: 'review' });
         // En una herramienta el paso es la herramienta entera: sin foco.
         const focusStep = (block as any).focus_step_id as string | null | undefined;
         const focus = focusStep ?? block.step_id;
         if (page && page.kind !== 'tool' && focus) q.set('focus', focus);
         // Mismo nombre que la cabecera del bloque: el foco elegido, o el paso.
         const focusTitle = page && focusStep && isElementOf(page, focusStep) ? elementTitle(page, focusStep, null) : null;
-        const href = page ? `/coach-portal/${coachToken}/seq/${page.id}?${q.toString()}` : `/coach-portal/${coachToken}?tab=courses&lesson=${block.step_id}`;
+        // De dónde sale (este camp, este día): el Back de la página / la lección vuelve acá.
+        // La lección es una carga de página (dentro del portal un <Link> al
+        // mismo path no hacía nada: el portal lee ?tab=&lesson= solo al entrar).
+        const href = withFrom(page ? `/coach-portal/${coachToken}/seq/${page.id}?${q.toString()}` : `/coach-portal/${coachToken}?tab=courses&lesson=${block.step_id}`, planFrom);
         const label = page
           ? `Teach it · ${sequenceDisplayName(page)}${focusTitle ? ` · ${focusTitle}` : !focusStep && block.step_id && block.step_title && page.kind !== 'tool' ? ` · ${block.step_title}` : ''}`
           : `Open the lesson${block.step_title ? ` · ${block.step_title}` : ''}`;
         return (
-          <Link href={href} className="inline-flex items-center gap-1 text-[11px] text-[var(--tss-cyan)] hover:underline">
+          <a href={href} className="inline-flex items-center gap-1 text-[11px] text-[var(--tss-cyan)] hover:underline">
             <ListChecks size={11} strokeWidth={1.75} />
             {label} →
-          </Link>
+          </a>
         );
       })()}
 

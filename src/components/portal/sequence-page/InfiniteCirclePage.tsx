@@ -227,7 +227,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
                       ))}
                     </ul>
                     <p className="mt-2 text-[12.5px]"><span style={{ color: MUTED }}>Key words · </span><span className="font-mono" style={{ color: INK }}>{st.keyWords.join(' · ')}</span></p>
-                    <a href={coach ? `${portal}?tab=${courseTab}&lesson=${st.lessonId}` : withFrom(`${portal}?tab=${courseTab}&lesson=${st.lessonId}`, here)} className="inline-block mt-2 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {st.lessonLabel}</a>
+                    <a href={withFrom(`${portal}?tab=${courseTab}&lesson=${st.lessonId}`, coach ? { k: 'loop' } : here)} className="inline-block mt-2 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {st.lessonLabel}</a>
                   </div>
                 </details>
               ))}

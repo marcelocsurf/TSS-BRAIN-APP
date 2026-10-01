@@ -5,6 +5,7 @@
 // criterios). Esta ruta se queda por los links guardados (planes, WhatsApp):
 // mismos chequeos de acceso que /teach, y lleva al paso en su página; un paso
 // sin página (Venue Analysis, Warm Up) abre su lección con la capa del coach.
+import { parseFrom, encodeFrom, withFrom } from '@/lib/nav/origin';
 import { notFound, redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { pageForStep } from '@/lib/sequence-pages/resolve';
@@ -15,8 +16,9 @@ export const dynamic = 'force-dynamic';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function CoachStpToolsPage({ params }: { params: Promise<{ token: string; stepId: string }> }) {
+export default async function CoachStpToolsPage({ params, searchParams }: { params: Promise<{ token: string; stepId: string }>; searchParams?: Promise<{ from?: string }> }) {
   const { token, stepId } = await params;
+  const sp = searchParams ? await searchParams : undefined;
   if (!UUID_RE.test(token) || !/^STP-\d+[A-Z]?$/.test(stepId)) notFound();
 
   const admin = createAdminClient();
@@ -32,7 +34,10 @@ export default async function CoachStpToolsPage({ params }: { params: Promise<{ 
   if (page && sequencePageRank(page) <= await coachTeachRank(admin, coach as any)) {
     const q = new URLSearchParams({ tab: 'review' });
     if (page.kind !== 'tool') q.set('focus', stepId);
+    // El origen (?from=) sigue de largo: el Back de la página vuelve ahí.
+    const from = parseFrom(sp?.from, 'coach');
+    if (from) q.set('from', encodeFrom(from));
     redirect(`/coach-portal/${token}/seq/${page.id}?${q.toString()}`);
   }
-  redirect(`/coach-portal/${token}?tab=courses&lesson=${stepId}`);
+  redirect(withFrom(`/coach-portal/${token}?tab=courses&lesson=${stepId}`, parseFrom(sp?.from, 'coach')));
 }

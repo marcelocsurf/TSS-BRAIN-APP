@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import { parseFrom } from '@/lib/nav/origin';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { getCoachPortalData } from '@/lib/actions/coach-portal';
 import { CoachPortalTabs } from './CoachPortalTabs';
@@ -22,12 +23,12 @@ export const revalidate = 0;
 
 interface Props {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ tab?: string; lesson?: string }>;
+  searchParams: Promise<{ tab?: string; lesson?: string; camp?: string; day?: string; view?: string; from?: string }>;
 }
 
 export default async function CoachPortalPage({ params, searchParams }: Props) {
   const { token } = await params;
-  const { tab, lesson } = await searchParams;
+  const { tab, lesson, camp, day, view, from } = await searchParams;
 
   // Managers have their own read-only portal — send them there even if they
   // were given (or bookmarked) the coach-portal form of their link.
@@ -71,6 +72,14 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
   // ?tab=courses&lesson=ID (links "Read the full lesson" / "Go deeper" de las
   // páginas de secuencia del coach, 2026-09-29): abre esa lección al entrar.
   const initialLessonId = initialTab === 'courses' && lesson && /^[A-Za-z0-9._-]{2,64}$/.test(lesson) ? lesson : undefined;
+  // ?tab=plan&camp=&day=&view= (volver de Teach it / una lección, 2026-10-01):
+  // el Plan abre esa clase en ese día y esa vista.
+  const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const initialPlan = initialTab === 'plan' && camp && UUID.test(camp)
+    ? { campId: camp.toLowerCase(), day: day && /^\d{1,2}$/.test(day) && Number(day) >= 1 ? Number(day) : undefined, view: (view === 'run' ? 'run' : 'read') as 'read' | 'run' }
+    : null;
+  // De dónde vino el link (?from=): el Back de la lección vuelve ahí.
+  const initialFrom = parseFrom(from, 'coach');
 
   // M9 — academy branding fallback
   const brand = resolveAcademyBranding(data.academyBranding);
@@ -118,6 +127,8 @@ export default async function CoachPortalPage({ params, searchParams }: Props) {
         data={data}
         initialTab={initialTab}
         initialLessonId={initialLessonId}
+        initialPlan={initialPlan}
+        initialFrom={initialFrom}
         studentSide={await getStudentSideForCoach(data.coach.id)}
       />
     </div>

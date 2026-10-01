@@ -1,5 +1,6 @@
 'use client';
 
+import { withFrom } from '@/lib/nav/origin';
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -47,7 +48,7 @@ function QuickRoster({
       {roster.map((r) => (
         <Link
           key={r.student_id}
-          href={`/coach-portal/${token}/students/${r.student_id}`}
+          href={withFrom(`/coach-portal/${token}/students/${r.student_id}`, { k: 'home' })}
           className="flex items-center gap-2 py-1 group"
         >
           <span className="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center text-white text-[11px] font-bold shrink-0 bg-gray-400">

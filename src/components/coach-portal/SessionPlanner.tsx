@@ -1,5 +1,6 @@
 'use client';
 
+import { withFrom } from '@/lib/nav/origin';
 import { useState, useTransition, useEffect } from 'react';
 import {
   BRAND,
@@ -1671,7 +1672,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                           {differs && groupSeq && <p className="text-[13px] mt-1.5" style={{ color: '#9A6A12' }}>Stays here while the group works {seqLabel(groupSeq)}.</p>}
                           {/* El puente (Marcelo 2026-09-24): de la misión al
                               material para enseñarla, abierto en ese detalle. */}
-                          <a href={`/coach-portal/${token}/seq/${mySeq.id}${missionList.length ? `?focus=${encodeURIComponent(missionList[0])}&from=${encodeURIComponent("today's plan")}` : ''}`}
+                          <a href={withFrom(`/coach-portal/${token}/seq/${mySeq.id}${missionList.length ? `?focus=${encodeURIComponent(missionList[0])}` : ''}`, { k: 'plan', camp: data.camp.id, day: data.selectedDay.day_number, view: 'run', why: 'today' })}
                             className="inline-flex items-center gap-1.5 text-[13px] font-bold mt-2 no-underline" style={{ color: '#00789A' }}>
                             How to teach it →
                           </a>
@@ -1832,6 +1833,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay }: SessionPlan
                 <DayCloseCard
                   key={s.student_id}
                   token={token}
+                  planFrom={{ k: 'plan', camp: data.camp.id, day: data.selectedDay.day_number, view: 'run', why: 'close' }}
                   student={s}
                   isClosed={isClosed}
                   isLastDay={isLastDay}

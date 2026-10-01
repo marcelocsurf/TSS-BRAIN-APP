@@ -206,7 +206,8 @@ export function SequencePage({
   // la lección o el Cancel de Let's Play vuelven acá, a la misma pestaña.
   const parent = navTab === 'home' ? 'home' as const : navTab === 'sequence' ? 'play' as const : undefined;
   const here = (t: Tab = tab) => ({ k: 'seq' as const, id: cfg.id, tab: t, ...(parent ? { parent } : {}) });
-  const lessonHref = (id: string) => (coach ? `${portal}?tab=${courseTab}&lesson=${id}` : withFrom(`${portal}?tab=${courseTab}&lesson=${id}`, here()));
+  // El coach vuelve a esta página (misma pestaña) desde la lección.
+  const lessonHref = (id: string) => withFrom(`${portal}?tab=${courseTab}&lesson=${id}`, coach ? { k: 'seq', id: cfg.id, tab } : here());
   const playHref = (q: string) => withFrom(`${portal}?tab=sequence&${q}`, here('do'));
   // Solo la dirección del dibujo cambia con el stance; el nombre de la maniobra no.
   const waveDirection = flip ? 'left' : 'right';

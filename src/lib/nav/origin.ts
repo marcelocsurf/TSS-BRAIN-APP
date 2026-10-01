@@ -30,6 +30,8 @@ export type StudentFrom =
 
 export type CoachFrom =
   | { k: 'home' }
+  /** La lista de clases de la pestaña Plan (sin una clase abierta). */
+  | { k: 'plans' }
   | { k: 'plan'; camp: string; day?: number; view: 'read' | 'run'; why?: 'plan' | 'today' | 'close' }
   | { k: 'course'; belt: CoachBelt }
   | { k: 'circles'; belt?: 'yellow' | 'blue' }
@@ -94,7 +96,7 @@ export function parseFrom(raw: unknown, portal: 'student' | 'coach'): AnyFrom | 
     }
   }
   switch (k) {
-    case 'home': case 'loop': return a === undefined ? ({ k } as CoachFrom) : null;
+    case 'home': case 'loop': case 'plans': return a === undefined ? ({ k } as CoachFrom) : null;
     case 'plan': {
       if (!a || !UUID_RE.test(a)) return null;
       const day = b && /^\d{1,2}$/.test(b) && Number(b) >= 1 && Number(b) <= 90 ? Number(b) : undefined;
@@ -159,6 +161,7 @@ export function coachBack(o: CoachFrom | null, token: string, fallback: CoachFro
   const root = `/coach-portal/${token}`;
   switch (at.k) {
     case 'home': return { href: `${root}?tab=home`, label: 'Home' };
+    case 'plans': return { href: `${root}?tab=plan`, label: 'Your classes' };
     case 'plan': return {
       href: `${root}?tab=plan&camp=${at.camp}${at.day ? `&day=${at.day}` : ''}&view=${at.view}`,
       label: at.why === 'close' ? 'The close' : at.why === 'today' || at.view === 'run' ? "Today's plan" : 'The camp plan',

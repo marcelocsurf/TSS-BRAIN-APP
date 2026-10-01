@@ -15,6 +15,7 @@ import { CoachMediaBar } from '@/components/coach-portal/CoachMediaBar';
 import { VideoList } from '@/components/coach-portal/VideoEmbed';
 import { laminasInMarkdown, stripLaminas } from '@/lib/sequence-pages/laminas';
 import { splitCoachCourses, groupToolCourses } from '@/lib/coach/coach-lessons';
+import { coachBack, withFrom, type CoachFrom } from '@/lib/nav/origin';
 import { PendingAssignments } from './PendingAssignments';
 import { PendingStaffInvites } from './PendingStaffInvites';
 import { CoachGuide } from './CoachGuide';
@@ -112,12 +113,18 @@ export function CoachPortalTabs({
   data,
   initialTab,
   initialLessonId,
+  initialPlan = null,
+  initialFrom = null,
   studentSide,
 }: {
   data: CoachPortalData;
   initialTab?: Tab;
   /** ?lesson=ID: la lección que se abre al entrar a Courses. */
   initialLessonId?: string;
+  /** ?tab=plan&camp=&day=&view=: volver de Teach it / una lección a esa clase. */
+  initialPlan?: { campId: string; day?: number; view: 'read' | 'run' } | null;
+  /** ?from= (src/lib/nav/origin.ts): de dónde vino el link a la lección. */
+  initialFrom?: CoachFrom | null;
   /** Si este coach además entrena como alumno, el link a su portal de alumno. */
   studentSide?: { href: string; name: string } | null;
 }) {
@@ -126,7 +133,16 @@ export function CoachPortalTabs({
   // pestaña Cursos no la reabre.
   const [pendingLesson, setPendingLesson] = useState<string | undefined>(initialLessonId);
   // "Run today" desde el Home: el Plan abre ese camp/día directo.
-  const [planAutoOpen, setPlanAutoOpen] = useState<{ campId: string; day?: number; view: 'read' | 'run' } | null>(null);
+  const [planAutoOpen, setPlanAutoOpen] = useState<{ campId: string; day?: number; view: 'read' | 'run'; from?: 'home' } | null>(initialPlan);
+  // Cambiar de pestaña sin recargar, con la URL al día (2026-10-01): una
+  // recarga o el Back de otra página vuelven a la misma pestaña.
+  const setTab = (t: Tab) => {
+    setActiveTab(t);
+    try {
+      const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+      window.history.replaceState({ ...st, __NA: true }, '', `${window.location.pathname}?tab=${t}`);
+    } catch { /* cosmético */ }
+  };
   // When a class is open in the planner we switch to a focused, light-themed
   // full-screen mode: light background (not the dark portal shell) + the global
   // tab-nav hidden, so the planner isn't a light screen floating on black with
@@ -206,9 +222,9 @@ export function CoachPortalTabs({
             <PendingStaffInvites invites={(data as any).pendingStaffInvites ?? []} />
 
             {isSupport ? (
-              <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} spaceBookings={(data as any).academySpaceBookings ?? []} emergencyPlan={data.emergencyPlan} onGoTo={(t) => setActiveTab(t as Tab)} />
+              <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} spaceBookings={(data as any).academySpaceBookings ?? []} emergencyPlan={data.emergencyPlan} onGoTo={(t) => setTab(t as Tab)} />
             ) : (
-              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setActiveTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} todayLogistics={(data as any).todayLogistics ?? null} studentSide={studentSide} onRunToday={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run' }); setActiveTab('plan'); }} unclosed={(data as any).unclosedPast ?? []} onOpenDay={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run' }); setActiveTab('plan'); }} />
+              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} todayLogistics={(data as any).todayLogistics ?? null} studentSide={studentSide} onRunToday={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run', from: 'home' }); setTab('plan'); }} unclosed={(data as any).unclosedPast ?? []} onOpenDay={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run', from: 'home' }); setTab('plan'); }} />
             )}
           </div>
         )}
@@ -222,11 +238,12 @@ export function CoachPortalTabs({
             coach={coach}
             token={coach.portal_token}
             initialLessonId={pendingLesson}
+            initialFrom={initialFrom}
             onLessonConsumed={() => setPendingLesson(undefined)}
             teachRank={data.teachRank}
           />
         )}
-        {activeTab === 'tools' && <ToolsTab coach={coach} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoToCourses={() => setActiveTab('courses' as Tab)} />}
+        {activeTab === 'tools' && <ToolsTab coach={coach} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoToCourses={() => setTab('courses' as Tab)} />}
         {activeTab === 'spaces' && <PortalSpaces token={coach.portal_token} coachId={coach.id} />}
         {activeTab === 'inventory' && (
           <PortalInventory token={coach.portal_token} />
@@ -240,11 +257,12 @@ export function CoachPortalTabs({
             onOpenChange={setPlannerOpen}
             autoOpen={planAutoOpen}
             onAutoOpened={() => setPlanAutoOpen(null)}
+            onBackHome={() => setTab('home')}
           />
         )}
         {activeTab === 'rating' && (
           <div className="rounded-lg p-3" style={{ background: 'transparent' }}>
-            <RatingTab stats={stats} onBack={() => setActiveTab('home')} />
+            <RatingTab stats={stats} onBack={() => setTab('home')} />
           </div>
         )}
       </div>
@@ -259,7 +277,7 @@ export function CoachPortalTabs({
             return (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => setTab(tab.key)}
                 className={`flex-1 flex flex-col items-center py-2.5 text-[10px] font-medium transition-colors ${
                   isActive ? 'text-[#00D2FF]' : 'text-white/40'
                 }`}
@@ -860,9 +878,12 @@ function CoursesTab({
   coach,
   token,
   initialLessonId,
+  initialFrom = null,
   onLessonConsumed,
   teachRank = 1,
 }: {
+  /** De dónde vino el link a la lección (?from=): su Back vuelve ahí. */
+  initialFrom?: CoachFrom | null;
   courses: any[];
   progress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
   coach: any;
@@ -916,13 +937,13 @@ function CoursesTab({
       if (u.searchParams.has('lesson')) { u.searchParams.delete('lesson'); window.history.replaceState(window.history.state, '', u.pathname + u.search); }
     } catch { /* nada */ }
   };
-  // Solo volvemos con history.back() si la página anterior es de ESTE portal
-  // (la secuencia o Teach it); si el link vino de afuera, cerramos la lección.
-  const cameFromThisPortal = () => {
-    try { return document.referrer.startsWith(`${window.location.origin}/coach-portal/${token}/`); } catch { return false; }
-  };
+  // La lección que llegó por link vuelve a su origen (?from=, 2026-10-01): el
+  // plan del camp en ese día, la página de la secuencia… Sin origen, a la lista.
+  // (Antes se adivinaba con document.referrer + history.back(), que falla en
+  // el app instalado y en los links de WhatsApp.)
+  const linkBack = fromLink && openLessonId === linkedId && initialFrom ? coachBack(initialFrom, token, { k: 'home' }) : null;
   const goBack = () => {
-    if (fromLink && openLessonId === linkedId && cameFromThisPortal() && window.history.length > 1) { window.history.back(); return; }
+    if (linkBack) { window.location.assign(linkBack.href); return; }
     setFromLink(false);
     closeLesson();
   };
@@ -981,7 +1002,7 @@ function CoursesTab({
           onClick={goBack}
           className="text-[12px] text-[var(--tss-cyan,#00D2FF)] hover:underline"
         >
-          {fromLink && openLessonId === linkedId ? '← Back' : '← Back to courses'}
+          {linkBack ? `← Back to ${linkBack.label.replace(/^(Home|The|Today's|Your)\b/, (w) => w.toLowerCase())}` : '← Back to courses'}
         </button>
 
         {loading && (
@@ -1913,16 +1934,30 @@ function PlanTab({
   onOpenChange,
   autoOpen = null,
   onAutoOpened,
+  onBackHome,
 }: {
   upcoming: any[];
   past: any[];
   unclosed?: { camp_id: string; camp_name: string; day_number: number; date: string }[];
   token: string;
   onOpenChange?: (open: boolean) => void;
-  autoOpen?: { campId: string; day?: number; view: 'read' | 'run' } | null;
+  autoOpen?: { campId: string; day?: number; view: 'read' | 'run'; from?: 'home' } | null;
   onAutoOpened?: () => void;
+  /** La clase se abrió desde el Home ("Run today"): su Back vuelve al Home. */
+  onBackHome?: () => void;
 }) {
   const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
+  const [openedFromHome, setOpenedFromHome] = useState(false);
+  const [planDay, setPlanDay] = useState<number | null>(null);
+  // La clase abierta queda en la URL (?camp=&day=&view=): el Back de Teach it
+  // o de una lección vuelve a esta clase, este día, esta vista.
+  const syncPlanUrl = (camp: string | null, day?: number | null, view?: 'read' | 'run') => {
+    try {
+      const q = camp ? `?tab=plan&camp=${camp}${day ? `&day=${day}` : ''}&view=${view ?? 'read'}` : '?tab=plan';
+      const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+      window.history.replaceState({ ...st, __NA: true }, '', `${window.location.pathname}${q}`);
+    } catch { /* cosmético */ }
+  };
   // 🚐 Transporte en dos toques (sin abrir el planner): panel por servicio.
   const [trOpen, setTrOpen] = useState<string | null>(null);
   const [trInfo, setTrInfo] = useState<any>(null);
@@ -1988,9 +2023,13 @@ function PlanTab({
     setLoading(true);
     setPlanData(null);
     setPlanView(view ?? 'read');
+    setPlanDay(dayNumber ?? null);
+    syncPlanUrl(campId, dayNumber ?? null, view ?? 'read');
     try {
       const d = await getServicePlan(token, campId, dayNumber);
       setPlanData(d);
+      const dn = (d as any)?.selectedDay?.day_number ?? dayNumber ?? null;
+      if (dn) { setPlanDay(dn); syncPlanUrl(campId, dn, view ?? 'read'); }
     } catch (e) {
       setPlanData(null);
     }
@@ -2001,9 +2040,14 @@ function PlanTab({
     setSelectedCampId(null);
     setPlanData(null);
     setPlanView('read');
+    setPlanDay(null);
+    syncPlanUrl(null);
+    // Abierta desde el Home ("Run today"): vuelve al Home, no a la lista.
+    if (openedFromHome) { setOpenedFromHome(false); onBackHome?.(); }
   };
   useEffect(() => {
     if (!autoOpen) return;
+    setOpenedFromHome(autoOpen.from === 'home');
     void openPlanner(autoOpen.campId, autoOpen.day, autoOpen.view);
     onAutoOpened?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -2016,6 +2060,8 @@ function PlanTab({
     try {
       const d = await getServicePlan(token, selectedCampId, dayNumber);
       setPlanData(d);
+      setPlanDay(dayNumber);
+      syncPlanUrl(selectedCampId, dayNumber, planView);
     } catch {
       /* keep prior data */
     }
@@ -2050,7 +2096,7 @@ function PlanTab({
             onClick={close}
             className="text-[12px] text-[var(--tss-navy)] hover:underline"
           >
-            ← Back to services
+            {openedFromHome ? '← Back to home' : '← Back to your classes'}
           </button>
           {planData.readOnly ? (
             <span className="text-[11px] uppercase tracking-wider font-semibold text-[#55666E] px-3 py-1" style={{ fontFamily: 'DM Mono, monospace' }}>
@@ -2062,7 +2108,7 @@ function PlanTab({
                 <button
                   key={v}
                   type="button"
-                  onClick={() => setPlanView(v)}
+                  onClick={() => { setPlanView(v); syncPlanUrl(selectedCampId, planDay, v); }}
                   className={`px-3 py-1 text-[10px] uppercase tracking-wider font-semibold transition-colors ${
                     planView === v
                       ? 'bg-[var(--tss-navy)] text-white'
@@ -2081,6 +2127,7 @@ function PlanTab({
           <CampPlanReader
             instanceId={selectedCampId}
             coachToken={token}
+            initialDay={planDay}
             templatePlan={planData.templatePlan}
             templateMeta={planData.templateMeta}
           />
@@ -2422,7 +2469,7 @@ function ServiceRoster({ token, roster }: { token: string; roster: RosterEntry[]
             return (
               <Link
                 key={r.id}
-                href={`/coach-portal/${token}/students/${r.id}`}
+                href={withFrom(`/coach-portal/${token}/students/${r.id}`, { k: 'plans' })}
                 className="flex items-center gap-[10px] px-[13px] py-[8px] hover:bg-[#F7F9FA] transition-colors"
                 style={{ borderTop: `1px solid ${HAIRLINE}` }}
               >

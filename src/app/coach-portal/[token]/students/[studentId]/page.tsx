@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { parseFrom, coachBack } from '@/lib/nav/origin';
 import { notFound } from 'next/navigation';
 import {
   ArrowLeft, AlertTriangle, ShieldCheck, Heart, Phone, User, Waves,
@@ -17,14 +18,20 @@ export const dynamic = 'force-dynamic';
 
 interface Props {
   params: Promise<{ token: string; studentId: string }>;
+  searchParams?: Promise<{ from?: string }>;
 }
 
-export default async function CoachStudentDetailPage({ params }: Props) {
+export default async function CoachStudentDetailPage({ params, searchParams }: Props) {
   const { token, studentId } = await params;
+  const sp = searchParams ? await searchParams : undefined;
   const s = await getCoachStudentDetail(token, studentId);
   if (!s) notFound();
 
   const belt = BELT_DISPLAY[s.belt_level as BeltLevel];
+  // De dónde vino (?from=): la lista de clases, el Home… Sin origen, la lista de alumnos.
+  const origin = parseFrom(sp?.from, 'coach');
+  const back = origin ? (() => { const b = coachBack(origin, token, { k: 'home' }); return { href: b.href, label: b.label === 'Home' ? 'home' : b.label.toLowerCase() }; })()
+    : { href: `/coach-portal/${token}/students`, label: 'students' };
   const fullName = `${s.first_name} ${s.last_name ?? ''}`.trim();
   const hasSafetyFlag = anyMedicalNote(s.allergies, s.injuries, s.medical_notes, s.risk_notes);
 
@@ -33,10 +40,10 @@ export default async function CoachStudentDetailPage({ params }: Props) {
       {/* Header */}
       <div className="bg-[var(--tss-navy)] text-white px-4 py-5">
         <Link
-          href={`/coach-portal/${token}/students`}
+          href={back.href}
           className="inline-flex items-center gap-1 text-xs text-white/60 hover:text-white mb-2"
         >
-          <ArrowLeft size={12} /> Back to students
+          <ArrowLeft size={12} /> Back to {back.label}
         </Link>
         <div className="flex items-center gap-3 mt-1">
           <div

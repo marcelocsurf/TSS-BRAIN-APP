@@ -3,6 +3,7 @@
 // Feel · Do · Review) más una capa plegada por paso — cómo lo enseño, cómo lo
 // corrijo, cómo lo valido — que sale de las lecciones COACH-STP-xxx. Un
 // interruptor la apaga para mostrar la página limpia en la playa.
+import { parseFrom, coachBack, type CoachBelt } from '@/lib/nav/origin';
 import { sequenceSide } from '@/lib/constants/learning-blocks';
 import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
@@ -132,14 +133,20 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
   // El puente del plan / cierre (?focus=paso|elemento&from=…).
   const stepTitle = sp.focus ? (((lessonRows ?? []) as any[]).find((l) => l.id === sp.focus)?.title ?? null) : null;
   const match = sp.focus ? detailForFocus(cfg, sp.focus, stepTitle) : null;
-  const focus = match?.title ? { key: match.key, title: match.title, from: sp.from || undefined } : null;
+  // De dónde vino (?from=, src/lib/nav/origin.ts): el plan del camp en ese día,
+  // Dar la clase, el cierre… Los links viejos traían texto libre ("the camp
+  // plan"): el banner lo sigue mostrando, el Back cae al índice.
+  const origin = parseFrom(sp.from, 'coach');
+  const fromLabel = origin ? coachBack(origin, token, { k: 'home' }).label.toLowerCase() : (sp.from && /^[a-z' ]{3,30}$/i.test(sp.from) ? sp.from : undefined);
+  const focus = match?.title ? { key: match.key, title: match.title, from: fromLabel } : null;
   // Lo de cada paso para su hoja (Show it): sus láminas y sus videos.
   const stepMedia: Record<string, { laminas: ReturnType<typeof media.laminasOfLesson>; videos: ReturnType<typeof media.videosOfLesson> }> = {};
   for (const id of sheetIds) {
     stepMedia[id] = { laminas: media.laminasOfLesson(id), videos: media.videosOfLesson(id) };
   }
-  // Volver al índice, en la cinta desde la que se mira.
+  // Volver al índice, en la cinta desde la que se mira (si no vino de otro lado).
   const backBelt = viewKey.replace(/_belt$/, '');
+  const back = coachBack(origin && !(origin.k === 'seq' && origin.id === cfg.id) ? origin : null, token, { k: 'course', belt: (['white', 'yellow', 'blue', 'purple', 'brown', 'black'].includes(backBelt) ? backBelt : 'white') as CoachBelt });
 
   const byStep = new Map((coachRows ?? []).map((c: any) => [c.linked_step_id as string, c]));
   const layerOf = (id: string): CoachStepLayer => {
@@ -155,6 +162,7 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
       {/* eslint-disable-next-line @next/next/no-css-tags */}
       <link rel="stylesheet" href="/tss/theme.css" />
       <SequencePage
+        back={back}
         cfg={pageCfg} lessons={lessons} pieces={pieces} token={token} canTrack={false}
         video={resolveSequenceVideo(videos, null, null)} videos={videos} stance={null}
         progress={null} initialTab={initialTab} flip={sequenceSide(cfg.id) === 'bs'}
