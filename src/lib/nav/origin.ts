@@ -36,7 +36,7 @@ export type CoachFrom =
   | { k: 'plan'; camp: string; day?: number; view: 'read' | 'run'; why?: 'plan' | 'today' | 'close'; home?: true }
   | { k: 'course'; belt: CoachBelt | 'pre'; view?: 'course' | 'plates' | 'videos' }
   | { k: 'circles'; belt?: 'yellow' | 'blue' }
-  | { k: 'loop' }
+  | { k: 'loop'; side?: 'fs' | 'bs' }
   /** La página de la secuencia con TODO lo suyo: la voz (course), el detalle
    *  abierto (focus) y de dónde había llegado (up: el plan, el índice…). */
   | { k: 'seq'; id: string; tab?: SeqTab; course?: string; focus?: string; up?: Exclude<CoachFrom, { k: 'seq' }> };
@@ -48,7 +48,9 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const CODE_RE = /^[A-Za-z0-9:._-]{1,160}$/;
 const SEQ_RE = /^[A-Z0-9.-]{3,40}$/;
 const LESSON_RE = /^[A-Za-z0-9._-]{2,64}$/;
-const STEP_RE = /^[A-Z0-9-]{3,40}(:[A-Z0-9]{1,12})?$/;
+// Paso ("STP-016") o elemento de página ("CIRCLE-BOARD:P1", "BB-SEQ-08:rotation").
+// Sin "_": es el escape de ":" dentro del código de la página del coach.
+const STEP_RE = /^[A-Z0-9-]{3,40}(:[A-Za-z0-9-]{1,16})?$/;
 const SEQ_TABS: SeqTab[] = ['think', 'feel', 'do', 'review'];
 const CIRCLES: Circle[] = ['body', 'board', 'wave'];
 const BELTS: CoachBelt[] = ['white', 'yellow', 'blue', 'purple', 'brown', 'black'];
@@ -114,7 +116,8 @@ export function parseFrom(raw: unknown, portal: 'student' | 'coach'): AnyFrom | 
     }
   }
   switch (k) {
-    case 'home': case 'loop': case 'plans': return a === undefined ? ({ k } as CoachFrom) : null;
+    case 'home': case 'plans': return a === undefined ? ({ k } as CoachFrom) : null;
+    case 'loop': { const side = pick(a, ['fs', 'bs'] as const); return { k, ...(side ? { side } : {}) }; }
     case 'plan': {
       if (!a || !UUID_RE.test(a)) return null;
       const day = b && /^\d{1,2}$/.test(b) && Number(b) >= 1 && Number(b) <= 90 ? Number(b) : undefined;
@@ -205,7 +208,7 @@ export function coachBack(o: CoachFrom | null, token: string, fallback: CoachFro
     };
     case 'course': return { href: withQuery(`${root}/course`, { belt: at.belt, view: at.view }), label: 'Courses' };
     case 'circles': return { href: `${root}/circles${at.belt ? `?belt=${at.belt}` : ''}`, label: 'The Three Circles' };
-    case 'loop': return { href: `${root}/loop`, label: 'The Infinite Circle' };
+    case 'loop': return { href: withQuery(`${root}/loop`, { side: at.side }), label: 'The Infinite Circle' };
     case 'seq': return {
       href: withQuery(`${root}/seq/${encodeURIComponent(at.id)}`, { tab: at.tab, course: at.course, focus: at.focus, from: at.up ? encodeFrom(at.up) : undefined }),
       label: seqName(at.id),

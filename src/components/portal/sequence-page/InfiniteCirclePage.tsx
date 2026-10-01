@@ -172,7 +172,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
                 <p key={k.word} className="text-[13.5px] leading-snug" style={{ color: TEXT }}><span className="font-semibold" style={{ color: INK }}>{k.word}</span> · {k.note}</p>
               ))}
             </div>
-            <a href={coach ? `${portal}/circles?belt=blue` : withFrom(`${portal}/circles`, here)} className="inline-block mt-3 text-[13px] font-semibold" style={{ color: CYAN }}>Go back to the Three Circles →</a>
+            <a href={coach ? withFrom(`${portal}/circles`, { k: 'loop', side }) : withFrom(`${portal}/circles`, here)} className="inline-block mt-3 text-[13px] font-semibold" style={{ color: CYAN }}>Go back to the Three Circles →</a>
           </Card>
 
           <Card eyebrow="04 · New in Blue · the words the circle adds" color={CYAN}>
@@ -227,7 +227,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
                       ))}
                     </ul>
                     <p className="mt-2 text-[12.5px]"><span style={{ color: MUTED }}>Key words · </span><span className="font-mono" style={{ color: INK }}>{st.keyWords.join(' · ')}</span></p>
-                    <a href={withFrom(`${portal}?tab=${courseTab}&lesson=${st.lessonId}`, coach ? { k: 'loop' } : here)} className="inline-block mt-2 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {st.lessonLabel}</a>
+                    <a href={withFrom(`${portal}?tab=${courseTab}&lesson=${st.lessonId}`, coach ? { k: 'loop', side } : here)} className="inline-block mt-2 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {st.lessonLabel}</a>
                   </div>
                 </details>
               ))}

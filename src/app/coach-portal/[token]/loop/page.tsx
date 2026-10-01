@@ -20,7 +20,7 @@ const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function CoachLoopPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<{ from?: string }> }) {
+export default async function CoachLoopPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<{ from?: string; side?: string }> }) {
   const sp = searchParams ? await searchParams : undefined;
   const { token } = await params;
   if (!UUID_RE.test(token)) notFound();
@@ -42,6 +42,7 @@ export default async function CoachLoopPage({ params, searchParams }: { params: 
         video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null}
         threeCirclesLessonId={THREE_CIRCLES_LESSON_ID}
         loopLessonId={null}
+        initialSide={sp?.side === 'bs' || sp?.side === 'fs' ? sp.side : null}
         coach={{ backHref: coachBack(parseFrom(sp?.from, 'coach'), token, { k: 'course', belt: 'blue' }).href, laminas: INFINITE_CIRCLE_LAMINAS, videos: dedupeVideos([...media.libraryVideos('BB-LOOP'), ...media.videosOfLesson('BB-FND-INF')]) }}
       />
     </div>

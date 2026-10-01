@@ -25,8 +25,12 @@ const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function CoachCirclesPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<{ from?: string }> }) {
+export default async function CoachCirclesPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<{ from?: string; belt?: string }> }) {
   const sp = searchParams ? await searchParams : undefined;
+  // La cinta desde la que se mira (Yellow o Blue): de dónde vino o ?belt=.
+  const origin = parseFrom(sp?.from, 'coach');
+  const viewBelt: 'yellow' | 'blue' = sp?.belt === 'blue' || sp?.belt === 'yellow' ? sp.belt
+    : (origin?.k === 'course' && origin.belt === 'blue') || origin?.k === 'loop' || (origin?.k === 'circles' && origin.belt === 'blue') ? 'blue' : 'yellow';
   const { token } = await params;
   if (!UUID_RE.test(token)) notFound();
   const admin = createAdminClient();
@@ -56,7 +60,7 @@ export default async function CoachCirclesPage({ params, searchParams }: { param
         video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null}
         lessonId={THREE_CIRCLES_LESSON_ID}
         moveVideos={movementVideos(media)}
-        coach={{ backHref: coachBack(parseFrom(sp?.from, 'coach'), token, { k: 'course', belt: 'yellow' }).href, laminas: THREE_CIRCLES_LAMINAS, videos: threeCirclesVideos(media) }}
+        coach={{ backHref: coachBack(origin && origin.k !== 'circles' ? origin : null, token, { k: 'course', belt: viewBelt }).href, belt: viewBelt, laminas: THREE_CIRCLES_LAMINAS, videos: threeCirclesVideos(media) }}
       />
     </div>
   );

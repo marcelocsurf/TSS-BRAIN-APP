@@ -36,6 +36,7 @@ import { sequencePageFor } from '@/lib/sequence-pages';
 import { loadPortalState, savePortalState, touchPortalState } from '@/lib/portal/portal-state';
 import { discardSession, getOpenSession, type OpenSession } from '@/lib/actions/lets-play';
 import { studentBack, withFrom, type StudentFrom } from '@/lib/nav/origin';
+import { leaveTo } from '@/lib/nav/leave';
 import { isGoofy } from '@/lib/stance';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { SequenceTrainingFlow } from '@/components/sequence/SequenceTrainingFlow';
@@ -869,6 +870,7 @@ export function PortalTabs({
       try {
         // Sin ?tab= la entrada es la portada: Home.
         const t = (new URLSearchParams(window.location.search).get('tab') || 'home') as Tab;
+        if (t !== 'sequence') releasePlayOnLeave();
         if (TABS.some((x) => x.key === t)) setActiveTab((cur) => (cur === t ? cur : t));
       } catch { /* nada */ }
     };
@@ -906,13 +908,15 @@ export function PortalTabs({
   // Next trataría el replaceState como navegación y remontaría el portal.
   // Un flujo que ya terminó (sesión evaluada, pantalla "Session saved").
   const flowDoneRef = useRef(false);
+  // Salir de Let's Play (barra, Home, atrás del teléfono) suelta el paso que
+  // había llegado de afuera y el flujo ya terminado: al volver, la lista.
+  const releasePlayOnLeave = () => {
+    setDeepStepId(null);
+    setStepFrom('play');
+    if (flowDoneRef.current) { flowDoneRef.current = false; setPendingSequence(null); setFlowFrom(null); }
+  };
   const showTab = (t: Tab) => {
-    // Salir de Let's Play suelta el paso que había llegado de afuera y el flujo
-    // ya terminado: al volver, la lista (no un plan nuevo de lo que ya evaluó).
-    if (t !== 'sequence') {
-      setDeepStepId(null);
-      if (flowDoneRef.current) { flowDoneRef.current = false; setPendingSequence(null); setFlowFrom(null); }
-    }
+    if (t !== 'sequence') releasePlayOnLeave();
     setActiveTab(t);
     savePortalState(data.token, { tab: t, lesson: null, lessonFrom: null });
     try {
@@ -947,7 +951,7 @@ export function PortalTabs({
     if (f.k === 'course') { showTab('course'); return; }
     // Otra página (la de la secuencia, los Tres Círculos, una lección): se va,
     // reemplazando esta entrada (el atrás del teléfono no pasa por una lista fantasma).
-    window.location.replace(studentBack(f, data.token, { k: 'play' }).href);
+    leaveTo(studentBack(f, data.token, { k: 'play' }).href);
   };
   const flowBackLabel = !flowFrom || flowFrom.k === 'play' ? "Let's Play"
     : flowFrom.k === 'step' ? 'the step' : studentBack(flowFrom, data.token, { k: 'play' }).label;
@@ -957,6 +961,7 @@ export function PortalTabs({
   // la página con la URL interna de Next (que puede traer ?seq=… de un
   // deep-link) y el flow arrancaba de nuevo (Marcelo 2026-09-11).
   const goTab = (t: Tab) => {
+    if (t !== 'sequence') releasePlayOnLeave();
     setActiveTab(t);
     savePortalState(data.token, { tab: t, lesson: null, lessonFrom: null });
     portalRouter.replace(`${window.location.pathname}?tab=${t}`);
@@ -1072,10 +1077,10 @@ export function PortalTabs({
             <CourseTab
               data={data.courseData}
               // Una lección abierta desde otra pantalla (?from=) vuelve ahí.
-              onExit={(f) => {
+              onExit={(f, steps) => {
                 if (f.k === 'home') showTab('home');
                 else if (f.k === 'play') showTab('sequence');
-                else window.location.replace(studentBack(f, data.token, { k: 'course' }).href);
+                else leaveTo(studentBack(f, data.token, { k: 'course' }).href, steps);
               }}
             />
             {/* Las presentaciones otorgadas viven en COURSE, no en el Home
@@ -1236,8 +1241,10 @@ export function PortalTabs({
                 belt={data.courseData?.activeCourseBelt || student.belt_level || 'white'}
                 onPracticeDrill={handlePracticeDrill}
                 onTrainSequence={(args) => {
-                  // "Practice" desde el detalle de un paso: Cancel vuelve a ese paso.
+                  // "Practice" desde el detalle de un paso: Cancel vuelve a ese paso
+                  // (y ese paso conserva su propio origen: la lista o afuera).
                   const fromStep = args.returnStepId ?? null;
+                  if (fromStep && !args.returnStepOutside) setStepFrom('play');
                   setDeepStepId(null); setPendingSequence(args);
                   setFlowFrom(fromStep ? { k: 'step', id: fromStep } : { k: 'play' });
                 }}

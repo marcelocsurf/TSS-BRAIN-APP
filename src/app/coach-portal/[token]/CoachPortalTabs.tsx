@@ -16,6 +16,7 @@ import { VideoList } from '@/components/coach-portal/VideoEmbed';
 import { laminasInMarkdown, stripLaminas } from '@/lib/sequence-pages/laminas';
 import { splitCoachCourses, groupToolCourses } from '@/lib/coach/coach-lessons';
 import { coachBack, withFrom, type CoachFrom } from '@/lib/nav/origin';
+import { leaveTo } from '@/lib/nav/leave';
 import { PendingAssignments } from './PendingAssignments';
 import { PendingStaffInvites } from './PendingStaffInvites';
 import { CoachGuide } from './CoachGuide';
@@ -157,6 +158,9 @@ export function CoachPortalTabs({
   useEffect(() => {
     try { if (quietUrl && `${window.location.pathname}${window.location.search}` !== quietUrl) writeQuietUrl(quietUrl); } catch { /* nada */ }
   }, [data]);
+  // La URL silenciosa es de ESTE portal montado: al salir se olvida (si no,
+  // volver al portal por un link reescribía una dirección vieja).
+  useEffect(() => () => { quietUrl = null; }, []);
   // When a class is open in the planner we switch to a focused, light-themed
   // full-screen mode: light background (not the dark portal shell) + the global
   // tab-nav hidden, so the planner isn't a light screen floating on black with
@@ -957,7 +961,7 @@ function CoursesTab({
   // el app instalado y en los links de WhatsApp.)
   const linkBack = fromLink && openLessonId === linkedId && initialFrom ? coachBack(initialFrom, token, { k: 'home' }) : null;
   const goBack = () => {
-    if (linkBack) { window.location.replace(linkBack.href); return; }
+    if (linkBack) { leaveTo(linkBack.href, 1); return; }
     setFromLink(false);
     closeLesson();
   };

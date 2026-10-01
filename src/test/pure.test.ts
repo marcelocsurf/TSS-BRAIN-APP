@@ -511,6 +511,9 @@ describe('nav · from', () => {
       // La página del coach con su voz, su detalle abierto y su origen (el plan).
       { k: 'seq', id: 'BB-LINE', tab: 'review', course: 'yellow_belt', focus: 'CIRCLE-BOARD:P1', up: { k: 'plan', camp: '6d4049a4-0000-4000-8000-000000000001', day: 2, view: 'read', why: 'plan' } },
       { k: 'seq', id: 'WB-SEQ-3', up: { k: 'course', belt: 'white' } },
+      // Elementos en minúscula (#8 / #9) y el lado del Infinite Circle.
+      { k: 'seq', id: 'BB-SEQ-08', tab: 'review', focus: 'BB-SEQ-08:rotation', up: { k: 'plan', camp: '6d4049a4-0000-4000-8000-000000000001', day: 1, view: 'run', why: 'today' } },
+      { k: 'loop', side: 'bs' }, { k: 'loop' },
     ] as const;
     for (const c of coach) expect(parseFrom(encodeFrom(c as any), 'coach')).toEqual(c);
   });

@@ -70,6 +70,8 @@ export type TrainSequenceArgs = {
   sessionId?: string | null;
   /** "Practice" desde el detalle de un paso: Cancel vuelve a ese paso. */
   returnStepId?: string | null;
+  /** …y ese paso había llegado de afuera (Home, What it takes), no de la lista. */
+  returnStepOutside?: boolean;
 };
 
 interface Props {
@@ -172,7 +174,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         // cae al flujo ligado de siempre.
         onPracticeDrill={(drillMissionId) => {
           const seq = data.sequences.find((sq) => sq.items.some((i) => i.step_id === openStepId));
-          if (seq && onTrainSequence) { const back = openStepId; setOpenStepId(null); onTrainSequence({ sequenceId: seq.id, mode: 'step_focus', focusStepId: back, returnStepId: back }); }
+          if (seq && onTrainSequence) { const back = openStepId; setOpenStepId(null); onTrainSequence({ sequenceId: seq.id, mode: 'step_focus', focusStepId: back, returnStepId: back, returnStepOutside: stepFromOutside }); }
           else onPracticeDrill?.(drillMissionId);
         }}
       />
