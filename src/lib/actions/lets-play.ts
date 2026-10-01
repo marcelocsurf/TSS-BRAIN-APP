@@ -30,7 +30,9 @@ import { studentCanTrack, TRACKING_LOCKED_MESSAGE } from '@/lib/portal/access';
 import { pickWeakestCriterion, type CriterionEvaluationItem, type CriterionResultValue } from '@/lib/utils/criteria';
 import { SEQUENCE_PASS_STARS, sequenceLabel, sequenceSide, SIDE_WORD } from '@/lib/constants/learning-blocks';
 import { getMySequence, threeCirclesSequence, type DrillMissionRow, type SequenceData } from './sequence';
-import { THREE_CIRCLES_SEQUENCE_ID } from '@/lib/sequence-pages/three-circles';
+import { THREE_CIRCLES_SEQUENCE_ID, gameContext } from '@/lib/sequence-pages/three-circles';
+import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
+import { sequenceDisplayName } from '@/lib/sequence-pages/resolve';
 
 export type TrainingMode = 'sequence_run' | 'step_focus';
 
@@ -711,17 +713,31 @@ export async function getOpenSession(portalToken: string): Promise<OpenSession |
       .limit(1)
       .maybeSingle();
     if (!r || !r.linked_sequence_id) return null;
+    // Los Tres Círculos: el "paso" es un juego (drills_missions), no una
+    // lección — antes el aviso decía "the whole sequence" (2026-10-01).
+    const isCircles = r.linked_sequence_id === THREE_CIRCLES_SEQUENCE_ID;
     let focusTitle: string | null = null;
     if (r.linked_step_id) {
-      const { data: l } = await admin.from('lessons').select('title').eq('id', r.linked_step_id).maybeSingle();
-      focusTitle = l?.title ?? null;
+      if (isCircles) {
+        const { data: g } = await admin.from('drills_missions').select('title').eq('id', r.linked_step_id).maybeSingle();
+        const ctx = gameContext(r.linked_step_id);
+        focusTitle = g?.title ? (ctx ? `${ctx.label} — ${g.title}` : g.title) : ctx?.label ?? null;
+      } else {
+        const { data: l } = await admin.from('lessons').select('title').eq('id', r.linked_step_id).maybeSingle();
+        focusTitle = l?.title ?? null;
+      }
     }
     const plannedAt = r.planned_at ?? r.created_at;
     const label = String(r.drill_name ?? '');
+    // El nombre sale de la secuencia, no de partir drill_name (los títulos
+    // de los juegos llevan " · " adentro y el aviso repetía palabras).
+    const cfg = SEQUENCE_PAGES[r.linked_sequence_id];
+    const seqLbl = isCircles ? 'The Three Circles' : cfg ? sequenceDisplayName(cfg)
+      : label.includes(' · ') && r.linked_step_id ? label.split(' · ').slice(1, 2).join(' · ') : label.split(' · ').slice(0, 2).join(' · ');
     return {
       id: r.id,
       sequenceId: r.linked_sequence_id,
-      sequenceLabel: label.includes(' · ') && r.linked_step_id ? label.split(' · ').slice(1, 2).join(' · ') : label.split(' · ').slice(0, 2).join(' · '),
+      sequenceLabel: seqLbl,
       sequenceName: label,
       mode: (r.training_mode === 'step_focus' ? 'step_focus' : 'sequence_run') as TrainingMode,
       focusStepId: r.linked_step_id ?? null,

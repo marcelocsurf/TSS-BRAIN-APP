@@ -285,26 +285,30 @@ function OpenSessionCard({ data, onFinish, onDiscard }: { data: PortalData; onFi
   const measure = [os.plannedDuration ? `${os.plannedDuration} min` : null, os.plannedReps ? `${os.plannedReps} ${os.measure === 'waves' ? 'waves' : 'runs'}` : null].filter(Boolean).join(' · ');
   const stale = os.ageHours >= 24;
   const when = os.ageHours < 1 ? 'just now' : os.ageHours < 24 ? `${os.ageHours} h ago` : `${Math.round(os.ageHours / 24)} d ago`;
+  // Manual v10.1 (Marcelo 2026-10-01: "que no se vean las letras tipo glow"):
+  // la misma tarjeta sand que "From your coach" — tinta sobre crema, etiqueta
+  // mono oscura, un solo botón cyan. Nada de texto de color sobre navy.
+  const accent = stale ? '#FFD166' : '#06D6A0';
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: '#0A2438', borderLeft: `3px solid ${stale ? '#FFD166' : '#06D6A0'}` }}>
-      <div className="px-4 pt-3.5 pb-3">
-        <p className="text-[12px]" style={{ ...F_LABEL, color: stale ? '#FFD166' : '#06D6A0' }}>{stale ? 'Still open' : 'Your session plan'} · planned {when}</p>
-        <p className="text-[15px] font-semibold text-white mt-0.5 leading-snug">{os.sequenceLabel && os.sequenceLabel !== os.sequenceName ? `${os.sequenceLabel} · ` : ''}{os.sequenceName}{os.side ? ` · ${os.side === 'fs' ? 'Frontside' : 'Backside'}` : ''}</p>
-        <p className="text-[12px] mt-1.5" style={{ ...F_LABEL, color: '#00D2FF' }}>Objective</p>
-        <p className="text-[14px] font-semibold text-white leading-snug">
-          {os.mode === 'step_focus' && os.focusTitle ? `Focus on ${os.focusTitle}` : 'The whole sequence, start to finish'}{os.focusMoment ? ` · ${os.focusMoment}` : ''}
-        </p>
-        {measure && <p className="text-[12px] text-white/70 mt-0.5">{measure}</p>}
-        {os.intention && <p className="text-[12px] mt-1 leading-snug" style={{ color: '#FFD166' }}>Your word: {os.intention}</p>}
-        <div className="flex items-center gap-2 mt-3">
-          <button type="button" onClick={onFinish} className="flex-1 h-11 rounded-xl text-[12.5px] font-bold active:scale-[0.98]" style={{ background: '#00D2FF', color: '#061C2B' }}>
-            I&apos;m back — finish &amp; evaluate →
-          </button>
-          <button type="button" onClick={onDiscard} className="h-11 px-3 rounded-xl text-[12.5px]" style={{ color: 'rgba(247,249,250,.78)', border: '1px solid rgba(255,255,255,.15)' }}>
-            {stale ? 'Close without evaluating' : 'Discard'}
-          </button>
-        </div>
-      </div>
+    <div className="rounded-lg p-4" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}`, borderTop: `4px solid ${accent}` }}>
+      <p style={{ ...T_LABEL, color: creamLabel(accent) }}>{stale ? 'Still open' : 'Your session plan'} · planned {when}</p>
+      <p className="text-[22px] font-extrabold leading-tight mt-1" style={{ fontFamily: ARCHIVO, color: T_INK }}>
+        {os.sequenceLabel}{os.side && !/frontside|backside/i.test(os.sequenceLabel) ? ` · ${os.side === 'fs' ? 'Frontside' : 'Backside'}` : ''}
+      </p>
+      <p className="mt-2.5" style={{ ...T_LABEL, color: T_MUTED }}>Objective</p>
+      <p className="text-[15px] font-semibold leading-snug mt-0.5" style={{ color: T_INK }}>
+        {os.mode === 'step_focus' && os.focusTitle ? `Focus on ${os.focusTitle}` : 'The whole sequence, start to finish'}{os.focusMoment ? ` · ${os.focusMoment}` : ''}
+      </p>
+      {measure && <p className="text-[14px] mt-0.5" style={{ color: T_MUTED }}>{measure}</p>}
+      {os.intention && <p className="text-[14px] mt-1 leading-snug font-semibold" style={{ color: T_INK, fontStyle: 'italic' }}>Your word: {os.intention}</p>}
+      <button type="button" onClick={onFinish}
+        className="w-full mt-3 min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 px-3 text-[15px] font-black uppercase active:scale-[0.99]"
+        style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.035em', fontFamily: ARCHIVO }}>
+        I&apos;m back — finish &amp; evaluate <ArrowRight size={17} className="shrink-0" />
+      </button>
+      <button type="button" onClick={onDiscard} className="w-full mt-2 min-h-[40px] text-[14px] font-semibold" style={{ color: T_MUTED }}>
+        {stale ? 'Close without evaluating' : 'Discard this plan'}
+      </button>
     </div>
   );
 }
