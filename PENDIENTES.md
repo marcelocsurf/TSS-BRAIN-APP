@@ -9,7 +9,7 @@ Actualizada: 2026-10-01. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico
 1. [ ] **Ley de datos de El Salvador**: validar la ley vigente y lo que cualquier app debe cumplir; qué hacer para evitar una demanda (cruza con §1 LEGAL y `AUDITORIA_LEGAL.md`).
 2. [ ] **Cierre del entreno · "What do you work on next?"**: el selector sale vacío (ej. Three Circles · Body · Rotation) y solo ofrece detalles de la misma secuencia → que se pueda elegir OTRA secuencia como próximo foco.
 3. [ ] **Aviso "Your session plan · I'm back — finish & evaluate"**: pasarlo al manual v10.1, sin letras con efecto glow.
-4. [ ] **Botones con continuidad**: cada "volver"/"siguiente" lleva a la pantalla lógica (de dónde vine), en portal del alumno y del coach.
+4. [x] **Botones con continuidad** (2026-10-01, regla única `src/lib/nav/origin.ts`: el origen viaja en `?from=`; alumno + coach; dos revisiones adversariales). Quedan bloques chicos: borrador del plan al ir a "Rehearse it on land", Custom Session en curso, "← Home" en Feedback/Sessions, salida del quiz al portal, pantalla de explicación en vez de 404 en circles/loop sin curso, atrás del teléfono en overlays; coach: "Plan day N+1 →" al cerrar un día, Accept de asignaciones con botón, Teach it bloqueado por nivel, Continue learning.
 5. [ ] **Home del portal del alumno más pro**: propuesta de diseño primero (herramienta de diseño), Marcelo aprueba, después código.
 
 ## 0. LO QUE SOLO PUEDE HACER MARCELO — esta semana
