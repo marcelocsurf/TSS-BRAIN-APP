@@ -110,7 +110,13 @@ async function main() {
   manifest.total_rows = Object.values(manifest.tables).reduce((a, b) => a + b, 0);
   writeFileSync(join(out, 'MANIFEST.json'), JSON.stringify(manifest, null, 1));
   console.log(`filas: ${manifest.total_rows} · errores: ${manifest.errors.length}`);
-  if (manifest.errors.length) { console.error(JSON.stringify(manifest.errors, null, 1)); }
+  // Sin rutas en el log (pueden llevar nombres de personas): solo cuántos
+  // errores por tabla o bucket. El detalle va dentro del paquete cifrado.
+  if (manifest.errors.length) {
+    const byWhere = {};
+    for (const e of manifest.errors) { const k = e.table || e.bucket || e.storage || 'other'; byWhere[k] = (byWhere[k] || 0) + 1; }
+    console.error('errores por origen:', JSON.stringify(byWhere));
+  }
   // Un backup con errores de lectura NO cuenta como backup: que el workflow falle y avise.
   process.exit(manifest.errors.length ? 2 : 0);
 }

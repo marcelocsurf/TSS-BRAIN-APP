@@ -6,7 +6,9 @@
 #   NEXT_PUBLIC_SUPABASE_URL     (obligatorio)
 #   SUPABASE_SERVICE_ROLE_KEY    (obligatorio)
 #   SUPABASE_DB_URL              (opcional: agrega un pg_dump real)
-#   BACKUP_PASSPHRASE            (opcional: cifra el archivo con AES-256)
+#   BACKUP_PASSPHRASE            (OBLIGATORIO desde 2026-10-01: sin ella el run falla
+#                                 y no se sube nada — el respaldo trae datos de salud
+#                                 y documentos de identidad; nunca sin cifrar)
 #
 # El resultado queda como "artifact" del run, 90 días (máximo de GitHub).
 # Para restaurar: ver RECUPERACION.md.
@@ -26,6 +28,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # Sin cifrado no hay respaldo (2026-10-01): antes se subía el paquete
+      # en claro si faltaba la passphrase.
+      - name: Exigir cifrado
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Falta el secreto BACKUP_PASSPHRASE. No se respalda sin cifrar."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -42,22 +55,21 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: node scripts/backup.mjs ./backup-out
 
-      - name: Empaquetar (y cifrar si hay passphrase)
+      - name: Empaquetar y cifrar
         env:
           BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
         run: |
           STAMP=$(date -u +%Y-%m-%d)
           tar -czf "tss-backup-$STAMP.tar.gz" -C backup-out .
-          if [ -n "$BACKUP_PASSPHRASE" ]; then
-            openssl enc -aes-256-cbc -pbkdf2 -salt -in "tss-backup-$STAMP.tar.gz" -out "tss-backup-$STAMP.tar.gz.enc" -pass env:BACKUP_PASSPHRASE
-            rm "tss-backup-$STAMP.tar.gz"
-          fi
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in "tss-backup-$STAMP.tar.gz" -out "tss-backup-$STAMP.tar.gz.enc" -pass env:BACKUP_PASSPHRASE
+          rm "tss-backup-$STAMP.tar.gz"
+          rm -rf backup-out
+          # Solo el tamaño en el log: los logs se pueden leer desde afuera.
           ls -la tss-backup-*
-          cat backup-out/MANIFEST.json | head -40
 
       - uses: actions/upload-artifact@v4
         with:
           name: tss-backup-${{ github.run_id }}
-          path: tss-backup-*
+          path: tss-backup-*.enc
           retention-days: 90
           if-no-files-found: error

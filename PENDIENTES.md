@@ -5,6 +5,7 @@ Actualizada: 2026-10-01. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico
 ---
 
 ## EN CURSO — pedidos de Marcelo 2026-10-01 (uno por uno, en este orden)
+0. [ ] **SEGURIDAD URGENTE (hallado 2026-10-01)** — el repo de GitHub es PÚBLICO y tiene 3 respaldos SIN cifrar (17, 20 y 27-sep: toda la base + archivos, con salud y documentos de identidad). Ya hecho por Claude: 4 cuentas de prueba con contraseña publicada (admin@/coordinator@/coach@/assistant@tss-brain.com) BLOQUEADAS (nunca entraron, sin registros en Auth); el backup ya no sube nada sin cifrar; `create_role_users.sql` fuera del repo. Falta (solo Marcelo): (a) GitHub → repo → Settings → Danger Zone → **Make private**; (b) secreto `BACKUP_PASSPHRASE`; (c) correr el backup a mano y, cuando salga el `.enc`, **borrar los 3 respaldos viejos**; (d) preguntar al abogado si cuenta como vulneración con aviso de 72 h (art. 25, Ley de Protección de Datos Personales).
 1. [ ] **Ley de datos de El Salvador**: validar la ley vigente y lo que cualquier app debe cumplir; qué hacer para evitar una demanda (cruza con §1 LEGAL y `AUDITORIA_LEGAL.md`).
 2. [ ] **Cierre del entreno · "What do you work on next?"**: el selector sale vacío (ej. Three Circles · Body · Rotation) y solo ofrece detalles de la misma secuencia → que se pueda elegir OTRA secuencia como próximo foco.
 3. [ ] **Aviso "Your session plan · I'm back — finish & evaluate"**: pasarlo al manual v10.1, sin letras con efecto glow.
@@ -16,7 +17,7 @@ Actualizada: 2026-10-01. Detalle legal en `AUDITORIA_LEGAL.md`; informe técnico
 **Seguridad y respaldo (30 minutos en total)**
 - [x] **Token de GitHub con permiso `workflow`** — HECHO 2026-09-17; workflow subido.: GitHub → Settings → Developer settings → Personal access tokens → tu token → Edit → marcar **workflow** → Update. Sin esto el archivo `.github/workflows/backup.yml` no se puede subir (hoy está en la Mac, sin subir). Avisar a Claude y lo sube.
 - [x] **Dos secretos en GitHub** — HECHO 2026-09-17. (repo TSS-BRAIN-APP → Settings → Secrets and variables → Actions → New repository secret), mismos valores que en Vercel: `NEXT_PUBLIC_SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`.
-- [ ] Opcionales del backup: `SUPABASE_DB_URL` (Supabase → Connect → Session pooler, con la contraseña de la base → agrega un pg_dump completo con logins de coaches) y `BACKUP_PASSPHRASE` (frase larga guardada en el gestor de contraseñas → cifra el paquete).
+- [ ] **URGENTE (2026-10-01) — `BACKUP_PASSPHRASE` ya es OBLIGATORIA**: sin ella el backup del domingo falla a propósito (no sube nada sin cifrar). Frase larga, guardada en el gestor de contraseñas. Opcional: `SUPABASE_DB_URL` (Supabase → Connect → Session pooler) para un pg_dump completo.
 - [x] **Primer backup a mano** — HECHO 2026-09-17: run #3 en verde (3 min), artifact de 90 días. Desde ahora corre solo los domingos 00:00.: GitHub → Actions → "Backup semanal" → Run workflow → verlo en verde y bajar el artifact una vez para saber dónde queda.
 - [x] **Plan de Supabase**: la organización ya está en Pro (verificado 2026-09-16): backups diarios de 7 días del lado de Supabase. Solo queda confirmar que la tarjeta no vence.
 - [x] **Verificación en dos pasos** en Google, GitHub, Vercel y Supabase — HECHO 2026-09-16 (Supabase no da códigos de recuperación: Google Authenticator con sincronización en la nube).
