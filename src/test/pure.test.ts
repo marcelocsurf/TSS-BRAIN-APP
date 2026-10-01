@@ -553,3 +553,31 @@ describe('nav · from', () => {
     expect(parseFrom('seq:WB-SEQ-3::::seq:WB-SEQ-1', 'coach')).toEqual({ k: 'seq', id: 'WB-SEQ-3' });
   });
 });
+
+// El Home "Clarity" (Marcelo 2026-10-01): el círculo del agua y el dial del flow.
+describe('Home visuals · water ring and flow dial', () => {
+  it('flow zones are the same as My progress (2.5–3.5 is the channel)', async () => {
+    const { flowZone } = await import('@/components/portal/HomeVisuals');
+    expect(flowZone(2.4)).toBe('easy');
+    expect(flowZone(2.5)).toBe('opt');
+    expect(flowZone(3.5)).toBe('opt');
+    expect(flowZone(3.6)).toBe('hard');
+  });
+  it('draws an empty ring and the right words without data', async () => {
+    const React = await import('react');
+    const { renderToStaticMarkup } = await import('react-dom/server');
+    const { WaterRing, FlowDial } = await import('@/components/portal/HomeVisuals');
+    const empty = renderToStaticMarkup(React.createElement(WaterRing, { trainingMinutes: 0, freeSurfMinutes: 0 }));
+    expect(empty).toContain('0h');
+    expect(empty).toContain('no sessions yet');
+    const split = renderToStaticMarkup(React.createElement(WaterRing, { trainingMinutes: 90, freeSurfMinutes: 30 }));
+    expect(split).toContain('#00D2FF');
+    expect(split).toContain('#06D6A0');
+    expect(split).toContain('2h');
+    expect(renderToStaticMarkup(React.createElement(FlowDial, { avg: 3, count: 1 }))).toContain('Rate 1 more session');
+    expect(renderToStaticMarkup(React.createElement(FlowDial, { avg: null, count: 0 }))).toContain('Rate 2 sessions');
+    const hard = renderToStaticMarkup(React.createElement(FlowDial, { avg: 4.2, count: 5 }));
+    expect(hard).toContain('Above the channel');
+    expect(hard).toContain('lower the challenge');
+  });
+});

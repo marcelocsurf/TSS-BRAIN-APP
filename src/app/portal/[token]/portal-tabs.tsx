@@ -44,6 +44,7 @@ import { CustomSessionFlow } from '@/components/portal/CustomSessionFlow';
 import { MaterialReader } from '@/components/portal/MaterialReader';
 import { RenewalGate } from './RenewalGate';
 import { FreeSurfLogger } from '@/components/portal/FreeSurfLogger';
+import { WaterRing, FlowDial } from '@/components/portal/HomeVisuals';
 import { StudentPresentations } from '@/components/portal/StudentPresentations';
 import { ProgramCard } from '@/components/portal/ProgramCard';
 import { AthleteScoreCard } from '@/components/portal/AthleteScoreCard';
@@ -109,6 +110,7 @@ import {
   Flame,
   ArrowRight,
   ArrowLeft,
+  Star,
 } from 'lucide-react';
 
 // ─── Types ───
@@ -230,7 +232,7 @@ interface PortalData {
   /** La primera secuencia sin lograr y el paso que la frena. */
   /** ¿Sigue pendiente lo que el coach dejó para trabajar? */
   /** La tarea que dejó el coach, solo mientras esté pendiente (coach-focus.ts). */
-  coachFocus?: { text: string | null; note: string | null; sequence_id: string | null; step_id: string | null; label: string | null; set_at: string | null; set_by_name: string | null; text_only: boolean } | null;
+  coachFocus?: { text: string | null; note: string | null; sequence_id: string | null; step_id: string | null; label: string | null; sequence_label?: string | null; step_label?: string | null; set_at: string | null; set_by_name: string | null; text_only: boolean } | null;
   /** Foco ELEGIBLE del coach: secuencia (+ paso) que el Home abre en Let's Play. */
   /** The Lineup: el canal de la comunidad (null si falló la carga). */
   lineup?: import('@/lib/actions/community').LineupData | null;
@@ -412,6 +414,39 @@ const creamLabel = (accent: string) => (accent === '#FFD166' ? '#10263B' : accen
 const ARCHIVO = 'var(--font-archivo), Archivo, sans-serif';
 const T_MONO_SM = { fontFamily: 'var(--font-plex), DM Mono, monospace', fontSize: 13 } as const;
 const T_LINK = '#00A8CC';
+// Home · diseño A "Clarity" (Marcelo 2026-10-01): tarjetas navy para los datos,
+// arena para la acción, filas para el buzón.
+const HOME_CARD = '#0C2738';
+const HOME_LINE = 'rgba(214,225,231,0.14)';
+const HOME_MONO = { fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', fontWeight: 500, fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase' } as const;
+// El rótulo sobre arena: el cyan claro no llega al contraste sobre #E9E2D2.
+const SAND_LABEL = '#00728A';
+const ONE_WAVE_ID = 'f50677a2-72b1-4abd-9335-fe0c99c80333';
+// El color de la cinta sobre navy: la negra (#111111) no se ve, va en gris claro.
+const onNavyBeltColor = (level: string, color: string | null | undefined) =>
+  level === 'black_belt' ? '#C9D6DD' : color || '#00D2FF';
+const initialsOf = (name: string | null | undefined) =>
+  (name ?? '').trim().split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '·';
+
+/** Una fila de "Also for you": ícono, título, una línea de detalle. */
+function HomeRowInner({ icon: Icon, color, bg, title, sub, extra, chevron = true }: {
+  icon: LucideIcon; color: string; bg: string; title: React.ReactNode; sub?: React.ReactNode; extra?: React.ReactNode; chevron?: boolean;
+}) {
+  return (
+    <>
+      <span className="w-9 h-9 rounded-lg grid place-items-center shrink-0" style={{ background: bg, color }}>
+        <Icon size={18} strokeWidth={1.8} />
+      </span>
+      <span className="min-w-0 flex-1 flex flex-col gap-0.5">
+        <span className="text-[15px] font-bold leading-snug" style={{ color: '#F7F9FA' }}>{title}</span>
+        {sub && <span className="text-[13px] leading-snug" style={{ color: '#A9BCC7' }}>{sub}</span>}
+        {extra}
+      </span>
+      {/* En una fila que se despliega (<details className="group">) gira al abrir. */}
+      {chevron && <ChevronRight size={16} className="shrink-0 transition-transform group-open:rotate-90" style={{ color: '#8FB3C4' }} />}
+    </>
+  );
+}
 /** Tarjeta sand del manual v10 con etiqueta mono arriba (mock My Progress 2026-09-15). */
 function SandCard({ label, right, children, className = '' }: { label?: string; right?: React.ReactNode; children: React.ReactNode; className?: string }) {
   return (
@@ -1500,7 +1535,6 @@ function HomeTab({
   const allOwned = seqRows.length > 0 && seqOwned === seqRows.length;
   const preCourseDone = data.courseData?.preCourseCompleted;
   const courseBeltWord = seqScores ? seqScores.belt.charAt(0).toUpperCase() + seqScores.belt.slice(1) : null;
-  const courseIsMyBelt = !!courseBeltWord && String(belt?.en ?? '').startsWith(courseBeltWord);
   const slot: 'class' | 'coach' | null =
     data.openSession ? null
     : classSoon ? 'class' : coachTask ? 'coach' : null;
@@ -1511,15 +1545,6 @@ function HomeTab({
     if (h === 0) return `${m}m`;
     return m === 0 ? `${h}h` : `${h}h ${m}m`;
   };
-  // Tamaño para la cifra del centro del anillo. Archivo Expanded es ancha
-  // (~0.62em por carácter), y el hueco libre dentro del aro son ~81px: a
-  // partir de "16h 44m" un tamaño fijo se sale. Se ajusta al largo real.
-  const ringFontSize = (label: string) =>
-    label.length <= 3 ? '24px'
-    : label.length <= 5 ? '20px'
-    : label.length <= 7 ? '16px'
-    : label.length <= 9 ? '13.5px'
-    : '12px';
 
   // Training tip of the day — rotate based on day of year
   // El cue rota por SESIONES CERRADAS, no por día del calendario: trae un
@@ -1548,30 +1573,31 @@ function HomeTab({
           saber qué entrenar. Eso va arriba del nombre. ═══ */}
       {onFinishOpenSession && onDiscardOpenSession && <OpenSessionCard data={data} onFinish={onFinishOpenSession} onDiscard={onDiscardOpenSession} />}
 
-      {/* ── Identidad (línea aprobada 2026-09-14): foto, nombre, CURRENT LEVEL,
-          cinta y nivel. Antes vivía dentro del cockpit; la campana 🔔 sube con
-          ella. Mismos datos. ── */}
+      {/* ── Identidad (diseño A "Clarity", Marcelo 2026-10-01): el aro de la foto
+          es el color de la cinta y la cinta es la puerta a My progress. Sin
+          "Current level": la pastilla ya lo dice. La campana sigue al lado. ── */}
       <div className="flex items-center gap-3.5">
-        <div className="w-[68px] h-[68px] rounded-full overflow-hidden flex items-center justify-center shrink-0"
-          style={{ border: '3px solid #00D2FF', background: '#1b3148' }}>
+        <div className="w-[58px] h-[58px] rounded-full overflow-hidden flex items-center justify-center shrink-0"
+          style={{ border: `3px solid ${onNavyBeltColor(beltLevel, belt?.color)}`, background: '#10263B' }}>
           {student.photo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={student.photo_url} alt="" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-[30px] font-black" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F7F9FA' }}>{(student.first_name || '?').slice(0, 1).toUpperCase()}</span>
+            <span className="text-[19px] font-extrabold" style={{ fontFamily: ARCHIVO, color: '#F7F9FA', letterSpacing: '0.02em' }}>
+              {`${(student.first_name || '?').slice(0, 1)}${(student.last_name || '').slice(0, 1)}`.toUpperCase()}
+            </span>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[22px] font-black leading-tight" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: '#F7F9FA' }}>
+          <p className="text-[24px] font-extrabold leading-[1.05]" style={{ fontFamily: ARCHIVO, color: '#F7F9FA', letterSpacing: '-0.01em' }}>
             {student.first_name} {student.last_name}
           </p>
-          <p className="mt-0.5" style={{ ...T_LABEL, color: '#D9E4EA' }}>Current level</p>
-          <div className="mt-1 flex items-center gap-2.5 flex-wrap">
-            {/* La cinta es también la puerta a My progress (2026-09-26). */}
-            <button type="button" onClick={() => { if (data.canTrack !== false) setProgressOpen(true); }} className="inline-flex items-center rounded-[5px] px-2.5 py-1" style={{ ...T_LABEL, background: belt?.color || '#E8E8E8', color: LIGHT_BELTS.includes(beltLevel) ? T_NAVY : '#fff' }}>
+          <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+            <button type="button" onClick={() => { if (data.canTrack !== false) setProgressOpen(true); }} className="inline-flex items-center rounded-[4px] px-2 py-[3px]"
+              style={{ ...HOME_MONO, fontSize: 11, letterSpacing: '0.1em', background: belt?.color || '#E8E8E8', color: LIGHT_BELTS.includes(beltLevel) ? T_NAVY : '#fff' }}>
               {belt?.en}
             </button>
-            <span className="text-[14px]" style={{ color: '#D9E4EA' }}>{belt?.levelName ? `${belt.levelName} · ` : ''}Level {BELT_RANK[beltLevel] ?? 1} of 6</span>
+            <span className="text-[14px]" style={{ color: '#C9D6DD' }}>{belt?.levelName ? `${belt.levelName} · ` : ''}Level {BELT_RANK[beltLevel] ?? 1} of 6</span>
             {/* Cinta provisional (del quiz): etiqueta, no caja. El coach la confirma en el agua. */}
             {(student as any).belt_provisional && <span style={{ ...T_LABEL, color: '#D9E4EA', opacity: 0.75 }}>provisional</span>}
           </div>
@@ -1589,11 +1615,59 @@ function HomeTab({
         )}
       </div>
 
-      {/* ═══ LA TARJETA DE ACCIÓN · 1 de 2: LA CLASE (Marcelo 2026-09-26) ═══
+      {/* ═══ EL AGUA, EN UN CÍRCULO (Marcelo 2026-10-01: "antes era un círculo
+          y cambiaba de color según free surf o training… era más visual y
+          bonito"). Cyan = training, verde = free surf, el total en el centro.
+          Abajo, las secuencias de la cinta. Toda la tarjeta abre My progress. ═══ */}
+      {data.canTrack !== false && (() => {
+        const bIdx = BELT_HIERARCHY.indexOf(beltLevel);
+        const nextBelt = bIdx >= 0 && bIdx < BELT_HIERARCHY.length - 1 ? BELT_DISPLAY[BELT_HIERARCHY[bIdx + 1]] : null;
+        const nextWord = nextBelt ? String(nextBelt.en).replace(/ Belt$/, '') : null;
+        return (
+          <button type="button" onClick={() => setProgressOpen(true)} className="w-full text-left rounded-lg px-3.5 pt-3.5 pb-3 flex flex-col gap-3"
+            style={{ background: HOME_CARD, border: `1px solid ${HOME_LINE}`, color: '#F7F9FA' }}>
+            <span className="flex items-center gap-[18px] w-full">
+              <WaterRing trainingMinutes={surf.trainingMinutes} freeSurfMinutes={surf.freeSurfMinutes} />
+              <span className="min-w-0 flex-1 flex flex-col gap-2.5">
+                <span style={{ ...HOME_MONO, color: '#8FB3C4' }}>Time in the water</span>
+                {surf.totalMinutes > 0 ? (
+                  <>
+                    <span className="flex items-center gap-2 text-[14px]">
+                      <span className="shrink-0" style={{ width: 10, height: 10, borderRadius: 5, background: '#00D2FF' }} />
+                      <span className="flex-1" style={{ color: '#C9D6DD' }}>Training</span>
+                      <b style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtHm(surf.trainingMinutes)}</b>
+                    </span>
+                    <span className="flex items-center gap-2 text-[14px]">
+                      <span className="shrink-0" style={{ width: 10, height: 10, borderRadius: 5, background: '#06D6A0' }} />
+                      <span className="flex-1" style={{ color: '#C9D6DD' }}>Free surf</span>
+                      <b style={{ fontVariantNumeric: 'tabular-nums' }}>{fmtHm(surf.freeSurfMinutes)}</b>
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-[15px] font-bold leading-snug">Your first session starts the count.</span>
+                )}
+                {streak > 0 && <span className="inline-flex items-center gap-1 text-[12px]" style={{ color: '#A9BCC7' }}><Flame size={13} strokeWidth={1.75} />{streak}-day streak</span>}
+              </span>
+            </span>
+            <span className="flex items-center justify-between gap-3 pt-2.5 text-[13px] w-full" style={{ borderTop: `1px solid ${HOME_LINE}`, color: '#C9D6DD' }}>
+              <span className="min-w-0">
+                {seqRows.length ? (
+                  <><b style={{ color: '#F7F9FA' }}>{seqOwned} / {seqRows.length}</b> sequences{courseBeltWord ? ` · ${courseBeltWord} Belt` : ''}{allOwned ? ' · all yours' : ''}</>
+                ) : nextWord ? (
+                  <>Next belt · <b style={{ color: '#F7F9FA' }}>{nextWord}</b></>
+                ) : 'Top belt reached'}
+              </span>
+              <span className="shrink-0 inline-flex items-center gap-1 font-semibold" style={{ color: '#00D2FF' }}>My progress <ChevronRight size={14} /></span>
+            </span>
+          </button>
+        );
+      })()}
+
+      {/* ═══ LA TARJETA DE ACCIÓN · 1 de 3: LA CLASE (Marcelo 2026-09-26) ═══
           En camp (o con clase mañana) lo primero es la clase con el coach: día,
-          hora, qué va a trabajar, qué estudiar. Antes se dibujaba AL FINAL del
-          Home. La tarea del coach entra ACÁ como línea, sin TRAIN IT: en el camp
-          se entrena con el coach (doctrina 2026-09-19). */}
+          qué va a trabajar, qué estudiar. La tarea del coach entra ACÁ como
+          línea, sin TRAIN IT: en el camp se entrena con el coach (doctrina
+          2026-09-19). Diseño A 2026-10-01: todo sobre la arena, sin caja navy. */}
       {slot === 'class' && (() => {
         const c: any = upcomingCamps[0];
         const startD = new Date((c.start_date ?? '') + 'T00:00:00');
@@ -1602,106 +1676,121 @@ function HomeTab({
         const totalDays = c.stay_days ?? Math.max(1, Math.round((endD.getTime() - startD.getTime()) / 86400000) + 1);
         const dayNum = todayD >= startD ? Math.min(totalDays, Math.round((todayD.getTime() - startD.getTime()) / 86400000) + 1) : null;
         const certN = c.coach?.certification_level ? String(c.coach.certification_level).replace(/\D/g, '') : null;
+        const plansArr: any[] = Array.isArray(c.plans) ? c.plans : [];
+        const topicsArr: any[] = Array.isArray(c.topics) ? c.topics : [];
+        const hasPlan = plansArr.length > 0 || topicsArr.length > 0;
+        const sd = c.next_session?.session_date as string | undefined;
+        const when = (() => {
+          if (!sd) return 'Next session';
+          const d = new Date(sd + 'T00:00:00');
+          const diff = Math.round((d.getTime() - todayD.getTime()) / 86400000);
+          return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'long' });
+        })();
+        const many = plansArr.length > 1;
         return (
-          <div className="rounded-lg p-4" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
-            <p className="text-[12px]" style={{ ...F_LABEL, color: '#0090B0' }}>
-              {dayNum
-                ? `In progress · Day ${dayNum} of ${totalDays}`
-                : `Next class · ${startD.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`}
-            </p>
-            <p className="mt-1.5 text-lg" style={{ ...F_DISPLAY, color: '#061C2B' }}>{c.camp_name}</p>
+          <div className="rounded-lg px-4 pt-[18px] pb-4 flex flex-col gap-3" style={{ background: T_CREAM, color: T_INK }}>
+            <div className="flex items-center justify-between gap-3">
+              <span style={{ ...HOME_MONO, color: SAND_LABEL }}>{dayNum ? (beltCamp ? 'Today · your camp' : 'Today') : 'Next class'}</span>
+              <span style={{ ...HOME_MONO, letterSpacing: '0.08em', color: T_MUTED }}>
+                {dayNum ? `Day ${dayNum} of ${totalDays}` : startD.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </span>
+            </div>
             {/* El plan del coach para la próxima sesión, en el idioma del curso
                 (Marcelo 2026-09-17): la secuencia y el foco, con Study it y
                 Rehearse it para llegar preparado. Solo si el coach ya lo armó. */}
-            {((Array.isArray(c.plans) && c.plans.length > 0) || (Array.isArray(c.topics) && c.topics.length > 0)) && (() => {
-              const plansArr: any[] = Array.isArray(c.plans) ? c.plans : [];
-              const sd = c.next_session?.session_date as string | undefined;
-              const when = (() => {
-                if (!sd) return 'Next session';
-                const d = new Date(sd + 'T00:00:00'); const t = new Date(elSalvadorToday() + 'T00:00:00');
-                const diff = Math.round((d.getTime() - t.getTime()) / 86400000);
-                return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString('en-US', { weekday: 'long' });
-              })();
-              const many = plansArr.length > 1;
-              return (
-                <div className="mt-3 rounded-lg p-3.5" style={{ background: T_NAVY, border: '1px solid rgba(0,210,255,.35)' }}>
-                  <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>{when}{c.coach?.display_name ? ` with ${c.coach.display_name}` : ''}{plansArr.length ? ' · you will work on' : ' · theory'}{many ? ` · ${plansArr.length} ${plansArr.every((p: any) => p.kind !== 'tool') ? 'sequences' : 'things'}, one at a time` : ''}</p>
-                  <div className={many ? 'mt-1 space-y-2.5' : 'mt-1'}>
-                    {plansArr.map((pl: any, i: number) => {
-                      const isGame = pl.kind === 'game';
-                      const isCircle = pl.kind === 'circle';
-                      const seqBase = isGame || isCircle ? `/portal/${data.token}/circles` : `/portal/${data.token}/seq/${pl.sequenceId}`;
-                      // Desde el Home: el Back de la página vuelve al Home.
-                      const seqHref = withFrom(seqBase, { k: 'home' });
-                      const rehearseHref = withFrom(`${seqBase}?tab=feel`, { k: 'home' });
-                      return (
-                        <div key={`${pl.sequenceId}:${i}`} className={many ? 'rounded-[5px] px-3 py-2.5' : ''} style={many ? { background: 'rgba(247,249,250,.06)', border: '1px solid rgba(247,249,250,.14)' } : undefined}>
-                          <p className="text-[20px] leading-tight" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{many ? `${i + 1} · ` : ''}{pl.label ?? (pl.kind === 'entry' ? pl.title : `#${pl.number} · ${pl.title}`)}</p>
-                          <p className="mt-1.5 text-[13.5px] leading-snug" style={{ color: 'rgba(247,249,250,.85)' }}>
-                            {pl.kind === 'game' ? 'One rule, the wave is the referee. You play it with your coach; your coach stars it. Tonight, learn the rule.' : pl.focus.length > 0 ? <><span className="font-bold" style={{ color: '#F7F9FA' }}>Your focus:</span> {pl.focus.join(' · ')}</> : pl.kind === 'tool' ? 'All three moments.' : 'The whole sequence, start to finish.'}
-                          </p>
-                          {pl.notes && <p className="mt-1.5 text-[13px] italic" style={{ color: 'rgba(247,249,250,.75)' }}>"{pl.notes}"</p>}
-                          {/* Durante el camp el entreno es CON el coach y lo califica el coach
-                              (Marcelo 2026-09-19): el alumno estudia y ensaya en tierra, no
-                              registra solo. Por eso el juego no tiene "Play it" acá. */}
-                          <div className={`mt-2.5 grid gap-2 ${isGame || isCircle ? 'grid-cols-1' : 'grid-cols-2'}`}>
-                            <a href={seqHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: '#00D2FF', color: T_NAVY, fontFamily: ARCHIVO }}>Study it</a>
-                            {!isGame && !isCircle && <a href={rehearseHref} className="rounded-[5px] py-2.5 text-center text-[13px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.5)', fontFamily: ARCHIVO }}>Rehearse it on land</a>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {Array.isArray(c.topics) && c.topics.length > 0 && (
-                    <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(247,249,250,.14)' }}>
-                      <p className="text-[12px]" style={{ ...F_LABEL, color: '#00D2FF' }}>Also today · theory</p>
-                      <div className="mt-1.5 space-y-1.5">
-                        {c.topics.map((t: any) => (
-                          <div key={t.id} className="flex items-center justify-between gap-3">
-                            <p className="text-[14px] font-bold leading-snug" style={{ color: '#F7F9FA' }}>{t.title}</p>
-                            <a href={withFrom(`/portal/${data.token}${t.href}`, { k: 'home' })} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.45)', fontFamily: ARCHIVO }}>Study it</a>
-                          </div>
-                        ))}
+            {/* Con secuencias, el título es lo que va a trabajar y el camp va
+                chico arriba; sin secuencias (nada o solo teoría), el camp es el título. */}
+            <div className="flex flex-col gap-1">
+              {plansArr.length > 0 ? (
+                <p className="text-[13px] font-bold" style={{ color: T_MUTED }}>{c.camp_name}</p>
+              ) : (
+                <p className="text-[23px] font-extrabold leading-[1.12]" style={{ fontFamily: ARCHIVO, letterSpacing: '-0.01em' }}>{c.camp_name}</p>
+              )}
+              {hasPlan && (
+                <p className="text-[13px] font-bold" style={{ color: T_MUTED }}>
+                  {when}{c.coach?.display_name ? ` with ${c.coach.display_name}` : ''}{plansArr.length ? ' · you will work on' : ' · theory'}{many ? ` · ${plansArr.length} ${plansArr.every((p: any) => p.kind !== 'tool') ? 'sequences' : 'things'}, one at a time` : ''}
+                </p>
+              )}
+            </div>
+            {plansArr.length > 0 && (
+              <div className={many ? 'space-y-2.5' : ''}>
+                {plansArr.map((pl: any, i: number) => {
+                  const isGame = pl.kind === 'game';
+                  const isCircle = pl.kind === 'circle';
+                  const seqBase = isGame || isCircle ? `/portal/${data.token}/circles` : `/portal/${data.token}/seq/${pl.sequenceId}`;
+                  // Desde el Home: el Back de la página vuelve al Home.
+                  const seqHref = withFrom(seqBase, { k: 'home' });
+                  const rehearseHref = withFrom(`${seqBase}?tab=feel`, { k: 'home' });
+                  return (
+                    <div key={`${pl.sequenceId}:${i}`} className={many ? 'rounded-[5px] px-3 py-3' : ''} style={many ? { background: T_PAPER, border: `1px solid ${T_BORDER}` } : undefined}>
+                      <p className={`${many ? 'text-[19px]' : 'text-[23px]'} font-extrabold leading-[1.12]`} style={{ fontFamily: ARCHIVO, letterSpacing: '-0.01em' }}>
+                        {many ? `${i + 1} · ` : ''}{pl.label ?? (pl.kind === 'entry' ? pl.title : `#${pl.number} · ${pl.title}`)}
+                      </p>
+                      <p className="mt-1 text-[15px] leading-snug">
+                        {pl.kind === 'game' ? 'One rule, the wave is the referee. You play it with your coach; your coach stars it. Tonight, learn the rule.' : pl.focus.length > 0 ? <>Your focus: {pl.focus.join(' · ')}</> : pl.kind === 'tool' ? 'All three moments.' : 'The whole sequence, start to finish.'}
+                      </p>
+                      {pl.notes && <p className="mt-1 text-[14px] italic leading-snug">&ldquo;{pl.notes}&rdquo;</p>}
+                      {/* Durante el camp el entreno es CON el coach y lo califica el coach
+                          (Marcelo 2026-09-19): el alumno estudia y ensaya en tierra, no
+                          registra solo. Por eso el juego no tiene "Play it" acá. */}
+                      <div className={`mt-3 grid gap-2 ${isGame || isCircle ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                        <a href={seqHref} className="min-h-[48px] rounded-[5px] flex items-center justify-center text-[15px] font-black uppercase no-underline" style={{ background: '#00D2FF', color: T_NAVY, fontFamily: ARCHIVO, letterSpacing: '0.04em' }}>Study it</a>
+                        {!isGame && !isCircle && <a href={rehearseHref} className="min-h-[48px] rounded-[5px] flex items-center justify-center text-center px-1 text-[13px] font-extrabold uppercase no-underline leading-tight" style={{ color: T_INK, border: `1.5px solid ${T_INK}`, fontFamily: ARCHIVO, letterSpacing: '0.03em' }}>Rehearse it on land</a>}
                       </div>
                     </div>
-                  )}
+                  );
+                })}
+              </div>
+            )}
+            {topicsArr.length > 0 && (
+              <div className="pt-2.5" style={{ borderTop: '1px solid #D3CCB9' }}>
+                <p style={{ ...HOME_MONO, fontSize: 10.5, letterSpacing: '0.1em', color: T_MUTED }}>Also today · theory</p>
+                <div className="mt-1.5 space-y-1.5">
+                  {topicsArr.map((t: any) => (
+                    <div key={t.id} className="flex items-center justify-between gap-3">
+                      <p className="text-[15px] font-bold leading-snug">{t.title}</p>
+                      <a href={withFrom(`/portal/${data.token}${t.href}`, { k: 'home' })} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-black uppercase no-underline" style={{ color: T_INK, border: `1.5px solid ${T_INK}`, fontFamily: ARCHIVO }}>Study it</a>
+                    </div>
+                  ))}
                 </div>
-              );
-            })()}
+              </div>
+            )}
             {coachTask && (
-              <div className="mt-3 rounded-[5px] px-3 py-2.5" style={{ background: T_PAPER, borderLeft: '3px solid #00D2FF' }}>
-                <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>From your coach</p>
-                <p className="text-[15px] font-bold leading-snug mt-0.5" style={{ color: T_INK }}>{coachTask.label ?? 'A note from your coach'}</p>
-                {(coachTask.label ? coachTask.note : coachTask.text) && <p className="text-[13.5px] mt-0.5 leading-snug italic" style={{ color: T_INK }}>{coachTask.label ? coachTask.note : coachTask.text}</p>}
-                <p className="text-[12.5px] mt-1" style={{ color: T_MUTED }}>You work it with your coach in class.</p>
+              <div className="pt-2.5" style={{ borderTop: '1px solid #D3CCB9' }}>
+                <p style={{ ...HOME_MONO, fontSize: 10.5, letterSpacing: '0.1em', color: T_MUTED }}>From your coach</p>
+                <p className="text-[15px] font-bold leading-snug mt-1">{coachTask.label ?? 'A note from your coach'}</p>
+                {(coachTask.label ? coachTask.note : coachTask.text) && <p className="text-[14px] mt-0.5 leading-snug italic">{coachTask.label ? coachTask.note : coachTask.text}</p>}
+                <p className="text-[13px] mt-1" style={{ color: T_MUTED }}>You work it with your coach in class.</p>
               </div>
             )}
             {preCourseDone === false && data.hasAnyCourse && beltCamp && (
-              <button type="button" onClick={() => onGoTo('course')} className="mt-3 w-full flex items-center justify-between gap-3 rounded-[5px] px-3 py-2.5 text-left" style={{ background: T_PAPER, border: `1px solid ${T_BORDER}` }}>
+              <button type="button" onClick={() => onGoTo('course')} className="w-full flex items-center justify-between gap-3 rounded-[5px] px-3 py-2.5 text-left" style={{ background: T_PAPER, border: `1px solid ${T_BORDER}` }}>
                 <span className="min-w-0">
-                  <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>{campDayNum ? 'Pre-Course · still open' : 'Before day 1'}</span>
+                  <span style={{ ...HOME_MONO, fontSize: 10.5, letterSpacing: '0.1em', color: SAND_LABEL }}>{campDayNum ? 'Pre-Course · still open' : 'Before day 1'}</span>
                   <span className="block text-[15px] font-bold leading-snug" style={{ color: T_INK }}>Finish the Pre-Course — it is what your camp builds on</span>
                 </span>
                 <ArrowRight size={16} style={{ color: T_INK }} />
               </button>
             )}
-            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm" style={{ color: T_MUTED }}>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm" style={{ color: T_MUTED }}>
               {c.scheduled_time && (
-                <span className="inline-flex items-center gap-1.5"><Clock size={14} style={{ color: '#0090B0' }} />{c.scheduled_time}</span>
+                <span className="inline-flex items-center gap-1.5"><Clock size={14} style={{ color: SAND_LABEL }} />{c.scheduled_time}</span>
               )}
-              <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} style={{ color: '#0090B0' }} />{totalDays} day{totalDays === 1 ? '' : 's'}</span>
+              <span className="inline-flex items-center gap-1.5"><CalendarDays size={14} style={{ color: SAND_LABEL }} />{totalDays} day{totalDays === 1 ? '' : 's'}</span>
             </div>
             {c.coach && (
-              <button type="button" onClick={() => { if (data.coachProfileUnlocked) onGoTo('my-coach'); }} className="mt-3 w-full flex items-center gap-3 rounded-[5px] px-3 py-2.5 text-left" style={{ background: T_PAPER, border: `1px solid ${T_BORDER}`, cursor: data.coachProfileUnlocked ? 'pointer' : 'default' }}>
-                <div className="w-10 h-11 rounded-full overflow-hidden bg-gray-200 shrink-0">
-                  {c.coach.photo_url && (
+              <button type="button" onClick={() => { if (data.coachProfileUnlocked) onGoTo('my-coach'); }} className="w-full flex items-center gap-3 rounded-[5px] px-3 py-2.5 text-left" style={{ background: T_PAPER, border: `1px solid ${T_BORDER}`, cursor: data.coachProfileUnlocked ? 'pointer' : 'default' }}>
+                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 flex items-center justify-center" style={{ background: T_INK }}>
+                  {c.coach.photo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={c.coach.photo_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[12px] font-extrabold" style={{ color: T_CREAM }}>{initialsOf(c.coach.display_name)}</span>
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold truncate" style={{ color: '#061C2B' }}>{c.coach.display_name}</p>
-                  {certN && <p className="text-[12px] mt-0.5" style={{ ...F_LABEL, color: '#55666E' }}>Level {certN} certified</p>}
+                  <p className="text-sm font-semibold truncate" style={{ color: T_INK }}>{c.coach.display_name}</p>
+                  {certN && <p className="text-[12px] mt-0.5" style={{ ...F_LABEL, color: T_MUTED }}>Level {certN} certified</p>}
                 </div>
                 {data.coachProfileUnlocked && <ChevronRight size={16} className="shrink-0" style={{ color: T_MUTED }} />}
               </button>
@@ -1710,289 +1799,228 @@ function HomeTab({
         );
       })()}
 
-
-          {/* ═══ 2 de 2: LA TAREA DEL COACH (Marcelo 2026-09-25): "le aparece, y
-              si la trabaja una vez deja de aparecer". Fuera de camp es LA
-              tarjeta mientras esté pendiente; el servidor la quita cuando
-              registra una sesión sobre ella. Misma fila que abre Let's Play. */}
-          {slot === 'coach' && coachTask && (() => {
-            const cf = coachTask;
-            const when = cf.set_at ? new Date(cf.set_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' }) : null;
-            const who = cf.set_by_name ? `${cf.set_by_name} left it` : 'Your coach left it';
-            const train = cf.sequence_id
-              ? () => { if (onTrainSequence) onTrainSequence({ sequenceId: cf.sequence_id!, mode: 'step_focus', focusStepId: cf.step_id, intention: cf.note }); else onGoTo('sequence'); }
-              : cf.step_id ? () => onOpenStep?.(cf.step_id!) : null;
-            return (
-              <div className="rounded-lg p-4" style={{ background: T_CREAM, color: T_INK, border: `1px solid ${T_BORDER}` }}>
-                <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>From your coach</p>
-                <p className="text-[22px] font-extrabold leading-tight mt-1" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', color: T_INK }}>{cf.label ?? 'A note from your coach'}</p>
-                <p className="text-[15px] mt-1 leading-snug" style={{ color: T_INK }}>
-                  {who}{when ? ` · ${when}` : ''}{cf.label ? ' · train it once and it clears' : ' · keep it in mind in your next session'}
-                </p>
-                {(cf.label ? cf.note : cf.text) && <p className="text-[14px] mt-1 leading-snug font-semibold" style={{ color: T_INK, fontStyle: 'italic' }}>{cf.label ? cf.note : cf.text}</p>}
-                {train && (
-                  <button type="button" onClick={train}
-                    className="w-full mt-3 min-h-[48px] rounded-[5px] flex items-center justify-center gap-2 text-[17px] font-black uppercase"
-                    style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.035em', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
-                    Train it <ArrowRight size={18} />
-                  </button>
-                )}
-                {cf.sequence_id && seqPageHref(data, cf.sequence_id) && (
-                  <a href={withFrom(seqPageHref(data, cf.sequence_id)!, { k: 'home' })} className="flex items-center justify-center gap-1.5 mt-2.5 text-[15px] font-bold" style={{ color: T_INK }}>
-                    Open the sequence page <ArrowRight size={15} />
-                  </a>
-                )}
-              </div>
-            );
-          })()}
-
-      {/* ═══ TUS DATOS (Marcelo 2026-09-29: "el home debe tener más info
-          esencial, como el flow channel y las horas"). Tres datos, nunca más:
-          horas en el agua (training / free surf), Flow Channel y secuencias
-          tuyas de la cinta. Cada uno abre My progress. Sin datos, una frase en
-          vez de ceros. La racha va chica al lado de las horas. ═══ */}
-      {data.canTrack !== false && (() => {
-        const bIdx = BELT_HIERARCHY.indexOf(beltLevel);
-        const nextBelt = bIdx >= 0 && bIdx < BELT_HIERARCHY.length - 1 ? BELT_DISPLAY[BELT_HIERARCHY[bIdx + 1]] : null;
-        const nextWord = nextBelt ? String(nextBelt.en).replace(/ Belt$/, '') : null;
-        const pctTrain = surf.totalMinutes > 0 ? (surf.trainingMinutes / surf.totalMinutes) * 100 : 0;
-        const fc = data.flowChannel;
-        const flowCount = fc?.count ?? 0;
-        // Con UNA sola calificación el promedio no dice nada: desde FLOW_MIN_RATINGS.
-        const flowAvg = fc && fc.avg != null && flowCount >= FLOW_MIN_RATINGS ? fc.avg : null;
-        const flowZone = flowAvg != null ? flowZoneOf(flowAvg) : 'opt';
-        const flowPill = { easy: '#DCE8F2', opt: '#BDEFFF', hard: '#F6D9DC' }[flowZone];
-        const flowWord = flowAvg != null ? flowWordOf(flowAvg) : '';
-        const flowHint = flowZone === 'easy' ? 'too easy lately' : flowZone === 'hard' ? 'too hard lately' : 'learning zone';
-        // flex-col: un <button> centra su contenido; así las dos arrancan arriba.
-        const tile = 'w-full text-left rounded-lg p-3.5 flex flex-col';
+      {/* ═══ 2 de 3: LA TAREA DEL COACH (Marcelo 2026-09-25): "le aparece, y
+          si la trabaja una vez deja de aparecer". Fuera de camp es LA tarjeta
+          mientras esté pendiente; el servidor la quita cuando registra una
+          sesión sobre ella. Diseño A: la secuencia chica arriba, el paso
+          grande, quién la dejó con sus iniciales. */}
+      {slot === 'coach' && coachTask && (() => {
+        const cf = coachTask;
+        const when = cf.set_at ? new Date(cf.set_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'America/El_Salvador' }) : null;
+        const who = cf.set_by_name ? `${cf.set_by_name} left it for you` : 'Your coach left it for you';
+        const split = !!(cf.sequence_label && cf.step_label);
+        const note = cf.label ? cf.note : cf.text;
+        const train = cf.sequence_id
+          ? () => { if (onTrainSequence) onTrainSequence({ sequenceId: cf.sequence_id!, mode: 'step_focus', focusStepId: cf.step_id, intention: cf.note }); else onGoTo('sequence'); }
+          : cf.step_id ? () => onOpenStep?.(cf.step_id!) : null;
         return (
-          <div className="space-y-2.5">
-            <button type="button" onClick={() => setProgressOpen(true)} className="w-full text-left rounded-lg p-4" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
-              <span className="flex items-baseline justify-between gap-2">
-                <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Time in the water</span>
-                {streak > 0 && <span className="inline-flex items-center gap-1 text-[12px]" style={{ color: T_MUTED }}><Flame size={13} strokeWidth={1.75} />{streak}-day streak</span>}
-              </span>
-              {surf.totalMinutes > 0 ? (
-                <>
-                  <span className="block text-[34px] font-black leading-none mt-1.5" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.totalMinutes)}</span>
-                  <span className="block h-1.5 rounded-full overflow-hidden mt-3" style={{ background: '#06D6A0' }}><span className="block h-full" style={{ width: `${pctTrain}%`, background: '#00D2FF' }} /></span>
-                  <span className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[13px]" style={{ color: T_INK }}>
-                    <span className="inline-flex items-center gap-1.5"><span style={{ width: 8, height: 8, borderRadius: 2, background: '#00D2FF', display: 'inline-block' }} />Training {fmtHm(surf.trainingMinutes)}</span>
-                    <span className="inline-flex items-center gap-1.5"><span style={{ width: 8, height: 8, borderRadius: 2, background: '#06D6A0', display: 'inline-block' }} />Free surf {fmtHm(surf.freeSurfMinutes)}</span>
-                  </span>
-                </>
-              ) : (
-                <span className="block text-[17px] font-bold leading-snug mt-1" style={{ color: T_INK }}>Your first session starts the count.</span>
-              )}
-            </button>
-            <div className="grid grid-cols-2 gap-2.5">
-              <button type="button" onClick={() => setProgressOpen(true)} className={tile} style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
-                <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Flow Channel</span>
-                {flowAvg != null ? (
-                  <>
-                    <span className="block text-[30px] font-black leading-none mt-1.5" style={{ fontFamily: ARCHIVO, color: T_INK }}>{flowAvg.toFixed(1)}</span>
-                    <span className="self-start inline-block rounded-full px-2.5 py-0.5 mt-2 text-[13px] font-bold" style={{ background: flowPill, color: T_INK }}>{flowWord}</span>
-                    <span className="block text-[12px] mt-1" style={{ color: T_MUTED }}>{flowHint}</span>
-                  </>
-                ) : (
-                  <span className="block text-[14px] font-bold leading-snug mt-1.5" style={{ color: T_INK }}>{flowCount === 1 ? 'Rate 1 more session to see your flow.' : 'Rate 2 sessions to see your flow.'}</span>
-                )}
-              </button>
-              <button type="button" onClick={() => setProgressOpen(true)} className={tile} style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
-                <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>{seqRows.length ? 'Sequences' : 'Next belt'}</span>
-                {seqRows.length ? (
-                  <>
-                    <span className="block text-[30px] font-black leading-none mt-1.5" style={{ fontFamily: ARCHIVO, color: T_INK }}>{seqOwned}<span className="text-[17px]" style={{ color: T_MUTED }}> / {seqRows.length}</span></span>
-                    <span className="block h-1.5 rounded-full overflow-hidden mt-3" style={{ background: T_BORDER }}><span className="block h-full" style={{ width: `${(seqOwned / seqRows.length) * 100}%`, background: '#1E88E5' }} /></span>
-                    <span className="block text-[12px] mt-2 leading-snug" style={{ color: T_MUTED }}>{courseBeltWord ? `${courseBeltWord} Belt · ` : ''}{allOwned ? 'all yours' : 'yours'}{nextWord && courseIsMyBelt ? ` · next ${nextWord}` : ''}</span>
-                  </>
-                ) : (
-                  <>
-                    {/* Sin puntajes (curso bajo candado antes del camp): la cinta ya
-                        está en el encabezado; acá va lo que viene. */}
-                    <span className="block text-[24px] font-black leading-tight mt-1.5" style={{ fontFamily: ARCHIVO, color: T_INK }}>{nextWord ?? 'Top belt'}</span>
-                    <span className="block text-[12px] mt-2 leading-snug" style={{ color: T_MUTED }}>{nextWord ? 'what it takes →' : 'you made it'}</span>
-                  </>
-                )}
-              </button>
+          <div className="rounded-lg px-4 pt-[18px] pb-4 flex flex-col gap-3" style={{ background: T_CREAM, color: T_INK }}>
+            <div className="flex items-center justify-between gap-3">
+              <span style={{ ...HOME_MONO, color: SAND_LABEL }}>From your coach</span>
+              {when && <span style={{ ...HOME_MONO, letterSpacing: '0.08em', color: T_MUTED }}>{when}</span>}
             </div>
+            <div className="flex flex-col gap-1">
+              {split && <p className="text-[13px] font-bold" style={{ color: T_MUTED }}>{cf.sequence_label}</p>}
+              <p className="text-[23px] font-extrabold leading-[1.12]" style={{ fontFamily: ARCHIVO, letterSpacing: '-0.01em' }}>{split ? cf.step_label : cf.label ?? 'A note from your coach'}</p>
+            </div>
+            {note && <p className="text-[15px] leading-snug font-semibold italic">{note}</p>}
+            <div className="flex items-center gap-2.5 text-[14px]">
+              <span className="w-7 h-7 rounded-full grid place-items-center shrink-0 text-[11px] font-extrabold" style={{ background: T_INK, color: T_CREAM }}>{initialsOf(cf.set_by_name)}</span>
+              <span>{who}{cf.label ? ' · train it once and it clears' : ' · keep it in mind in your next session'}</span>
+            </div>
+            {train && (
+              <button type="button" onClick={train}
+                className="w-full min-h-[52px] rounded-[5px] flex items-center justify-center gap-2.5 text-[17px] font-black uppercase"
+                style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.04em', fontFamily: ARCHIVO }}>
+                Train it <ArrowRight size={18} />
+              </button>
+            )}
+            {cf.sequence_id && seqPageHref(data, cf.sequence_id) && (
+              <a href={withFrom(seqPageHref(data, cf.sequence_id)!, { k: 'home' })} className="self-center inline-flex items-center gap-1 text-[14px] font-bold no-underline" style={{ color: T_INK }}>
+                Open the sequence page <ChevronRight size={15} />
+              </a>
+            )}
           </div>
         );
       })()}
 
-      {/* ═══ QUÉ ENTRENAR (Marcelo 2026-09-29): un botón, no una lista, y solo si
-          nadie le dejó nada ("si el coach le dejó algo que salga en home y si no,
-          que se quede en Let's Play"). Lo elige el alumno según el mar del día. ═══ */}
+      {/* ═══ 3 de 3: QUÉ ENTRENAR (Marcelo 2026-09-29): si nadie le dejó nada,
+          NO adivinamos qué entrenar (el mar cambia el foco): Let's Play con su
+          camino. Diseño A: la misma tarjeta de arena que las otras dos. ═══ */}
       {data.canTrack !== false && data.hasAnyCourse !== false && !data.courseLocked && slot === null && !data.openSession && (
-        <button type="button" onClick={() => { if (onOpenPath) onOpenPath(); else onGoTo('sequence'); window.scrollTo(0, 0); }} className="w-full text-left rounded-lg px-4 py-3.5 flex items-center gap-3" style={{ background: 'transparent', border: '1.5px solid #00D2FF' }}>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[17px] font-extrabold leading-tight" style={{ fontFamily: ARCHIVO, color: '#F7F9FA' }}>What to train next</span>
-            <span className="block text-[13px] mt-0.5" style={{ color: '#D9E4EA' }}>Let&apos;s Play · pick it by today&apos;s ocean</span>
-          </span>
-          <ArrowRight size={20} className="shrink-0" style={{ color: '#00D2FF' }} />
-        </button>
+        <div className="rounded-lg px-4 pt-[18px] pb-4 flex flex-col gap-3" style={{ background: T_CREAM, color: T_INK }}>
+          <span style={{ ...HOME_MONO, color: SAND_LABEL }}>What to train next</span>
+          <p className="text-[23px] font-extrabold leading-[1.12]" style={{ fontFamily: ARCHIVO, letterSpacing: '-0.01em' }}>Pick it by today&apos;s ocean</p>
+          <p className="text-[15px] leading-snug">Your path in Let&apos;s Play shows the next sequence and the step holding it back.</p>
+          <button type="button" onClick={() => { if (onOpenPath) onOpenPath(); else onGoTo('sequence'); window.scrollTo(0, 0); }}
+            className="w-full min-h-[52px] rounded-[5px] flex items-center justify-center gap-2.5 text-[17px] font-black uppercase"
+            style={{ background: BRAND.colors.cyan, color: T_NAVY, letterSpacing: '0.04em', fontFamily: ARCHIVO }}>
+            Open Let&apos;s Play <ArrowRight size={18} />
+          </button>
+        </div>
       )}
+
+      {/* ═══ FLOW CHANNEL COMO DIAL (Marcelo 2026-10-01 eligió la opción 3):
+          gris = boredom, verde = el canal, rojo = anxiety; la aguja es su
+          promedio. Mismas zonas y frases que My progress. Abre My progress. ═══ */}
+      {data.canTrack !== false && (() => {
+        const fc = data.flowChannel;
+        const n = fc?.count ?? 0;
+        const has = !!fc && fc.avg != null && n >= FLOW_MIN_RATINGS;
+        return (
+          <button type="button" onClick={() => setProgressOpen(true)}
+            className="w-full rounded-lg px-3.5 pt-3.5 pb-4 flex flex-col gap-1.5 items-center"
+            style={{ background: HOME_CARD, border: `1px solid ${HOME_LINE}`, color: '#F7F9FA' }}>
+            <span className="flex items-center justify-between w-full">
+              <span style={{ ...HOME_MONO, color: '#8FB3C4' }}>Flow channel</span>
+              {has && <span className="text-[12px]" style={{ color: '#8FB3C4' }}>{n} rated sessions</span>}
+            </span>
+            <FlowDial avg={fc?.avg ?? null} count={n} minRatings={FLOW_MIN_RATINGS} />
+          </button>
+        );
+      })()}
 
       {/* Log free surf: el registro de dos segundos (2026-09-22) se queda en el
           Home, pero como botón SECUNDARIO: un solo cyan lleno por pantalla, y es
           el de la tarjeta de acción. */}
       {data.canTrack !== false && <FreeSurfLogger token={data.token} variant="secondary" />}
 
-      {/* ═══ EL BUZÓN, EN FILAS (regla 2026-08-14: lo que te llegó, caduca y se
-          vacía). Una línea cada una; nada del tamaño de la acción. ═══ */}
-      {/* Última clase con el coach · solo 7 días (después vive en My progress → My Sessions). */}
-      {latestResult && (Date.now() - effectiveDate(latestResult) <= 7 * 86400000) && (() => {
-        const when = new Date(effectiveDate(latestResult)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        const surveyDone = data.surveyResultIds.includes(latestResult.id);
-        const canRate = !surveyDone && !!latestResult.survey_unlocked;
-        const openSessions = () => {
-          // Sin membresía no existe My progress: su historial es la pantalla de sesiones.
-          if (data.canTrack === false) { onGoTo('sessions'); return; }
-          setProgressOpen(true);
-          setTimeout(() => { const d = document.getElementById('my-sessions') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); } }, 120);
-        };
-        const saw = coachSawLine(latestResult);
-        const meaning = statusMeaning(latestResult.status);
-        return (
-          <div className="rounded-lg overflow-hidden" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
-            <button type="button" onClick={openSessions} className="w-full text-left px-4 py-3 flex items-center gap-3">
-              <span className="min-w-0 flex-1">
-                <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Last class · {when}{latestResult.coaches?.display_name ? ` · ${latestResult.coaches.display_name}` : ''}</span>
-                <span className="block text-[15px] font-bold leading-snug mt-0.5" style={{ color: T_INK }}>{latestResult.mission || latestResult.standalone_sessions?.mission || 'Session'}{meaning ? ` · ${meaning}` : ''}</span>
-                {saw && <span className="block text-[13px] mt-0.5" style={{ color: T_MUTED }}>Your coach saw: {saw}</span>}
-                {surveyDone && latestResult.student_visible_summary && (
-                  <span className="block text-[13.5px] mt-1.5 leading-snug italic line-clamp-3" style={{ color: T_INK }}>“{latestResult.student_visible_summary}”</span>
+      {/* ═══ ALSO FOR YOU: EL BUZÓN, EN FILAS (regla 2026-08-14: lo que te llegó,
+          caduca y se vacía). Diseño A: una fila por cosa, ícono a la izquierda,
+          nada del tamaño de la acción. ═══ */}
+      {(() => {
+        const rows: React.ReactNode[] = [];
+        const ROW = 'w-full text-left flex items-center gap-3 min-h-[60px] py-2.5';
+        const line = { borderTop: `1px solid ${HOME_LINE}` };
+        // Última clase con el coach · solo 7 días (después vive en My progress → My Sessions).
+        if (latestResult && Date.now() - effectiveDate(latestResult) <= 7 * 86400000) {
+          const when = new Date(effectiveDate(latestResult)).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const surveyDone = data.surveyResultIds.includes(latestResult.id);
+          const canRate = !surveyDone && !!latestResult.survey_unlocked;
+          const openSessions = () => {
+            // Sin membresía no existe My progress: su historial es la pantalla de sesiones.
+            if (data.canTrack === false) { onGoTo('sessions'); return; }
+            setProgressOpen(true);
+            setTimeout(() => { const d = document.getElementById('my-sessions') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); } }, 120);
+          };
+          const saw = coachSawLine(latestResult);
+          const meaning = statusMeaning(latestResult.status);
+          rows.push(
+            <button key="last-class" type="button" onClick={openSessions} className={ROW} style={line}>
+              <HomeRowInner icon={Clock} color="#00D2FF" bg="rgba(0,210,255,0.12)"
+                title={`Your last class · ${when}${latestResult.coaches?.display_name ? ` · ${latestResult.coaches.display_name}` : ''}`}
+                sub={`${latestResult.mission || latestResult.standalone_sessions?.mission || 'Session'}${meaning ? ` · ${meaning}` : ''}`}
+                extra={<>
+                  {saw && <span className="block text-[13px] leading-snug" style={{ color: '#A9BCC7' }}>Your coach saw: {saw}</span>}
+                  {surveyDone && latestResult.student_visible_summary && (
+                    <span className="block text-[13.5px] mt-1 leading-snug italic line-clamp-3" style={{ color: '#D9E4EA' }}>“{latestResult.student_visible_summary}”</span>
+                  )}
+                </>} />
+            </button>,
+          );
+          if (canRate) rows.push(
+            <button key="rate" type="button" onClick={() => onGoTo('feedback')} className={ROW} style={line}>
+              <HomeRowInner icon={Star} color="#FFD166" bg="rgba(255,209,102,0.14)" title="Rate your coach" sub="Unlock the session feedback" />
+            </button>,
+          );
+        }
+        // Promoción de cinta (30 días, 2026-08-09): fila que se despliega.
+        (() => {
+          const promotedAt = (student as any).belt_promoted_at as string | null;
+          if (!promotedAt) return;
+          const days = (Date.now() - new Date(promotedAt).getTime()) / 86400000;
+          if (!(days >= 0 && days <= 30)) return;
+          const d = BELT_DISPLAY[beltLevel];
+          const copy = PROMOTION_COPY[beltLevel];
+          if (!d || !copy?.next) return;
+          // La nota del coach se muestra UNA vez: si el acta del camp (abajo) ya la trae, acá no.
+          const note = recentCampResult?.final?.note ? null : (campWithNote?.coach_final_note ?? null);
+          rows.push(
+            <details key="promotion" className="group" style={line}>
+              <summary className={`${ROW} list-none cursor-pointer [&::-webkit-details-marker]:hidden`}>
+                <HomeRowInner icon={Sparkles} color={onNavyBeltColor(beltLevel, d.color)} bg="rgba(247,249,250,0.08)" title={`You’re now a ${d.en}!`} sub="Belt promotion · see what comes next" />
+              </summary>
+              <div className="mb-3 rounded-lg p-4 space-y-2" style={{ background: T_CREAM }}>
+                {copy.mastered && <p className="text-[14px] leading-snug" style={{ color: T_INK }}>✓ {copy.mastered}</p>}
+                <p className="text-[14px] leading-snug" style={{ color: T_INK }}>→ {copy.next}</p>
+                {note && (
+                  <div className="rounded-[5px] px-3 py-2" style={{ background: T_PAPER, borderLeft: '3px solid #00D2FF' }}>
+                    <p style={{ ...T_LABEL, color: SAND_LABEL }}>From your coach</p>
+                    <p className="text-[14px] italic leading-snug mt-0.5" style={{ color: T_INK }}>{note}</p>
+                  </div>
                 )}
-              </span>
-              <ChevronRight size={16} className="shrink-0" style={{ color: T_INK }} />
-            </button>
-            {canRate && (
-              <button type="button" onClick={() => onGoTo('feedback')} className="w-full text-left px-4 py-2.5 text-[14px] font-bold flex items-center justify-between gap-3" style={{ borderTop: `1px solid ${T_BORDER}`, color: T_INK }}>
-                Rate your coach · unlock the session feedback <ArrowRight size={15} />
-              </button>
-            )}
+                <button type="button" onClick={() => onGoTo('sequence')} className="w-full min-h-[44px] rounded-[5px] text-[14px] font-black uppercase" style={{ background: T_NAVY, color: '#F7F9FA', fontFamily: ARCHIVO }}>
+                  See your new sequences →
+                </button>
+              </div>
+            </details>,
+          );
+        })();
+        // El acta del camp (2026-09-18, 21 días): fila que se despliega.
+        if (recentCampResult) {
+          const c: any = recentCampResult;
+          const f = c.final;
+          const m = String(f.summary ?? '').match(/(\d+)\/(\d+) secuencias/);
+          const seqLine = m ? `${m[1]} of ${m[2]} sequences are yours` : null;
+          const targetBelt = c.template_name ? String(c.template_name).match(/(white|yellow|blue|purple)/i)?.[1] : null;
+          const beltLabel = targetBelt ? `${targetBelt.charAt(0).toUpperCase()}${targetBelt.slice(1).toLowerCase()} Belt` : 'the next level';
+          rows.push(
+            <details key="camp-result" className="group" style={line}>
+              <summary className={`${ROW} list-none cursor-pointer [&::-webkit-details-marker]:hidden`}>
+                <HomeRowInner icon={Check} color="#06D6A0" bg="rgba(6,214,160,0.14)" title={c.camp_name} sub={`Your camp · ${f.approved ? `Ready for ${beltLabel}` : 'In progress · keep going'}`} />
+              </summary>
+              <div className="mb-3 rounded-lg p-4 space-y-2" style={{ background: T_CREAM }}>
+                {f.approved && <p className="text-[14px] leading-snug" style={{ color: T_INK }}>Recommended by your coach. Your coach confirms the belt with the academy.</p>}
+                {seqLine && <p className="text-[14px] leading-snug" style={{ color: T_INK }}>{seqLine}. {f.approved ? '' : 'What you did not show yet is still yours to earn — it lives in your course.'}</p>}
+                {f.focus && (
+                  <div className="rounded-[5px] px-3 py-2" style={{ background: T_PAPER, borderLeft: '3px solid #00D2FF' }}>
+                    <p style={{ ...T_LABEL, color: SAND_LABEL }}>Your next focus</p>
+                    <p className="text-[14px] mt-0.5" style={{ color: T_INK }}>{f.focus}</p>
+                  </div>
+                )}
+                {f.note && <p className="text-[14px] whitespace-pre-line leading-snug italic" style={{ color: T_INK }}>{f.note}</p>}
+              </div>
+            </details>,
+          );
+        }
+        // Próximo camp lejos: una línea, sin plan todavía.
+        if (campNow && !classSoon) rows.push(
+          <div key="next-camp" className={ROW} style={line}>
+            <HomeRowInner icon={CalendarDays} color="#00D2FF" bg="rgba(0,210,255,0.12)" chevron={false}
+              title={`${campNow.camp_name}${campNow.coach?.display_name ? ` · with ${campNow.coach.display_name}` : ''}`}
+              sub={`Next camp · ${campStart ? campStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : ''}`} />
+          </div>,
+        );
+        // Find your level: invitación al quiz v2 (Marcelo 2026-09-16, caso
+        // Gustavo Dias). Con ?t= el resultado se ata a esta ficha y
+        // &from=portal lo trae de vuelta.
+        if (data.levelQuizDone === false) rows.push(
+          <a key="quiz" href={`/quiz-v2.html?t=${encodeURIComponent(data.token)}&from=portal`} className={`${ROW} no-underline`} style={line}>
+            <HomeRowInner icon={Compass} color="#00D2FF" bg="rgba(0,210,255,0.12)" title="Find your level" sub="Optional · 3 minutes · ten quick scenes, your coach confirms it in the water" />
+          </a>,
+        );
+        // ONE WAVE: con curso, el libro es una fila (vive también en Course).
+        const bk = ((data as any).homeBundle?.presentations ?? []).find((p: any) => p.id === ONE_WAVE_ID);
+        if (bk && data.hasAnyCourse) rows.push(
+          <button key="book" type="button" onClick={() => setReader({ id: bk.id, title: 'ONE WAVE' })} className={ROW} style={line}>
+            <HomeRowInner icon={BookOpen} color="#FFD166" bg="rgba(255,209,102,0.14)" title="ONE WAVE" sub="Your book · read it here" />
+          </button>,
+        );
+        if (rows.length === 0) return null;
+        return (
+          <div className="flex flex-col">
+            <span className="pb-1.5" style={{ ...HOME_MONO, color: '#8FB3C4' }}>Also for you</span>
+            <div style={{ borderBottom: `1px solid ${HOME_LINE}` }}>{rows}</div>
           </div>
         );
       })()}
 
-      {/* Promoción de cinta (30 días, 2026-08-09): fila que se despliega. Sin emoji ni degradado. */}
+      {/* ── 📖 ONE WAVE sin curso — la compra del libro, adelante y al centro
+          (venta web 2026-09-01). Solo si tiene el grant; abre el PDF inline con
+          el mismo mecanismo de materiales. ── */}
       {(() => {
-        const promotedAt = (student as any).belt_promoted_at as string | null;
-        if (!promotedAt) return null;
-        const days = (Date.now() - new Date(promotedAt).getTime()) / 86400000;
-        if (!(days >= 0 && days <= 30)) return null;
-        const d = BELT_DISPLAY[beltLevel];
-        const copy = PROMOTION_COPY[beltLevel];
-        if (!d || !copy?.next) return null;
-        // La nota del coach se muestra UNA vez: si el acta del camp (abajo) ya la trae, acá no.
-        const note = recentCampResult?.final?.note ? null : (campWithNote?.coach_final_note ?? null);
-        return (
-          <details className="rounded-lg overflow-hidden" style={{ background: T_CREAM, border: `1px solid ${d.color}` }}>
-            <summary className="list-none cursor-pointer px-4 py-3 flex items-center gap-3">
-              <span className="min-w-0 flex-1">
-                <span style={{ ...T_LABEL, color: creamLabel(d.color) }}>Belt promotion</span>
-                <span className="block text-[16px] font-extrabold leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>You’re now a {d.en}!</span>
-              </span>
-              <ChevronRight size={16} className="shrink-0" style={{ color: T_INK }} />
-            </summary>
-            <div className="px-4 pb-4 space-y-2">
-              {copy.mastered && <p className="text-[14px] leading-snug" style={{ color: T_INK }}>✓ {copy.mastered}</p>}
-              <p className="text-[14px] leading-snug" style={{ color: T_INK }}>→ {copy.next}</p>
-              {note && (
-                <div className="rounded-[5px] px-3 py-2" style={{ background: T_PAPER, borderLeft: '3px solid #00D2FF' }}>
-                  <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>From your coach</p>
-                  <p className="text-[14px] italic leading-snug mt-0.5" style={{ color: T_INK }}>{note}</p>
-                </div>
-              )}
-              <button type="button" onClick={() => onGoTo('sequence')} className="w-full min-h-[44px] rounded-[5px] text-[14px] font-black uppercase" style={{ background: T_NAVY, color: '#F7F9FA', fontFamily: ARCHIVO }}>
-                See your new sequences →
-              </button>
-            </div>
-          </details>
-        );
-      })()}
-
-      {/* El acta del camp (2026-09-18, 21 días): fila que se despliega. */}
-      {recentCampResult && (() => {
-        const c: any = recentCampResult;
-        const f = c.final;
-        const m = String(f.summary ?? '').match(/(\d+)\/(\d+) secuencias/);
-        const seqLine = m ? `${m[1]} of ${m[2]} sequences are yours` : null;
-        const targetBelt = c.template_name ? String(c.template_name).match(/(white|yellow|blue|purple)/i)?.[1] : null;
-        const beltLabel = targetBelt ? `${targetBelt.charAt(0).toUpperCase()}${targetBelt.slice(1).toLowerCase()} Belt` : 'the next level';
-        return (
-          <details className="rounded-lg overflow-hidden" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
-            <summary className="list-none cursor-pointer px-4 py-3 flex items-center gap-3">
-              <span className="min-w-0 flex-1">
-                <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Your camp · result</span>
-                <span className="block text-[15px] font-bold leading-snug mt-0.5" style={{ color: T_INK }}>{c.camp_name} · {f.approved ? `Ready for ${beltLabel}` : 'In progress · keep going'}</span>
-              </span>
-              <ChevronRight size={16} className="shrink-0" style={{ color: T_INK }} />
-            </summary>
-            <div className="px-4 pb-4 space-y-2">
-              {f.approved && <p className="text-[14px] leading-snug" style={{ color: T_INK }}>Recommended by your coach. Your coach confirms the belt with the academy.</p>}
-              {seqLine && <p className="text-[14px] leading-snug" style={{ color: T_INK }}>{seqLine}. {f.approved ? '' : 'What you did not show yet is still yours to earn — it lives in your course.'}</p>}
-              {f.focus && (
-                <div className="rounded-[5px] px-3 py-2" style={{ background: T_PAPER, borderLeft: '3px solid #00D2FF' }}>
-                  <p style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Your next focus</p>
-                  <p className="text-[14px] mt-0.5" style={{ color: T_INK }}>{f.focus}</p>
-                </div>
-              )}
-              {f.note && <p className="text-[14px] whitespace-pre-line leading-snug italic" style={{ color: T_INK }}>{f.note}</p>}
-            </div>
-          </details>
-        );
-      })()}
-
-      {/* Próximo camp lejos (más de un día): una línea, sin plan todavía. */}
-      {campNow && !classSoon && (
-        <div className="rounded-lg px-4 py-3 flex items-center gap-3" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
-          <CalendarDays size={18} className="shrink-0" style={{ color: T_INK }} />
-          <span className="min-w-0 flex-1">
-            <span style={{ ...T_LABEL, color: creamLabel('#00D2FF') }}>Next camp · {campStart ? campStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : ''}</span>
-            <span className="block text-[15px] font-bold leading-snug mt-0.5" style={{ color: T_INK }}>{campNow.camp_name}{campNow.coach?.display_name ? ` · with ${campNow.coach.display_name}` : ''}</span>
-          </span>
-        </div>
-      )}
-
-      {/* ── Find your level: invitación al quiz v2 (Marcelo 2026-09-16, caso
-          Gustavo Dias: lo hizo por fuera y quedó en un duplicado). Con ?t=
-          el resultado se ata a esta ficha y &from=portal lo trae de vuelta. ── */}
-      {data.levelQuizDone === false && (
-        <a
-          href={`/quiz-v2.html?t=${encodeURIComponent(data.token)}&from=portal`}
-          className="block w-full text-left rounded-lg overflow-hidden"
-          style={{ background: T_CREAM, border: `1px solid ${T_BORDER}`, textDecoration: 'none' }}
-        >
-          <div className="flex items-center gap-3 px-4 py-3">
-            <div className="min-w-0 flex-1">
-              <p style={{ ...T_LABEL, color: T_MUTED }}>Optional · 3 minutes</p>
-              <p className="text-[15px] font-bold leading-snug" style={{ color: T_INK }}>Find your level · ten quick scenes, your coach confirms it in the water</p>
-            </div>
-            <ChevronRight size={16} className="shrink-0" style={{ color: T_INK }} />
-          </div>
-        </a>
-      )}
-      {/* ── 📖 ONE WAVE — la compra del libro, adelante y al centro (venta
-          web 2026-09-01). Solo si tiene el grant; abre el PDF inline con el
-          mismo mecanismo de materiales. Las DEMÁS presentaciones siguen en
-          Course (decisión 2026-08-25) — esto es su compra, no la lista. ── */}
-      {(() => {
-        const bk = ((data as any).homeBundle?.presentations ?? []).find(
-          (p: any) => p.id === 'f50677a2-72b1-4abd-9335-fe0c99c80333',
-        );
-        if (!bk) return null;
-        // Con curso, el libro es una fila del buzón: vive también en Course.
-        if (data.hasAnyCourse) return (
-          <button type="button" onClick={() => setReader({ id: bk.id, title: 'ONE WAVE' })} className="w-full text-left rounded-lg px-4 py-3 flex items-center gap-3" style={{ background: T_CREAM, border: `1px solid ${T_BORDER}` }}>
-            <span className="min-w-0 flex-1">
-              <span style={{ ...T_LABEL, color: T_MUTED }}>Your book</span>
-              <span className="block text-[15px] font-bold leading-snug" style={{ color: T_INK }}>ONE WAVE · read it here</span>
-            </span>
-            <ChevronRight size={16} style={{ color: T_INK }} />
-          </button>
-        );
+        const bk = ((data as any).homeBundle?.presentations ?? []).find((p: any) => p.id === ONE_WAVE_ID);
+        if (!bk || data.hasAnyCourse) return null;
         return (
           <button
             type="button"
@@ -2221,7 +2249,6 @@ function HomeTab({
             const nd = nextB ? BELT_DISPLAY[nextB] : null;
             const cb = data.courseData?.activeCourseBelt ? String(data.courseData.activeCourseBelt).replace(/_belt$/, '') : null;
             const courseBelt = cb ? BELT_DISPLAY[`${cb}_belt` as BeltLevel] : null;
-            const pctTrain = surf.totalMinutes > 0 ? (surf.trainingMinutes / surf.totalMinutes) * 100 : 0;
             return (
               <>
                 <SandCard label="Your level">
@@ -2236,21 +2263,23 @@ function HomeTab({
                   <button type="button" onClick={() => onOpenRoadmap?.()} className="inline-flex items-center gap-1.5 mt-2.5 text-[15px] font-bold" style={{ color: T_LINK }}>What it takes <ArrowRight size={15} /></button>
                 </SandCard>
                 <SandCard label="Time in the water">
-                  <p className="text-[40px] font-black leading-none" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.totalMinutes)}</p>
-                  {/* El split de estas horas (antes el anillo): cyan = training, verde = free surf. */}
-                  <div className="h-1.5 rounded-full overflow-hidden mt-3" style={{ background: '#06D6A0' }}><div className="h-full" style={{ width: `${pctTrain}%`, background: '#00D2FF' }} /></div>
-                  <div className="grid grid-cols-2 mt-3">
-                    <div>
-                      <p className="text-[13px] inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><span style={{ width: 8, height: 8, borderRadius: 2, background: '#00D2FF', display: 'inline-block' }} />Training</p>
-                      <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.trainingMinutes)}</p>
-                    </div>
-                    <div className="pl-4" style={{ borderLeft: `1px solid ${T_BORDER}` }}>
-                      <p className="text-[13px] inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><span style={{ width: 8, height: 8, borderRadius: 2, background: '#06D6A0', display: 'inline-block' }} />Free surf</p>
-                      <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.freeSurfMinutes)}</p>
+                  {/* El círculo otra vez (Marcelo 2026-10-01): cyan = training,
+                      verde = free surf, el total en el centro. Igual que el Home. */}
+                  <div className="flex items-center gap-5">
+                    <WaterRing trainingMinutes={surf.trainingMinutes} freeSurfMinutes={surf.freeSurfMinutes} size={124} tone="sand" />
+                    <div className="min-w-0 flex-1 space-y-3">
+                      <div>
+                        <p className="text-[13px] inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><span style={{ width: 10, height: 10, borderRadius: 5, background: '#00D2FF', display: 'inline-block' }} />Training</p>
+                        <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.trainingMinutes)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[13px] inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><span style={{ width: 10, height: 10, borderRadius: 5, background: '#06D6A0', display: 'inline-block' }} />Free surf</p>
+                        <p className="text-[20px] font-black leading-tight" style={{ fontFamily: ARCHIVO, color: T_INK }}>{fmtHm(surf.freeSurfMinutes)}</p>
+                      </div>
                     </div>
                   </div>
                   {/* La racha vivía en el Home (casilla); acá desde 2026-09-26. */}
-                  <p className="text-[13px] mt-3 inline-flex items-center gap-1.5" style={{ color: T_MUTED }}><Flame size={14} strokeWidth={1.75} />Current streak · {streak} {streak === 1 ? 'day' : 'days'}</p>
+                  <p className="text-[13px] mt-3 flex items-center gap-1.5" style={{ color: T_MUTED }}><Flame size={14} strokeWidth={1.75} />Current streak · {streak} {streak === 1 ? 'day' : 'days'}</p>
                   <button type="button" onClick={() => { const d = document.getElementById('my-sessions') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }} className="inline-flex items-center gap-1.5 mt-3 text-[15px] font-bold" style={{ color: T_LINK }}>View sessions <ArrowRight size={15} /></button>
                 </SandCard>
                 <SandCard label="Your next level">
@@ -2418,87 +2447,31 @@ function HomeTab({
 // (too hard); the ideal is the middle, where challenge meets ability. Fed by the
 // student's own session ratings (survey_responses.flow_channel, 1-5; 3 = flow).
 
-// Rediseño 2026-08-25 (idea de Marcelo): tres ZONAS rotuladas en vez de un
-// gradiente continuo — se lee de un vistazo y enseña el concepto, no solo lo
-// mide. Además arregla una incoherencia vieja: el número mostraba el PROMEDIO
-// (1-5) pero el marcador se posicionaba con el conteo de extremos, así que
-// podían contradecirse. Ahora TODO sale del promedio.
-// Escala 1-5 → 0-100%: la zona óptima (2.5-3.5) es el 25% central.
-const ZONE_EASY_END = 37.5, ZONE_OPT_END = 62.5;
+// Las zonas (1-5 → 0-100%, el canal es 2.5-3.5) y el dial viven en
+// components/portal/HomeVisuals (flowZone, FlowDial): Home y My progress dicen
+// lo mismo con el MISMO promedio. Desde 2026-10-01 es un dial (Marcelo eligió
+// la opción 3), no las tres casillas del 2026-08-25.
 // Home y My progress usan el MISMO umbral (revisión 2026-09-29): con una sola
 // calificación el promedio no dice nada.
 const FLOW_MIN_RATINGS = 2;
-function flowZoneOf(avg: number): 'easy' | 'opt' | 'hard' {
-  const pct = ((avg - 1) / 4) * 100;
-  return pct < ZONE_EASY_END ? 'easy' : pct > ZONE_OPT_END ? 'hard' : 'opt';
-}
-// La palabra sale de la zona (antes Math.round(3.5) decía "Hard" dentro de la
-// zona óptima: pastilla y consejo se contradecían).
-function flowWordOf(avg: number): string {
-  const z = flowZoneOf(avg);
-  if (z === 'opt') return 'Optimal';
-  if (z === 'easy') return avg < 1.5 ? 'Bored' : 'Easy';
-  return avg >= 4.5 ? 'Frustrating' : 'Hard';
-}
 
 function FlowChannelCard({ flow }: { flow?: { avg: number | null; count: number; boredom: number; anxiety: number } }) {
-  const hasData = !!flow && flow.avg != null && flow.count >= FLOW_MIN_RATINGS;
-  const avg = hasData ? flow!.avg! : null;
-  const label = avg != null ? flowWordOf(avg) : '';
-  // Posición del marcador = el mismo promedio que muestra el número.
-  const pct = avg != null ? Math.max(2, Math.min(98, ((avg - 1) / 4) * 100)) : 50;
-  const zone = avg == null ? 'opt' : flowZoneOf(avg);
-  const advice = !hasData
-    ? ''
-    : zone === 'easy'
-    ? 'Too easy lately — raise the challenge.'
-    : zone === 'hard'
-    ? 'Too hard lately — lower the challenge.'
-    : "You're in the learning zone — keep it here.";
-  // Tarjeta sand (mock My Progress 2026-09-15): número grande, pastilla con la
-  // zona, tres casillas. Los textos de la doctrina son los de siempre.
-  const ZONES = [
-    { key: 'easy', label: 'Too easy', w: ZONE_EASY_END },
-    { key: 'opt', label: 'Optimal learning', w: ZONE_OPT_END - ZONE_EASY_END },
-    { key: 'hard', label: 'Too hard', w: 100 - ZONE_OPT_END },
-  ] as const;
-  const PILL = { easy: '#DCE8F2', opt: '#BDEFFF', hard: '#F6D9DC' } as const;
-
+  const n = flow?.count ?? 0;
+  const hasData = !!flow && flow.avg != null && n >= FLOW_MIN_RATINGS;
+  // El dial (Marcelo 2026-10-01, opción 3): el mismo del Home, sobre arena.
+  // Zonas, número y consejo salen del MISMO promedio; la doctrina abajo.
   return (
-    <SandCard label="Flow Channel" right={hasData ? <span className="text-[12px]" style={{ color: T_MUTED }}>from your session ratings</span> : undefined}>
-      {!hasData ? (
-        <p className="text-[14px] leading-relaxed" style={{ color: T_INK }}>
-          {flow && flow.count === 1 ? 'Rate 1 more session to see your flow.' : 'Rate your sessions to map where your flow lives.'}
-        </p>
-      ) : (
+    <SandCard label="Flow Channel" right={hasData ? <span className="text-[12px]" style={{ color: T_MUTED }}>{n} rating{n === 1 ? '' : 's'} · from your sessions</span> : undefined}>
+      <FlowDial avg={flow?.avg ?? null} count={n} minRatings={FLOW_MIN_RATINGS} tone="sand" />
+      {hasData && (
         <>
-          <div className="flex items-center gap-3">
-            <span className="font-black leading-none" style={{ fontFamily: ARCHIVO, color: T_INK, fontSize: 44 }}>{avg!.toFixed(1)}</span>
-            <div>
-              <span className="inline-block rounded-full px-3 py-1 text-[15px] font-bold" style={{ background: PILL[zone], color: T_INK }}>{label}</span>
-              <p className="text-[13px] mt-1" style={{ color: T_MUTED }}>{flow!.count} rating{flow!.count === 1 ? '' : 's'}</p>
-            </div>
-          </div>
-
-          <p className="mt-3 mb-1.5" style={{ ...T_LABEL, color: T_MUTED }}>Output · Learning zone</p>
-          <div className="relative">
-            <div className="flex gap-1.5">
-              {ZONES.map((z) => (
-                <div key={z.key} className="rounded-[5px] py-2.5 text-center text-[13px] font-semibold" style={{ width: `${z.w}%`, background: zone === z.key ? '#BDEFFF' : '#F7F9FA', border: `1px solid ${zone === z.key ? '#00D2FF' : T_BORDER}`, color: T_INK, fontWeight: zone === z.key ? 800 : 500 }}>{z.label}</div>
-              ))}
-            </div>
-            {/* Dónde estás (mismo promedio que el número de arriba) */}
-            <div className="absolute" style={{ left: `${pct}%`, top: -5, width: 3, height: 52, borderRadius: 2, background: T_INK, transform: 'translateX(-50%)' }} />
-          </div>
-
           {/* La doctrina, en las palabras de Marcelo */}
-          <p className="text-[14px] font-bold mt-3.5" style={{ color: T_INK }}>
+          <p className="text-[14px] font-bold mt-3.5 text-center" style={{ color: T_INK }}>
             Challenge matched to capability + conditions
           </p>
-          <p className="text-[13px] mt-0.5" style={{ color: T_MUTED }}>
+          <p className="text-[13px] mt-0.5 text-center" style={{ color: T_MUTED }}>
             Difficult enough to demand attention · possible enough to produce feedback
           </p>
-          <p className="text-[14px] mt-2 font-semibold" style={{ color: T_INK }}>{advice}</p>
         </>
       )}
     </SandCard>
