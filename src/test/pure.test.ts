@@ -477,3 +477,51 @@ describe('wave kit · la fórmula coincide con las capas del kit', () => {
     });
   }
 });
+
+// Navegación con continuidad (Marcelo 2026-10-01): el origen viaja como código
+// en `from`; nunca puede volverse una dirección de otro sitio.
+import { parseFrom, encodeFrom, withFrom, studentBack, coachBack } from '@/lib/nav/origin';
+describe('nav · from', () => {
+  const T = '9882b0fd-9b69-46b8-a7b7-c9fec4f840c6';
+  it('rechaza todo lo que no es un código conocido', () => {
+    for (const bad of ['//evil.com', 'https:x', 'javascript:alert(1)', '%2F%2Fevil', 'seq:../x', 'x'.repeat(161), 'nope', '', 'seq:NOT-A-PAGE', 'plan:not-a-uuid:1:read', 'lesson:a/b', 'course:pink']) {
+      expect(parseFrom(bad, 'student'), bad).toBeNull();
+    }
+    expect(parseFrom('plan:not-a-uuid:1:read', 'coach')).toBeNull();
+    expect(parseFrom('course:pink', 'coach')).toBeNull();
+    expect(parseFrom(42, 'student')).toBeNull();
+  });
+  it('ida y vuelta', () => {
+    const cases = [
+      { k: 'home' }, { k: 'play' }, { k: 'course' }, { k: 'loop' },
+      { k: 'seq', id: 'WB-SEQ-3', tab: 'do' }, { k: 'seq', id: 'YB-SEQ-7.0' }, { k: 'seq', id: 'BB-SEQ-11', tab: 'do', parent: 'play' },
+      { k: 'circles', circle: 'wave', parent: 'home' }, { k: 'loop', parent: 'course' },
+      { k: 'circles', circle: 'board' }, { k: 'circles' },
+      { k: 'lesson', id: 'PC-WARMUP' },
+      { k: 'plan', seq: 'BB-SEQ-11', mode: 'step_focus', focus: 'STP-040' },
+      { k: 'plan', seq: 'CIRCLE-BOARD', mode: 'step_focus', focus: 'CIRCLE-BOARD:P1' },
+    ] as const;
+    for (const c of cases) expect(parseFrom(encodeFrom(c as any), 'student')).toEqual(c);
+    const coach = [
+      { k: 'plan', camp: '6d4049a4-0000-4000-8000-000000000001', day: 2, view: 'read', why: 'plan' },
+      { k: 'plan', camp: '6d4049a4-0000-4000-8000-000000000001', view: 'run' },
+      { k: 'course', belt: 'yellow' }, { k: 'circles', belt: 'blue' }, { k: 'home' }, { k: 'seq', id: 'BB-LINE', tab: 'review' },
+    ] as const;
+    for (const c of coach) expect(parseFrom(encodeFrom(c as any), 'coach')).toEqual(c);
+  });
+  it('withFrom con y sin ? y con #', () => {
+    expect(withFrom('/portal/x/seq/WB-SEQ-3', { k: 'home' })).toBe('/portal/x/seq/WB-SEQ-3?from=home');
+    expect(withFrom('/portal/x?tab=course&lesson=STP-002', { k: 'seq', id: 'WB-SEQ-1' })).toBe('/portal/x?tab=course&lesson=STP-002&from=seq%3AWB-SEQ-1');
+    expect(withFrom('/a?b=1#row', { k: 'play' })).toBe('/a?b=1&from=play#row');
+    expect(withFrom('/a?from=home&b=1', { k: 'play' })).toBe('/a?b=1&from=play');
+    expect(withFrom('/a', null)).toBe('/a');
+  });
+  it('los Back solo arman rutas del mismo portal', () => {
+    expect(studentBack(null, T, { k: 'course' }).href).toBe(`/portal/${T}?tab=course`);
+    expect(studentBack({ k: 'seq', id: 'WB-SEQ-3', tab: 'do' }, T, { k: 'course' })).toEqual({ href: `/portal/${T}/seq/WB-SEQ-3?tab=do`, label: '#3 · Pop-Up' });
+    expect(studentBack({ k: 'home' }, 'not-a-token', { k: 'course' }).href).toBe('/');
+    expect(studentBack({ k: 'seq', id: 'BB-SEQ-11', tab: 'do', parent: 'play' }, T, { k: 'course' }).href).toBe(`/portal/${T}/seq/BB-SEQ-11?tab=do&from=play`);
+    expect(coachBack({ k: 'plan', camp: '6d4049a4-0000-4000-8000-000000000001', day: 2, view: 'read' }, T, { k: 'course', belt: 'white' }))
+      .toEqual({ href: `/coach-portal/${T}?tab=plan&camp=6d4049a4-0000-4000-8000-000000000001&day=2&view=read`, label: 'The camp plan' });
+  });
+});

@@ -2,6 +2,7 @@
 // Marcelo (2026-09-09): Think + Feel, sin Do; la ola lleva juego; colores del
 // lenguaje desde acá. Lo ve quien tiene Yellow o Blue (la lección YB-FND-01
 // vive en yb_onboarding, compartida con Blue).
+import { parseFrom, studentBack } from '@/lib/nav/origin';
 import { getCourseLocks } from '@/lib/portal/course-lock';
 import { CourseLockedScreen } from '@/components/portal/CourseLockedScreen';
 import { notFound } from 'next/navigation';
@@ -23,8 +24,13 @@ const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], var
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const COURSE_OWNER_IDS = new Set(['3518cc9c-d633-44ff-b32a-bfb86b5ae748', '0f6816db-a637-4af0-86b6-1a1c8227953c']);
 
-export default async function CirclesPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function CirclesPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<{ from?: string; circle?: string }> }) {
   const { token } = await params;
+  const sp = searchParams ? await searchParams : {};
+  // De dónde llegó (?from=) y en qué círculo abrir (?circle=), 2026-10-01.
+  const parsed = parseFrom(sp.from, 'student');
+  const origin = parsed && parsed.k !== 'circles' ? parsed : null;
+  const initialCircle = sp.circle === 'body' || sp.circle === 'board' || sp.circle === 'wave' ? sp.circle : null;
   if (!UUID_RE.test(token)) notFound();
   const admin = createAdminClient();
   const { data: student } = await admin.from('students').select('id, course_access_yellow, course_access_blue').eq('portal_token', token).maybeSingle();
@@ -55,7 +61,11 @@ export default async function CirclesPage({ params }: { params: Promise<{ token:
       {/* Tema de la línea aprobada (TSS_Design_Handoff): reglas limitadas a .tss */}
       {/* eslint-disable-next-line @next/next/no-css-tags */}
       <link rel="stylesheet" href="/tss/theme.css" />
-      <ThreeCirclesPage token={token} pieces={pieces} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} lessonId={THREE_CIRCLES_LESSON_ID} moveVideos={movementVideos(media)} />
+      <ThreeCirclesPage
+        back={studentBack(origin, token, { k: 'course' })}
+        navTab={origin?.k === 'home' ? 'home' : origin?.k === 'play' || origin?.k === 'plan' ? 'sequence' : 'course'}
+        initialCircle={initialCircle}
+        token={token} pieces={pieces} canTrack={access.canTrack} video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null} lessonId={THREE_CIRCLES_LESSON_ID} moveVideos={movementVideos(media)} />
     </div>
   );
 }

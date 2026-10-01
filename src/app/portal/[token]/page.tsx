@@ -16,6 +16,7 @@ import { validateStudentSession } from '@/lib/actions/student-pin';
 import { getActiveStudentOrCoachImpersonation } from '@/lib/actions/impersonate';
 import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 import { PortalTabs } from './portal-tabs';
+import { parseFrom } from '@/lib/nav/origin';
 import { getCoachSideForStudent } from '@/lib/actions/dual-profile';
 import { getThreeCirclesProgress, getHomeSequenceData } from '@/lib/actions/sequence';
 import { getOpenSession, getTasks } from '@/lib/actions/lets-play';
@@ -42,12 +43,12 @@ export const revalidate = 0;
 
 interface Props {
   params: Promise<{ token: string }>;
-  searchParams: Promise<{ tab?: string; survey?: string; drill?: string; step?: string; seq?: string; mode?: string; focus?: string; word?: string }>;
+  searchParams: Promise<{ tab?: string; survey?: string; drill?: string; step?: string; seq?: string; mode?: string; focus?: string; word?: string; from?: string }>;
 }
 
 export default async function StudentPortalPage({ params, searchParams }: Props) {
   const { token } = await params;
-  const { tab, survey, drill, step, seq, mode, focus, word } = await searchParams;
+  const { tab, survey, drill, step, seq, mode, focus, word, from } = await searchParams;
 
   // Skip the anti-sharing check when an admin is impersonating — they
   // legitimately have multiple "sessions" open across alumnos.
@@ -281,6 +282,8 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           focusStepId: mode === 'step_focus' && focus && /^[A-Z0-9-]{3,20}$/.test(focus) ? focus : null,
           intention: word ? String(word).slice(0, 120) : null,
         } : null}
+        // De dónde vino el link (?from=, código validado): Cancel vuelve ahí.
+        initialFrom={parseFrom(from, 'student')}
       />
       </div>
     </>

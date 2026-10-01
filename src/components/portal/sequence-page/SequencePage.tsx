@@ -13,6 +13,8 @@
 // recorrido ORIGINAL de cada secuencia. TODO el contenido (textos, orden,
 // links, lógica de Let's Play) es el mismo de antes: solo cambia cómo se ve.
 import { useEffect, useRef, useState } from 'react';
+import { withFrom } from '@/lib/nav/origin';
+import { PortalBottomNav, type PortalNavTab } from './PortalBottomNav';
 import { ArrowRight, Lock, Play } from 'lucide-react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { WaveGuide, WAVE_KIT_SEQUENCE } from './WaveGuide';
@@ -76,8 +78,13 @@ export interface SequenceProgress {
 }
 
 export function SequencePage({
-  video, videos = null, stance = null, cfg, lessons, pieces, token, canTrack, progress, initialTab = null, flip = false, coach = null, trainAs = null }: {
+  video, videos = null, stance = null, cfg, lessons, pieces, token, canTrack, progress, initialTab = null, flip = false, coach = null, trainAs = null, back = null, navTab = 'course' }: {
   cfg: SequencePageConfig;
+  /** El "‹ Back" de arriba: adonde estaba el usuario (?from=, src/lib/nav/origin.ts).
+   *  Sin origen: el Course (alumno) o el índice de cursos (coach). */
+  back?: { href: string; label: string } | null;
+  /** La pestaña que la barra de abajo marca (la del origen). */
+  navTab?: PortalNavTab;
   /** Desde otro curso, el botón de Let's Play entrena esta secuencia (Yellow → su #6 o #7). */
   trainAs?: { id: string; number: number; stepIds: string[] } | null;
   lessons: Record<string, LessonBits>;
@@ -184,9 +191,23 @@ export function SequencePage({
   const tabsRef = useRef<HTMLDivElement | null>(null);
   const go = (t: Tab) => {
     setTab(t);
+    // La pestaña queda en la URL (2026-10-01): volver de una lección o de
+    // Let's Play cae en Do it, no en Think it. __NA = sin navegación de Next.
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.set('tab', t);
+      const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+      window.history.replaceState({ ...st, __NA: true }, '', `${u.pathname}${u.search}${u.hash}`);
+    } catch { /* cosmético */ }
     if (coach && tabsRef.current) tabsRef.current.scrollIntoView({ block: 'start', behavior: 'smooth' });
     else window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  // Los links que salen de esta página llevan de dónde salieron: el Back de
+  // la lección o el Cancel de Let's Play vuelven acá, a la misma pestaña.
+  const parent = navTab === 'home' ? 'home' as const : navTab === 'sequence' ? 'play' as const : undefined;
+  const here = (t: Tab = tab) => ({ k: 'seq' as const, id: cfg.id, tab: t, ...(parent ? { parent } : {}) });
+  const lessonHref = (id: string) => (coach ? `${portal}?tab=${courseTab}&lesson=${id}` : withFrom(`${portal}?tab=${courseTab}&lesson=${id}`, here()));
+  const playHref = (q: string) => withFrom(`${portal}?tab=sequence&${q}`, here('do'));
   // Solo la dirección del dibujo cambia con el stance; el nombre de la maniobra no.
   const waveDirection = flip ? 'left' : 'right';
   const stripStep = (t: string) => t.replace(/^\d+ · /, '').replace(/ · .*$/, '');
@@ -234,7 +255,7 @@ export function SequencePage({
           <div className="tss-brand-row">
             <svg className="tss-logo" viewBox="180 183 960 269" role="img" aria-label="The Surf Sequence — Evolve through play"><image href="/tss/assets/tss-logo-original-white.png" width="1312" height="654" /></svg>
           </div>
-          <a className="tss-back" href={coach ? coach.backHref : `${portal}?tab=course`}><Icon name="back" />{coach ? 'Courses' : 'Course'}</a>
+          <a className="tss-back" href={back?.href ?? (coach ? coach.backHref : `${portal}?tab=course`)}><Icon name="back" />{back?.label ?? (coach ? 'Courses' : 'Course')}</a>
           {coach && (
             <div className="mt-3 flex items-center justify-between gap-3 rounded-[5px] px-3 py-2" style={{ background: 'rgba(0,210,255,.12)', border: '1px solid rgba(0,210,255,.45)' }}>
               <span style={{ ...MONO, color: CYAN }}>{coachOn ? 'Coach view · your layer is on' : 'Student view · exactly what they see'}</span>
@@ -377,7 +398,7 @@ export function SequencePage({
               <Card title="Before you start · every session" color={GOLD_BRIGHT} collapsible defaultOpen={false}>
                 {cfg.prep.map((p, i) => (
                   <div key={p.lessonId} className="py-2" style={{ borderTop: i ? `1px solid ${BORDER}` : undefined }}>
-                    <Go href={`${portal}?tab=${courseTab}&lesson=${p.lessonId}`}>{p.label}</Go>
+                    <Go href={lessonHref(p.lessonId)}>{p.label}</Go>
                     {p.note && <p className="text-[14px] leading-snug mt-0.5 m-0" style={{ color: INK }}>{p.note}</p>}
                   </div>
                 ))}
@@ -400,7 +421,7 @@ export function SequencePage({
                       <div key={id} className={g.ids.length > 1 ? 'mt-2 pl-3' : ''} style={g.ids.length > 1 ? { borderLeft: `2px solid ${BORDER}` } : undefined}>
                         {g.ids.length > 1 && <p className="text-[14px] font-bold m-0" style={{ color: INK }}>{lessons[id].title}</p>}
                         {lessons[id].whatIs && <p className="text-[14px] mt-1 mb-0 leading-snug" style={{ color: INK }}>{lessons[id].whatIs.split('\n').find((l) => l.trim() && !l.startsWith('#') && !l.startsWith('|') && !l.startsWith('>'))?.replace(/\*\*/g, '')}</p>}
-                        <Go href={`${portal}?tab=${courseTab}&lesson=${id}`} small>Read the full lesson in the course</Go>
+                        <Go href={lessonHref(id)} small>Read the full lesson in the course</Go>
                       </div>
                     ) : null)}
                   </div>
@@ -455,7 +476,7 @@ export function SequencePage({
                 <summary>Go deeper: each step as its own page<Chevron /></summary>
                 <div className="px-3 pb-3 flex flex-wrap gap-2">
                   {cfg.stepIds.map((id) => (
-                    <a key={id} href={`${portal}?tab=${courseTab}&lesson=${id}`} className="text-[13px] font-semibold px-3 py-1.5 rounded-full no-underline" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: INK }}>{shortLesson(lessons[id]?.title ?? id)} →</a>
+                    <a key={id} href={lessonHref(id)} className="text-[13px] font-semibold px-3 py-1.5 rounded-full no-underline" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: INK }}>{shortLesson(lessons[id]?.title ?? id)} →</a>
                   ))}
                 </div>
               </details>
@@ -540,15 +561,15 @@ export function SequencePage({
                   if (!mid) return null;
                   return (
                     <div className="mt-1">
-                      <a href={`${portal}?tab=sequence&drill=${mid}`} className="tss-primary no-underline">{own ? `Start the mission in Let's Play · ${word}` : isTool ? "Start the mission in Let's Play · all three moments" : "Start the mission in Let's Play"}</a>
+                      <a href={playHref(`drill=${mid}`)} className="tss-primary no-underline">{own ? `Start the mission in Let's Play · ${word}` : isTool ? "Start the mission in Let's Play · all three moments" : "Start the mission in Let's Play"}</a>
                       {own && pieces[cfg.do.missionId] && (
-                        <div className="mt-2"><a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="text-[13px] no-underline" style={{ color: MUTED }}>or the complete mission · all three moments</a></div>
+                        <div className="mt-2"><a href={playHref(`drill=${cfg.do.missionId}`)} className="text-[13px] no-underline" style={{ color: MUTED }}>or the complete mission · all three moments</a></div>
                       )}
                     </div>
                   );
                 }
-                const runHref = `${portal}?tab=sequence&seq=${lp}&mode=sequence_run`;
-                const focusHref = focusStep ? `${portal}?tab=sequence&seq=${lp}&mode=step_focus&focus=${focusStep}&word=${encodeURIComponent(word)}` : null;
+                const runHref = playHref(`seq=${lp}&mode=sequence_run`);
+                const focusHref = focusStep ? playHref(`seq=${lp}&mode=step_focus&focus=${focusStep}&word=${encodeURIComponent(word)}`) : null;
                 return (
                   <div className="mt-1">
                     {focusHref ? (
@@ -558,7 +579,7 @@ export function SequencePage({
                     )}
                     <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
                       {focusHref && <Go href={runHref} small>or the whole sequence, no focus</Go>}
-                      {pieces[cfg.do.missionId] && <a href={`${portal}?tab=sequence&drill=${cfg.do.missionId}`} className="text-[13px] no-underline" style={{ color: MUTED }}>Log the mission only</a>}
+                      {pieces[cfg.do.missionId] && <a href={playHref(`drill=${cfg.do.missionId}`)} className="text-[13px] no-underline" style={{ color: MUTED }}>Log the mission only</a>}
                     </div>
                   </div>
                 );
@@ -584,9 +605,9 @@ export function SequencePage({
                   {d.indicators.map((ind, i) => <Indicator key={i} ok={ind.ok} no={ind.no} fix={ind.fix} first={i === 0} />)}
                   {d.deeper && (
                     <div className="mt-2 flex flex-wrap gap-2 text-[13px]">
-                      <a href={`${portal}?tab=${courseTab}&lesson=${d.deeper.lessonId}`} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: INK }}>Go deeper → {d.deeper.label}</a>
+                      <a href={lessonHref(d.deeper.lessonId)} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: INK }}>Go deeper → {d.deeper.label}</a>
                       {d.deeper.drillId && pieces[d.deeper.drillId] && <button type="button" onClick={() => go('feel')} className="px-3 py-1.5 rounded-full font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: VIOLET }}>Drill: {pieces[d.deeper.drillId].title} · Feel it</button>}
-                      {canTrack && d.deeper.missionId && pieces[d.deeper.missionId] && <a href={`${portal}?tab=sequence&drill=${d.deeper.missionId}`} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: GREEN }}>Mission: {pieces[d.deeper.missionId].title}</a>}
+                      {canTrack && d.deeper.missionId && pieces[d.deeper.missionId] && <a href={playHref(`drill=${d.deeper.missionId}`)} className="px-3 py-1.5 rounded-full no-underline font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: GREEN }}>Mission: {pieces[d.deeper.missionId].title}</a>}
                     </div>
                   )}
                 </div>
@@ -623,7 +644,7 @@ export function SequencePage({
                   </summary>
                   <div className="px-3 pb-3">
                     {d.indicators.map((ind, i) => <Indicator key={i} ok={ind.ok} no={ind.no} fix={ind.fix} first={i === 0} />)}
-                    {d.deeper && <Go href={`${portal}?tab=${courseTab}&lesson=${d.deeper.lessonId}`} small>Go deeper → {d.deeper.label}</Go>}
+                    {d.deeper && <Go href={lessonHref(d.deeper.lessonId)} small>Go deeper → {d.deeper.label}</Go>}
                   </div>
                 </details>
               ))}
@@ -682,7 +703,7 @@ export function SequencePage({
             drill={pieceOf(d.deeper?.drillId)}
             // Herramienta: el momento sin misión propia (cuando perdés velocidad) se corre con la completa.
             mission={pieceOf(d.deeper?.missionId ?? (isTool ? cfg.do.missionId : undefined))}
-            lessonHref={stepId ? `${portal}?tab=${courseTab}&lesson=${stepId}` : null}
+            lessonHref={stepId ? lessonHref(stepId) : null}
             onClose={() => setSheetKey(null)}
             onPresent={(start) => setDeck({ slides: stepSlides(d, m, stepCue), start, title: stripStep(d.title) })}
           />
@@ -690,11 +711,7 @@ export function SequencePage({
       })()}
       {coach && deck && <ClassDeck slides={deck.slides} start={deck.start} title={deck.title} onClose={() => setDeck(null)} />}
       {coach && watching && coachVideos.length > 0 && <VideosDialog title={`${cfg.title} · all videos`} videos={coachVideos} onClose={() => setWatching(false)} />}
-      {!coach && <nav className="tss-bottom-nav" aria-label="Main navigation"><div className="tss-bottom-nav-inner">
-        <a href={`${portal}?tab=home`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="home" />Home</a>
-        <a href={`${portal}?tab=course`} aria-current="page" className="relative flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><span style={{ color: CYAN }}><Icon name="course" /></span>Course<span className="absolute bottom-[5px] w-[72%] h-1 rounded-full" style={{ background: CYAN }} /></a>
-        <a href={`${portal}?tab=sequence`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase no-underline" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="play" />Let&apos;s Play</a>
-      </div></nav>}
+      {!coach && <PortalBottomNav portal={portal} active={navTab} />}
     </section>
   );
 }

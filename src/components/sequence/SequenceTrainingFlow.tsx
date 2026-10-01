@@ -143,9 +143,13 @@ interface Props {
   onDone: (next?: 'home' | 'sequence') => void;
   /** Nombre de OTRO plan abierto (si existe): guardar este lo reemplaza. Solo aviso. */
   otherOpenPlan?: string | null;
+  /** Adónde lleva Cancel (la pantalla desde la que se abrió el flujo). */
+  backLabel?: string;
+  /** El plan quedó guardado: el portal lo muestra ya en el Home y en Let's Play. */
+  onPlanSaved?: (sessionId: string) => void;
 }
 
-export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, initialFocusMoment = null, openSession = null, goofy = false, studentBelt: _studentBelt = 'white_belt', onCancel, rehearseHref = null, onDone, otherOpenPlan = null }: Props) {
+export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, initialFocusMoment = null, openSession = null, goofy = false, studentBelt: _studentBelt = 'white_belt', onCancel, rehearseHref = null, onDone, otherOpenPlan = null, backLabel = "Let's Play", onPlanSaved }: Props) {
   // El modo se elige EN el plan (toda la línea, o un paso/momento como foco).
   const [modeState, setModeState] = useState<TrainingMode>(openSession?.mode ?? mode);
   const isRun = modeState === 'sequence_run';
@@ -311,7 +315,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
     return (
       <div className="text-center py-12">
         <p className="text-[#B03A2E] mb-2">{errorMsg || 'Something went wrong'}</p>
-        <button onClick={onCancel} className="text-sm underline text-[#55666E]">← Back to Let&apos;s Play</button>
+        <button onClick={onCancel} className="text-sm underline text-[#55666E]">← Back to {backLabel}</button>
       </div>
     );
   }
@@ -381,6 +385,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         });
         if (!res.ok) { setErrorMsg(res.error); return; }
         setSessionId(res.sessionId);
+        onPlanSaved?.(res.sessionId);
         setPhase('saved');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       } catch {
@@ -599,7 +604,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   // ─── SAVED · andá a surfear ───
   if (phase === 'saved') {
     return (
-      <Shell step={2} seqLabel={seqLabel} title={shellTitle} onCancel={onDone} cancelLabel="Close">
+      <Shell step={2} seqLabel={seqLabel} title={shellTitle} onCancel={() => onDone('home')} cancelLabel="Close">
         <div className="rounded-lg p-5 text-center" style={{ background: INK }}>
           <p className="text-[12px]" style={{ ...F_M, color: CYAN }}>Plan saved</p>
           <p className="text-[24px] mt-1" style={{ ...F_D, color: PAPER }}>Now go surf</p>

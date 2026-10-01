@@ -20,6 +20,8 @@ const TTL_MS = 10 * 60_000;
 export interface PortalEphemeralState {
   tab?: string | null;
   lesson?: string | null;
+  /** De dónde vino la lección abierta (código de src/lib/nav/origin.ts). */
+  lessonFrom?: string | null;
   t: number;
 }
 

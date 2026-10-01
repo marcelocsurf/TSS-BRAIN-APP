@@ -10,6 +10,8 @@
 // y las dos fuerzas son los PNG exactos del paquete. TODO el contenido
 // (textos, orden, drills, links) es el mismo de antes: solo cambia cómo se ve.
 import { useState } from 'react';
+import { withFrom } from '@/lib/nav/origin';
+import { PortalBottomNav, type PortalNavTab } from './PortalBottomNav';
 import { markLessonComplete } from '@/lib/actions/course';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { COMMAND_COLORS, HOLD_COLOR } from '@/lib/sequence-pages/wave-kit';
@@ -60,7 +62,7 @@ function Piece({ p, canTrack }: { p?: PieceRow; canTrack: boolean }) {
 }
 
 /** Juego (drills_missions type='game'): imagen + regla + medida, para jugarlo en el agua. */
-function Game({ p, portal }: { p?: PieceRow; portal?: string }) {
+function Game({ p, portal, from }: { p?: PieceRow; portal?: string; from?: Parameters<typeof withFrom>[1] }) {
   if (!p) return null;
   const md = (p.description_md ?? '').replace(/^## The game\s*/m, '').trim();
   return (
@@ -70,7 +72,7 @@ function Game({ p, portal }: { p?: PieceRow; portal?: string }) {
       <div className="mt-2 text-[14px] leading-[1.45] tss-game-body" style={{ color: 'rgba(247,249,250,.92)' }}><MarkdownContent markdown={md} /></div>
       {/* Al flujo de Let's Play (plan → surf → evaluate) con este juego como foco (Marcelo 2026-09-17). */}
       {portal && (
-        <a href={`${portal}?tab=sequence&seq=THREE-CIRCLES&mode=step_focus&focus=${p.id}`} className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-[5px] text-[13px] font-black uppercase no-underline" style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
+        <a href={withFrom(`${portal}?tab=sequence&seq=THREE-CIRCLES&mode=step_focus&focus=${p.id}`, from)} className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-[5px] text-[13px] font-black uppercase no-underline" style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>
           Play it in Let&apos;s Play
         </a>
       )}
@@ -123,7 +125,7 @@ function Icon({ name }: { name: 'home' | 'course' | 'play' | 'back' | 'link' | '
   return <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{p[name]}</svg>;
 }
 
-export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, moveVideos, coach }: {
+export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, moveVideos, coach, back = null, navTab = 'course', initialCircle = null }: {
   token: string;
   pieces: Record<string, PieceRow>;
   canTrack: boolean;
@@ -135,10 +137,31 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
    *  alumno, con los links al portal del coach, "Teach it" en vez de "Play it"
    *  y sin marcar leída ni la barra del alumno. */
   coach?: { backHref: string; laminas?: Lamina[]; videos?: CourseVideo[] };
+  /** El "‹ Back" de arriba según de dónde llegó (?from=); sin él, el Course. */
+  back?: { href: string; label: string } | null;
+  /** La pestaña que marca la barra de abajo (la del origen). */
+  navTab?: PortalNavTab;
+  /** ?circle= (volver de una lección o de Let's Play al MISMO círculo). */
+  initialCircle?: Circle['key'] | null;
 }) {
   // La portada es una pantalla propia (Marcelo 2026-09-24): antes vivía
   // dentro del círculo 1 y se mezclaba con él. Ahora se entra desde ella.
-  const [key, setKey] = useState<Circle['key'] | 'intro'>('intro');
+  const [key, setKeyState] = useState<Circle['key'] | 'intro'>(initialCircle ?? 'intro');
+  // El círculo abierto queda en la URL (2026-10-01): volver de una lección o
+  // de Let's Play cae en el mismo círculo. __NA = sin navegación de Next.
+  const setKey = (k: Circle['key'] | 'intro') => {
+    setKeyState(k);
+    try {
+      const u = new URL(window.location.href);
+      if (k === 'intro') u.searchParams.delete('circle'); else u.searchParams.set('circle', k);
+      const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+      window.history.replaceState({ ...st, __NA: true }, '', `${u.pathname}${u.search}${u.hash}`);
+    } catch { /* cosmético */ }
+  };
+  // Lo que sale de esta página lleva de dónde salió (el círculo abierto).
+  const parent = navTab === 'home' ? 'home' as const : navTab === 'sequence' ? 'play' as const : undefined;
+  const here = { k: 'circles' as const, ...(key !== 'intro' ? { circle: key } : {}), ...(parent ? { parent } : {}) };
+  const lessonHref = (id: string) => (coach ? `/coach-portal/${token}?tab=courses&lesson=${id}` : withFrom(`/portal/${token}?tab=course&lesson=${id}`, here));
   const [pos, setPos] = useState<'P1' | 'P2' | 'P3'>('P2');
   const portal = coach ? `/coach-portal/${token}` : `/portal/${token}`;
   const courseTab = coach ? 'courses' : 'course';
@@ -154,7 +177,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
           <div className="tss-brand-row">
             <svg className="tss-logo" viewBox="180 183 960 269" role="img" aria-label="The Surf Sequence — Evolve through play"><image href="/tss/assets/tss-logo-original-white.png" width="1312" height="654" /></svg>
           </div>
-          <a className="tss-back" href={coach ? coach.backHref : `${portal}?tab=course`}><Icon name="back" />{coach ? 'Courses' : 'Course'}</a>
+          <a className="tss-back" href={back?.href ?? (coach ? coach.backHref : `${portal}?tab=course`)}><Icon name="back" />{back?.label ?? (coach ? 'Courses' : 'Course')}</a>
           <h1>{isIntro ? 'The Three Circles of Power' : `0${cur.n} / ${cur.label}`}</h1>
           <p className="tss-subtitle">{isIntro ? 'Body · board · wave. Where the three overlap, you get flow.' : SUBTITLE[cur.key]}</p>
           {/* Coach: el mismo material + a un toque, cómo enseñarlo (Teach it). */}
@@ -253,8 +276,8 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
                 )}
                 <p className="mt-3" style={{ ...MONO, color: MUTED }}>Feel it · on land</p>
                 {m.feel.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
-                {(m.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={coach ? undefined : portal} />)}
-                <a href={`${portal}?tab=${courseTab}&lesson=${m.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {m.lessonLabel}</a>
+                {(m.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={coach ? undefined : portal} from={here} />)}
+                <a href={lessonHref(m.lessonId)} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {m.lessonLabel}</a>
               </Acc>
             ))}
           </Card>
@@ -319,8 +342,8 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
             <Card title="Feel it · on land and on the skate" id="feel">
               <Acc title="Open the drills">
                 {cur.feel!.map((id) => <Piece key={id} p={pieces[id]} canTrack={canTrack} />)}
-                {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={coach ? undefined : portal} />)}
-                <a href={`${portal}?tab=${courseTab}&lesson=${cur.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
+                {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={coach ? undefined : portal} from={here} />)}
+                <a href={lessonHref(cur.lessonId)} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
               </Acc>
             </Card>
           </>
@@ -375,8 +398,8 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
                 <div className="tss-timing mt-3"><div><h3>The rule</h3><p style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 700, lineHeight: 1.35 }}>{cur.game.rule}</p></div></div>
                 <p className="text-[14px] mt-3 leading-[1.45]" style={{ color: MUTED }}>{cur.game.how}</p>
                 {/* El juego general de los Tres Círculos (Marcelo 2026-09-17): pocket y espuma con todas las herramientas. */}
-                {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={coach ? undefined : portal} />)}
-                <a href={`${portal}?tab=${courseTab}&lesson=${cur.lessonId}`} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
+                {(cur.play ?? []).map((id) => <Game key={id} p={pieces[id]} portal={coach ? undefined : portal} from={here} />)}
+                <a href={lessonHref(cur.lessonId)} className="inline-block mt-3 text-[14px] font-bold" style={{ color: '#005F79' }}>Go deeper → {cur.lessonLabel}</a>
                 </Acc>
               </Card>
             )}
@@ -407,16 +430,12 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
           </Acc>
           {/* El botón de marcar como leído NO se pliega: si se esconde, el
               alumno no encuentra cómo completar la lección. */}
-          {!coach && <div className="mt-3"><MarkReadButton token={token} lessonId={lessonId} portal={portal} /></div>}
+          {!coach && <div className="mt-3"><MarkReadButton token={token} lessonId={lessonId} portal={portal} back={back} /></div>}
         </Card>
       </div>
 
       {/* Nav inferior blanca: los mismos destinos del portal (el coach no la usa). */}
-      {!coach && <nav className="tss-bottom-nav" aria-label="Main navigation"><div className="tss-bottom-nav-inner">
-        <a href={`${portal}?tab=home`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="home" />Home</a>
-        <a href={`${portal}?tab=course`} aria-current="page" className="relative flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase" style={{ color: INK, letterSpacing: '0.055em' }}><span style={{ color: CYAN }}><Icon name="course" /></span>Course<span className="absolute bottom-[5px] w-[72%] h-1 rounded-full" style={{ background: CYAN }} /></a>
-        <a href={`${portal}?tab=sequence`} className="flex flex-col items-center justify-center gap-1 min-h-[68px] text-[11px] font-bold uppercase" style={{ color: INK, letterSpacing: '0.055em' }}><Icon name="play" />Let&apos;s Play</a>
-      </div></nav>}
+      {!coach && <PortalBottomNav portal={portal} active={navTab} />}
     </section>
   );
 }
@@ -430,7 +449,7 @@ function Video({ url, title }: { url: string; title: string }) {
   return <video src={url} controls playsInline preload="metadata" className="w-full block mb-3 rounded-[5px]" title={title} />;
 }
 
-export function MarkReadButton({ token, lessonId, portal }: { token: string; lessonId: string; portal: string }) {
+export function MarkReadButton({ token, lessonId, portal, back = null }: { token: string; lessonId: string; portal: string; back?: { href: string; label: string } | null }) {
   const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
   return (
     <div className="flex items-center gap-3 flex-wrap">
@@ -444,7 +463,7 @@ export function MarkReadButton({ token, lessonId, portal }: { token: string; les
         style={state === 'done' ? { background: CYAN, color: NAVY } : { background: NAVY, color: '#FFFFFF' }}>
         {state === 'done' ? '✓ Marked as read' : state === 'busy' ? 'Saving…' : state === 'error' ? 'Could not save · try again' : 'Mark the lesson as read'}
       </button>
-      {state === 'done' && <a href={`${portal}?tab=course`} className="text-[14px] font-bold" style={{ color: '#005F79' }}>Back to Course →</a>}
+      {state === 'done' && <a href={back?.href ?? `${portal}?tab=course`} className="text-[14px] font-bold" style={{ color: '#005F79' }}>Back to {back?.label ?? 'Course'} →</a>}
     </div>
   );
 }

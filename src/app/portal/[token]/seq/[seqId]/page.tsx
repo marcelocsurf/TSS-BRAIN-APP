@@ -7,6 +7,7 @@ import { CourseLockedScreen } from '@/components/portal/CourseLockedScreen';
 import { sequenceSide } from '@/lib/constants/learning-blocks';
 import { isGoofy, boardFlip, stanceOf } from '@/lib/stance';
 import { notFound, redirect } from 'next/navigation';
+import { parseFrom, studentBack, withFrom } from '@/lib/nav/origin';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { COURSES } from '@/lib/constants/courses';
@@ -34,14 +35,22 @@ function section(md: string | null | undefined, heading: string): string {
   return (m?.[1] ?? '').trim();
 }
 
-export default async function SequencePageRoute({ params, searchParams }: { params: Promise<{ token: string; seqId: string }>; searchParams?: Promise<{ tab?: string }> }) {
+export default async function SequencePageRoute({ params, searchParams }: { params: Promise<{ token: string; seqId: string }>; searchParams?: Promise<{ tab?: string; from?: string }> }) {
   const { token, seqId } = await params;
   const sp = searchParams ? await searchParams : {};
   const initialTab = sp.tab === 'feel' || sp.tab === 'do' || sp.tab === 'review' || sp.tab === 'think' ? sp.tab : null;
   const cfg = sequencePageFor(seqId);
   if (!cfg || !UUID_RE.test(token)) notFound();
-  // Los círculos viven en su propia página (/circles), no en la de 4 pestañas.
-  if (cfg.kind === 'circle') redirect(`/portal/${token}/circles`);
+  // De dónde vino (Home, Let's Play, Course, una lección…): el "‹ Back" vuelve
+  // ahí. Un origen que es esta misma página no sirve de vuelta.
+  const parsed = parseFrom(sp.from, 'student');
+  const origin = parsed && !(parsed.k === 'seq' && parsed.id === cfg?.id) ? parsed : null;
+  // Los círculos viven en su propia página (/circles), no en la de 4 pestañas:
+  // se abre en ESE círculo y conserva el origen.
+  if (cfg && cfg.kind === 'circle') {
+    const circle = cfg.id.replace(/^CIRCLE-/, '').toLowerCase();
+    redirect(withFrom(`/portal/${token}/circles?circle=${encodeURIComponent(circle)}`, origin));
+  }
 
   const admin = createAdminClient();
   const { data: student } = await admin
@@ -155,7 +164,10 @@ export default async function SequencePageRoute({ params, searchParams }: { para
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       {/* Línea aprobada (TSS_Design_Handoff): reglas limitadas a .tss; /tss/ es público en el middleware. */}
       <link rel="stylesheet" href="/tss/theme.css" />
-      <SequencePage cfg={pageCfg} trainAs={trainAs} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={resolveSequenceVideo(videos, null, null)} videos={videos} stance={stanceOf(student as any)} progress={progress} initialTab={initialTab} flip={boardFlip(sequenceSide(cfg.id), isGoofy(student as any))} />
+      <SequencePage
+        back={studentBack(origin, token, { k: 'course' })}
+        navTab={origin?.k === 'home' ? 'home' : origin?.k === 'play' || origin?.k === 'plan' ? 'sequence' : 'course'}
+        cfg={pageCfg} trainAs={trainAs} lessons={lessons} pieces={pieces} token={token} canTrack={access.canTrack} video={resolveSequenceVideo(videos, null, null)} videos={videos} stance={stanceOf(student as any)} progress={progress} initialTab={initialTab} flip={boardFlip(sequenceSide(cfg.id), isGoofy(student as any))} />
     </div>
   );
 }

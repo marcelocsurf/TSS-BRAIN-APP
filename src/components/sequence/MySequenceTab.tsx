@@ -9,6 +9,7 @@ import { Dumbbell, Waves, Target } from 'lucide-react';
 import { BELT_THEMES, beltLevelFromString, type BeltTheme } from '@/lib/constants/belt-theme';
 import { sequencePrefix } from '@/lib/constants/learning-blocks';
 import { sequencePageFor } from '@/lib/sequence-pages';
+import { withFrom } from '@/lib/nav/origin';
 import { THREE_CIRCLES_SEQUENCE_ID, gameContext } from '@/lib/sequence-pages/three-circles';
 import { SEQUENCE_ROLE, SIDE_SHORT, SIDE_WORD, type SequenceSide } from '@/lib/constants/learning-blocks';
 import { sideBalance } from '@/lib/sequence-sides';
@@ -67,6 +68,8 @@ export type TrainSequenceArgs = {
   focusMoment?: string | null;
   /** Cerrar un plan guardado antes del agua (sesión abierta). */
   sessionId?: string | null;
+  /** "Practice" desde el detalle de un paso: Cancel vuelve a ese paso. */
+  returnStepId?: string | null;
 };
 
 interface Props {
@@ -82,9 +85,13 @@ interface Props {
   ownedBelts?: string[];
   /** Lección "Venue Analysis" (ONB-06) leída; null = no se sabe. */
   venueDone?: boolean | null;
+  /** El "Back" del detalle del paso: vuelve adonde estaba el alumno al abrirlo
+   *  (Home, What it takes o Let's Play). Sin esto, queda en la lista. */
+  onStepBack?: () => void;
+  stepBackLabel?: string;
 }
 
-export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, onTrainSequence, initialStepId, ownedBelts = [], venueDone = null }: Props) {
+export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, onTrainSequence, initialStepId, ownedBelts = [], venueDone = null, onStepBack, stepBackLabel }: Props) {
   const router = useRouter();
   const [data, setData] = useState<SequenceData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -147,9 +154,11 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
       <StepDetailView
         stepId={openStepId}
         portalToken={portalToken}
+        backLabel={stepBackLabel}
         onBack={() => {
           setOpenStepId(null);
           refresh();
+          onStepBack?.();
         }}
         onRatingChange={refresh}
         // "Practice this mission" entra por el MISMO flujo que la secuencia
@@ -159,7 +168,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         // cae al flujo ligado de siempre.
         onPracticeDrill={(drillMissionId) => {
           const seq = data.sequences.find((sq) => sq.items.some((i) => i.step_id === openStepId));
-          if (seq && onTrainSequence) { setOpenStepId(null); onTrainSequence({ sequenceId: seq.id, mode: 'step_focus', focusStepId: openStepId }); }
+          if (seq && onTrainSequence) { const back = openStepId; setOpenStepId(null); onTrainSequence({ sequenceId: seq.id, mode: 'step_focus', focusStepId: back, returnStepId: back }); }
           else onPracticeDrill?.(drillMissionId);
         }}
       />
@@ -182,7 +191,8 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
   // El paso: el que frenó tu último run · si no, el primero bajo 4★ · si no,
   // el primero que todavía no calificaste · si no, el primero de la cadena.
   const beltWord = beltKey.charAt(0).toUpperCase() + beltKey.slice(1);
-  const pageHrefOf = (id: string) => { const c = sequencePageFor(id); return c && ownedBelts.includes(c.belt) ? `/portal/${portalToken}/seq/${id}` : null; };
+  // Desde Let's Play: el Back de la página vuelve acá (src/lib/nav/origin.ts).
+  const pageHrefOf = (id: string) => { const c = sequencePageFor(id); return c && ownedBelts.includes(c.belt) ? withFrom(`/portal/${portalToken}/seq/${id}`, { k: 'play' }) : null; };
   // Progreso por lado (Marcelo 2026-09-10): general · frontside · backside.
   // La misma función que usa el Home, así los dos dicen lo mismo.
   const sides = sideBalance(levelSeqs);
@@ -221,7 +231,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
         const entriesOwned = entries.filter((sq) => sq.state === 'owned').length;
         const circlesDone = circles.filter((g) => (g.lastStars ?? 0) >= 4).length;
         const stages: { n: number; title: string; status: string; done: boolean; href?: string | null; hint: string }[] = [
-          { n: 1, title: 'Venue analysis', status: venueDone == null ? 'theory' : venueDone ? 'read' : 'not read yet', done: venueDone === true, href: `/portal/${portalToken}?tab=course`, hint: 'Read the spot before you paddle out. It is in your Pre-Course.' },
+          { n: 1, title: 'Venue analysis', status: venueDone == null ? 'theory' : venueDone ? 'read' : 'not read yet', done: venueDone === true, href: withFrom(`/portal/${portalToken}?tab=course&lesson=ONB-06`, { k: 'play' }), hint: 'Read the spot before you paddle out. It is in your Pre-Course.' },
           { n: 2, title: 'Getting to the wave', status: entries.length ? `${entriesOwned} of ${entries.length} yours` : '—', done: entries.length > 0 && entriesOwned === entries.length, href: null, hint: 'Paddle out, catch, angle. The sequences below the games.' },
           { n: 3, title: 'The Three Circles', status: circles.length ? `${circlesDone} of ${circles.length} games at 4★` : '—', done: circles.length > 0 && circlesDone === circles.length, href: null, hint: 'Play the six games below.' },
           { n: 4, title: `${beltWord} sequences`, status: levelSeqs.length ? `${owned} of ${levelSeqs.length} yours` : '—', done: levelSeqs.length > 0 && owned === levelSeqs.length, href: null, hint: 'One sequence at a time, both sides.' },

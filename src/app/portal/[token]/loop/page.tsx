@@ -1,6 +1,7 @@
 // ═══ /portal/[token]/loop — The Infinite Circle, el curso del lenguaje ═══
 // Marcelo (2026-09-09): teórico, en dos lados (frontside / backside), con el
 // código de colores; se estudia antes de las secuencias #8-#13.
+import { parseFrom, studentBack } from '@/lib/nav/origin';
 import { getCourseLocks } from '@/lib/portal/course-lock';
 import { CourseLockedScreen } from '@/components/portal/CourseLockedScreen';
 import { notFound } from 'next/navigation';
@@ -20,8 +21,13 @@ const COURSE_OWNER_IDS = new Set(['3518cc9c-d633-44ff-b32a-bfb86b5ae748', '0f681
 /** La lección del curso que este página reemplaza en pantalla (sigue contando para el progreso). */
 const LOOP_LESSON_ID = 'BB-FND-INF';
 
-export default async function LoopPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function LoopPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<{ from?: string; side?: string }> }) {
   const { token } = await params;
+  const sp = searchParams ? await searchParams : {};
+  // De dónde llegó (?from=) y qué lado abrir (?side=), 2026-10-01.
+  const parsed = parseFrom(sp.from, 'student');
+  const origin = parsed && parsed.k !== 'loop' ? parsed : null;
+  const initialSide = sp.side === 'fs' || sp.side === 'bs' ? sp.side : null;
   if (!UUID_RE.test(token)) notFound();
   const admin = createAdminClient();
   const blue = COURSES.find((c) => c.key === 'blue_belt')!;
@@ -48,6 +54,9 @@ export default async function LoopPage({ params }: { params: Promise<{ token: st
       {/* eslint-disable-next-line @next/next/no-css-tags */}
       <link rel="stylesheet" href="/tss/theme.css" />
       <InfiniteCirclePage
+        back={studentBack(origin, token, { k: 'course' })}
+        navTab={origin?.k === 'home' ? 'home' : origin?.k === 'play' || origin?.k === 'plan' ? 'sequence' : 'course'}
+        initialSide={initialSide as any}
         token={token}
         video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null}
         threeCirclesLessonId={THREE_CIRCLES_LESSON_ID}

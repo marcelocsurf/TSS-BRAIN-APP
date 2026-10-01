@@ -37,6 +37,10 @@ interface LessonViewerProps {
   // Lets a lesson jump to another lesson (e.g. a sequence step pointing to
   // its canonical Pre-Course version). Optional — falls back to no banner.
   onOpenLesson?: (id: string) => void;
+  /** El banner a la versión del Pre-Course: se abre ENCIMA (su Back vuelve acá). */
+  onOpenIntro?: (id: string) => void;
+  /** Adónde lleva el Back (la pantalla desde la que llegó la lección); null = el curso. */
+  backLabel?: string | null;
   /** La siguiente lección pendiente del curso (auditoría 2026-09-25): tras
    *  "Mark as done" el alumno sigue sin volver a buscar en la lista. */
   nextLesson?: { id: string; title: string } | null;
@@ -56,7 +60,7 @@ const SEQUENCE_TO_INTRO: Record<string, { id: string; label: string }> = {
 
 type Section = 'video' | 'theory' | 'drill' | 'mission' | 'errors' | 'quiz' | 'form';
 
-export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, nextLesson = null, onCompleted, onBeforeComplete }: LessonViewerProps) {
+export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, onOpenIntro, backLabel = null, nextLesson = null, onCompleted, onBeforeComplete }: LessonViewerProps) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -100,7 +104,7 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, next
       <div className="text-center py-20 space-y-3">
         <p className="text-[#55666E] text-sm">This lesson is not available.</p>
         <button type="button" onClick={onBack} className="text-xs font-semibold text-[var(--tss-cyan,#00D2FF)]">
-          ← Back to the course
+          ← Back to {backLabel ?? 'the course'}
         </button>
       </div>
     );
@@ -126,7 +130,7 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, next
           onClick={onBack}
           className="text-[12px] uppercase tracking-wider flex items-center gap-1" style={{ fontFamily: 'var(--font-plex)', color: 'rgba(247,249,250,.75)' }}
         >
-          ← Back to course
+          ← Back to {backLabel ?? 'course'}
         </button>
 
         <div className="bg-[#E9E2D2] border border-[#DCD7C6] rounded-lg p-6">
@@ -165,7 +169,7 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, next
             onClick={onBack}
             className="mt-4 w-full py-3 rounded-[5px] bg-[var(--tss-navy)] text-white text-sm font-bold"
           >
-            ← Back to {lesson.pc_section_name || 'course'}
+            ← Back to {backLabel ?? (lesson.pc_section_name || 'course')}
           </button>
         </div>
       </div>
@@ -189,7 +193,7 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, next
           onClick={onBack}
           className="text-[12px] uppercase tracking-wider flex items-center gap-1 mb-3" style={{ fontFamily: 'var(--font-plex)', color: 'rgba(247,249,250,.75)' }}
         >
-          ← Back to course
+          ← Back to {backLabel ?? 'course'}
         </button>
         <div className="text-white rounded-lg p-5" style={{ background: '#061C2B', border: '1px solid rgba(0,210,255,.25)' }}>
           {/* El código interno de la lección (VAL-001, PC-PRE-07…) no se le
@@ -221,7 +225,7 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, next
       {/* Sequence step → shared Pre-Course lesson (single source of truth) */}
       {onOpenLesson && SEQUENCE_TO_INTRO[lesson.id] && (
         <button
-          onClick={() => onOpenLesson(SEQUENCE_TO_INTRO[lesson.id].id)}
+          onClick={() => (onOpenIntro ?? onOpenLesson)(SEQUENCE_TO_INTRO[lesson.id].id)}
           className="w-full flex items-center gap-3 rounded-lg border border-[#DCD7C6] bg-[#E9E2D2] px-4 py-3 text-left"
         >
           <BookOpen size={18} strokeWidth={1.75} className="flex-shrink-0 text-[var(--tss-navy)]" />
@@ -332,7 +336,7 @@ export function LessonViewer({ lessonId, portalToken, onBack, onOpenLesson, next
               </button>
             ) : (
               <button type="button" onClick={onBack} className="w-full py-3 rounded-[5px] text-sm font-bold" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6', color: '#10263B' }}>
-                ← Back to course
+                ← Back to {backLabel ?? 'course'}
               </button>
             )
           )}

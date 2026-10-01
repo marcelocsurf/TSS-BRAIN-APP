@@ -26,11 +26,13 @@ interface Props {
   stepId: string;
   portalToken: string;
   onBack: () => void;
+  /** Adónde lleva el Back (la pantalla desde la que se abrió el paso). */
+  backLabel?: string;
   onRatingChange?: () => void;
   onPracticeDrill?: (drillMissionId: string) => void;
 }
 
-export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, onPracticeDrill }: Props) {
+export function StepDetailView({ stepId, portalToken, onBack, backLabel = "Let's Play", onRatingChange, onPracticeDrill }: Props) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [savingRating, setSavingRating] = useState(false);
@@ -105,7 +107,7 @@ export function StepDetailView({ stepId, portalToken, onBack, onRatingChange, on
           onClick={onBack}
           className="text-sm text-[#55666E] hover:text-[#10263B] flex items-center gap-1 mb-3"
         >
-          ← Back to Let&apos;s Play
+          ← Back to {backLabel}
         </button>
 
         <div className="text-white rounded-lg p-5" style={{ background: INK, borderLeft: `4px solid ${CYAN}` }}>

@@ -4,6 +4,8 @@
 // Marcelo (2026-09-09): teórico, conceptos; frontside y backside; cada paso
 // con su color; lo que ya viene de los 3 Círculos vs lo nuevo de Blue.
 import { useState } from 'react';
+import { withFrom } from '@/lib/nav/origin';
+import { PortalBottomNav, type PortalNavTab } from './PortalBottomNav';
 import { ArrowLeft } from 'lucide-react';
 import { MarkReadButton } from './ThreeCirclesPage';
 import { COMMAND_COLORS, HOLD_COLOR } from '@/lib/sequence-pages/wave-kit';
@@ -55,7 +57,7 @@ function Card({ eyebrow, color, children }: { eyebrow: string; color?: string; c
   );
 }
 
-export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLessonId, coach }: {
+export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLessonId, coach, back = null, navTab = 'course', initialSide = null }: {
   token: string;
   video?: { url: string; title: string } | null;
   threeCirclesLessonId: string;
@@ -63,11 +65,30 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
   /** Modo coach (paso 3 de unificar, 2026-09-29): misma página, links al
    *  portal del coach, sin marcar leída. */
   coach?: { backHref: string; laminas?: Lamina[]; videos?: CourseVideo[] };
+  /** El "‹ Back" de arriba según de dónde llegó (?from=); sin él, el Course. */
+  back?: { href: string; label: string } | null;
+  /** La pestaña que marca la barra de abajo (la del origen). */
+  navTab?: PortalNavTab;
+  /** ?side= (volver de una lección al MISMO lado). */
+  initialSide?: LoopSide['key'] | null;
 }) {
-  const [side, setSide] = useState<LoopSide['key']>('fs');
+  const [side, setSideState] = useState<LoopSide['key']>(initialSide ?? 'fs');
+  // El lado elegido queda en la URL (2026-10-01). __NA = sin navegación de Next.
+  const setSide = (k: LoopSide['key']) => {
+    setSideState(k);
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.set('side', k);
+      const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+      window.history.replaceState({ ...st, __NA: true }, '', `${u.pathname}${u.search}${u.hash}`);
+    } catch { /* cosmético */ }
+  };
   const portal = coach ? `/coach-portal/${token}` : `/portal/${token}`;
   const courseTab = coach ? 'courses' : 'course';
   const cur = LOOP_SIDES.find((s) => s.key === side)!;
+  // Lo que sale de esta página lleva de dónde salió (y de dónde había llegado).
+  const parent = navTab === 'home' ? 'home' as const : navTab === 'sequence' ? 'play' as const : undefined;
+  const here = { k: 'loop' as const, ...(parent ? { parent } : {}) };
 
   return (
     <section className="tss">
@@ -76,7 +97,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
           <div className="tss-brand-row">
             <svg className="tss-logo" viewBox="180 183 960 269" role="img" aria-label="The Surf Sequence — Evolve through play"><image href="/tss/assets/tss-logo-original-white.png" width="1312" height="654" /></svg>
           </div>
-          <a className="tss-back" href={coach ? coach.backHref : `${portal}?tab=course`}><ArrowLeft size={14} /> {coach ? 'Courses' : 'Course'}</a>
+          <a className="tss-back" href={back?.href ?? (coach ? coach.backHref : `${portal}?tab=course`)}><ArrowLeft size={14} /> {back?.label ?? (coach ? 'Courses' : 'Course')}</a>
           <p style={{ ...F_M, color: CYAN }}>Blue belt · the language of every sequence</p>
           <h1>{LOOP_INTRO.title}</h1>
           <p className="tss-subtitle">{LOOP_INTRO.headline}</p>
@@ -151,7 +172,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
                 <p key={k.word} className="text-[13.5px] leading-snug" style={{ color: TEXT }}><span className="font-semibold" style={{ color: INK }}>{k.word}</span> · {k.note}</p>
               ))}
             </div>
-            <a href={`${portal}?tab=${courseTab}&lesson=${threeCirclesLessonId}`} className="inline-block mt-3 text-[13px] font-semibold" style={{ color: CYAN }}>Go back to the Three Circles →</a>
+            <a href={coach ? `${portal}/circles?belt=blue` : withFrom(`${portal}/circles`, here)} className="inline-block mt-3 text-[13px] font-semibold" style={{ color: CYAN }}>Go back to the Three Circles →</a>
           </Card>
 
           <Card eyebrow="04 · New in Blue · the words the circle adds" color={CYAN}>
@@ -206,7 +227,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
                       ))}
                     </ul>
                     <p className="mt-2 text-[12.5px]"><span style={{ color: MUTED }}>Key words · </span><span className="font-mono" style={{ color: INK }}>{st.keyWords.join(' · ')}</span></p>
-                    <a href={`${portal}?tab=${courseTab}&lesson=${st.lessonId}`} className="inline-block mt-2 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {st.lessonLabel}</a>
+                    <a href={coach ? `${portal}?tab=${courseTab}&lesson=${st.lessonId}` : withFrom(`${portal}?tab=${courseTab}&lesson=${st.lessonId}`, here)} className="inline-block mt-2 text-[13px] font-semibold" style={{ color: CYAN }}>Go deeper → {st.lessonLabel}</a>
                   </div>
                 </details>
               ))}
@@ -223,7 +244,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
           </Card>
 
           {/* Marcar leída acá mismo, sin ir a la lección (2026-09-11). */}
-          {loopLessonId && !coach && <MarkReadButton token={token} lessonId={loopLessonId} portal={portal} />}
+          {loopLessonId && !coach && <MarkReadButton token={token} lessonId={loopLessonId} portal={portal} back={back} />}
         </div>
 
         <p className="text-[11px] mt-8 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ color: MUTED }}>
@@ -233,6 +254,7 @@ export function InfiniteCirclePage({ token, video, threeCirclesLessonId, loopLes
           ))}
         </p>
       </div>
+      {!coach && <PortalBottomNav portal={portal} active={navTab} />}
     </section>
   );
 }

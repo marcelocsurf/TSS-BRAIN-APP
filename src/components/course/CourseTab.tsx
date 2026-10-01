@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { LessonViewer } from './LessonViewer';
+import { parseFrom, encodeFrom, studentBack, type StudentFrom } from '@/lib/nav/origin';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { CourseFinalQuiz } from './CourseFinalQuiz';
 import { getSectionIntros, type SectionIntro } from '@/lib/actions/section-intros';
@@ -143,7 +144,11 @@ const WB_SEQUENCE_CUMULATIVE: Record<string, number> = {
 // sessionStorage es la verdad. En la primera carga del documento manda la URL.
 let courseTabMountedBefore = false;
 
-export function CourseTab({ data }: { data: CourseData }) {
+export function CourseTab({ data, onExit }: {
+  data: CourseData;
+  /** Una lección que llegó desde otra pantalla (?from=): su Back vuelve ahí. */
+  onExit?: (from: StudentFrom) => void;
+}) {
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
   const [intros, setIntros] = useState<Record<string, SectionIntro>>({});
   useEffect(() => { getSectionIntros().then(setIntros).catch(() => {}); }, []);
@@ -161,6 +166,16 @@ export function CourseTab({ data }: { data: CourseData }) {
   const restoreScrollRef = useRef(false);
   const [doneOverride, setDoneOverride] = useState<Set<string>>(() => new Set());
   const [lastLesson, setLastLesson] = useState<string | null>(null);
+  // De dónde llegó la lección abierta (Marcelo 2026-10-01: continuidad). El
+  // Back la cierra y vuelve ahí; sin origen, a la lista del curso.
+  const [lessonFrom, setLessonFromState] = useState<StudentFrom | null>(null);
+  const setLessonFrom = (f: StudentFrom | null) => {
+    setLessonFromState(f);
+    savePortalState(data.portalToken, { lessonFrom: f ? encodeFrom(f) : null });
+  };
+  // Lecciones abiertas desde el banner de otra lección (STP-002 → Warm Up):
+  // el Back vuelve a la de antes, no a la lista.
+  const stackRef = useRef<string[]>([]);
 
   const pathWithLesson = (id: string | null) => `${window.location.pathname}?tab=course${id ? `&lesson=${encodeURIComponent(id)}` : ''}`;
   const nextState = (extra: Record<string, unknown>) => {
@@ -170,7 +185,21 @@ export function CourseTab({ data }: { data: CourseData }) {
   // Cuántas entradas nuestras hay encima de la lista: abrir A y luego B desde
   // adentro son dos; "Back to course" las salta todas de un golpe.
   const depthRef = useRef(0);
-  const openLesson = (id: string) => {
+  const openLesson = (id: string, opts: { stack?: boolean } = {}) => {
+    if (opts.stack && openLessonId) {
+      // Una entrada nueva encima: el atrás del teléfono y el Back vuelven a la anterior.
+      stackRef.current = [...stackRef.current, openLessonId];
+      try {
+        depthRef.current = (depthRef.current || 0) + 1;
+        window.history.pushState(nextState({ tssLesson: id, tssDepth: depthRef.current }), '', pathWithLesson(id));
+        pushedRef.current = true;
+      } catch { /* sin historial */ }
+      setOpenLessonId(id);
+      saveLastLesson(data.portalToken, id);
+      setLastLesson(id);
+      try { window.scrollTo(0, 0); } catch { /* nada */ }
+      return;
+    }
     try {
       const already = openLessonId !== null;
       if (!already) scrollBeforeOpen.current = window.scrollY;
@@ -190,6 +219,31 @@ export function CourseTab({ data }: { data: CourseData }) {
     try { window.scrollTo(0, 0); } catch { /* nada */ }
   };
   const closeLesson = () => {
+    // 1) Abierta desde el banner de otra lección: vuelve a esa.
+    if (stackRef.current.length) {
+      const prev = stackRef.current[stackRef.current.length - 1];
+      stackRef.current = stackRef.current.slice(0, -1);
+      if (pushedRef.current && depthRef.current > 1) {
+        depthRef.current -= 1;
+        try { window.history.back(); return; } catch { /* sigue abajo */ }
+      }
+      // La de antes llegó por link (sin entrada propia): se reemplaza la
+      // dirección en el lugar, para que diga la lección que se ve.
+      try { window.history.replaceState(nextState({ tssLesson: prev, tssDepth: depthRef.current || 1 }), '', pathWithLesson(prev)); } catch { /* nada */ }
+      setOpenLessonId(prev);
+      return;
+    }
+    // 2) Llegó desde otra pantalla (la página de la secuencia, el Home…): vuelve ahí.
+    if (lessonFrom && onExit) {
+      const f = lessonFrom;
+      setLessonFrom(null);
+      pushedRef.current = false;
+      depthRef.current = 0;
+      try { window.history.replaceState(nextState({ tssLesson: null, tssDepth: 0 }), '', pathWithLesson(null)); } catch { /* nada */ }
+      setOpenLessonId(null);
+      onExit(f);
+      return;
+    }
     restoreScrollRef.current = true;
     if (pushedRef.current && depthRef.current > 0) {
       const back = depthRef.current;
@@ -206,6 +260,7 @@ export function CourseTab({ data }: { data: CourseData }) {
     const onPop = (e: PopStateEvent) => {
       const st = (e.state && typeof e.state === 'object') ? (e.state as any) : {};
       const id = st.tssLesson || null;
+      if (id && stackRef.current[stackRef.current.length - 1] === String(id)) stackRef.current = stackRef.current.slice(0, -1);
       if (id) { setOpenLessonId(String(id)); pushedRef.current = true; depthRef.current = Number(st.tssDepth) || 1; }
       else { pushedRef.current = false; depthRef.current = 0; restoreScrollRef.current = true; setOpenLessonId(null); }
     };
@@ -229,8 +284,10 @@ export function CourseTab({ data }: { data: CourseData }) {
       // Remount justo después de "Mark as done": la lección que se estaba
       // completando manda sobre la URL (que puede haber vuelto a la canónica).
       const completing = takeLessonCompleting(data.portalToken);
+      const keptFrom = parseFrom(loadPortalState(data.portalToken)?.lessonFrom ?? null, 'student');
       if (completing) {
         setOpenLessonId(completing);
+        if (keptFrom) setLessonFromState(keptFrom);
         const st = (window.history.state && typeof window.history.state === 'object') ? (window.history.state as any) : {};
         pushedRef.current = !!st.tssLesson; depthRef.current = Number(st.tssDepth) || (st.tssLesson ? 1 : 0);
         return;
@@ -243,6 +300,7 @@ export function CourseTab({ data }: { data: CourseData }) {
         const rlLocked = !!data.courseLock && !!rl && !(SHARED_PRE_COURSE_SECTIONS as readonly string[]).includes(rl.course_section);
         if (!rlLocked) {
           setOpenLessonId(restoredEarly.lesson);
+          if (keptFrom) setLessonFromState(keptFrom);
           const st = (window.history.state && typeof window.history.state === 'object') ? (window.history.state as any) : {};
           pushedRef.current = !!st.tssLesson; depthRef.current = Number(st.tssDepth) || (st.tssLesson ? 1 : 0);
           // La barra de direcciones vuelve a decir la lección que se ve (Next
@@ -258,16 +316,18 @@ export function CourseTab({ data }: { data: CourseData }) {
       const lockedByCamp = !!data.courseLock && !!target && !(SHARED_PRE_COURSE_SECTIONS as readonly string[]).includes(target.course_section);
       if (id && !lockedByCamp) {
         setOpenLessonId(id);
+        // ?from= (src/lib/nav/origin.ts): de dónde vino este link a la lección.
+        const f = parseFrom(new URLSearchParams(window.location.search).get('from'), 'student');
+        setLessonFrom(f && f.k !== 'course' && !(f.k === 'lesson' && f.id === id) ? f : null);
         // Si esta entrada del historial la creó openLesson (recarga o remount
         // por revalidación), el botón atrás sigue funcionando igual.
         const st = (window.history.state && typeof window.history.state === 'object') ? (window.history.state as any) : {};
         pushedRef.current = !!st.tssLesson; depthRef.current = Number(st.tssDepth) || (st.tssLesson ? 1 : 0);
         return;
       }
-      // Remount por refresh (marcar leída, cambiar de curso…): la lección
-      // que estaba abierta vuelve a abrirse sola.
-      const restored = loadPortalState(data.portalToken);
-      if (restored?.lesson) setOpenLessonId(restored.lesson);
+      // (2026-10-01) Ya no se reabre la última lección en una entrada nueva al
+      // Course: el remount por refresh está cubierto arriba; acá reabría una
+      // lección que el alumno ya había dejado (auditoría de navegación).
     } catch { /* sin deep link */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -306,13 +366,17 @@ export function CourseTab({ data }: { data: CourseData }) {
     const idx = order.findIndex((l) => l.id === openLessonId);
     const after = idx >= 0 ? order.slice(idx + 1).find(openable) : undefined;
     const anyLeft = order.find((l) => l.id !== openLessonId && openable(l));
-    const next = after ?? anyLeft ?? null;
+    // Una lección fuera del orden del curso (Go deeper desde una secuencia)
+    // no salta a otra cualquiera: el botón vuelve adonde llegó.
+    const next = idx >= 0 ? (after ?? anyLeft ?? null) : null;
     return (
       <LessonViewer
         lessonId={openLessonId}
         portalToken={data.portalToken}
         onBack={closeLesson}
+        backLabel={stackRef.current.length ? 'the lesson' : lessonFrom ? studentBack(lessonFrom, data.portalToken, { k: 'course' }).label : null}
         onOpenLesson={(id) => openLesson(id)}
+        onOpenIntro={(id) => openLesson(id, { stack: true })}
         nextLesson={next ? { id: next.id, title: next.title } : null}
         onCompleted={(id) => setDoneOverride((prev) => { const n = new Set(prev); n.add(id); return n; })}
         onBeforeComplete={(id) => markLessonCompleting(data.portalToken, id)}

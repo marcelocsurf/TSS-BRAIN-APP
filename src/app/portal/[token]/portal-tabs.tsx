@@ -34,7 +34,8 @@ function surveyDateLabel(sessionDate: string | null | undefined, createdAt: stri
 import { MySequenceTab, type TrainSequenceArgs } from '@/components/sequence/MySequenceTab';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { loadPortalState, savePortalState, touchPortalState } from '@/lib/portal/portal-state';
-import { discardSession } from '@/lib/actions/lets-play';
+import { discardSession, getOpenSession, type OpenSession } from '@/lib/actions/lets-play';
+import { studentBack, withFrom, type StudentFrom } from '@/lib/nav/origin';
 import { isGoofy } from '@/lib/stance';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { SequenceTrainingFlow } from '@/components/sequence/SequenceTrainingFlow';
@@ -555,7 +556,10 @@ function NextMovesBlock({ data, mode, onTrainSequence, onOpenStep, onGoTo }: {
   onOpenStep?: (stepId: string) => void;
   onGoTo?: (tab: Tab) => void;
 }) {
-  const { rows, coachCleared } = nextMoveRows(data, onTrainSequence, onOpenStep);
+  const { rows: rawRows, coachCleared } = nextMoveRows(data, onTrainSequence, onOpenStep);
+  // La página de la secuencia vuelve adonde se tocó: Home o Let's Play.
+  const origin = mode === 'full' ? ({ k: 'play' } as const) : ({ k: 'home' } as const);
+  const rows = rawRows.map((r) => (r.pageHref ? { ...r, pageHref: withFrom(r.pageHref, origin) } : r));
   if (rows.length === 0 && !coachCleared) return null;
   const rowStyle = { borderTop: '1px solid rgba(255,255,255,.08)' };
   const renderRow = (r: NextMoveRow, idx: number, numbered: boolean) => {
@@ -722,6 +726,7 @@ export function PortalTabs({
   initialDrillId,
   initialStepId,
   initialTrain,
+  initialFrom = null,
 }: {
   data: PortalData;
   initialTab?: Tab;
@@ -730,6 +735,8 @@ export function PortalTabs({
   initialStepId?: string | null;
   /** Deep-link desde la página de la secuencia: abrir Let's Play con la línea (o el foco) ya elegida. */
   initialTrain?: TrainSequenceArgs | null;
+  /** De dónde vino el deep-link (?from=, src/lib/nav/origin.ts): Cancel vuelve ahí. */
+  initialFrom?: StudentFrom | null;
 }) {
   // Al terminar una Custom Session el Home debe re-leer del servidor
   // (horas, sesiones) — sin esto quedaba viejo hasta recargar.
@@ -804,6 +811,19 @@ export function PortalTabs({
   // Let's Play por SECUENCIA (Marcelo 2026-09-04): correr la secuencia
   // completa o trabajar un paso como foco. Se renderiza inline en el tab.
   const [pendingSequence, setPendingSequence] = useState<TrainSequenceArgs | null>(initialTrain ?? null);
+  // De dónde arrancó el flujo de Let's Play (Marcelo 2026-10-01: "que pueda
+  // regresar a la pantalla que es lógico"): Cancel vuelve ahí, no siempre a
+  // la lista. 'step' = el detalle del paso desde el que se tocó Practice.
+  type FlowFrom = StudentFrom | { k: 'step'; id: string };
+  const [flowFrom, setFlowFrom] = useState<FlowFrom | null>(initialTrain || initialDrillId ? initialFrom : null);
+  // De dónde se abrió el detalle de un paso: su "Back" vuelve ahí.
+  const [stepFrom, setStepFrom] = useState<'home' | 'play' | 'roadmap'>(initialStepId && initialFrom?.k === 'home' ? 'home' : 'play');
+  // El plan guardado antes del agua, VIVO (2026-10-01): al guardarlo se lee de
+  // nuevo, así el Home y Let's Play lo muestran sin recargar. Antes quedaba el
+  // de la carga de la página (o ninguno) hasta un refresh.
+  const [openSessionLive, setOpenSessionLive] = useState<OpenSession | null>(data.openSession ?? null);
+  useEffect(() => { setOpenSessionLive(data.openSession ?? null); }, [data.openSession]);
+  const liveData = useMemo(() => ({ ...data, openSession: openSessionLive }), [data, openSessionLive]);
 
   // Los parámetros de deep-link (?tab=, ?lesson=, ?drill=, ?step=, ?survey=)
   // ya quedaron capturados en estado arriba, así que se limpian de la barra de
@@ -830,7 +850,11 @@ export function PortalTabs({
       const keep = new URLSearchParams();
       const tab = p.get('tab');
       if (tab) keep.set('tab', tab);
-      if (tab === 'course' && p.get('lesson')) keep.set('lesson', p.get('lesson')!);
+      if (tab === 'course' && p.get('lesson')) {
+        keep.set('lesson', p.get('lesson')!);
+        // De dónde vino la lección (?from=): su Back vuelve ahí (CourseTab).
+        if (p.get('from')) keep.set('from', p.get('from')!);
+      }
       const q = keep.toString();
       window.history.replaceState({ ...st, __NA: true }, '', `${window.location.pathname}${q ? `?${q}` : ''}`);
     } catch { /* la limpieza es cosmética, nunca debe romper el portal */ }
@@ -865,13 +889,55 @@ export function PortalTabs({
   // Abrir UN paso puntual en Let's Play. El estado del deep-link (?step=) ya
   // existía; lo que faltaba era usarlo desde adentro — por eso la tarjeta
   // "Your next move" del Home se veía tocable y no hacía nada.
-  const openStepInPlay = (stepId: string) => {
-    // Un flujo abandonado (secuencia o pieza) no puede secuestrar el salto.
+  // Suelta cualquier flujo a medias de Let's Play (secuencia, pieza, paso
+  // abierto, sesión libre): un salto nuevo nunca cae en uno abandonado.
+  const resetPlay = () => {
     setPendingSequence(null);
     setPendingDrillMissionId(null);
-    setDeepStepId(stepId);
-    setActiveTab('sequence');
+    setShowCustomSession(false);
+    setDeepStepId(null);
+    setFlowFrom(null);
   };
+  // Cambiar de pantalla sin recargar, con la URL al día (?tab=). Sin __NA,
+  // Next trataría el replaceState como navegación y remontaría el portal.
+  const showTab = (t: Tab) => {
+    setActiveTab(t);
+    savePortalState(data.token, { tab: t, lesson: null, lessonFrom: null });
+    try {
+      const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+      window.history.replaceState({ ...st, __NA: true, tssLesson: null }, '', `${window.location.pathname}?tab=${t}`);
+    } catch { /* nada */ }
+  };
+  const openStepInPlay = (stepId: string, from: 'home' | 'play' | 'roadmap' = 'play') => {
+    resetPlay();
+    setDeepStepId(stepId);
+    setStepFrom(from);
+    showTab('sequence');
+  };
+  // El "Back" del detalle del paso: adonde estaba el alumno al abrirlo.
+  const leaveStep = () => {
+    setDeepStepId(null);
+    const from = stepFrom;
+    setStepFrom('play');
+    if (from === 'home') showTab('home');
+    else if (from === 'roadmap') setRoadmapOpen(true);
+  };
+  const stepBackLabel = stepFrom === 'home' ? 'Home' : stepFrom === 'roadmap' ? 'What it takes' : "Let's Play";
+  // Cancel de un flujo de Let's Play: vuelve adonde arrancó.
+  const leaveFlow = () => {
+    const f = flowFrom;
+    setPendingSequence(null);
+    setPendingDrillMissionId(null);
+    setFlowFrom(null);
+    if (!f || f.k === 'play') return;
+    if (f.k === 'home') { showTab('home'); return; }
+    if (f.k === 'step') { setDeepStepId(f.id); return; }
+    if (f.k === 'course') { showTab('course'); return; }
+    // Otra página (la de la secuencia, los Tres Círculos, una lección): se va.
+    window.location.assign(studentBack(f, data.token, { k: 'play' }).href);
+  };
+  const flowBackLabel = !flowFrom || flowFrom.k === 'play' ? "Let's Play"
+    : flowFrom.k === 'step' ? 'the step' : studentBack(flowFrom, data.token, { k: 'play' }).label;
 
   // La sesión abierta (plan guardado antes del agua): cerrarla o descartarla.
   // Ir a una pestaña con datos frescos, SIN router.refresh(): refresh re-pide
@@ -879,23 +945,30 @@ export function PortalTabs({
   // deep-link) y el flow arrancaba de nuevo (Marcelo 2026-09-11).
   const goTab = (t: Tab) => {
     setActiveTab(t);
-    savePortalState(data.token, { tab: t, lesson: null });
+    savePortalState(data.token, { tab: t, lesson: null, lessonFrom: null });
     portalRouter.replace(`${window.location.pathname}?tab=${t}`);
   };
-  const finishOpenSession = () => {
-    const os = data.openSession;
+  const finishOpenSession = (from: 'home' | 'play' = 'home') => {
+    const os = openSessionLive;
     if (!os) return;
-    setPendingDrillMissionId(null);
-    setDeepStepId(null);
+    resetPlay();
+    setFlowFrom({ k: from });
     setPendingSequence({ sequenceId: os.sequenceId, mode: os.mode, focusStepId: os.focusStepId, intention: os.intention, focusMoment: os.focusMoment, sessionId: os.id });
-    setActiveTab('sequence');
+    showTab('sequence');
   };
-  const discardOpenSession = async () => {
-    const os = data.openSession;
+  // Descartar el plan deja al alumno donde lo tocó (Home o Let's Play).
+  const discardOpenSession = async (stay: 'home' | 'sequence' = 'home') => {
+    const os = openSessionLive;
     if (!os) return;
     if (!window.confirm('Discard this plan? Nothing gets rated.')) return;
     await discardSession(data.token, os.id);
-    goTab('home');
+    setOpenSessionLive(null);
+    goTab(stay);
+  };
+  // Plan guardado (antes del agua): queda atado al flujo y se lee de nuevo.
+  const onPlanSaved = async (sessionId: string) => {
+    setPendingSequence((p) => (p ? { ...p, sessionId } : p));
+    try { setOpenSessionLive(await getOpenSession(data.token)); } catch { /* el refresh del Done lo trae */ }
   };
 
   const handlePracticeDrill = (drillMissionId: string) => {
@@ -962,24 +1035,34 @@ export function PortalTabs({
       <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-4">
         {activeTab === 'home' && (
           <HomeTab
-            data={{ ...data, lineupUnreadLive: lineupUnread } as any}
+            data={{ ...liveData, lineupUnreadLive: lineupUnread } as any}
             belt={belt}
-            onGoTo={setActiveTab}
-            onOpenStep={openStepInPlay}
+            // Ir a Let's Play desde el Home (Log a session, See your new
+            // sequences…) arranca limpio: un flujo abandonado no lo secuestra.
+            onGoTo={(t) => { if (t === 'sequence') resetPlay(); showTab(t); }}
+            onOpenStep={(id) => openStepInPlay(id, 'home')}
             // "What to train next" abre SIEMPRE el camino: un flujo abandonado
             // (tarea del coach, drill, sesión libre, paso) no lo secuestra.
-            onOpenPath={() => { setPendingSequence(null); setPendingDrillMissionId(null); setShowCustomSession(false); setDeepStepId(null); setActiveTab('sequence'); }}
-            onTrainSequence={(a) => { setDeepStepId(null); setPendingDrillMissionId(null); setPendingSequence(a); setActiveTab('sequence'); }}
+            onOpenPath={() => { resetPlay(); showTab('sequence'); }}
+            onTrainSequence={(a) => { resetPlay(); setFlowFrom({ k: 'home' }); setPendingSequence(a); showTab('sequence'); }}
             onOpenRoadmap={() => setRoadmapOpen(true)}
             onOpenWater={() => setWaterOpen(true)}
-            onFinishOpenSession={finishOpenSession}
-            onDiscardOpenSession={discardOpenSession}
+            onFinishOpenSession={() => finishOpenSession('home')}
+            onDiscardOpenSession={() => discardOpenSession('home')}
           />
         )}
         {activeTab === 'course' && data.courseData && (
           <div className="space-y-4">
             {/* 'What it takes' vive en My Progress (Your next level); acá repetía (Marcelo 2026-09-16). */}
-            <CourseTab data={data.courseData} />
+            <CourseTab
+              data={data.courseData}
+              // Una lección abierta desde otra pantalla (?from=) vuelve ahí.
+              onExit={(f) => {
+                if (f.k === 'home') showTab('home');
+                else if (f.k === 'play') showTab('sequence');
+                else window.location.assign(studentBack(f, data.token, { k: 'course' }).href);
+              }}
+            />
             {/* Las presentaciones otorgadas viven en COURSE, no en el Home
                 (pedido de Marcelo 2026-08-25). Es el mismo lugar que ya usa
                 el coach en su pestaña Cursos. No dibuja nada si no hay. */}
@@ -1005,12 +1088,14 @@ export function PortalTabs({
                 focusStepId={pendingSequence.focusStepId ?? null}
                 initialIntention={pendingSequence.intention ?? null}
                 initialFocusMoment={pendingSequence.focusMoment ?? null}
-                openSession={pendingSequence.sessionId && data.openSession?.id === pendingSequence.sessionId ? data.openSession : null}
+                openSession={pendingSequence.sessionId && openSessionLive?.id === pendingSequence.sessionId ? openSessionLive : null}
                 goofy={isGoofy(student as any)}
                 studentBelt={student.belt_level || 'white_belt'}
-                onCancel={() => setPendingSequence(null)}
-                rehearseHref={seqPageHref(data, pendingSequence.sequenceId, 'feel')}
-                otherOpenPlan={data.openSession && data.openSession.id !== pendingSequence.sessionId ? (data.openSession.sequenceName || data.openSession.sequenceLabel || 'another sequence') : null}
+                onCancel={leaveFlow}
+                backLabel={flowBackLabel}
+                onPlanSaved={onPlanSaved}
+                rehearseHref={(() => { const h = seqPageHref(data, pendingSequence.sequenceId, 'feel'); return h ? withFrom(h, { k: 'plan', seq: pendingSequence.sequenceId, mode: pendingSequence.mode, ...(pendingSequence.focusStepId ? { focus: pendingSequence.focusStepId } : {}) }) : null; })()}
+                otherOpenPlan={openSessionLive && openSessionLive.id !== pendingSequence.sessionId ? (openSessionLive.sequenceName || openSessionLive.sequenceLabel || 'another sequence') : null}
                 onDone={(next) => {
                   // Marcelo (2026-09-11): "cuando termino me manda otra vez a
                   // iniciar en lugar de Home". router.refresh() re-pedía la
@@ -1018,6 +1103,7 @@ export function PortalTabs({
                   // ?seq=… del deep-link → initialTrain → el flow arrancaba de
                   // nuevo. Ahora se navega EXPLÍCITO a la pestaña prometida.
                   setPendingSequence(null);
+                  setFlowFrom(null);
                   goTab(next ?? 'sequence');
                   // El plan recién guardado tiene que verse YA en el Home
                   // (Marcelo 2026-09-18: "cierro el plan y no me sale"). La URL
@@ -1109,20 +1195,27 @@ export function PortalTabs({
           ) : (
             // 3) Default: pick a drill or mission from your sequence
             <div className="space-y-4">
-              <OpenSessionCard data={data} onFinish={finishOpenSession} onDiscard={discardOpenSession} />
+              <OpenSessionCard data={liveData} onFinish={() => finishOpenSession('play')} onDiscard={() => discardOpenSession('sequence')} />
               <NextMovesBlock
-                data={data}
+                data={liveData}
                 mode="full"
-                onTrainSequence={(args) => { setDeepStepId(null); setPendingSequence(args); }}
-                onOpenStep={openStepInPlay}
-                onGoTo={setActiveTab}
+                onTrainSequence={(args) => { resetPlay(); setFlowFrom({ k: 'play' }); setPendingSequence(args); }}
+                onOpenStep={(id) => openStepInPlay(id, 'play')}
+                onGoTo={showTab}
               />
               <MySequenceTab
                 portalToken={data.token}
                 belt={data.courseData?.activeCourseBelt || student.belt_level || 'white'}
                 onPracticeDrill={handlePracticeDrill}
-                onTrainSequence={(args) => { setDeepStepId(null); setPendingSequence(args); }}
+                onTrainSequence={(args) => {
+                  // "Practice" desde el detalle de un paso: Cancel vuelve a ese paso.
+                  const fromStep = args.returnStepId ?? null;
+                  setDeepStepId(null); setPendingSequence(args);
+                  setFlowFrom(fromStep ? { k: 'step', id: fromStep } : { k: 'play' });
+                }}
                 initialStepId={deepStepId}
+                onStepBack={leaveStep}
+                stepBackLabel={stepBackLabel}
                 ownedBelts={data.ownedBelts ?? []}
                 venueDone={(() => { const l = (data.courseData?.lessons ?? []).find((x: any) => x.id === 'ONB-06'); return l ? !!l.completed : null; })()}
               />
@@ -1187,7 +1280,7 @@ export function PortalTabs({
           <BeltRoadmap
             token={data.token}
             onClose={() => setRoadmapOpen(false)}
-            onOpenStep={openStepInPlay}
+            onOpenStep={(id) => openStepInPlay(id, 'roadmap')}
             onOpenWater={() => setWaterOpen(true)}
           />
         )}
@@ -1210,12 +1303,7 @@ export function PortalTabs({
                   // La barra cambia de pestaña: la lección abierta se suelta
                   // (antes el Course volvía a la última lección durante 10 min)
                   // y la URL dice en qué pestaña estás.
-                  setActiveTab(tab.key);
-                  savePortalState(data.token, { tab: tab.key, lesson: null });
-                  try {
-                    const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
-                    window.history.replaceState({ ...st, __NA: true, tssLesson: null }, '', `${window.location.pathname}?tab=${tab.key}`);
-                  } catch { /* nada */ }
+                  showTab(tab.key);
                 }}
                 className={`relative flex-1 flex flex-col items-center py-2.5 text-[12px] font-semibold transition-colors ${
                   isActive ? 'text-[var(--tss-navy)]' : 'text-gray-400 hover:text-gray-600'
@@ -1505,8 +1593,10 @@ function HomeTab({
                     {plansArr.map((pl: any, i: number) => {
                       const isGame = pl.kind === 'game';
                       const isCircle = pl.kind === 'circle';
-                      const seqHref = isGame || isCircle ? `/portal/${data.token}/circles` : `/portal/${data.token}/seq/${pl.sequenceId}`;
-                      const rehearseHref = `${seqHref}?tab=feel`;
+                      const seqBase = isGame || isCircle ? `/portal/${data.token}/circles` : `/portal/${data.token}/seq/${pl.sequenceId}`;
+                      // Desde el Home: el Back de la página vuelve al Home.
+                      const seqHref = withFrom(seqBase, { k: 'home' });
+                      const rehearseHref = withFrom(`${seqBase}?tab=feel`, { k: 'home' });
                       return (
                         <div key={`${pl.sequenceId}:${i}`} className={many ? 'rounded-[5px] px-3 py-2.5' : ''} style={many ? { background: 'rgba(247,249,250,.06)', border: '1px solid rgba(247,249,250,.14)' } : undefined}>
                           <p className="text-[20px] leading-tight" style={{ ...F_DISPLAY, color: '#F7F9FA' }}>{many ? `${i + 1} · ` : ''}{pl.label ?? (pl.kind === 'entry' ? pl.title : `#${pl.number} · ${pl.title}`)}</p>
@@ -1532,7 +1622,7 @@ function HomeTab({
                         {c.topics.map((t: any) => (
                           <div key={t.id} className="flex items-center justify-between gap-3">
                             <p className="text-[14px] font-bold leading-snug" style={{ color: '#F7F9FA' }}>{t.title}</p>
-                            <a href={`/portal/${data.token}${t.href}`} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.45)', fontFamily: ARCHIVO }}>Study it</a>
+                            <a href={withFrom(`/portal/${data.token}${t.href}`, { k: 'home' })} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-black uppercase no-underline" style={{ background: 'transparent', color: '#F7F9FA', border: '1px solid rgba(247,249,250,.45)', fontFamily: ARCHIVO }}>Study it</a>
                           </div>
                         ))}
                       </div>
@@ -1611,7 +1701,7 @@ function HomeTab({
                   </button>
                 )}
                 {cf.sequence_id && seqPageHref(data, cf.sequence_id) && (
-                  <a href={seqPageHref(data, cf.sequence_id)!} className="flex items-center justify-center gap-1.5 mt-2.5 text-[15px] font-bold" style={{ color: T_INK }}>
+                  <a href={withFrom(seqPageHref(data, cf.sequence_id)!, { k: 'home' })} className="flex items-center justify-center gap-1.5 mt-2.5 text-[15px] font-bold" style={{ color: T_INK }}>
                     Open the sequence page <ArrowRight size={15} />
                   </a>
                 )}
