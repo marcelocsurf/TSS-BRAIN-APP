@@ -16,7 +16,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Lock, Play } from 'lucide-react';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { WaveGuide, WAVE_KIT_SEQUENCE } from './WaveGuide';
-import { COMMAND_COLORS } from '@/lib/sequence-pages/wave-guide-svg';
+import { COMMAND_COLORS } from '@/lib/sequence-pages/wave-kit';
 import { BoardMap } from './BoardMap';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { SEQUENCE_LAMINAS } from '@/lib/sequence-pages/laminas';

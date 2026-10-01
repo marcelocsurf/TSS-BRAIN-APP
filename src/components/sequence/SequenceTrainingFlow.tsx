@@ -30,7 +30,7 @@ import { VenueScoutLauncher, type VenueCheckResult } from '@/components/venue-sc
 import { sequenceLabel, SIDE_WORD, SEQUENCE_PASS_STARS } from '@/lib/constants/learning-blocks';
 import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
 import { MomentChips } from './MySequenceTab';
-import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
+import { COMMAND_COLORS } from '@/lib/sequence-pages/wave-kit';
 import { WaveGuide, WAVE_KIT_SEQUENCE } from '@/components/portal/sequence-page/WaveGuide';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { boardFlip } from '@/lib/stance';

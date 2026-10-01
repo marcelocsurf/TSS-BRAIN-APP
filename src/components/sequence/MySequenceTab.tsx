@@ -16,7 +16,7 @@ import { momentsByStep, type Moment } from '@/lib/sequence-pages/moments';
 import { effectiveStars, selfStarsThatCount } from '@/lib/stars';
 import { getTasks, closeTask, type StudentTask } from '@/lib/actions/lets-play';
 import { MAX_OPEN_TASKS } from '@/lib/stars';
-import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
+import { COMMAND_COLORS } from '@/lib/sequence-pages/wave-kit';
 
 /** Los momentos de la línea que cubre una lección, con su punto de color.
  *  Es el lenguaje de la ejecución (posture · palm up · extend · elbow); la

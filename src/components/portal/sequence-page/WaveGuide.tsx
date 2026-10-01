@@ -1,17 +1,15 @@
-// ═══ Wave Guide · la ola ilustrada con el recorrido de la secuencia ═══
-// Envoltorio React del SVG puro (src/lib/sequence-pages/wave-guide-svg.ts):
-// misma fuente para el app y para los archivos exportados del paquete de diseño.
+// ═══ Wave Guide · la ola del TSS_Wave_Kit con el recorrido de la secuencia ═══
+// Una sola ola en todo el app (Marcelo 2026-10-01: "pone el nuevo y elimina
+// ese viejo"): la ola fotorrealista del kit + sus capas (zonas, pocket,
+// etiquetas). El recorrido: las capas del kit para las 6 Blue; para el resto,
+// la misma fórmula del kit desde la config (src/lib/sequence-pages/wave-kit.ts).
 // `waveDirection` es solo hacia dónde corre la ola; no cambia el nombre ni el
 // contenido de la maniobra (stance y frontside/backside se resuelven afuera).
 import type { WaveBoardData } from '@/lib/sequence-pages/types';
-import { buildWaveGuideSvg, legendItems, type WaveDirection } from '@/lib/sequence-pages/wave-guide-svg';
+import { kitRouteSvg, legendItems, type WaveDirection } from '@/lib/sequence-pages/wave-kit';
 
-/** Poner la ruta cuando exista el PNG aprobado; null = ilustración en código. */
-export const WAVE_FACE_IMAGE: string | null = null;
-
-/** Secuencias con lámina del TSS_Wave_Kit (2026-09-17): ola fotorrealista limpia
- *  + capas vectoriales del kit (zonas, hold, recorrido, pocket, etiquetas).
- *  Solo Blue (Marcelo: "solo en blue"). El resto sigue con la ilustración en código. */
+/** Secuencias con capas de recorrido hechas por el TSS_Wave_Kit (2026-09-17).
+ *  Las demás dibujan su recorrido con la fórmula del kit (wave-kit.ts). */
 export const WAVE_KIT_SEQUENCE: Record<string, string> = {
   'BB-SEQ-08': 'frontside-pumping',
   'BB-SEQ-09': 'backside-pumping',
@@ -24,14 +22,18 @@ export const WAVE_KIT_SEQUENCE: Record<string, string> = {
 /** Capas del kit: todas comparten viewBox 2048×683; los archivos wave-left ya
  *  vienen espejados (no aplicar otro scaleX). El fondo PNG del kit (2172×724,
  *  misma proporción 3:1) va en WebP: 1024 px para teléfono, 2172 px arriba. */
-function WaveKitLayers({ sequence, waveDirection, title }: { sequence: string; waveDirection: WaveDirection; title: string }) {
+function WaveKitLayers({ sequence, data, waveDirection, title }: { sequence?: string; data: WaveBoardData; waveDirection: WaveDirection; title: string }) {
   const base = '/tss/waves';
+  // Con capas del kit: sus archivos. Sin: el recorrido generado, como imagen
+  // (data URI) para que la flecha de cada ola no choque con otra en la página.
+  const route = sequence
+    ? [`${base}/layers/${sequence}-wave-${waveDirection}-hold.svg`, `${base}/layers/${sequence}-wave-${waveDirection}-route.svg`]
+    : [`data:image/svg+xml;charset=utf-8,${encodeURIComponent(kitRouteSvg(data, waveDirection))}`];
   const layers = [
-    `layers/zones-wave-${waveDirection}.svg`,
-    `layers/${sequence}-wave-${waveDirection}-hold.svg`,
-    `layers/${sequence}-wave-${waveDirection}-route.svg`,
-    `layers/pocket-wave-${waveDirection}.svg`,
-    `layers/labels-wave-${waveDirection}.svg`,
+    `${base}/layers/zones-wave-${waveDirection}.svg`,
+    ...route,
+    `${base}/layers/pocket-wave-${waveDirection}.svg`,
+    `${base}/layers/labels-wave-${waveDirection}.svg`,
   ];
   return (
     <div role="img" aria-label={title} className="relative w-full" style={{ aspectRatio: '2048 / 683', background: '#061C2B', isolation: 'isolate' }}>
@@ -43,7 +45,7 @@ function WaveKitLayers({ sequence, waveDirection, title }: { sequence: string; w
         alt="" aria-hidden className="absolute inset-0 w-full h-full" />
       {layers.map((p, i) => (
         // eslint-disable-next-line @next/next/no-img-element
-        <img key={p} src={`${base}/${p}`} alt="" aria-hidden className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: i + 1 }} />
+        <img key={i} src={p} alt="" aria-hidden className="absolute inset-0 w-full h-full pointer-events-none" style={{ zIndex: i + 1 }} />
       ))}
     </div>
   );
@@ -53,21 +55,17 @@ export function WaveGuide({ data, title, waveDirection = 'right', legend = true,
   data: WaveBoardData;
   title: string;
   waveDirection?: WaveDirection;
-  /** Slug del TSS_Wave_Kit (ver WAVE_KIT_SEQUENCE); si viene, se usa la lámina del kit. */
+  /** Slug del TSS_Wave_Kit (ver WAVE_KIT_SEQUENCE): usa sus capas de recorrido; sin él, el recorrido sale de `data`. */
   kitSequence?: string;
   /** Leyenda en HTML debajo del dibujo (color del texto según el fondo de la tarjeta). */
   legend?: boolean;
   legendColor?: string;
 }) {
-  // Ola pintada (cuando Marcelo la apruebe): public/tss/assets/wave-face-right.png. Hasta entonces, la ilustración en código.
-  const svg = buildWaveGuideSvg(data, { waveDirection, title, faceImageHref: WAVE_FACE_IMAGE ?? undefined });
   return (
     <figure className="m-0">
-      {kitSequence
-        /* En teléfono la lámina tiene ancho mínimo y se desplaza a lo ancho
-           para que zonas y etiquetas se lean (recomendación del kit). */
-        ? <div className="rounded-[5px] overflow-x-auto" style={{ background: '#061C2B' }}><div className="min-w-[640px] sm:min-w-0"><WaveKitLayers sequence={kitSequence} waveDirection={waveDirection} title={title} /></div></div>
-        : <div className="rounded-[5px] overflow-hidden" style={{ background: '#061C2B', lineHeight: 0 }} dangerouslySetInnerHTML={{ __html: svg }} />}
+      {/* En teléfono la lámina tiene ancho mínimo y se desplaza a lo ancho
+          para que zonas y etiquetas se lean (recomendación del kit). */}
+      <div className="rounded-[5px] overflow-x-auto" style={{ background: '#061C2B' }}><div className="min-w-[640px] sm:min-w-0"><WaveKitLayers sequence={kitSequence} data={data} waveDirection={waveDirection} title={title} /></div></div>
       {legend && (
         <figcaption className="flex flex-wrap gap-x-4 gap-y-1.5 mt-2.5 text-[13px] font-semibold" style={{ color: legendColor }}>
           {legendItems(data).map((it) => (

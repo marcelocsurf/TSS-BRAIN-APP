@@ -59,7 +59,7 @@ import {
 } from '@/lib/constants/learning-blocks';
 import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { sequenceStarChanges } from '@/lib/evaluation/sequence-stars';
-import { COMMAND_COLORS } from '@/components/portal/sequence-page/WaveBoard';
+import { COMMAND_COLORS } from '@/lib/sequence-pages/wave-kit';
 
 export interface EvalRow extends SequenceGroupable {
   step_id: string;

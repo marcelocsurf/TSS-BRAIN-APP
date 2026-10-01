@@ -12,7 +12,7 @@
 import { useState } from 'react';
 import { markLessonComplete } from '@/lib/actions/course';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
-import { COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
+import { COMMAND_COLORS, HOLD_COLOR } from '@/lib/sequence-pages/wave-kit';
 import { WaveGuide } from './WaveGuide';
 import { CIRCLES, CIRCLES_INTRO, gameContext, type Circle } from '@/lib/sequence-pages/three-circles';
 import type { WaveBoardData } from '@/lib/sequence-pages/types';

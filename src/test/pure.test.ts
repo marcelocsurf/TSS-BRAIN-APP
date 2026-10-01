@@ -451,3 +451,29 @@ describe('detailForFocus', () => {
     }
   });
 });
+
+// La ola del kit (2026-10-01): la fórmula de wave-kit.ts dibuja lo mismo que
+// las capas que hizo el TSS_Wave_Kit para las 6 Blue — así la #7 y el juego
+// del círculo 3 caen sobre la ola igual que ellas.
+import { readFileSync } from 'node:fs';
+import { kitRouteSvg } from '@/lib/sequence-pages/wave-kit';
+import { WAVE_KIT_SEQUENCE } from '@/components/portal/sequence-page/WaveGuide';
+describe('wave kit · la fórmula coincide con las capas del kit', () => {
+  const nums = (s: string) => (s.match(/-?\d*\.?\d+/g) ?? []).map(Number);
+  const pathsOf = (svg: string) => Array.from(svg.matchAll(/<path d="(M[^"]+)"/g)).map((m) => m[1]);
+  for (const [id, slug] of Object.entries(WAVE_KIT_SEQUENCE)) {
+    it(id, () => {
+      const board = SEQUENCE_PAGES[id]?.think.board;
+      expect(board, id).toBeTruthy();
+      const strokes = (svg: string) => pathsOf(svg).filter((d) => !d.startsWith('M0 0')).flatMap(nums);
+      // Misma pila que el kit: primero el hold, después el recorrido.
+      const ours = strokes(kitRouteSvg(board!, 'right'));
+      const kit = [
+        ...strokes(readFileSync(`public/tss/waves/layers/${slug}-wave-right-hold.svg`, 'utf8')),
+        ...strokes(readFileSync(`public/tss/waves/layers/${slug}-wave-right-route.svg`, 'utf8')),
+      ];
+      expect(ours.length).toBe(kit.length);
+      ours.forEach((n, i) => expect(Math.abs(n - kit[i])).toBeLessThan(0.01));
+    });
+  }
+});

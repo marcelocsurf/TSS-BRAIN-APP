@@ -3,7 +3,7 @@
 // concept" y el póster "El Círculo Infinito"): un círculo con los pasos como
 // nodos, el ∞ en el centro, "loop until the wave ends" y la secuencia de
 // entrada (una vez por ola) debajo. Cada nodo lleva el color de su comando.
-import { COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
+import { COMMAND_COLORS, HOLD_COLOR } from '@/lib/sequence-pages/wave-kit';
 
 const PAPER = '#F7F9FA', CYAN = '#00D2FF';
 const MONO = 'var(--font-plex), IBM Plex Mono, Menlo, monospace';

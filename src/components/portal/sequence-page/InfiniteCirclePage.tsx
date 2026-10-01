@@ -6,7 +6,7 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { MarkReadButton } from './ThreeCirclesPage';
-import { COMMAND_COLORS, HOLD_COLOR } from './WaveBoard';
+import { COMMAND_COLORS, HOLD_COLOR } from '@/lib/sequence-pages/wave-kit';
 import { WaveGuide } from './WaveGuide';
 import { InfinityCircle } from './InfinityCircle';
 import { ZoomImage } from '@/components/shared/ImageLightbox';
