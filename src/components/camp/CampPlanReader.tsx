@@ -24,7 +24,9 @@ import {
   Repeat,
   Brain,
   ListChecks,
+  Lock,
 } from 'lucide-react';
+import { canTeachPage } from '@/lib/coach/course-access';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
 import { StpMediaGrid } from '@/components/coach-portal/StpMediaGrid';
 import {
@@ -57,6 +59,8 @@ interface Props {
   initialDay?: number | null;
   /** La clase se abrió desde el Home: los links lo recuerdan para la vuelta. */
   fromHome?: boolean;
+  /** data.teachRank del portal (0 = sin cursos). Sin dato no se bloquea (dashboard: sin links). */
+  teachRank?: number;
 }
 
 type Mode = 'summary' | 'detail';
@@ -112,6 +116,7 @@ export function CampPlanReader({
   templateMeta,
   initialDay = null,
   fromHome = false,
+  teachRank,
 }: Props) {
   const [mode, setMode] = useState<Mode>('summary');
   const [expanded, setExpanded] = useState<Set<number>>(() => new Set(initialDay ? [initialDay] : []));
@@ -328,7 +333,7 @@ export function CampPlanReader({
                             </button>
                             {open && (
                               <div className="border-t border-[#DCD7C6] p-2">
-                                <BlockCard block={b} coachToken={coachToken} planFrom={instanceId ? { k: 'plan', camp: instanceId, day: d.day_number, view: 'read', why: 'plan', ...(fromHome ? { home: true as const } : {}) } : null} />
+                                <BlockCard block={b} coachToken={coachToken} teachRank={teachRank} planFrom={instanceId ? { k: 'plan', camp: instanceId, day: d.day_number, view: 'read', why: 'plan', ...(fromHome ? { home: true as const } : {}) } : null} />
                               </div>
                             )}
                           </div>
@@ -353,7 +358,7 @@ export function CampPlanReader({
 }
 
 // ── A single block (Activity), rendered with type-specific visuals ──
-function BlockCard({ block, coachToken, planFrom = null }: { block: Block; coachToken?: string | null; planFrom?: CoachFrom | null }) {
+function BlockCard({ block, coachToken, planFrom = null, teachRank }: { block: Block; coachToken?: string | null; planFrom?: CoachFrom | null; teachRank?: number }) {
   const activityType =
     ACTIVITY_TYPES.find((t) => t.value === block.block_type) ??
     ACTIVITY_TYPES.find((t) => t.value === 'custom')!;
@@ -506,6 +511,15 @@ function BlockCard({ block, coachToken, planFrom = null }: { block: Block; coach
         const label = page
           ? `Teach it · ${sequenceDisplayName(page)}${focusTitle ? ` · ${focusTitle}` : !focusStep && block.step_id && block.step_title && page.kind !== 'tool' ? ` · ${block.step_title}` : ''}`
           : `Open the lesson${block.step_title ? ` · ${block.step_title}` : ''}`;
+        // Arriba de su cinta (o sin cursos) la página da 404 (seq/[seqId]/page.tsx):
+        // se nombra sin link (Marcelo 2026-10-01).
+        const canOpen = teachRank === undefined || (page ? canTeachPage(page, teachRank) : teachRank > 0);
+        if (!canOpen) return (
+          <span className="inline-flex items-center gap-1 text-[11px] text-[#55666E]">
+            <Lock size={11} strokeWidth={1.75} />
+            {page ? `${sequenceDisplayName(page)} · above your teaching level` : `${block.step_title ?? 'This lesson'} · not in your courses`}
+          </span>
+        );
         return (
           <a href={href} className="inline-flex items-center gap-1 text-[11px] text-[var(--tss-cyan)] hover:underline">
             <ListChecks size={11} strokeWidth={1.75} />

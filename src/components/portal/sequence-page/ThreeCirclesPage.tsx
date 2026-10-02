@@ -180,12 +180,13 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
           <a className="tss-back" href={back?.href ?? (coach ? coach.backHref : `${portal}?tab=course`)}><Icon name="back" />{back?.label ?? (coach ? 'Courses' : 'Course')}</a>
           <h1>{isIntro ? 'The Three Circles of Power' : `0${cur.n} / ${cur.label}`}</h1>
           <p className="tss-subtitle">{isIntro ? 'Body · board · wave. Where the three overlap, you get flow.' : SUBTITLE[cur.key]}</p>
-          {/* Coach: el mismo material + a un toque, cómo enseñarlo (Teach it). */}
+          {/* Coach: el mismo material + a un toque, cómo enseñarlo (Teach it).
+              El círculo vuelve ACÁ (2026-10-01): sin origen caía en el curso Yellow. */}
           {coach && (
             <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] font-bold mb-1" style={{ color: CYAN }}>
               <span style={{ ...MONO, color: CYAN }}>Teach it</span>
               {CIRCLES.map((c) => (
-                <a key={c.key} href={`${portal}/seq/CIRCLE-${c.key.toUpperCase()}`} className="no-underline" style={{ color: CYAN }}>{`Circle ${c.n} · ${c.label} →`}</a>
+                <a key={c.key} href={withFrom(`${portal}/seq/CIRCLE-${c.key.toUpperCase()}`, { k: 'circles', ...(coach.belt ? { belt: coach.belt } : {}) })} className="no-underline" style={{ color: CYAN }}>{`Circle ${c.n} · ${c.label} →`}</a>
               ))}
             </p>
           )}

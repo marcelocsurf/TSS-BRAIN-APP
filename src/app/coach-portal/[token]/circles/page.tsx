@@ -25,7 +25,7 @@ const archivo = Archivo({ subsets: ['latin'], axes: ['wdth'], variable: '--font-
 const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex' });
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function CoachCirclesPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<{ from?: string; belt?: string }> }) {
+export default async function CoachCirclesPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams?: Promise<{ from?: string; belt?: string; circle?: string }> }) {
   const sp = searchParams ? await searchParams : undefined;
   // La cinta desde la que se mira (Yellow o Blue): de dónde vino o ?belt=.
   const origin = parseFrom(sp?.from, 'coach');
@@ -49,6 +49,10 @@ export default async function CoachCirclesPage({ params, searchParams }: { param
 
   // Todos los videos (Library + la lección + cada movimiento) y las láminas, de la fuente única.
   const media = await loadCourseMedia(admin, [THREE_CIRCLES_LESSON_ID, ...MOVE_LESSON_IDS]);
+  // El Back con SU nombre (Marcelo 2026-10-01): desde el Infinite Circle dice
+  // "The Infinite Circle", desde el plan "Today's plan" (antes siempre "Courses").
+  // Al índice, a la fila de la que salió (#row-circles).
+  const back = coachBack(origin && origin.k !== 'circles' ? origin : null, token, { k: 'course', belt: viewBelt }, 'circles');
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       {/* eslint-disable-next-line @next/next/no-css-tags */}
@@ -60,7 +64,10 @@ export default async function CoachCirclesPage({ params, searchParams }: { param
         video={videoRow?.file_url ? { url: videoRow.file_url, title: videoRow.title } : null}
         lessonId={THREE_CIRCLES_LESSON_ID}
         moveVideos={movementVideos(media)}
-        coach={{ backHref: coachBack(origin && origin.k !== 'circles' ? origin : null, token, { k: 'course', belt: viewBelt }).href, belt: viewBelt, laminas: THREE_CIRCLES_LAMINAS, videos: threeCirclesVideos(media) }}
+        back={back}
+        // ?circle= (2026-10-01): volver de una lección cae en el MISMO círculo, como en el alumno.
+        initialCircle={sp?.circle === 'body' || sp?.circle === 'board' || sp?.circle === 'wave' ? sp.circle : null}
+        coach={{ backHref: back.href, belt: viewBelt, laminas: THREE_CIRCLES_LAMINAS, videos: threeCirclesVideos(media) }}
       />
     </div>
   );

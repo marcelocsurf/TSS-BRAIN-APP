@@ -68,10 +68,13 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
 .cb-tss{height:24px;width:auto;opacity:.82}
 .cb-div{width:1px;height:26px;background:rgba(255,255,255,.15)}
 .cb-note{font-family:'IBM Plex Mono',monospace;font-size:.6rem;letter-spacing:.5px;color:var(--tm);opacity:.6;text-align:center;margin-top:8px;text-transform:uppercase}
+/* Vuelta al portal y atrás dentro del quiz (Marcelo 2026-10-01, continuidad) */
+.tb-back{position:absolute;left:10px;top:0;height:46px;align-items:center;padding:0 6px;background:none;border:none;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--tl)}
+.backlink{background:none;border:none;cursor:pointer;padding:10px 6px;font-family:'IBM Plex Mono',monospace;font-size:.66rem;letter-spacing:.12em;text-transform:uppercase;color:var(--tl);opacity:.85}
 </style>
 </head>
 <body>
-<div class="topbar"><img class="tb-logo" id="tbPuro" alt="Puro Surf"><span class="tb-div"></span><img class="tb-logo" id="tbTss" alt="The Surf Sequence"></div>
+<div class="topbar"><img class="tb-logo" id="tbPuro" alt="Puro Surf"><span class="tb-div"></span><img class="tb-logo" id="tbTss" alt="The Surf Sequence"><button class="tb-back" id="tbBack" type="button" onclick="toPortal()" style="display:none">← Portal</button></div>
 <div class="wrap">
 
 <!-- ═══ INTRO — el del quiz actual (v1): prepara expectativas y el resultado ═══ -->
@@ -94,6 +97,7 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
   <p class="center" style="color:var(--cyan);font-weight:600;max-width:420px;margin:0 auto 16px;text-wrap:balance">That's what The Surf Sequence is built on.</p>
   <p class="center mono" style="font-size:.6rem;color:var(--tm);margin-bottom:22px">10 scenes · 2 tracks · ~90 seconds</p>
   <div class="center"><button class="btn" onclick="show('gate')">Find my level →</button></div>
+  <div class="center portal-back" style="margin-top:8px;display:none"><button class="backlink" type="button" onclick="toPortal()">← Back to your portal</button></div>
   <div class="center" style="margin-top:14px">
     <button class="btn ghost" onclick="document.getElementById('rb-box').style.display='block';this.style.display='none'" style="padding:10px 18px;font-size:.8rem">Already surfed with Puro Surf?</button>
     <div id="rb-box" style="display:none;max-width:400px;margin:10px auto 0">
@@ -134,6 +138,7 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
     </button>
   </div>
   <div class="center" style="margin-top:16px"><button class="btn" id="gnext" disabled onclick="gateNext()">Continue →</button></div>
+  <div class="center" style="margin-top:6px"><button class="backlink" type="button" onclick="show('intro')">← Back</button></div>
 </div>
 
 <!-- ═══ TABLA (contexto, no puntúa) ═══ -->
@@ -146,6 +151,7 @@ body{background:var(--ink);color:var(--tl);font-family:'Archivo',system-ui,sans-
     <button class="opt" onclick="boardSelect('short')">Shortboard</button>
     <button class="opt" onclick="boardSelect('varias')">A bit of everything — depends on the day</button>
   </div>
+  <div class="center" style="margin-top:14px"><button class="backlink" type="button" onclick="show('gate')">← Back</button></div>
 </div>
 
 <!-- ═══ QUIZ ═══ -->
@@ -315,6 +321,19 @@ let cur=0, ans=new Array(QS.length).fill(-1), need=-1, needs=[], board=null;
    captura, el resultado se ata a su ficha. ?from=intake agrega la vuelta. */
 const TOKEN=new URLSearchParams(location.search).get('t');
 const FROM=new URLSearchParams(location.search).get('from');
+/* Vuelta al portal (Marcelo 2026-10-01, continuidad): solo con ?t=<token válido>
+   &from=portal. Si el navegador vino del portal, se vuelve atrás (sin duplicar
+   la entrada); si no (link copiado), se reemplaza por el Home del portal. Con
+   el resultado ya guardado se carga fresco (el Home deja de ofrecer el quiz). */
+const PORTAL_HREF=(TOKEN&&FROM==='portal'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(TOKEN))?'/portal/'+TOKEN+'?tab=home':null;
+let quizDone=false;
+function toPortal(){
+  if(!PORTAL_HREF)return;
+  if(quizDone){location.href=PORTAL_HREF;return}
+  try{const ref=document.referrer?new URL(document.referrer):null;
+    if(ref&&ref.origin===location.origin&&ref.pathname==='/portal/'+TOKEN&&history.length>1){history.back();return}}catch(e){}
+  location.replace(PORTAL_HREF);
+}
 let pendingR=null;
 async function sendResult(payload){
   const res=await fetch('/api/quiz-v2-lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
@@ -389,6 +408,7 @@ async function capSubmit(){
 }
 document.getElementById('tbTss').src=TSS_LOGO;document.getElementById('tbPuro').src=PURO_LOGO;
 document.getElementById('cbTss').src=TSS_LOGO;document.getElementById('cbPuro').src=PURO_LOGO;
+if(PORTAL_HREF){document.getElementById('tbBack').style.display='flex';document.querySelectorAll('.portal-back').forEach(el=>el.style.display='block')}
 
 function show(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById('s-'+id).classList.add('on');window.scrollTo(0,0)}
 function gateSelect(g){
@@ -425,13 +445,14 @@ function render(){
   document.getElementById('qscene').textContent=q.scene;
   document.getElementById('qprompt').textContent=q.prompt;
   document.getElementById('opts').innerHTML=q.opts.map((o,i)=>`<button class="opt ${ans[cur]===i?'sel':''}" onclick="pick(${i})">${o.t}</button>`).join('');
-  document.getElementById('bbk').style.display=cur===0?'none':'inline-block';
+  document.getElementById('bbk').style.display='inline-block';
   document.getElementById('bnx').disabled=ans[cur]===-1;
   document.getElementById('bnx').textContent=cur===QS.length-1?'See my level':'Next';
 }
-function pick(i){ans[cur]=i;document.querySelectorAll('.opt').forEach((el,j)=>el.classList.toggle('sel',j===i));document.getElementById('bnx').disabled=false;if(cur<QS.length-1)setTimeout(next,350)}
+/* Solo las opciones de la pregunta (2026-10-01): '.opt' también marcaba las tablas, que ahora se ven al volver. */
+function pick(i){ans[cur]=i;document.querySelectorAll('#opts .opt').forEach((el,j)=>el.classList.toggle('sel',j===i));document.getElementById('bnx').disabled=false;if(cur<QS.length-1)setTimeout(next,350)}
 function next(){if(ans[cur]===-1)return;if(cur===QS.length-1){finishQuiz();return}cur++;render()}
-function prev(){if(cur>0){cur--;render()}}
+function prev(){if(cur>0){cur--;render()}else{show('board')}}
 
 function raw(i){const a=ans[i];return(typeof a==='number'&&a>=0&&a<=3)?QS[i].opts[a].s:0}
 function compute(){
@@ -461,6 +482,7 @@ function compute(){
 }
 
 function renderResult(r){
+  quizDone=true;
   const lv=r.lv;
   const ci=LEVELS.indexOf(lv);
   const next=LEVELS[ci+1];const nxn=next?next.name:'the next level';

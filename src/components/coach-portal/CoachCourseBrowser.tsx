@@ -133,8 +133,9 @@ export function CoachCourseBrowser({ token, tabs, initialBelt, initialView }: {
                 <div className="mt-2 rounded-lg overflow-hidden" style={{ background: '#fff', border: `1px solid ${BORDER}` }}>
                   {g.items.map((it, idx) => {
                     const h = hrefsFor(it, token, tab.key, view);
+                    // id de la fila (2026-10-01): el Back de lo que se abrió desde acá vuelve a ella (#row-<id>).
                     return (
-                      <div key={it.id} className="px-4 py-3" style={{ borderTop: idx ? `1px solid ${BORDER}` : undefined }}>
+                      <div key={it.id} id={`row-${it.id}`} className="px-4 py-3" style={{ borderTop: idx ? `1px solid ${BORDER}` : undefined, scrollMarginTop: 12 }}>
                         {it.kind === 'page' && <p style={{ ...MONO, fontSize: 10, color: '#0090B0' }}>{it.eyebrow}</p>}
                         <p className="text-[16px] font-bold leading-snug" style={{ color: INK }}>{it.title}</p>
                         {it.laminas.length > 0 && (

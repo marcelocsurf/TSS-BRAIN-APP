@@ -69,7 +69,7 @@ function EmRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function SupportHome({ coach, upcoming, schedule, spaceBookings = [], emergencyPlan, onGoTo }: {
+export function SupportHome({ coach, upcoming, schedule, spaceBookings = [], emergencyPlan, onGoTo, onOpenInventory, openTaskId = null }: {
   coach: any;
   upcoming: any[];
   schedule: any[];
@@ -82,6 +82,10 @@ export function SupportHome({ coach, upcoming, schedule, spaceBookings = [], eme
     emergency_protocol: string | null;
   } | null;
   onGoTo?: (tab: string) => void;
+  /** El inventario abierto desde una tarea (2026-10-01): su Back vuelve a esa tarea. */
+  onOpenInventory?: (taskId: string) => void;
+  /** Volver del inventario: la tarea que lo abrió, abierta. */
+  openTaskId?: string | null;
 }) {
   const initials = `${coach.first_name?.[0] || ''}${coach.last_name?.[0] || ''}`.toUpperCase();
   const title = coach.job_title || 'Team member';
@@ -125,7 +129,7 @@ export function SupportHome({ coach, upcoming, schedule, spaceBookings = [], eme
       </Card>
 
       {/* Mis tareas (con el paso a paso que escribe quien la ejecuta) */}
-      <CoachTasks token={coach.portal_token} onOpenInventory={onGoTo ? () => onGoTo('inventory') : undefined} />
+      <CoachTasks token={coach.portal_token} onOpenInventory={onOpenInventory ?? (onGoTo ? () => onGoTo('inventory') : undefined)} initialOpenId={openTaskId} />
 
       {/* Calendario de la academia: la foto operativa de los próximos 7 días */}
       <div>

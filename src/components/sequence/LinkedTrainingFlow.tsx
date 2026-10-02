@@ -12,7 +12,6 @@
 // profundidad pedagógica (criterios → coach valida → My Sequence).
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   getDrillMissionForTraining,
   saveLinkedTrainingSession,
@@ -48,6 +47,10 @@ interface Props {
   onCancel?: () => void;
   /** El nombre de esa pantalla para el botón de vuelta. */
   backLabel?: string;
+  /** La sesión quedó guardada (pantalla final): el portal la suelta al salir de Let's Play. */
+  onSaved?: () => void;
+  /** "← Back to <origen>" de la pantalla final. Sin esto, onReturnToSequence. */
+  onDoneBack?: () => void;
 }
 
 // ─── Brand Manual v10 ───
@@ -73,11 +76,10 @@ export function LinkedTrainingFlow({
   onReturnToSequence,
   onCancel,
   backLabel = "Let's Play",
+  onSaved,
+  onDoneBack,
 }: Props) {
   const cancel = onCancel ?? onClearIncoming;
-  // Home/Course leen datos del servidor: sin refresh, las horas y los
-  // drills practicados quedaban viejos hasta recargar (bug 2026-09-01).
-  const router = useRouter();
   const [drill, setDrill] = useState<DrillMissionRow | null>(null);
   const [phase, setPhase] = useState<Phase>('loading');
   const [errorMsg, setErrorMsg] = useState('');
@@ -463,7 +465,10 @@ export function LinkedTrainingFlow({
       if (res.ok) {
         getWeeklyPracticeCount(portalToken).then(setWeekCount).catch(() => {});
         setPhase('done');
-        router.refresh();
+        // Sin router.refresh() (Marcelo 2026-10-01): re-pedía la URL interna de Next
+        // (con el ?drill= del deep link) y la barra volvía ahí; recargar reabría la
+        // misión. Los datos frescos (horas, estrella) llegan al salir (goTab en el portal).
+        onSaved?.();
       } else {
         setErrorMsg(res.error || 'Failed to save session');
       }
@@ -714,11 +719,15 @@ export function LinkedTrainingFlow({
           </div>
           </>)}
 
+          {/* Vuelve adonde se abrió la misión (la página de la secuencia, el paso,
+              el Home…); Let's Play queda aparte (Marcelo 2026-10-01). */}
           <div className="space-y-2 pt-1">
-            <button onClick={onReturnToSequence} className="w-full py-3 rounded-full text-[11px]" style={{ ...F_M, background: INK, color: PAPER, fontWeight: 700 }}>
-              ← Back to Let&apos;s Play
+            <button onClick={onDoneBack ?? onReturnToSequence} className="w-full py-3 rounded-full text-[11px]" style={{ ...F_M, background: INK, color: PAPER, fontWeight: 700 }}>
+              ← Back to {backLabel}
             </button>
-            <button onClick={onClearIncoming} className="w-full py-2 text-xs text-[#55666E]">Stay in Let&apos;s Play</button>
+            {backLabel !== "Let's Play" && (
+              <button onClick={onReturnToSequence} className="w-full py-2 text-xs text-[#55666E]">Let&apos;s Play</button>
+            )}
           </div>
         </div>
       </div>

@@ -34,6 +34,13 @@ export function sequencePageRank(cfg: { courseKey: string; alsoCourseKeys?: stri
   return Math.min(...[cfg.courseKey, ...(cfg.alsoCourseKeys ?? [])].map((k) => BELT_RANK[String(k).replace(/_belt$/, '')] ?? 6));
 }
 
+/** ¿El coach abre esta página para enseñarla? La MISMA regla que la ruta
+ *  /coach-portal/[token]/seq (Marcelo 2026-10-01): sin esto, "Teach it" de
+ *  una página arriba de su cinta caía en el 404 del alumno. */
+export function canTeachPage(cfg: { courseKey: string; alsoCourseKeys?: string[] } | null | undefined, rank: number): boolean {
+  return !!cfg && sequencePageRank(cfg) <= rank;
+}
+
 // Todas las lecciones que nombra una página (pasos, prep, "Go deeper"…): se
 // leen del config entero, así un link nuevo en la página no queda afuera.
 const pageLessonIds = new Map<string, Set<string>>();

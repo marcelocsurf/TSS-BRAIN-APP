@@ -33,6 +33,9 @@ export default async function CoachLoopPage({ params, searchParams }: { params: 
 
   // Todos los videos (Library + la lección) y las láminas, de la fuente única.
   const media = await loadCourseMedia(admin, ['BB-FND-INF']);
+  // El Back con SU nombre (Marcelo 2026-10-01): desde el plan "Today's plan",
+  // desde el índice "Courses" (a la fila de la que salió, #row-loop).
+  const back = coachBack(parseFrom(sp?.from, 'coach'), token, { k: 'course', belt: 'blue' }, 'loop');
   return (
     <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
       {/* eslint-disable-next-line @next/next/no-css-tags */}
@@ -43,7 +46,8 @@ export default async function CoachLoopPage({ params, searchParams }: { params: 
         threeCirclesLessonId={THREE_CIRCLES_LESSON_ID}
         loopLessonId={null}
         initialSide={sp?.side === 'bs' || sp?.side === 'fs' ? sp.side : null}
-        coach={{ backHref: coachBack(parseFrom(sp?.from, 'coach'), token, { k: 'course', belt: 'blue' }).href, laminas: INFINITE_CIRCLE_LAMINAS, videos: dedupeVideos([...media.libraryVideos('BB-LOOP'), ...media.videosOfLesson('BB-FND-INF')]) }}
+        back={back}
+        coach={{ backHref: back.href, laminas: INFINITE_CIRCLE_LAMINAS, videos: dedupeVideos([...media.libraryVideos('BB-LOOP'), ...media.videosOfLesson('BB-FND-INF')]) }}
       />
     </div>
   );

@@ -4,7 +4,7 @@ import { pickWeakestCriterion } from '@/lib/utils/criteria';
 import { takesRunStar, selfStarsThatCount } from '@/lib/stars';
 import { sequenceStarChanges } from '@/lib/evaluation/sequence-stars';
 import { BB_LINE, BB_NAV, entryPageForCourse } from '@/lib/sequence-pages/bb-entry';
-import { beltRankOf, sequencePageRank, studentSectionRank, lessonInVisiblePage } from '@/lib/coach/course-access';
+import { beltRankOf, sequencePageRank, studentSectionRank, lessonInVisiblePage, canTeachPage } from '@/lib/coach/course-access';
 import { coachMayOpenCoachLesson, splitCoachCourses, groupToolCourses, toolCourseKey } from '@/lib/coach/coach-lessons';
 import { laminasInMarkdown, stripLaminas } from '@/lib/sequence-pages/laminas';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
@@ -340,6 +340,16 @@ describe('coach course access by belt', () => {
     expect(lessonInVisiblePage('STP-035', 1)).toBe(false);
     expect(lessonInVisiblePage('STP-035', 2)).toBe(true); // BB-NAV sale en Yellow
   });
+  // Los links "Teach it" del plan siguen la regla de la ruta /seq (2026-10-01).
+  it('teach links follow the page route rule', () => {
+    expect(canTeachPage(SEQUENCE_PAGES['BB-SEQ-08'], 2)).toBe(false);
+    expect(canTeachPage(SEQUENCE_PAGES['BB-SEQ-08'], 3)).toBe(true);
+    expect(canTeachPage(BB_NAV, 2)).toBe(true);
+    expect(canTeachPage(SEQUENCE_PAGES['WB-SEQ-1'], 0)).toBe(false);
+    expect(canTeachPage(SEQUENCE_PAGES['CIRCLE-BODY'], 1)).toBe(false);
+    expect(canTeachPage(SEQUENCE_PAGES['CIRCLE-BODY'], 2)).toBe(true);
+    expect(canTeachPage(null, 6)).toBe(false);
+  });
 });
 
 // Cursos de herramientas del coach (Marcelo 2026-09-30): aparte de la
@@ -552,6 +562,16 @@ describe('nav · from', () => {
     // Una página dentro de otra página no encadena más de un nivel.
     expect(parseFrom('seq:WB-SEQ-3::::seq:WB-SEQ-1', 'coach')).toEqual({ k: 'seq', id: 'WB-SEQ-3' });
   });
+  it('el Back al índice del curso cae en la fila de la que salió (2026-10-01)', () => {
+    expect(coachBack({ k: 'course', belt: 'blue' }, T, { k: 'home' }, 'BB-SEQ-08').href).toBe(`/coach-portal/${T}/course?belt=blue#row-BB-SEQ-08`);
+    expect(coachBack(null, T, { k: 'course', belt: 'yellow' }, 'circles').href).toBe(`/coach-portal/${T}/course?belt=yellow#row-circles`);
+    // En Plates / Videos no hay filas: sin ancla.
+    expect(coachBack({ k: 'course', belt: 'blue', view: 'plates' }, T, { k: 'home' }, 'BB-SEQ-08').href).toBe(`/coach-portal/${T}/course?belt=blue&view=plates`);
+    // Otro destino ignora la fila; una fila rara no se pega.
+    expect(coachBack({ k: 'home' }, T, { k: 'home' }, 'x1').href).toBe(`/coach-portal/${T}?tab=home`);
+    expect(coachBack({ k: 'course', belt: 'blue' }, T, { k: 'home' }, 'a"><b').href).toBe(`/coach-portal/${T}/course?belt=blue`);
+    expect(coachBack({ k: 'course', belt: 'blue' }, T, { k: 'home' }).href).toBe(`/coach-portal/${T}/course?belt=blue`);
+  });
 });
 
 // El Home "Clarity" (Marcelo 2026-10-01): el círculo del agua y el dial del flow.
@@ -579,5 +599,84 @@ describe('Home visuals · water ring and flow dial', () => {
     const hard = renderToStaticMarkup(React.createElement(FlowDial, { avg: 4.2, count: 5 }));
     expect(hard).toContain('Above the channel');
     expect(hard).toContain('lower the challenge');
+  });
+});
+
+// Let's Play (Marcelo 2026-10-01): el plan a medio llenar y la Custom Session en curso.
+import { planDraftKey, savePlanDraft, loadPlanDraft, clearPlanDraft, saveCustomInProgress, loadCustomInProgress, clearCustomInProgress } from '@/lib/portal/portal-state';
+describe('Let’s Play · borradores en el teléfono', () => {
+  const memStore = () => {
+    const m = new Map<string, string>();
+    return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => { m.set(k, v); }, removeItem: (k: string) => { m.delete(k); } };
+  };
+  it('planDraftKey normaliza igual que page.tsx rearma ?seq=&mode=&focus=', () => {
+    expect(planDraftKey('t', 'WB-SEQ-3', 'step_focus', null)).toBe(planDraftKey('t', 'WB-SEQ-3', 'sequence_run', null));
+    expect(planDraftKey('t', 'WB-SEQ-3', 'sequence_run', 'STP-016')).toBe(planDraftKey('t', 'WB-SEQ-3', 'sequence_run', null));
+    expect(planDraftKey('t', 'WB-SEQ-3', 'step_focus', 'STP-016')).not.toBe(planDraftKey('t', 'WB-SEQ-3', 'sequence_run', null));
+    // Un foco que page.tsx no acepta vuelve como la línea completa: misma clave.
+    expect(planDraftKey('t', 'WB-SEQ-3', 'step_focus', 'CIRCLE-BOARD:P1')).toBe(planDraftKey('t', 'WB-SEQ-3', 'sequence_run', null));
+  });
+  it('el borrador del plan vuelve, caduca a los 30 min y se borra', () => {
+    vi.stubGlobal('sessionStorage', memStore());
+    try {
+      const k = planDraftKey('t', 'WB-SEQ-3', 'step_focus', 'STP-016');
+      savePlanDraft(k, { intention: 'Eyes up' });
+      expect(loadPlanDraft<{ intention: string }>(k)?.intention).toBe('Eyes up');
+      const now = Date.now();
+      vi.spyOn(Date, 'now').mockReturnValue(now + 31 * 60_000);
+      expect(loadPlanDraft(k)).toBeNull();
+      vi.restoreAllMocks();
+      savePlanDraft(k, { intention: 'x' });
+      clearPlanDraft(k);
+      expect(loadPlanDraft(k)).toBeNull();
+    } finally { vi.unstubAllGlobals(); vi.restoreAllMocks(); }
+  });
+  it('la Custom Session en curso vive 24 h por token', () => {
+    vi.stubGlobal('localStorage', memStore());
+    try {
+      expect(loadCustomInProgress('t')).toBeNull();
+      saveCustomInProgress('t', { id: 'abc', focus: 'Free surf', duration: 45 });
+      expect(loadCustomInProgress('t')).toMatchObject({ id: 'abc', focus: 'Free surf', duration: 45 });
+      expect(loadCustomInProgress('other')).toBeNull();
+      const now = Date.now();
+      vi.spyOn(Date, 'now').mockReturnValue(now + 25 * 3600_000);
+      expect(loadCustomInProgress('t')).toBeNull();
+      vi.restoreAllMocks();
+      saveCustomInProgress('t', { id: 'abc', focus: 'Free surf', duration: 45 });
+      clearCustomInProgress('t');
+      expect(loadCustomInProgress('t')).toBeNull();
+    } finally { vi.unstubAllGlobals(); vi.restoreAllMocks(); }
+  });
+});
+
+// Home "Also today · theory" (Marcelo 2026-10-01): Study it solo con lo que abre el tema.
+import { topicOpenFor } from '@/lib/sequence-pages/topics';
+describe('topicOpenFor · Study it en la teoría del día', () => {
+  const who = (open: string[], extra: Partial<{ anyCourse: boolean; courseLocked: boolean; lessonSection: string | null }> = {}) =>
+    ({ open, anyCourse: open.length > 0, ...extra });
+  it('los Tres Círculos abren con Yellow o Blue, no con White', () => {
+    expect(topicOpenFor('circles', who(['yellow_belt']))).toBe(true);
+    expect(topicOpenFor('circles', who(['blue_belt']))).toBe(true);
+    expect(topicOpenFor('circles', who(['white_belt']))).toBe(false);
+  });
+  it('el Infinite Circle pide Blue', () => {
+    expect(topicOpenFor('loop', who(['blue_belt']))).toBe(true);
+    expect(topicOpenFor('loop', who(['yellow_belt']))).toBe(false);
+  });
+  it('una lección de Blue pide el curso Blue', () => {
+    expect(topicOpenFor('lesson:BB-ONB-01', who(['blue_belt']))).toBe(true);
+    expect(topicOpenFor('lesson:BB-ONB-01', who(['white_belt', 'yellow_belt']))).toBe(false);
+  });
+  it('una lección de todas las cintas abre con cualquier curso y no sin curso', () => {
+    expect(topicOpenFor('lesson:PC-WARMUP', who(['white_belt']))).toBe(true);
+    expect(topicOpenFor('lesson:PC-WARMUP', who([]))).toBe(false);
+    // Curso bajo candado (ownedBelts vacío) pero con curso: el Pre-Course abre.
+    expect(topicOpenFor('lesson:PC-WARMUP', who([], { anyCourse: true, courseLocked: true, lessonSection: 'pre_course_fundamentals' }))).toBe(true);
+  });
+  it('bajo candado, una lección fuera del Pre-Course no abre', () => {
+    expect(topicOpenFor('lesson:ONB-06', who([], { anyCourse: true, courseLocked: true, lessonSection: 'wb_onboarding' }))).toBe(false);
+  });
+  it('un id desconocido no abre', () => {
+    expect(topicOpenFor('nope', who(['blue_belt']))).toBe(false);
   });
 });

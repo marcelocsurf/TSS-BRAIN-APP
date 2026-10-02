@@ -841,6 +841,27 @@ export async function completeSelfTrainingSession(
   return { success: true };
 }
 
+// Descartar una Custom Session empezada y nunca cerrada (Marcelo 2026-10-01):
+// sale del historial y de las horas (que leen status = 'done'). Solo la
+// propia, solo 'custom' y solo si no se completó.
+export async function discardCustomSession(portalToken: string, sessionId: string): Promise<{ ok: boolean }> {
+  try {
+    const studentId = await studentIdFromPortalToken(portalToken);
+    if (!studentId) return { ok: false };
+    const admin = createAdminClient();
+    const { error } = await admin
+      .from('self_training_sessions')
+      .update({ status: 'discarded' })
+      .eq('id', sessionId)
+      .eq('student_id', studentId)
+      .eq('kind', 'custom')
+      .eq('completed', false);
+    return { ok: !error };
+  } catch {
+    return { ok: false };
+  }
+}
+
 // ─── Log a pure free-surf session (no mission/drill) ───
 
 // Lo que el alumno dejó anotado como "la próxima" en su última sesión libre.

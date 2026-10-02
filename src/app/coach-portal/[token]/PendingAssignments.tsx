@@ -79,27 +79,52 @@ function QuickRoster({
 export function PendingAssignments({
   token,
   assignments,
+  onPlanClass,
 }: {
   token: string;
   assignments: Assignment[];
+  /** "Plan this class →": abre ese servicio en el Plan (Dar la clase); su Back vuelve al Home. */
+  onPlanClass?: (campId: string) => void;
 }) {
-  if (!assignments || assignments.length === 0) return null;
+  // La tarjeta respondida queda a la vista con su confirmación hasta que el
+  // coach la cierra (Marcelo 2026-10-01): el router.refresh() la saca de la
+  // lista del servidor y la confirmación desaparecía en el acto.
+  const [answered, setAnswered] = useState<Record<string, { a: Assignment; done: 'accepted' | 'rejected'; hidden?: true }>>({});
+  const live = assignments ?? [];
+  const list = [...live, ...Object.values(answered).map((x) => x.a).filter((a) => !live.some((l) => l.id === a.id))]
+    .filter((a) => !answered[a.id]?.hidden)
+    .sort((x, y) => x.start_date.localeCompare(y.start_date));
+  if (list.length === 0) return null;
   return (
     <div className="space-y-3 mb-5">
-      {assignments.map((a) => (
-        <AssignmentCard key={a.id} token={token} assignment={a} />
+      {list.map((a) => (
+        <AssignmentCard
+          key={a.id}
+          token={token}
+          assignment={a}
+          done={answered[a.id]?.done ?? null}
+          onAnswered={(done) => setAnswered((m) => ({ ...m, [a.id]: { a, done } }))}
+          onDismiss={() => setAnswered((m) => (m[a.id] ? { ...m, [a.id]: { ...m[a.id], hidden: true } } : m))}
+          onPlanClass={onPlanClass}
+        />
       ))}
     </div>
   );
 }
 
-function AssignmentCard({ token, assignment }: { token: string; assignment: Assignment }) {
+function AssignmentCard({ token, assignment, done, onAnswered, onDismiss, onPlanClass }: {
+  token: string;
+  assignment: Assignment;
+  done: null | 'accepted' | 'rejected';
+  onAnswered: (r: 'accepted' | 'rejected') => void;
+  onDismiss: () => void;
+  onPlanClass?: (campId: string) => void;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [mode, setMode] = useState<'idle' | 'rejecting'>('idle');
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
-  const [done, setDone] = useState<null | 'accepted' | 'rejected'>(null);
   // Quick view desde el PRIMER momento: quiénes van se ve ANTES de aceptar
   // (pedido de Marcelo 2026-08-30 — decidís mejor sabiendo a quién recibís),
   // y queda a la vista después de aceptar.
@@ -131,7 +156,7 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
           setError(res?.error || 'Could not send your response.');
           return;
         }
-        setDone(response);
+        onAnswered(response);
         router.refresh();
       } catch (e: any) {
         setError(e?.message || 'Could not send your response.');
@@ -161,9 +186,34 @@ function AssignmentCard({ token, assignment }: { token: string; assignment: Assi
               {quick.camp.time ? ` · ${quick.camp.time}` : ''} · {quick.camp.days} {quick.camp.days === 1 ? 'day' : 'days'}
             </p>
             <QuickRoster token={token} roster={quick.roster ?? []} />
-            <p className="text-[11px] font-semibold" style={{ color: '#00A8CC' }}>Next: open PLAN → 📅 Vista semana to plan the whole camp.</p>
+            {!alreadyPast && quick.camp.days > 1 && (
+              <p className="text-[11px] font-semibold" style={{ color: '#00A8CC' }}>Inside the class, 📅 Vista semana plans the whole camp.</p>
+            )}
           </div>
         )}
+
+        {/* El paso siguiente es un botón, no un texto (Marcelo 2026-10-01): abre
+            ESTA clase en el Plan y su Back vuelve al Home. Si el servicio ya
+            pasó, no — el Home ya ofrece cerrar los días. */}
+        <div className="mt-3 flex gap-2">
+          {done === 'accepted' && !alreadyPast && onPlanClass && (
+            <button
+              type="button"
+              onClick={() => onPlanClass(assignment.id)}
+              className="flex-1 py-2.5 rounded-full text-sm font-bold"
+              style={{ background: '#00D2FF', color: '#061C2B' }}
+            >
+              Plan this class →
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="px-4 py-2.5 border border-[#DCD7C6] text-[#55666E] rounded-full text-sm font-semibold"
+          >
+            Dismiss
+          </button>
+        </div>
       </div>
     );
   }

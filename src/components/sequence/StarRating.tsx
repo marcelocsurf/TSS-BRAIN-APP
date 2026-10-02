@@ -53,9 +53,18 @@ export function StarRating({
       <div
         className={`inline-flex items-center ${cls.spacing}`}
         onMouseLeave={() => setHover(null)}
+        {...(readOnly ? { role: 'img', 'aria-label': value != null ? `${value} of 5 stars${variant === 'official' ? ' (coach official)' : ''}` : 'Not rated yet' } : {})}
       >
         {[1, 2, 3, 4, 5].map((n) => {
           const filled = display !== null && n <= display;
+          // Solo lectura = texto, no botones: vive adentro de filas tocables
+          // (StepRow de Let's Play) y un <button> dentro de otro rompe la
+          // hidratación (consola 2026-10-01).
+          if (readOnly) return (
+            <span key={n} aria-hidden="true" className={`${cls.star} cursor-default ${filled ? filledColor : emptyColor}`}>
+              {filled ? '★' : '☆'}
+            </span>
+          );
           return (
             <button
               key={n}

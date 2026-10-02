@@ -20,6 +20,7 @@ import { SEQUENCE_PAGES, elementTitle } from '@/lib/sequence-pages';
 import { sequenceElements, isElementOf } from '@/lib/sequence-pages/circles-seq';
 import type { SequencePageConfig } from '@/lib/sequence-pages/types';
 import { resolveSequenceForSteps } from '@/lib/sequence-pages/resolve';
+import { canTeachPage } from '@/lib/coach/course-access';
 import type { ServicePlanBlock, ServicePlanStudent } from '@/lib/actions/service-planner';
 
 const STAR_LABEL: Record<number, string> = {
@@ -156,9 +157,12 @@ export function DayCloseCard({
   campBelt = null,
   token,
   planFrom = null,
+  teachRank,
 }: {
   /** Para el puente: del veredicto al material para enseñarlo. */
   token: string;
+  /** data.teachRank del portal: el puente solo hasta su cinta ("Change" llega a campBelt+1). */
+  teachRank?: number;
   /** De dónde sale el puente (este camp, este día, el cierre): el Back de la página vuelve acá. */
   planFrom?: CoachFrom | null;
   student: ServicePlanStudent;
@@ -429,12 +433,15 @@ export function DayCloseCard({
             {line && <p className="text-[13px] mt-1.5" style={{ color: '#7DE3FF' }}>{WHY[line.why]} · the student sees this in their portal</p>}
             {/* El puente (Marcelo 2026-09-24): del veredicto al material.
                 Lleva el momento que se rompió para abrir ahí. */}
-            {line?.seqId && (
+            {/* Arriba de su cinta la página da 404: se nombra sin link (2026-10-01). */}
+            {line?.seqId && (teachRank === undefined || canTeachPage(lineCfg, teachRank) ? (
               <a href={withFrom(`/coach-portal/${token}/seq/${line.seqId}${lineMoments[0] ? `?focus=${encodeURIComponent(lineMoments[0])}` : ''}`, planFrom)}
                 className="inline-flex items-center gap-1.5 text-[13px] font-bold mt-2 no-underline" style={{ color: '#00D2FF' }}>
                 How to teach this →
               </a>
-            )}
+            ) : (
+              <p className="inline-flex items-center gap-1.5 text-[13px] mt-2" style={{ color: 'rgba(247,249,250,.6)' }}>🔒 How to teach this · above your teaching level</p>
+            ))}
           </>
         ) : (
           <p className="text-[15px] mt-1.5" style={{ color: 'rgba(247,249,250,.7)' }}>

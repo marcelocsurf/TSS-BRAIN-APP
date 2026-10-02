@@ -4,6 +4,7 @@
 // lo que todavía no existe como dato (resultado, criterios aprobados, tablero).
 import { getCourseLocks } from '@/lib/portal/course-lock';
 import { CourseLockedScreen } from '@/components/portal/CourseLockedScreen';
+import { CourseNotOwnedScreen } from '@/components/portal/CourseNotOwnedScreen';
 import { sequenceSide } from '@/lib/constants/learning-blocks';
 import { isGoofy, boardFlip, stanceOf } from '@/lib/stance';
 import { notFound, redirect } from 'next/navigation';
@@ -74,17 +75,22 @@ export default async function SequencePageRoute({ params, searchParams }: { para
   // Sin el curso de esa cinta (p. ej. "Study it" desde el plan de un camp de
   // otra cinta): una pantalla que explica, no la página de error (2026-09-26).
   if (!owns) {
+    // Vuelve adonde llegó (Home, Let's Play…); sin origen, al Home del portal
+    // (2026-10-01). El envoltorio da las fuentes: antes la tarjeta quedaba
+    // fuera del alcance de --font-archivo.
+    const b = studentBack(origin, token, { k: 'home' });
     return (
-      <main className="min-h-screen flex items-center justify-center px-4 py-10" style={{ background: '#061C2B' }}>
-        <div className="w-full max-w-md rounded-lg px-6 py-6" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6' }}>
-          <p className="m-0 text-[11px]" style={{ fontFamily: 'var(--font-plex), IBM Plex Mono, monospace', textTransform: 'uppercase', letterSpacing: '0.16em', color: '#55666E' }}>{cfg.kind === 'tool' ? 'Part of every belt course' : `Part of the ${course?.label ?? 'belt course'}`}</p>
-          <h1 className="m-0 mt-1 text-[26px] leading-[1.06] uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 900, letterSpacing: '-0.02em', color: '#10263B' }}>{cfg.title}</h1>
-          <p className="m-0 mt-3 text-[16px] leading-snug" style={{ color: '#10263B' }}>{cfg.kind === 'tool'
+      <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
+        <CourseNotOwnedScreen
+          eyebrow={cfg.kind === 'tool' ? 'Part of every belt course' : `Part of the ${course?.label ?? 'belt course'}`}
+          title={cfg.title}
+          body={cfg.kind === 'tool'
             ? 'This tool opens with any belt course. Your coach works it with you in the water; the full page unlocks when a belt course is yours.'
-            : `This sequence opens with the ${course?.label ?? 'belt course'}. Your coach works it with you in the water; the full page unlocks when that course is yours.`}</p>
-          <a href={`/portal/${token}`} className="mt-5 inline-flex w-full items-center justify-center h-12 rounded-[5px] text-[15px] font-extrabold uppercase tracking-wide no-underline" style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-archivo), Archivo, sans-serif' }}>Back to your portal →</a>
-        </div>
-      </main>
+            : `This sequence opens with the ${course?.label ?? 'belt course'}. Your coach works it with you in the water; the full page unlocks when that course is yours.`}
+          backHref={b.href}
+          backLabel={origin ? `Back to ${b.label}` : 'Back to your portal'}
+        />
+      </div>
     );
   }
   // Candado hasta el día antes del camp (Marcelo 2026-09-17).

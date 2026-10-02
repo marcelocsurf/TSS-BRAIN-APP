@@ -20,13 +20,21 @@ function fmtTime(t?: string | null) {
   return `${hr % 12 || 12}:${m ?? '00'} ${hr >= 12 ? 'PM' : 'AM'}`;
 }
 
-export function CoachMiniCalendar({ services, onOpen, token }: {
+export function CoachMiniCalendar({ services, onOpen, token, cursor: cursorProp, onCursorChange, selected: selectedProp, onSelectedChange }: {
   services: any[];
   onOpen?: (id: string) => void;
   token?: string;
+  /** El mes y el día elegidos pueden vivir en el padre (PlanTab): así sobreviven
+   *  a abrir una clase y volver (Marcelo 2026-10-01). */
+  cursor?: Date;
+  onCursorChange?: (d: Date) => void;
+  selected?: string;
+  onSelectedChange?: (iso: string) => void;
 }) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const [cursorLocal, setCursorLocal] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
+  const cursor = cursorProp ?? cursorLocal;
+  const setCursor = (d: Date) => { setCursorLocal(d); onCursorChange?.(d); };
 
   // Load the coach's assigned tasks so their due dates show on the calendar too.
   const [tasks, setTasks] = useState<AcademyTask[]>([]);
@@ -70,7 +78,9 @@ export function CoachMiniCalendar({ services, onOpen, token }: {
     return map;
   }, [services]);
 
-  const [selected, setSelected] = useState<string>(iso(today));
+  const [selectedLocal, setSelectedLocal] = useState<string>(iso(today));
+  const selected = selectedProp ?? selectedLocal;
+  const setSelected = (k: string) => { setSelectedLocal(k); onSelectedChange?.(k); };
 
   // Build the month grid starting Monday.
   const cells = useMemo(() => {

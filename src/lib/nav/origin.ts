@@ -194,8 +194,10 @@ export function studentBack(o: StudentFrom | null, token: string, fallback: Stud
   }
 }
 
-/** Adónde vuelve un "Back" del portal del coach. `fallback` = adónde iba antes. */
-export function coachBack(o: CoachFrom | null, token: string, fallback: CoachFrom): Back {
+/** Adónde vuelve un "Back" del portal del coach. `fallback` = adónde iba antes.
+ *  row: la fila del índice de la que salió (#row-<id>, 2026-10-01), solo si se
+ *  vuelve al índice en la vista Course. */
+export function coachBack(o: CoachFrom | null, token: string, fallback: CoachFrom, row?: string): Back {
   const at = o ?? fallback;
   if (!UUID_RE.test(token)) return { href: '/', label: 'Back' };
   const root = `/coach-portal/${token}`;
@@ -206,7 +208,10 @@ export function coachBack(o: CoachFrom | null, token: string, fallback: CoachFro
       href: `${root}?tab=plan&camp=${at.camp}${at.day ? `&day=${at.day}` : ''}&view=${at.view}${at.home ? '&from=home' : ''}`,
       label: at.why === 'close' ? 'The close' : at.why === 'today' || at.view === 'run' ? "Today's plan" : 'The camp plan',
     };
-    case 'course': return { href: withQuery(`${root}/course`, { belt: at.belt, view: at.view }), label: 'Courses' };
+    case 'course': return {
+      href: `${withQuery(`${root}/course`, { belt: at.belt, view: at.view })}${row && LESSON_RE.test(row) && (at.view ?? 'course') === 'course' ? `#row-${row}` : ''}`,
+      label: 'Courses',
+    };
     case 'circles': return { href: `${root}/circles${at.belt ? `?belt=${at.belt}` : ''}`, label: 'The Three Circles' };
     case 'loop': return { href: withQuery(`${root}/loop`, { side: at.side }), label: 'The Infinite Circle' };
     case 'seq': return {

@@ -5,6 +5,7 @@
 import { parseFrom, studentBack } from '@/lib/nav/origin';
 import { getCourseLocks } from '@/lib/portal/course-lock';
 import { CourseLockedScreen } from '@/components/portal/CourseLockedScreen';
+import { CourseNotOwnedScreen } from '@/components/portal/CourseNotOwnedScreen';
 import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -36,7 +37,22 @@ export default async function CirclesPage({ params, searchParams }: { params: Pr
   const { data: student } = await admin.from('students').select('id, course_access_yellow, course_access_blue').eq('portal_token', token).maybeSingle();
   if (!student) notFound();
   const owns = COURSE_OWNER_IDS.has(student.id) || !!(student as any).course_access_yellow || !!(student as any).course_access_blue;
-  if (!owns) notFound();
+  // Sin Yellow ni Blue (p. ej. "Study it" desde el plan de un camp de otra
+  // cinta): la pantalla que explica, no la de error (Marcelo 2026-10-01).
+  if (!owns) {
+    const b = studentBack(origin, token, { k: 'home' });
+    return (
+      <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
+        <CourseNotOwnedScreen
+          eyebrow="Part of the Yellow and Blue Belt courses"
+          title="The Three Circles of Power"
+          body="The Three Circles open with the Yellow Belt or the Blue Belt Masterclass. Your coach works them with you in the water; the full page unlocks when one of those courses is yours."
+          backHref={b.href}
+          backLabel={origin ? `Back to ${b.label}` : 'Back to your portal'}
+        />
+      </div>
+    );
+  }
   // Candado hasta el día antes del camp: si TODO lo que da acceso (yellow/blue) está trabado.
   if (!COURSE_OWNER_IDS.has(student.id)) {
     const locks = await getCourseLocks(student.id);

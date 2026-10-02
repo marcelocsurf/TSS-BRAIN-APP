@@ -37,7 +37,7 @@ function sectionTight(md: string | null | undefined, heading: string): string {
   return (m?.[1] ?? '').trim();
 }
 
-export default async function CoachSequencePageRoute({ params, searchParams }: { params: Promise<{ token: string; seqId: string }>; searchParams?: Promise<{ tab?: string; course?: string; focus?: string; from?: string }> }) {
+export default async function CoachSequencePageRoute({ params, searchParams }: { params: Promise<{ token: string; seqId: string }>; searchParams?: Promise<{ tab?: string; course?: string; focus?: string; from?: string; sheet?: string }> }) {
   const { token, seqId } = await params;
   const sp = searchParams ? await searchParams : {};
   // Con ?focus (el puente del plan / cierre) la página abre en Review.
@@ -60,6 +60,9 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
     : beltRank(cfg.courseKey) > rank ? ((cfg.alsoCourseKeys ?? []).find((k) => beltRank(k) <= rank) ?? cfg.courseKey)
     : cfg.courseKey;
   const pageCfg = viewKey !== cfg.courseKey ? entryPageForCourse(cfg, viewKey) : cfg;
+  // La hoja que estaba abierta (?sheet=, 2026-10-01): solo un detalle real de
+  // esta página; 'none' = el coach la cerró (no vuelve la del ?focus).
+  const initialSheet = sp.sheet === 'none' ? null : sp.sheet && pageCfg.details.some((d) => d.key === sp.sheet) ? sp.sheet : undefined;
 
   // Los juegos, drills y misiones que la config nombra por id (como Teach it).
   const playIds = [
@@ -144,9 +147,10 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
   for (const id of sheetIds) {
     stepMedia[id] = { laminas: media.laminasOfLesson(id), videos: media.videosOfLesson(id) };
   }
-  // Volver al índice, en la cinta desde la que se mira (si no vino de otro lado).
+  // Volver al índice, en la cinta desde la que se mira (si no vino de otro lado),
+  // a la fila de esta página (#row-<id>, 2026-10-01).
   const backBelt = viewKey.replace(/_belt$/, '');
-  const back = coachBack(origin && !(origin.k === 'seq' && origin.id === cfg.id) ? origin : null, token, { k: 'course', belt: (['white', 'yellow', 'blue', 'purple', 'brown', 'black'].includes(backBelt) ? backBelt : 'white') as CoachBelt });
+  const back = coachBack(origin && !(origin.k === 'seq' && origin.id === cfg.id) ? origin : null, token, { k: 'course', belt: (['white', 'yellow', 'blue', 'purple', 'brown', 'black'].includes(backBelt) ? backBelt : 'white') as CoachBelt }, cfg.id);
 
   const byStep = new Map((coachRows ?? []).map((c: any) => [c.linked_step_id as string, c]));
   const layerOf = (id: string): CoachStepLayer => {
@@ -170,6 +174,7 @@ export default async function CoachSequencePageRoute({ params, searchParams }: {
           layers, backHref: `/coach-portal/${token}/course?belt=${backBelt}`,
           extraPieces, allVideos: media.videosOfPage(cfg), laminas: media.laminasOfPage(cfg),
           sayIt: { words, cue }, focus, stepMedia, sheetLayers, sheetPieces,
+          ...(initialSheet !== undefined ? { initialSheet } : {}),
           // Lo que la página lleva al salir a una lección: su voz, su detalle
           // abierto y de dónde había llegado (así la vuelta queda igual).
           self: {

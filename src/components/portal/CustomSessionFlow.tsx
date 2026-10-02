@@ -5,8 +5,10 @@ import { BRAND } from '@/lib/constants/brand';
 import {
   createSelfTrainingSession,
   completeSelfTrainingSession,
+  discardCustomSession,
   getNextIntention,
 } from '@/lib/actions/portal';
+import { loadCustomInProgress, saveCustomInProgress, clearCustomInProgress } from '@/lib/portal/portal-state';
 import { FocusPicker, FlowPicker, OutcomePicker } from '@/components/portal/close-pickers';
 import { Clock, CircleDot, Waves, ThumbsUp } from 'lucide-react';
 
@@ -38,16 +40,42 @@ export function CustomSessionFlow({
   const [waterMinutes, setWaterMinutes] = useState(30);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
+  // Se mira el teléfono antes de dibujar: una sesión empezada vuelve a "in progress".
+  const [checked, setChecked] = useState(false);
 
   // Lo que dejó anotado como "la próxima" la última vez ya viene escrito:
   // así el círculo se cierra sin que tenga que acordarse (Marcelo 2026-09-22).
   useEffect(() => {
     let alive = true;
+    // Una sesión empezada y sin cerrar (cerró el app, cambió de pestaña) vuelve
+    // a "in progress" con su Finish & Review (Marcelo 2026-10-01). Se lee en un
+    // efecto, nunca en useState (hidratación).
+    const open = loadCustomInProgress(portalToken);
+    if (open) {
+      setSessionId(open.id); setFocus(open.focus); setDuration(open.duration); setWaterMinutes(open.duration);
+      setPhase('in_progress'); setChecked(true);
+      return;
+    }
+    setChecked(true);
     getNextIntention(portalToken)
       .then((t) => { if (alive && t) setFocus((f) => { if (f) return f; setPrefilled(true); return t; }); })
       .catch(() => { /* si falla, arranca en blanco */ });
     return () => { alive = false; };
   }, [portalToken]);
+
+  // Descartar una sesión empezada: no queda en el historial ni suma horas.
+  const discard = () => {
+    if (!sessionId || !window.confirm('Discard this session? Nothing gets logged.')) return;
+    setError('');
+    startTransition(async () => {
+      const r = await discardCustomSession(portalToken, sessionId).catch(() => ({ ok: false }));
+      if (!r.ok) { setError('Could not discard. Check your connection and try again.'); return; }
+      clearCustomInProgress(portalToken);
+      onCancel();
+    });
+  };
+
+  if (!checked) return null;
 
   // ── Plan phase ──
   if (phase === 'plan') {
@@ -137,6 +165,7 @@ export function CustomSessionFlow({
                   kind: 'custom',
                 });
                 setSessionId(session.id);
+                saveCustomInProgress(portalToken, { id: session.id, focus: focus.trim(), duration });
                 setPhase('in_progress');
               } catch (e: any) {
                 setError(e.message || 'Failed to start');
@@ -184,6 +213,10 @@ export function CustomSessionFlow({
           style={{ background: BRAND.colors.navy }}
         >
           Finish & Review →
+        </button>
+        {error && <p className="text-xs text-red-600 bg-red-50 p-2 rounded">{error}</p>}
+        <button type="button" onClick={discard} disabled={pending} className="w-full py-2 text-xs text-gray-500 disabled:opacity-40">
+          Discard this session
         </button>
       </div>
     );
@@ -296,6 +329,7 @@ export function CustomSessionFlow({
                   flowChannel: flow,
                   nextIntention: nextIntention.trim() || null,
                 });
+                clearCustomInProgress(portalToken);
                 setPhase('done');
               } catch (e: any) {
                 setError(e.message || 'Failed to save');
@@ -306,6 +340,9 @@ export function CustomSessionFlow({
           style={{ background: BRAND.colors.navy }}
         >
           {pending ? 'Saving…' : !outcome ? 'Did you meet it?' : 'Save Session'}
+        </button>
+        <button type="button" onClick={discard} disabled={pending} className="w-full py-2 text-xs text-gray-500 disabled:opacity-40">
+          Discard this session
         </button>
       </div>
     );

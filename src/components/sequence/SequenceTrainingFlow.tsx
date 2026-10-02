@@ -37,11 +37,14 @@ import { sequencePageFor } from '@/lib/sequence-pages';
 import { boardFlip } from '@/lib/stance';
 import { StarRating } from './StarRating';
 import { MarkdownContent } from '@/components/course/MarkdownContent';
+import { planDraftKey, savePlanDraft, loadPlanDraft, clearPlanDraft } from '@/lib/portal/portal-state';
 
 // Dos momentos (Marcelo 2026-09-10): el PLAN se guarda antes del agua
 // ('saved' = andá a surfear); la EVALUACIÓN cierra la sesión al volver.
 type Phase = 'loading' | 'plan' | 'saved' | 'evaluation' | 'done' | 'error';
 type Measure = 'time' | 'reps' | 'waves' | 'time_reps';
+// Lo que el plan guarda en el teléfono al salir a ensayar en tierra (2026-10-01).
+type PlanDraft = { mode: TrainingMode; focusId: string | null; focusMoment: string | null; side: 'fs' | 'bs' | null; conditionsOk: boolean; venue: VenueCheckResult | null; measure: Measure; plannedDuration: number; plannedReps: number; intention: string; objectiveOpen: boolean };
 
 const INK = '#061C2B', PAPER = '#F7F9FA', CYAN = '#00D2FF', GOLD = '#FFD166', GREEN = '#06D6A0';
 const F_D: React.CSSProperties = { fontFamily: 'var(--font-archivo), Archivo, sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1.05 };
@@ -140,6 +143,8 @@ interface Props {
   /** "Rehearse it on land first": el Feel it de la secuencia en el curso (null
    *  sin curso — los drills son material de aprendizaje, no se registran). */
   rehearseHref?: string | null;
+  /** La dirección que reabre ESTE plan (?tab=sequence&seq=…): el atrás del teléfono desde el ensayo vuelve acá. */
+  planHref?: string | null;
   /** A dónde vuelve al terminar: 'home' (plan guardado) o 'sequence' (Let's Play). */
   onDone: (next?: 'home' | 'sequence') => void;
   /** Nombre de OTRO plan abierto (si existe): guardar este lo reemplaza. Solo aviso. */
@@ -152,7 +157,7 @@ interface Props {
   onSessionClosed?: (sessionId: string) => void;
 }
 
-export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, initialFocusMoment = null, openSession = null, goofy = false, studentBelt: _studentBelt = 'white_belt', onCancel, rehearseHref = null, onDone, otherOpenPlan = null, backLabel = "Let's Play", onPlanSaved, onSessionClosed }: Props) {
+export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focusStepId = null, initialIntention = null, initialFocusMoment = null, openSession = null, goofy = false, studentBelt: _studentBelt = 'white_belt', onCancel, rehearseHref = null, planHref = null, onDone, otherOpenPlan = null, backLabel = "Let's Play", onPlanSaved, onSessionClosed }: Props) {
   // El modo se elige EN el plan (toda la línea, o un paso/momento como foco).
   const [modeState, setModeState] = useState<TrainingMode>(openSession?.mode ?? mode);
   const isRun = modeState === 'sequence_run';
@@ -231,6 +236,8 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
   // flow y momentos antes de "Save". Se guarda en sessionStorage bajo la
   // sesión (o la secuencia) y se restaura al volver; se borra al guardar.
   const draftKey = `tss_eval_draft_${openSession?.id ?? sessionId ?? `${sequenceId}:${mode}`}`;
+  // Borrador del PLAN (2026-10-01): la clave es cómo se abrió (la misma que rearma la vuelta).
+  const planKey = planDraftKey(portalToken, sequenceId, mode, focusStepId);
   const [draftRestored, setDraftRestored] = useState(false);
   useEffect(() => {
     if (phase !== 'evaluation' || draftRestored) return;
@@ -283,6 +290,24 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         if (res.data.sequence.id === MOMENTUM_SEQUENCE_ID) {
           f = f ?? res.data.steps[0]?.step_id ?? null;
           setModeState('step_focus');
+        }
+        // Volvió del ensayo en tierra: el plan como lo dejó, sin pisarlo con la pista.
+        // Se lee sin borrarlo: si el efecto corre otra vez, restaura lo mismo. Si
+        // llegó con una palabra o un momento elegidos (la página, Your next moves),
+        // es un plan nuevo: manda lo elegido, no el borrador.
+        const draft = initialIntention || initialFocusMoment ? null : loadPlanDraft<PlanDraft>(planKey);
+        if (draft) {
+          const dMode: TrainingMode = res.data.sequence.id === MOMENTUM_SEQUENCE_ID ? 'step_focus' : draft.mode;
+          const dFocus = draft.focusId && res.data.steps.some((s) => s.step_id === draft.focusId) ? draft.focusId : f;
+          setModeState(dMode); setFocusId(dFocus); setFocusMoment(draft.focusMoment); setSide(draft.side);
+          setConditionsOk(!!draft.conditionsOk); setVenue(draft.venue ?? null); setMeasure(draft.measure);
+          setPlannedDuration(draft.plannedDuration); setPlannedReps(draft.plannedReps);
+          setIntention(draft.intention ?? ''); setObjectiveOpen(!!draft.objectiveOpen);
+          const h = dMode === 'step_focus' && dFocus ? res.data.stepHints[dFocus] : undefined;
+          setHintText(h ? `Your last run · ${h.result === 'not_met' ? 'not met' : 'partial'}: ${h.text}` : null);
+          autoIntentionRef.current = h?.text ?? '';
+          setPhase('plan');
+          return;
         }
         setFocusId(f);
         // Lo que quedó flojo la última vez ya es el objetivo de hoy.
@@ -395,6 +420,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         });
         if (!res.ok) { setErrorMsg(res.error); return; }
         setSessionId(res.sessionId);
+        clearPlanDraft(planKey);
         onPlanSaved?.(res.sessionId);
         setPhase('saved');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -404,8 +430,20 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
         setSavingPlan(false);
       }
     };
+    // Ensayar en tierra sale de Let's Play: el plan queda en el teléfono y el atrás
+    // del teléfono también vuelve acá (esta entrada pasa a ser la del plan; __NA =
+    // el parche de Next no lo trata como navegación).
+    const rememberPlan = () => {
+      savePlanDraft(planKey, { mode: modeState, focusId, focusMoment, side, conditionsOk, venue, measure, plannedDuration, plannedReps, intention, objectiveOpen } satisfies PlanDraft);
+      if (planHref) {
+        try {
+          const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+          window.history.replaceState({ ...st, __NA: true }, '', planHref);
+        } catch { /* cosmético */ }
+      }
+    };
     return (
-      <Shell step={1} seqLabel={seqLabel} title={shellTitle} onCancel={onCancel}>
+      <Shell step={1} seqLabel={seqLabel} title={shellTitle} onCancel={() => { clearPlanDraft(planKey); onCancel(); }}>
         {/* 1 · Qué vas a entrenar */}
         <div className="rounded-lg p-4" style={{ background: INK }}>
           <p className="text-[12px]" style={{ ...F_M, color: CYAN }}>What you train today</p>
@@ -519,7 +557,7 @@ export function SequenceTrainingFlow({ portalToken, sequenceId, belt, mode, focu
               </div>
             )}
             {focus.drill && rehearseHref && (
-              <a href={rehearseHref}
+              <a href={rehearseHref} onClick={rememberPlan}
                 className="w-full flex items-center gap-2.5 px-3.5 py-3 rounded-[5px] border-[1.5px] border-dashed border-[#DCD7C6] text-left active:scale-[0.99]">
                 <Dumbbell size={16} strokeWidth={1.75} className="text-[#55666E] shrink-0" />
                 <span className="text-[12.5px] text-[#55666E]"><b>Rehearse it on land first</b> → {focus.drill.title} · Feel it, in the course</span>

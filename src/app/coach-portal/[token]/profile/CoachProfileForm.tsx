@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
 import { submitCoachIntake, type CoachProfile } from '@/lib/actions/coach-intake';
 import { PhotoUploader } from '@/components/shared/PhotoUploader';
@@ -38,6 +39,15 @@ export function CoachProfileForm({ token, initial }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [savedAt, setSavedAt] = useState<string | null>(initial.intake_completed_at);
+  // Al enviar (Marcelo 2026-10-01): el aviso está arriba y el botón abajo — la
+  // confirmación se trae a la vista y, la primera vez, el camino al portal
+  // (un botón, sin redirigir solo).
+  const [firstTime] = useState(!initial.intake_completed_at); // se captura: el refresh cambia `initial`
+  const [justSaved, setJustSaved] = useState(false);
+  const savedRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (justSaved) savedRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [justSaved, savedAt]);
 
   const update = (k: keyof typeof form, v: string | boolean) =>
     setForm((p) => ({ ...p, [k]: v }));
@@ -72,6 +82,7 @@ export function CoachProfileForm({ token, initial }: Props) {
         waiver_version: COACH_WAIVER_VERSION,
       });
       setSavedAt(res.intake_completed_at);
+      setJustSaved(true);
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save.');
@@ -83,11 +94,22 @@ export function CoachProfileForm({ token, initial }: Props) {
   return (
     <form onSubmit={submit} className="space-y-4">
       {savedAt && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-start gap-2.5">
+        <div ref={savedRef} className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-start gap-2.5" style={{ scrollMarginTop: 12 }}>
           <CheckCircle2 size={18} className="text-emerald-700 flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-emerald-900 leading-relaxed">
-            Profile saved. Last updated {displayDate(savedAt)}.
-          </p>
+          <div>
+            <p className="text-xs text-emerald-900 leading-relaxed">
+              Profile saved. Last updated {displayDate(savedAt)}.
+            </p>
+            {justSaved && firstTime && (
+              <Link
+                href={`/coach-portal/${token}?tab=home`}
+                className="mt-2 inline-block rounded-[5px] px-3 py-2 text-[12px] font-bold no-underline"
+                style={{ background: '#00D2FF', color: '#061C2B' }}
+              >
+                Go to your portal →
+              </Link>
+            )}
+          </div>
         </div>
       )}
 

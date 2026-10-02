@@ -7,6 +7,8 @@
  * 2026-09-26 llevaban a la pestaña Course entera (Marcelo: "no me lleva al
  * tema en específico").
  */
+import { SHARED_PRE_COURSE_SECTIONS } from '@/lib/constants/courses';
+
 export interface PlanTopic {
   id: string;
   title: string;
@@ -41,6 +43,24 @@ export function topicsForBelt(belt: string | null | undefined): PlanTopic[] {
 
 export function topicById(id: string): PlanTopic | null {
   return PLAN_TOPICS.find((t) => t.id === id) ?? null;
+}
+
+/** ¿El alumno tiene lo que abre este tema? (2026-10-01) Mismas compuertas que
+ *  /circles (Yellow o Blue), /loop (Blue) y el Course: los temas de todas las
+ *  cintas (belts: []) abren con cualquier curso; los de una cinta, con ESE curso.
+ *  `open` = cursos sin candado (data.ownedBelts: 'blue_belt'…), como seqPageHref. */
+export function topicOpenFor(
+  topicId: string,
+  who: { open: readonly string[]; anyCourse: boolean; courseLocked?: boolean; lessonSection?: string | null },
+): boolean {
+  const t = topicById(topicId);
+  if (!t) return false;
+  if (t.id === 'circles') return who.open.includes('yellow_belt') || who.open.includes('blue_belt');
+  if (t.id === 'loop') return who.open.includes('blue_belt');
+  if (t.belts.length) return t.belts.some((b) => who.open.includes(`${b}_belt`));
+  // Bajo candado de camp el Course solo abre el Pre-Course (CourseTab).
+  if (who.courseLocked && who.lessonSection && !(SHARED_PRE_COURSE_SECTIONS as readonly string[]).includes(who.lessonSection)) return false;
+  return who.anyCourse;
 }
 
 /** El MISMO tema, del lado del coach (pasos 2 y 3 de unificar, 2026-09-29):

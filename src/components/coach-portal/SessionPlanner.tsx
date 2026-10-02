@@ -73,6 +73,7 @@ import {
   type AcademySpace, type SpaceBooking,
 } from '@/lib/actions/spaces';
 import { canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
+import { canTeachPage, BELT_RANK } from '@/lib/coach/course-access';
 import { DrillDetailModal } from '@/components/coach-portal/DrillDetailModal';
 import { usesBeltEvaluation } from '@/lib/constants/service-kinds';
 import { exigeCierreDeDias } from '@/lib/utils/camp-window';
@@ -104,9 +105,15 @@ interface SessionPlannerProps {
   onSwitchDay?: (dayNumber: number) => void;
   /** La clase se abrió desde el Home: su Back vuelve al Home (y los links lo recuerdan). */
   fromHome?: boolean;
+  /** data.teachRank del portal (0 = sin cursos): "How to teach it" solo hasta ahí. Sin dato no se bloquea. */
+  teachRank?: number;
+  /** Aviso que se tiene que ver aunque el planner se cierre (Marcelo 2026-10-01). */
+  onNotice?: (msg: string) => void;
+  /** Se cerró el día (o el camp): el portal refresca Needs closing / Home. */
+  onDayChanged?: () => void;
 }
 
-export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = false }: SessionPlannerProps) {
+export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = false, teachRank, onNotice, onDayChanged }: SessionPlannerProps) {
   const [plan, setPlan] = useState(data.plan);
   const [students, setStudents] = useState(data.students);
   const [pending, startTransition] = useTransition();
@@ -460,6 +467,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
           return { ...s, profile: { ...s.profile, next_recommended_focus: b0.whats_next ?? s.profile.next_recommended_focus, next_focus_sequence_id: b0.next_focus_sequence_id ?? null, next_focus_step_id: b0.next_focus_step_id ?? null } };
         }));
         flash('🏁 Day finalized');
+        // Las listas del portal (Needs closing, Home) ya no muestran este día (2026-10-01).
+        onDayChanged?.();
         // If this was the last day of a BELT camp, surface the final
         // official evaluation (rate every STP per student → graduation).
         // Simple lessons (surf_lesson / Discover Surfing) close with the
@@ -502,6 +511,8 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
     data.selectedDay.day_number,
   );
   const isLastDay = data.selectedDay.day_number === lastDayNumber;
+  // El día que sigue (Marcelo 2026-10-01): cerrar uno que no es el último deja "Plan day N+1 →".
+  const nextDay = [...data.daySummaries].sort((a, b) => a.day_number - b.day_number).find((d) => d.day_number > data.selectedDay.day_number) ?? null;
   const [showFinalEval, setShowFinalEval] = useState(false);
   // 📅 Vista semana (planner tipo Excel) — solo camps multi-día.
   const [showWeek, setShowWeek] = useState(false);
@@ -639,6 +650,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
           const res = await closeServicePlan(token, data.selectedDay.camp_session_id, [], { generalFeedback: plan.notes_general ?? null });
           if (!res?.ok) { alert(res?.error || 'No se pudo cerrar'); return; }
           setPlan((p) => ({ ...p, completion_state: 'closed' }));
+          onDayChanged?.();
         } catch (e: any) { alert(e.message || 'No se pudo cerrar'); }
       });
     };
@@ -904,7 +916,9 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
           onCancel={() => setShowFinalEval(false)}
           onCompleted={() => {
             setShowFinalEval(false);
-            flash('🏁 Camp finalized · official record saved');
+            // El aviso vive en el portal: el planner se cierra acá mismo (2026-10-01).
+            (onNotice ?? flash)('🏁 Camp finalized · official record saved');
+            onDayChanged?.();
             onBack();
           }}
         />
@@ -1538,18 +1552,23 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
                 </details>
                 {/* La teoría elegida, a un toque del material (paso 2, 2026-09-29):
                     la misma lección que el alumno abre con "Study it". Se abre en
-                    otra pestaña para no perder el plan. */}
+                    la MISMA pestaña con su origen (Marcelo 2026-10-01): los temas
+                    ya se guardaron al tocarlos, y el Back del material vuelve a
+                    este plan, este día, Dar la clase — igual que "How to teach it". */}
                 {(() => {
-                  const chosen = topics.filter((t) => chosenTopics.has(t.id)).map((t) => ({ t, href: coachTopicHref(t, token) })).filter((x) => !!x.href);
+                  // Mismo candado que circles/page.tsx y loop/page.tsx (2026-10-01).
+                  const topicOpen = (id: string) => teachRank === undefined || (id === 'circles' ? canTeachPage(SEQUENCE_PAGES['CIRCLE-BODY'], teachRank) : id === 'loop' ? BELT_RANK.blue <= teachRank : teachRank > 0);
+                  const planFrom = { k: 'plan' as const, camp: data.camp.id, day: data.selectedDay.day_number, view: 'run' as const, why: 'today' as const, ...(fromHome ? { home: true as const } : {}) };
+                  const chosen = topics.filter((t) => chosenTopics.has(t.id) && topicOpen(t.id)).map((t) => { const h = coachTopicHref(t, token); return { t, href: h ? withFrom(h, planFrom) : null }; }).filter((x) => !!x.href);
                   if (!chosen.length) return null;
                   return (
                     <div className="flex flex-wrap items-center gap-1.5 mt-2">
                       <span className="text-[10px] font-mono uppercase tracking-wider text-[#55666E]">Open the material</span>
                       {chosen.map(({ t, href }) => (
-                        <a key={t.id} href={href!} target="_blank" rel="noopener"
+                        <a key={t.id} href={href!}
                           className="px-3 py-1.5 rounded-full text-[11px] font-semibold no-underline"
                           style={{ background: '#E9F8FC', border: '1px solid #00A8CC', color: '#061C2B' }}>
-                          {t.title} ↗
+                          {t.title} →
                         </a>
                       ))}
                     </div>
@@ -1673,11 +1692,16 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
                           {legacyFocus && <p className="text-[13px] mt-1" style={{ color: '#55666E' }}>Focus: {legacyFocus}</p>}
                           {differs && groupSeq && <p className="text-[13px] mt-1.5" style={{ color: '#9A6A12' }}>Stays here while the group works {seqLabel(groupSeq)}.</p>}
                           {/* El puente (Marcelo 2026-09-24): de la misión al
-                              material para enseñarla, abierto en ese detalle. */}
+                              material para enseñarla, abierto en ese detalle.
+                              Arriba de su cinta la página da 404: sin link (2026-10-01). */}
+                          {teachRank === undefined || canTeachPage(mySeq, teachRank) ? (
                           <a href={withFrom(`/coach-portal/${token}/seq/${mySeq.id}${missionList.length ? `?focus=${encodeURIComponent(missionList[0])}` : ''}`, { k: 'plan', camp: data.camp.id, day: data.selectedDay.day_number, view: 'run', why: 'today', ...(fromHome ? { home: true as const } : {}) })}
                             className="inline-flex items-center gap-1.5 text-[13px] font-bold mt-2 no-underline" style={{ color: '#00789A' }}>
                             How to teach it →
                           </a>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 text-[13px] mt-2" style={{ color: '#55666E' }}>🔒 How to teach it · above your teaching level</span>
+                          )}
                           </>)}
 
                           {/* Lo que además trabaja hoy */}
@@ -1846,6 +1870,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
                   onRateSequence={(seqId, rating) => rateSequenceInline(s.student_id, seqId, rating)}
                   tomorrow={data.tomorrow ? { day_number: data.tomorrow.day_number, planned: data.tomorrow.byStudent[s.student_id] ?? null, hasBlocks: !!data.tomorrow.hasBlocks?.[s.student_id] } : null}
                   campBelt={data.camp.target_belt}
+                  teachRank={teachRank}
                 />
               ))}
             </div>
@@ -2025,7 +2050,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
                   Finalize takes the rest of the row (no more 2-line wrapping). */}
               <button
                 type="button"
-                onClick={() => { flash('✓ Saved — finish it whenever'); onBack(); }}
+                onClick={() => { (onNotice ?? flash)('✓ Saved — finish it whenever'); onBack(); }}
                 disabled={pending}
                 className="shrink-0 py-2.5 px-3 text-[12px] font-semibold rounded-[5px] border inline-flex flex-col items-center gap-0.5 leading-none"
                 style={{ borderColor: '#CBD5E1', color: '#475569' }}
@@ -2066,6 +2091,14 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
               <Flag size={14} strokeWidth={1.75} />
               Finalized{plan.closed_at ? ` · ${displayDate(plan.closed_at)}` : ''}
             </div>
+          )}
+          {state === 'closed' && nextDay && onSwitchDay && (data.camp as any).status !== 'completed' && (
+            <button type="button" disabled={pending}
+              onClick={() => { window.scrollTo({ top: 0 }); onSwitchDay(nextDay.day_number); }}
+              className="flex-1 py-2.5 text-white text-sm font-semibold rounded-[5px] inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
+              style={{ background: BRAND.colors.navy }}>
+              Plan day {nextDay.day_number} →
+            </button>
           )}
         </div>
       </div>

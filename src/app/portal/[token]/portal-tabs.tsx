@@ -17,7 +17,7 @@ import {
   type BeltMaterial,
 } from '@/lib/constants/student-materials';
 import { SurveyForm } from './survey-form';
-import { SurveySectionHead } from '@/components/survey/SurveyUi';
+import { SurveySectionHead, SurveyDone } from '@/components/survey/SurveyUi';
 import { PROMOTION_COPY, LIGHT_BELTS } from '@/lib/constants/promotion-copy';
 import { toElSalvadorDate, elSalvadorToday } from '@/lib/utils/tz';
 import { CourseTab } from '@/components/course/CourseTab';
@@ -33,7 +33,8 @@ function surveyDateLabel(sessionDate: string | null | undefined, createdAt: stri
 }
 import { MySequenceTab, type TrainSequenceArgs } from '@/components/sequence/MySequenceTab';
 import { sequencePageFor } from '@/lib/sequence-pages';
-import { loadPortalState, savePortalState, touchPortalState } from '@/lib/portal/portal-state';
+import { topicOpenFor } from '@/lib/sequence-pages/topics';
+import { loadPortalState, savePortalState, touchPortalState, loadCustomInProgress, type CustomInProgress } from '@/lib/portal/portal-state';
 import { discardSession, getOpenSession, type OpenSession } from '@/lib/actions/lets-play';
 import { studentBack, withFrom, type StudentFrom } from '@/lib/nav/origin';
 import { leaveTo } from '@/lib/nav/leave';
@@ -401,6 +402,8 @@ function getWarmupsForBelt(beltLevel: BeltLevel) {
 }
 
 type Tab = 'home' | 'course' | 'sequence' | 'lineup' | 'sessions' | 'feedback' | 'glossary' | 'my-coach';
+// Pantallas válidas que NO están en la barra de abajo (llegan por link o desde el Home).
+const SUB_SCREENS: Tab[] = ['feedback', 'sessions', 'glossary'];
 
 // ── Brand v10 type + color helpers (M140 student-home redesign) ──
 const F_DISPLAY = { fontFamily: 'var(--font-archivo), sans-serif', fontStretch: '125%', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1.08 } as const;
@@ -832,7 +835,6 @@ export function PortalTabs({
   // (?tab=feedback&survey=) y el botón "Rate your coach" llegan por acá.
   // Sin esta excepción rebotaban al Home (prueba E2E 2026-09-18).
   useEffect(() => {
-    const SUB_SCREENS: Tab[] = ['feedback', 'sessions', 'glossary'];
     if (SUB_SCREENS.includes(activeTab)) return;
     if (!TABS.some((t) => t.key === activeTab)) setActiveTab('home');
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -844,6 +846,12 @@ export function PortalTabs({
     initialDrillId || null
   );
   const [showCustomSession, setShowCustomSession] = useState(false);
+  // Custom Session empezada y sin cerrar (vive en el teléfono, 24 h): la tarjeta
+  // de Let's Play lo dice y abrirla vuelve a su Finish & Review (Marcelo 2026-10-01).
+  const [customOpen, setCustomOpen] = useState<CustomInProgress | null>(null);
+  useEffect(() => {
+    if (activeTab === 'sequence' && !showCustomSession) setCustomOpen(loadCustomInProgress(data.token));
+  }, [activeTab, showCustomSession, data.token]);
   // Let's Play por SECUENCIA (Marcelo 2026-09-04): correr la secuencia
   // completa o trabajar un paso como foco. Se renderiza inline en el tab.
   const [pendingSequence, setPendingSequence] = useState<TrainSequenceArgs | null>(initialTrain ?? null);
@@ -948,7 +956,7 @@ export function PortalTabs({
   const releasePlayOnLeave = () => {
     setDeepStepId(null);
     setStepFrom('play');
-    if (flowDoneRef.current) { flowDoneRef.current = false; setPendingSequence(null); setFlowFrom(null); }
+    if (flowDoneRef.current) { flowDoneRef.current = false; setPendingSequence(null); setPendingDrillMissionId(null); setFlowFrom(null); }
   };
   const showTab = (t: Tab) => {
     if (t !== 'sequence') releasePlayOnLeave();
@@ -958,6 +966,14 @@ export function PortalTabs({
       const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
       window.history.replaceState({ ...st, __NA: true, tssLesson: null }, '', `${window.location.pathname}?tab=${t}`);
     } catch { /* nada */ }
+  };
+  // "Read it in My Sessions" (encuesta enviada, Marcelo 2026-10-01): My progress
+  // abierto en My Sessions. Sin membresía no hay My progress: va a Sessions.
+  const [progressAsk, setProgressAsk] = useState<'sessions' | null>(null);
+  const openMySessions = () => {
+    if (data.canTrack === false) { showTab('sessions'); return; }
+    setProgressAsk('sessions');
+    showTab('home');
   };
   const openStepInPlay = (stepId: string, from: 'home' | 'play' | 'roadmap' = 'play') => {
     resetPlay();
@@ -991,6 +1007,15 @@ export function PortalTabs({
   };
   const flowBackLabel = !flowFrom || flowFrom.k === 'play' ? "Let's Play"
     : flowFrom.k === 'step' ? 'the step' : flowFrom.k === 'roadmap' ? 'What it takes' : studentBack(flowFrom, data.token, { k: 'play' }).label;
+  // La pantalla final de una misión guardada (Marcelo 2026-10-01): vuelve al
+  // origen como Cancel, pero Home, Course y Let's Play se recargan (goTab) para
+  // ver horas y estrella nuevas. Las páginas de afuera ya cargan de cero.
+  const leaveFlowDone = () => {
+    const f = flowFrom;
+    if (!f || f.k === 'play' || f.k === 'home' || f.k === 'course') { resetPlay(); goTabFresh(!f || f.k === 'play' ? 'sequence' : f.k); return; }
+    flowDoneRef.current = false;
+    leaveFlow();
+  };
 
   // La sesión abierta (plan guardado antes del agua): cerrarla o descartarla.
   // Ir a una pestaña con datos frescos, SIN router.refresh(): refresh re-pide
@@ -1002,6 +1027,10 @@ export function PortalTabs({
     savePortalState(data.token, { tab: t, lesson: null, lessonFrom: null });
     portalRouter.replace(`${window.location.pathname}?tab=${t}`);
   };
+  // Después de GUARDAR una sesión: goTab solo puede salir de la caché de Next
+  // (30 s) y el Home mostraba las horas viejas (revisión 2026-10-01). Con la
+  // URL ya en ?tab=X, el refresh no reabre ningún ?drill= ni ?seq=.
+  const goTabFresh = (t: Tab) => { goTab(t); setTimeout(() => portalRouter.refresh(), 80); };
   const finishOpenSession = (from: 'home' | 'play' = 'home') => {
     const os = openSessionLive;
     if (!os) return;
@@ -1032,6 +1061,11 @@ export function PortalTabs({
     // Stay on 'sequence' tab — Let's Play renders LinkedTrainingFlow inline.
     setActiveTab('sequence');
   };
+  // El plan abierto como origen (?from=plan:…): la página de la secuencia dice
+  // "‹ Your plan" y vuelve acá con lo ya llenado (Marcelo 2026-10-01).
+  const planOrigin: StudentFrom | null = pendingSequence
+    ? { k: 'plan', seq: pendingSequence.sequenceId, mode: pendingSequence.mode, ...(pendingSequence.focusStepId ? { focus: pendingSequence.focusStepId } : {}) }
+    : null;
 
   // M9 — academy branding (falls back to TSS defaults when academy
   // hasn't set logo / colors / tagline / name).
@@ -1105,6 +1139,8 @@ export function PortalTabs({
             onOpenWater={() => setWaterOpen(true)}
             onFinishOpenSession={() => finishOpenSession('home')}
             onDiscardOpenSession={() => discardOpenSession('home')}
+            progressAsk={progressAsk}
+            onProgressAsked={() => setProgressAsk(null)}
           />
         )}
         {activeTab === 'course' && data.courseData && (
@@ -1130,9 +1166,11 @@ export function PortalTabs({
         )}
         {activeTab === 'sequence' && (<>
           {/* 0) Secuencia elegida → correrla completa o con un paso como foco.
-              Se queda MONTADA (oculta) mientras el alumno ensaya el drill del
-              paso: al volver, su plan (seguridad, tiempo, runs, objetivo)
-              sigue ahí. */}
+              "Rehearse it on land first" sale a la página de la secuencia
+              (Feel it) y su "‹ Your plan" (o el atrás del teléfono) reabre
+              este plan con lo ya llenado: borrador en el teléfono, 30 min
+              (Marcelo 2026-10-01). El hidden queda por si una misión se abre
+              encima de un plan. */}
           {pendingSequence && (
             <div hidden={!!pendingDrillMissionId}>
               <SequenceTrainingFlow
@@ -1157,7 +1195,8 @@ export function PortalTabs({
                   setOpenSessionLive((cur) => (cur?.id === id ? null : cur));
                   setPendingSequence((p) => (p && p.sessionId === id ? { ...p, sessionId: null } : p));
                 }}
-                rehearseHref={(() => { const h = seqPageHref(data, pendingSequence.sequenceId, 'feel'); return h ? withFrom(h, { k: 'plan', seq: pendingSequence.sequenceId, mode: pendingSequence.mode, ...(pendingSequence.focusStepId ? { focus: pendingSequence.focusStepId } : {}) }) : null; })()}
+                rehearseHref={(() => { const h = seqPageHref(data, pendingSequence.sequenceId, 'feel'); return h && planOrigin ? withFrom(h, planOrigin) : null; })()}
+                planHref={planOrigin ? studentBack(planOrigin, data.token, { k: 'play' }).href : null}
                 otherOpenPlan={openSessionLive && openSessionLive.id !== pendingSequence.sessionId ? (openSessionLive.sequenceName || openSessionLive.sequenceLabel || 'another sequence') : null}
                 onDone={(next) => {
                   // Marcelo (2026-09-11): "cuando termino me manda otra vez a
@@ -1178,16 +1217,20 @@ export function PortalTabs({
             </div>
           )}
           {pendingDrillMissionId ? (
-            // 1) Drill picked from MySequenceTab (or "rehearse it on land first")
-            //    → run the linked flow inline. "Back to My Sequence" is truthful:
-            //    it drops the sequence flow too; "Stay in Train tab" returns to it.
+            // 1) Una misión o drill (desde la lista, un paso, la página de la
+            //    secuencia o un link) → el flujo inline. La pantalla final vuelve
+            //    al origen ("← Back to <origen>") y ofrece Let's Play aparte.
             <LinkedTrainingFlow
               key={pendingDrillMissionId}
               drillMissionId={pendingDrillMissionId}
               portalToken={data.token}
               studentBelt={student.belt_level || 'white_belt'}
               onClearIncoming={() => { setPendingDrillMissionId(null); if (!pendingSequence) setFlowFrom(null); }}
-              onReturnToSequence={() => { setPendingDrillMissionId(null); setPendingSequence(null); setFlowFrom(null); }}
+              onReturnToSequence={() => { resetPlay(); goTabFresh('sequence'); }}
+              onDoneBack={pendingSequence ? () => setPendingDrillMissionId(null) : leaveFlowDone}
+              // Guardada: salir de Let's Play (barra, atrás) la suelta; con un plan
+              // debajo, el plan sigue.
+              onSaved={() => { if (!pendingSequence) flowDoneRef.current = true; }}
               // Cancel: el ensayo en tierra abierto DESDE un plan vuelve al plan;
               // una misión abierta desde otra pantalla (la página de la
               // secuencia) vuelve ahí.
@@ -1294,17 +1337,17 @@ export function PortalTabs({
                 type="button"
                 onClick={() => setShowCustomSession(true)}
                 className="w-full rounded-lg p-4 text-left transition-colors"
-                style={{ background: T_CREAM, border: `1px dashed #9AA6AD` }}
+                style={{ background: T_CREAM, border: customOpen ? `1.5px solid ${T_INK}` : `1px dashed #9AA6AD` }}
               >
                 <p className="inline-flex items-center gap-1.5" style={{ ...T_LABEL, color: T_MUTED }}>
                   <Waves size={14} strokeWidth={1.75} />
-                  Custom Session
+                  {customOpen ? 'Custom Session in progress' : 'Custom Session'}
                 </p>
                 <p className="text-[16px] font-bold mt-1" style={{ color: T_INK }}>
-                  Free surf, breathing, fun — anything off-script
+                  {customOpen ? (customOpen.focus || 'Your session') : 'Free surf, breathing, fun — anything off-script'}
                 </p>
                 <p className="text-[13px] mt-1" style={{ color: T_MUTED }}>
-                  Logged for the record but does NOT count toward step mastery.
+                  {customOpen ? 'Tap to finish & review, or discard it.' : 'Logged for the record but does NOT count toward step mastery.'}
                 </p>
               </button>
 
@@ -1335,6 +1378,13 @@ export function PortalTabs({
             onSeen={() => setLineupSeen(true)}
           />
         )}
+        {/* Subpantallas fuera de la barra (Marcelo 2026-10-01, continuidad): su
+            "← Home", igual que My progress y el buzón. */}
+        {SUB_SCREENS.includes(activeTab) && (
+          <button type="button" onClick={() => showTab('home')} className="inline-flex items-center gap-2 text-[15px] font-semibold py-2 mb-2" style={{ color: '#00D2FF' }}>
+            <ArrowLeft size={18} /> Home
+          </button>
+        )}
         {activeTab === 'sessions' && <SessionsTab data={data} />}
         {activeTab === 'glossary' && <GlossaryTab />}
         {activeTab === 'feedback' && (
@@ -1342,6 +1392,7 @@ export function PortalTabs({
             data={data}
             autoExpandFirst={initialTab === 'feedback'}
             initialSurveyId={initialSurveyId || null}
+            onOpenSessions={openMySessions}
           />
         )}
         {activeTab === 'my-coach' && data.myCoach && <MyCoachTab data={data} />}
@@ -1364,7 +1415,8 @@ export function PortalTabs({
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
         <div className="max-w-lg md:max-w-3xl mx-auto flex">
           {TABS.map((tab) => {
-            const isActive = activeTab === tab.key;
+            // Las subpantallas (Sessions, Feedback, Glossary) cuelgan del Home.
+            const isActive = activeTab === tab.key || (tab.key === 'home' && SUB_SCREENS.includes(activeTab));
             return (
               <button
                 key={tab.key}
@@ -1375,6 +1427,9 @@ export function PortalTabs({
                   // La barra cambia de pestaña: la lección abierta se suelta
                   // (antes el Course volvía a la última lección durante 10 min)
                   // y la URL dice en qué pestaña estás.
+                  // Recién guardada una sesión (pantalla final): la pestaña se
+                  // carga fresca, con las horas y la estrella nuevas (2026-10-01).
+                  if (flowDoneRef.current) { goTabFresh(tab.key); return; }
                   showTab(tab.key);
                 }}
                 className={`relative flex-1 flex flex-col items-center py-2.5 text-[12px] font-semibold transition-colors ${
@@ -1430,10 +1485,15 @@ function HomeTab({
   onFinishOpenSession,
   onDiscardOpenSession,
   onOpenPath,
+  progressAsk,
+  onProgressAsked,
 }: {
   data: PortalData;
   belt: any;
   onGoTo: (tab: Tab) => void;
+  /** Otra pantalla pide My progress abierto en una sección (2026-10-01). */
+  progressAsk?: 'sessions' | null;
+  onProgressAsked?: () => void;
   /** Let's Play en el camino (sin flujos viejos abiertos). */
   onOpenPath?: () => void;
   /** La sesión abierta (plan guardado antes del agua): cerrarla o descartarla. */
@@ -1565,6 +1625,16 @@ function HomeTab({
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, [progressOpen]);
+  // Abre la sección My Sessions de My progress (una sola versión de este código).
+  const openSessionsDetails = () => { const d = document.getElementById('my-sessions') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
+  // Pedido desde otra pantalla (la encuesta enviada, 2026-10-01): My progress → My Sessions.
+  useEffect(() => {
+    if (!progressAsk) return;
+    setProgressOpen(true);
+    // Sin cleanup a propósito: onProgressAsked cambia la prop y cancelaría el timer.
+    setTimeout(() => { openSessionsDetails(); onProgressAsked?.(); }, 120);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [progressAsk]);
   return (
     <div className="space-y-4">
       {/* ═══ LO ACCIONABLE PRIMERO (auditoría 2026-09-10): a 360px el botón
@@ -1746,12 +1816,19 @@ function HomeTab({
               <div className="pt-2.5" style={{ borderTop: '1px solid #D3CCB9' }}>
                 <p style={{ ...HOME_MONO, fontSize: 10.5, letterSpacing: '0.1em', color: T_MUTED }}>Also today · theory</p>
                 <div className="mt-1.5 space-y-1.5">
-                  {topicsArr.map((t: any) => (
-                    <div key={t.id} className="flex items-center justify-between gap-3">
-                      <p className="text-[15px] font-bold leading-snug">{t.title}</p>
-                      <a href={withFrom(`/portal/${data.token}${t.href}`, { k: 'home' })} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-black uppercase no-underline" style={{ color: T_INK, border: `1.5px solid ${T_INK}`, fontFamily: ARCHIVO }}>Study it</a>
-                    </div>
-                  ))}
+                  {topicsArr.map((t: any) => {
+                    // Study it solo si el alumno tiene lo que abre (2026-10-01): sin el
+                    // curso, el tema se nombra igual (es la teoría del día), sin botón.
+                    const lid = String(t.id).startsWith('lesson:') ? String(t.id).slice(7) : null;
+                    const sec = lid ? ((data.courseData?.lessons ?? []).find((l: any) => l.id === lid)?.course_section ?? null) : null;
+                    const canStudy = topicOpenFor(String(t.id), { open: data.ownedBelts ?? [], anyCourse: !!data.hasAnyCourse, courseLocked: !!data.courseLocked, lessonSection: sec });
+                    return (
+                      <div key={t.id} className="flex items-center justify-between gap-3">
+                        <p className="text-[15px] font-bold leading-snug">{t.title}</p>
+                        {canStudy && <a href={withFrom(`/portal/${data.token}${t.href}`, { k: 'home' })} className="shrink-0 rounded-[5px] px-3 py-1.5 text-[12px] font-black uppercase no-underline" style={{ color: T_INK, border: `1.5px solid ${T_INK}`, fontFamily: ARCHIVO }}>Study it</a>}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -1901,7 +1978,7 @@ function HomeTab({
             // Sin membresía no existe My progress: su historial es la pantalla de sesiones.
             if (data.canTrack === false) { onGoTo('sessions'); return; }
             setProgressOpen(true);
-            setTimeout(() => { const d = document.getElementById('my-sessions') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); } }, 120);
+            setTimeout(openSessionsDetails, 120);
           };
           const saw = coachSawLine(latestResult);
           const meaning = statusMeaning(latestResult.status);
@@ -2280,7 +2357,7 @@ function HomeTab({
                   </div>
                   {/* La racha vivía en el Home (casilla); acá desde 2026-09-26. */}
                   <p className="text-[13px] mt-3 flex items-center gap-1.5" style={{ color: T_MUTED }}><Flame size={14} strokeWidth={1.75} />Current streak · {streak} {streak === 1 ? 'day' : 'days'}</p>
-                  <button type="button" onClick={() => { const d = document.getElementById('my-sessions') as HTMLDetailsElement | null; if (d) { d.open = true; d.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }} className="inline-flex items-center gap-1.5 mt-3 text-[15px] font-bold" style={{ color: T_LINK }}>View sessions <ArrowRight size={15} /></button>
+                  <button type="button" onClick={openSessionsDetails} className="inline-flex items-center gap-1.5 mt-3 text-[15px] font-bold" style={{ color: T_LINK }}>View sessions <ArrowRight size={15} /></button>
                 </SandCard>
                 <SandCard label="Your next level">
                   {nd ? (
@@ -2414,7 +2491,8 @@ function HomeTab({
                     <ChevronDown size={18} style={{ color: T_MUTED }} />
                   </summary>
                   <div className="px-3 pb-3 pt-1" style={{ borderTop: `1px solid ${T_BORDER}` }}>
-                    <FeedbackTab data={data} />
+                    {/* Dentro de My progress el botón solo abre My Sessions, acá arriba. */}
+                    <FeedbackTab data={data} onOpenSessions={openSessionsDetails} />
                   </div>
                 </details>
                 <button type="button" onClick={() => onGoTo('sequence')}
@@ -3316,14 +3394,24 @@ function FeedbackTab({
   autoExpandFirst = false,
   initialSurveyId = null,
   onDark = false,
+  onOpenSessions,
 }: {
   data: PortalData;
   autoExpandFirst?: boolean;
   initialSurveyId?: string | null;
   /** true = va dentro del bloque de archivo del Home (fondo #0A1628). */
   onDark?: boolean;
+  /** "Read it in My Sessions →" del Thank you (2026-10-01). */
+  onOpenSessions?: () => void;
 }) {
-  const { pendingSurveys, submittedSurveys, student, token } = data;
+  // La encuesta recién enviada (2026-10-01): su "Thank you" queda arriba aunque
+  // el refresh la saque de las pendientes (antes desaparecía en un segundo).
+  const [sent, setSent] = useState<{ id: string; unlocked: boolean } | null>(null);
+  const { pendingSurveys: pendingAll, submittedSurveys, student, token } = data;
+  const pendingSurveys = sent ? pendingAll.filter((r: any) => r.id !== sent.id) : pendingAll;
+  // El botón de enviar quedaba abajo: el "Thank you" se trae a la vista.
+  const sentRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => { if (sent) sentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, [sent]);
   // Priority: ?survey=X URL param wins (deep-link from email).
   // Then autoExpandFirst (general "open feedback tab from email").
   // Otherwise nothing expanded.
@@ -3340,6 +3428,19 @@ function FeedbackTab({
 
   return (
     <div className="space-y-5">
+      {sent && (
+        <div ref={sentRef} style={{ scrollMarginTop: 12 }}>
+        <SurveyDone title="Thank you" lines={[
+          <>Your honest feedback becomes part of your coach&apos;s record.</>,
+          <>Your session feedback is now open: read what your coach wrote and what comes next in <b>My Sessions</b>.</>,
+          ...(sent.unlocked ? [<>The <b>My Coach</b> tab is open too — rating, certifications and your history together.</>] : []),
+        ]}>
+          {onOpenSessions && (
+            <button type="button" onClick={onOpenSessions} className="mt-4 w-full min-h-[48px] rounded-[5px] text-[15px] font-black uppercase" style={{ background: '#00D2FF', color: '#061C2B', fontFamily: 'var(--font-archivo), Archivo, sans-serif', letterSpacing: '0.035em' }}>Read it in My Sessions →</button>
+          )}
+        </SurveyDone>
+        </div>
+      )}
       {/* Dos áreas (Marcelo 2026-09-25): 1 · Método y coach · 2 · Experiencia.
           Con el logo de la academia al lado del nuestro cuando el alumno es de
           una academia (Puro Surf). */}
@@ -3408,7 +3509,7 @@ function FeedbackTab({
                     ? (pendingSurveys.length > 1 ? <button type="button" onClick={() => setExpandedSurveyId(null)} className="shrink-0 text-[13px] font-semibold underline" style={{ color: '#55666E' }}>Hide</button> : null)
                     : answerBtn}
                 />
-                {open && <SurveyForm resultId={result.id} token={token} serviceKind={serviceKind} serviceName={serviceName} />}
+                {open && <SurveyForm resultId={result.id} token={token} serviceKind={serviceKind} serviceName={serviceName} onSent={(unlocked) => setSent({ id: result.id, unlocked })} />}
               </section>
             );
           })}

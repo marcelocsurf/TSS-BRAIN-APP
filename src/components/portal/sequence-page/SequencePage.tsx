@@ -128,6 +128,8 @@ export function SequencePage({
     sheetPieces?: Record<string, PieceRow>;
     /** Lo que la página lleva al salir a una lección (voz, detalle abierto, su origen). */
     self?: { course?: string; focus?: string; up?: Exclude<CoachFrom, { k: 'seq' }> };
+    /** ?sheet= (2026-10-01): la hoja abierta al volver de su lección; null = el coach la cerró. */
+    initialSheet?: string | null;
   } | null;
 }) {
   const [tab, setTab] = useState<Tab>(initialTab ?? 'think');
@@ -172,7 +174,18 @@ export function SequencePage({
   const coachVideos = coach?.allVideos ?? [];
   const coachFocus = coach?.focus ?? null;
   // La hoja de un paso: se abre tocando su chip, o sola si vino del plan (?focus).
-  const [sheetKey, setSheetKey] = useState<string | null>(coach?.focus?.key ?? null);
+  const [sheetKey, setSheetKey] = useState<string | null>(coach?.initialSheet !== undefined ? coach.initialSheet : coach?.focus?.key ?? null);
+  // La hoja abierta queda en la URL (Marcelo 2026-10-01): volver de "la lección
+  // completa" la reabre. 'none' = la cerró (no vuelve la del ?focus). __NA = sin navegación de Next.
+  const openSheet = (k: string | null) => {
+    setSheetKey(k);
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.set('sheet', k ?? 'none');
+      const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
+      window.history.replaceState({ ...st, __NA: true }, '', `${u.pathname}${u.search}${u.hash}`);
+    } catch { /* cosmético */ }
+  };
   // Todas las piezas que el coach puede usar (las del alumno + las solo-coach).
   const allPieces: Record<string, PieceRow> = { ...pieces };
   for (const p of coach?.extraPieces ?? []) allPieces[p.id] = p;
@@ -290,7 +303,7 @@ export function SequencePage({
               {/* Una sola fila que se desliza: los pasos no empujan el título hacia abajo. */}
               <div className="flex flex-nowrap overflow-x-auto gap-1.5 pb-1 -mx-1 px-1">
                 {cfg.details.filter((d) => onSide(d.deeper?.lessonId)).map((d) => (
-                  <button key={d.key} type="button" onClick={() => setSheetKey(d.key)} aria-pressed={sheetKey === d.key}
+                  <button key={d.key} type="button" onClick={() => openSheet(d.key)} aria-pressed={sheetKey === d.key}
                     className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 min-h-[40px] px-3 rounded-full text-[13px] font-semibold"
                     style={sheetKey === d.key ? { background: CYAN, color: NAVY } : { background: 'rgba(247,249,250,.08)', color: PAPER, border: '1px solid rgba(247,249,250,.25)' }}>
                     {d.command && <i className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COMMAND_COLORS[d.command] }} />}
@@ -710,7 +723,7 @@ export function SequencePage({
             // Herramienta: el momento sin misión propia (cuando perdés velocidad) se corre con la completa.
             mission={pieceOf(d.deeper?.missionId ?? (isTool ? cfg.do.missionId : undefined))}
             lessonHref={stepId ? lessonHref(stepId) : null}
-            onClose={() => setSheetKey(null)}
+            onClose={() => openSheet(null)}
             onPresent={(start) => setDeck({ slides: stepSlides(d, m, stepCue), start, title: stripStep(d.title) })}
           />
         );

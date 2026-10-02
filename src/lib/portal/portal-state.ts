@@ -26,6 +26,8 @@ export interface PortalEphemeralState {
   lessonFromFor?: string | null;
   /** Lecciones abiertas desde un banner (STP-002 → Warm Up): la de arriba y las de abajo. */
   lessonStack?: { top: string; stack: string[] } | null;
+  /** Grupos abiertos de la lista del Course (2026-10-01). */
+  courseGroups?: string[] | null;
   t: number;
 }
 
@@ -103,4 +105,59 @@ export function takeLessonCompleting(token: string): string | null {
     if (!v?.id || typeof v.t !== 'number' || Date.now() - v.t > 60_000) return null;
     return v.id;
   } catch { return null; }
+}
+
+// ═══ Plan de Let's Play a medio llenar (Marcelo 2026-10-01) ═══
+// "Rehearse it on land first" sale a la página de la secuencia; al volver
+// ("‹ Your plan" o el atrás del teléfono) el plan reabre con lo que ya había
+// llenado. Por pestaña, 30 min; se borra al guardar o cancelar el plan.
+const PLAN_DRAFT_TTL = 30 * 60_000;
+/** Clave = cómo se abrió el plan, normalizada igual que page.tsx rearma ?seq=&mode=&focus=
+ *  (step_focus sin un foco válido vuelve como la línea completa). */
+export function planDraftKey(token: string, seq: string, mode: string, focus: string | null | undefined): string {
+  const f = mode === 'step_focus' && focus && /^[A-Z0-9-]{3,20}$/.test(focus) ? focus : 'run';
+  return `tss_plan_draft_${token}:${seq}:${f}`;
+}
+export function savePlanDraft(key: string, value: object) {
+  try { sessionStorage.setItem(key, JSON.stringify({ ...value, t: Date.now() })); } catch { /* sin storage, sin borrador */ }
+}
+export function loadPlanDraft<T>(key: string): T | null {
+  try {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const d = JSON.parse(raw);
+    if (!d || typeof d.t !== 'number' || Date.now() - d.t > PLAN_DRAFT_TTL) { sessionStorage.removeItem(key); return null; }
+    return d as T;
+  } catch { return null; }
+}
+export function clearPlanDraft(key: string) { try { sessionStorage.removeItem(key); } catch { /* nada */ } }
+
+// ═══ Custom Session en curso (Marcelo 2026-10-01) ═══
+// "Start Session" crea la fila ANTES del agua; cerrar el app o cambiar de
+// pestaña perdía el "Finish & review". En el teléfono (localStorage), 24 h, por token.
+export type CustomInProgress = { id: string; focus: string; duration: number; t: number };
+const CUSTOM_TTL = 24 * 3600_000;
+const customKey = (token: string) => `tss_custom_in_progress_${token}`;
+export function saveCustomInProgress(token: string, v: Omit<CustomInProgress, 't'>) {
+  try { localStorage.setItem(customKey(token), JSON.stringify({ ...v, t: Date.now() })); } catch { /* nada */ }
+}
+export function loadCustomInProgress(token: string): CustomInProgress | null {
+  try {
+    const raw = localStorage.getItem(customKey(token));
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    if (!v || typeof v.id !== 'string' || !v.id || typeof v.t !== 'number' || Date.now() - v.t > CUSTOM_TTL) {
+      localStorage.removeItem(customKey(token));
+      return null;
+    }
+    return {
+      id: v.id,
+      focus: typeof v.focus === 'string' ? v.focus : '',
+      duration: typeof v.duration === 'number' && v.duration > 0 ? v.duration : 30,
+      t: v.t,
+    };
+  } catch { return null; }
+}
+export function clearCustomInProgress(token: string) {
+  try { localStorage.removeItem(customKey(token)); } catch { /* nada */ }
 }

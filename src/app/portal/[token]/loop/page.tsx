@@ -4,6 +4,7 @@
 import { parseFrom, studentBack } from '@/lib/nav/origin';
 import { getCourseLocks } from '@/lib/portal/course-lock';
 import { CourseLockedScreen } from '@/components/portal/CourseLockedScreen';
+import { CourseNotOwnedScreen } from '@/components/portal/CourseNotOwnedScreen';
 import { notFound } from 'next/navigation';
 import { Archivo, IBM_Plex_Mono } from 'next/font/google';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -34,7 +35,22 @@ export default async function LoopPage({ params, searchParams }: { params: Promi
   const { data: student } = await admin.from('students').select(`id, ${blue.accessColumn}`).eq('portal_token', token).maybeSingle();
   if (!student) notFound();
   const owns = COURSE_OWNER_IDS.has((student as any).id) || !!(student as any)[blue.accessColumn];
-  if (!owns) notFound();
+  // Sin Blue (p. ej. "Study it" desde el plan de un camp de otra cinta): la
+  // pantalla que explica, no la de error (Marcelo 2026-10-01).
+  if (!owns) {
+    const b = studentBack(origin, token, { k: 'home' });
+    return (
+      <div className={`tss-v10 ${archivo.variable} ${plexMono.variable}`}>
+        <CourseNotOwnedScreen
+          eyebrow={`Part of the ${blue.label}`}
+          title="The Infinite Circle"
+          body={`The Infinite Circle opens with the ${blue.label}. The full page unlocks when that course is yours.`}
+          backHref={b.href}
+          backLabel={origin ? `Back to ${b.label}` : 'Back to your portal'}
+        />
+      </div>
+    );
+  }
   if (!COURSE_OWNER_IDS.has((student as any).id)) {
     const lock = (await getCourseLocks((student as any).id))[blue.key];
     if (lock) return <CourseLockedScreen token={token} unlocksOn={lock.unlocksOn} campName={lock.campName} what="The Infinite Circle" />;

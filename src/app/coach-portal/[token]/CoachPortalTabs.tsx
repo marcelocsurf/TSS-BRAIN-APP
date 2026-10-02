@@ -136,7 +136,7 @@ export function CoachPortalTabs({
   /** ?lesson=ID: la lección que se abre al entrar a Courses. */
   initialLessonId?: string;
   /** ?tab=plan&camp=&day=&view=: volver de Teach it / una lección a esa clase. */
-  initialPlan?: { campId: string; day?: number; view: 'read' | 'run' } | null;
+  initialPlan?: { campId: string; day?: number; view: 'read' | 'run'; from?: 'home' } | null;
   /** ?from= (src/lib/nav/origin.ts): de dónde vino el link a la lección. */
   initialFrom?: CoachFrom | null;
   /** Si este coach además entrena como alumno, el link a su portal de alumno. */
@@ -146,6 +146,11 @@ export function CoachPortalTabs({
   // La lección del link (?lesson=) se abre UNA vez por carga: volver a la
   // pestaña Cursos no la reabre.
   const [pendingLesson, setPendingLesson] = useState<string | undefined>(initialLessonId);
+  // De dónde se abrió la lección (Marcelo 2026-10-01): el link (?from=) o el Home ("Continue learning").
+  const [lessonFrom, setLessonFrom] = useState<CoachFrom | null>(initialFrom);
+  // Lecciones terminadas en esta visita: Home y Cursos lo saben sin recargar
+  // (si no, "Continue learning" reabría la recién terminada).
+  const [doneNow, setDoneNow] = useState<string[]>([]);
   // "Run today" desde el Home: el Plan abre ese camp/día directo.
   const [planAutoOpen, setPlanAutoOpen] = useState<{ campId: string; day?: number; view: 'read' | 'run'; from?: 'home' } | null>(initialPlan);
   // Cambiar de pestaña sin recargar, con la URL al día (2026-10-01): una
@@ -154,6 +159,11 @@ export function CoachPortalTabs({
     setActiveTab(t);
     writeQuietUrl(`${window.location.pathname}?tab=${t}`);
   };
+  // Inventario abierto desde una tarea (Marcelo 2026-10-01): "← Back to the task"
+  // vuelve al Home con esa tarea abierta.
+  const [taskBack, setTaskBack] = useState<string | null>(null);
+  useEffect(() => { if (activeTab !== 'inventory') setTaskBack(null); }, [activeTab]);
+  const openInventoryFromTask = (taskId: string) => { setTaskBack(taskId); setTab('inventory'); };
   // Después de un router.refresh(), la URL vuelve a decir dónde está el coach.
   useEffect(() => {
     try { if (quietUrl && `${window.location.pathname}${window.location.search}` !== quietUrl) writeQuietUrl(quietUrl); } catch { /* nada */ }
@@ -168,7 +178,15 @@ export function CoachPortalTabs({
   const [plannerOpen, setPlannerOpen] = useState(false);
   // Guía rápida integrada: se abre sola la primera vez, después queda en su botón.
   const [guideOpen, setGuideOpen] = useState(false);
+  // Avisos del plan que sobreviven al planner y al refresh (Marcelo 2026-10-01):
+  // "Camp finalized", "Saved — finish it whenever" se ven aunque la clase se
+  // cierre o se vuelva al Home.
+  const [notice, setNotice] = useState<string | null>(null);
+  useEffect(() => { if (!notice) return; const t = setTimeout(() => setNotice(null), 2500); return () => clearTimeout(t); }, [notice]);
   const { coach, stats } = data;
+  const courseProgress = doneNow.length
+    ? { ...data.courseProgress, ...Object.fromEntries(doneNow.map((id) => [id, { completed: true, completed_at: data.courseProgress[id]?.completed_at ?? new Date().toISOString(), started: false }])) }
+    : data.courseProgress;
   const isSupport = (coach as any).portal_category === 'support';
   useEffect(() => {
     // El staff de apoyo (filmer, asistente) tiene otro portal reducido: la
@@ -236,13 +254,17 @@ export function CoachPortalTabs({
                 </a>
               )}
             </div>
-            <PendingAssignments token={coach.portal_token} assignments={data.pendingAssignments} />
+            <PendingAssignments
+              token={coach.portal_token}
+              assignments={data.pendingAssignments}
+              onPlanClass={isSupport ? undefined : (campId) => { setPlanAutoOpen({ campId, view: 'run', from: 'home' }); setTab('plan'); }}
+            />
             <PendingStaffInvites invites={(data as any).pendingStaffInvites ?? []} />
 
             {isSupport ? (
-              <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} spaceBookings={(data as any).academySpaceBookings ?? []} emergencyPlan={data.emergencyPlan} onGoTo={(t) => setTab(t as Tab)} />
+              <SupportHome coach={coach} upcoming={data.upcomingServices} schedule={(data as any).academySchedule ?? []} spaceBookings={(data as any).academySpaceBookings ?? []} emergencyPlan={data.emergencyPlan} onGoTo={(t) => setTab(t as Tab)} onOpenInventory={openInventoryFromTask} openTaskId={taskBack} />
             ) : (
-              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setTab} coachCourses={data.coachCourses} courseProgress={data.courseProgress} todayLogistics={(data as any).todayLogistics ?? null} studentSide={studentSide} onRunToday={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run', from: 'home' }); setTab('plan'); }} unclosed={(data as any).unclosedPast ?? []} onOpenDay={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run', from: 'home' }); setTab('plan'); }} />
+              <HomeTab coach={coach} stats={stats} upcoming={data.upcomingServices} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoTo={setTab} coachCourses={data.coachCourses} courseProgress={courseProgress} onOpenLesson={(id) => { setPendingLesson(id); setLessonFrom({ k: 'home' }); setTab('courses'); }} onOpenInventory={openInventoryFromTask} openTaskId={taskBack} todayLogistics={(data as any).todayLogistics ?? null} studentSide={studentSide} onRunToday={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run', from: 'home' }); setTab('plan'); }} unclosed={(data as any).unclosedPast ?? []} onOpenDay={(campId, day) => { setPlanAutoOpen({ campId, day, view: 'run', from: 'home' }); setTab('plan'); }} onOpenClass={(campId) => { setPlanAutoOpen({ campId, view: 'read', from: 'home' }); setTab('plan'); }} />
             )}
           </div>
         )}
@@ -252,19 +274,28 @@ export function CoachPortalTabs({
         {activeTab === 'courses' && !noCourses && (
           <CoursesTab
             courses={data.coachCourses}
-            progress={data.courseProgress}
+            progress={courseProgress}
             coach={coach}
             token={coach.portal_token}
             initialLessonId={pendingLesson}
-            initialFrom={initialFrom}
+            initialFrom={lessonFrom}
             onLessonConsumed={() => setPendingLesson(undefined)}
+            onBackHome={() => setTab('home')}
+            onCompleted={(id) => setDoneNow((d) => (d.includes(id) ? d : [...d, id]))}
             teachRank={data.teachRank}
           />
         )}
-        {activeTab === 'tools' && <ToolsTab coach={coach} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoToCourses={() => setTab('courses' as Tab)} />}
+        {activeTab === 'tools' && <ToolsTab coach={coach} emergencyPlan={data.emergencyPlan} students={data.myStudents} boards={data.boards} onGoToCourses={noCourses ? undefined : () => setTab('courses' as Tab)} />}
         {activeTab === 'spaces' && <PortalSpaces token={coach.portal_token} coachId={coach.id} />}
         {activeTab === 'inventory' && (
-          <PortalInventory token={coach.portal_token} />
+          <div className="space-y-3">
+            {taskBack && (
+              <button type="button" onClick={() => setTab('home')} className="text-[12px] text-[var(--tss-navy)] hover:underline">
+                ← Back to the task
+              </button>
+            )}
+            <PortalInventory token={coach.portal_token} />
+          </div>
         )}
         {activeTab === 'plan' && (
           <PlanTab
@@ -276,6 +307,8 @@ export function CoachPortalTabs({
             autoOpen={planAutoOpen}
             onAutoOpened={() => setPlanAutoOpen(null)}
             onBackHome={() => setTab('home')}
+            teachRank={noCourses ? 0 : data.teachRank}
+            onNotice={setNotice}
           />
         )}
         {activeTab === 'rating' && (
@@ -285,6 +318,9 @@ export function CoachPortalTabs({
         )}
       </div>
       {guideOpen && <CoachGuide onClose={closeGuide} noCourses={noCourses} />}
+      {notice && (
+        <div role="status" className="fixed top-2 left-1/2 -translate-x-1/2 z-[60] px-3 py-1.5 rounded-full text-[11px] font-semibold shadow-lg" style={{ background: BRAND.colors.navy, color: 'white' }}>{notice}</div>
+      )}
 
       {/* Bottom nav — hidden while the planner is open (focused mode). */}
       {!plannerOpen && (
@@ -591,6 +627,10 @@ function HomeTab({
   onRunToday,
   unclosed = [],
   onOpenDay,
+  onOpenClass,
+  onOpenLesson,
+  onOpenInventory,
+  openTaskId = null,
 }: {
   coach: any;
   stats: any;
@@ -606,6 +646,14 @@ function HomeTab({
   /** Días sin cerrar; los que el coach ya empezó van primero. */
   unclosed?: { camp_id: string; camp_name: string; day_number: number; date: string; started: boolean }[];
   onOpenDay?: (campId: string, dayNumber: number) => void;
+  /** "Your next classes": abre ESA clase (Marcelo 2026-10-01); su Back vuelve al Home. */
+  onOpenClass?: (campId: string) => void;
+  /** "Continue learning" abre la próxima lección de la certificación (2026-10-01); su Back vuelve al Home. */
+  onOpenLesson?: (lessonId: string) => void;
+  /** El inventario abierto desde una tarea (2026-10-01): su Back vuelve a esa tarea. */
+  onOpenInventory?: (taskId: string) => void;
+  /** Volver del inventario: la tarea que lo abrió, abierta. */
+  openTaskId?: string | null;
   /** Si este coach además entrena como alumno, el link a su portal. */
   studentSide?: { href: string; name: string } | null;
   emergencyPlan?: {
@@ -627,6 +675,9 @@ function HomeTab({
   const certLessons = splitCoachCourses(coachCourses as any[]).cert;
   const totalLessons = certLessons.length;
   const completedLessons = certLessons.filter((l: any) => courseProgress[l.id]?.completed).length;
+  // La próxima lección con la MISMA regla que "Continue" en Cursos (2026-10-01):
+  // la primera sin terminar y sin prerrequisito pendiente.
+  const nextCert = certLessons.find((l: any) => !courseProgress[l.id]?.completed && !((l.prerequisites ?? []) as string[]).some((p) => !courseProgress[p]?.completed));
   const coursePct = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
 
   // Certification progression (L1–L5) — drives the hero ring, mirroring the
@@ -823,7 +874,7 @@ function HomeTab({
           <div className="w-full rounded-full h-2 overflow-hidden" style={{ background: 'rgba(6,28,43,.07)' }}>
             <div className="h-full rounded-full transition-all" style={{ width: `${coursePct}%`, background: '#00D2FF' }} />
           </div>
-          <button onClick={() => onGoTo?.('courses')} className="text-[11px] mt-2.5 inline-flex items-center gap-1 hover:opacity-80" style={{ color: '#00A8CC' }}>
+          <button onClick={() => (nextCert && onOpenLesson ? onOpenLesson(nextCert.id) : onGoTo?.('courses'))} className="text-[11px] mt-2.5 inline-flex items-center gap-1 hover:opacity-80" style={{ color: '#00A8CC' }}>
             Continue learning <ChevronRight size={13} />
           </button>
         </div>
@@ -860,7 +911,7 @@ function HomeTab({
               return (
                 <button
                   key={s.id}
-                  onClick={() => onGoTo?.('plan')}
+                  onClick={() => (onOpenClass ? onOpenClass(s.id) : onGoTo?.('plan'))}
                   className="w-full text-left px-4 py-3 flex items-center justify-between gap-2 transition-colors hover:bg-[rgba(6,28,43,.03)]"
                   style={{ borderBottom: '1px solid rgba(6,28,43,.04)' }}
                 >
@@ -879,7 +930,7 @@ function HomeTab({
       )}
 
       {/* Tasks assigned to me by the coordinator */}
-      <CoachTasks token={coach.portal_token} onOpenInventory={onGoTo ? () => onGoTo('inventory') : undefined} />
+      <CoachTasks token={coach.portal_token} onOpenInventory={onOpenInventory ?? (onGoTo ? () => onGoTo('inventory') : undefined)} initialOpenId={openTaskId} />
 
       {/* Alto Rendimiento · Escalón 1 — solo aparece si el coach tiene el
           escalón otorgado Y atletas con programa a su cargo. */}
@@ -899,9 +950,15 @@ function CoursesTab({
   initialFrom = null,
   onLessonConsumed,
   teachRank = 1,
+  onBackHome,
+  onCompleted,
 }: {
   /** De dónde vino el link a la lección (?from=): su Back vuelve ahí. */
   initialFrom?: CoachFrom | null;
+  /** El Home es una pestaña de este mismo portal: volver sin recargar (2026-10-01). */
+  onBackHome?: () => void;
+  /** Lección terminada (leída o quiz aprobado): el Home lo sabe sin recargar. */
+  onCompleted?: (lessonId: string) => void;
   courses: any[];
   progress: Record<string, { completed: boolean; completed_at: string | null; started: boolean }>;
   coach: any;
@@ -959,8 +1016,12 @@ function CoursesTab({
   // plan del camp en ese día, la página de la secuencia… Sin origen, a la lista.
   // (Antes se adivinaba con document.referrer + history.back(), que falla en
   // el app instalado y en los links de WhatsApp.)
-  const linkBack = fromLink && openLessonId === linkedId && initialFrom ? coachBack(initialFrom, token, { k: 'home' }) : null;
+  // La fila de la que salió (#row-<id>, 2026-10-01): el índice del curso vuelve a ella.
+  const linkBack = fromLink && openLessonId === linkedId && initialFrom ? coachBack(initialFrom, token, { k: 'home' }, linkedId) : null;
   const goBack = () => {
+    // El Home vive en este mismo portal: se cambia de pestaña, sin recargar
+    // (leaveTo haría history.go o recargaría el portal entero).
+    if (linkBack && initialFrom?.k === 'home' && onBackHome) { setFromLink(false); closeLesson(); onBackHome(); return; }
     if (linkBack) { leaveTo(linkBack.href, 1); return; }
     setFromLink(false);
     closeLesson();
@@ -989,6 +1050,7 @@ function CoursesTab({
           ...prev,
           [openLessonId]: { completed: true, completed_at: new Date().toISOString(), started: false },
         }));
+        onCompleted?.(openLessonId);
         // Also reflect in local detail state
         setDetail((d) =>
           d
@@ -1073,6 +1135,7 @@ function CoursesTab({
                           ...p,
                           [openLessonId]: { completed: true, completed_at: new Date().toISOString(), started: false },
                         }));
+                        onCompleted?.(openLessonId);
                         setDetail((d) =>
                           d ? { ...d, progress: { ...(d.progress ?? { quiz_score: null, quiz_attempts: 0 }), completed: true, completed_at: new Date().toISOString() } } : d
                         );
@@ -1193,6 +1256,7 @@ function CoursesTab({
                     ...p,
                     [openLessonId]: { completed: true, completed_at: new Date().toISOString(), started: false },
                   }));
+                  onCompleted?.(openLessonId);
                   setDetail((d) =>
                     d ? { ...d, progress: { ...(d.progress ?? { quiz_score: null, quiz_attempts: 0 }), completed: true, completed_at: new Date().toISOString() } } : d
                   );
@@ -1234,6 +1298,22 @@ function CoursesTab({
                   className="w-full min-h-[44px] rounded-[5px] text-[13px] font-semibold border border-[#DCD7C6] bg-[#F7F9FA] text-left px-4 flex items-center justify-between gap-2"
                   style={{ color: '#061C2B' }}>
                   <span className="min-w-0 truncate">Next · {nextLesson.title}</span>
+                  <ChevronRight size={15} className="shrink-0 text-[#55666E]" />
+                </button>
+              );
+            })()}
+            {/* Certificación (Marcelo 2026-10-01): terminada la lección, "Next ·" con la
+                MISMA regla que "Continue" — la primera sin terminar y sin prerrequisito pendiente. */}
+            {isCompleted && !detail.coachTool && (() => {
+              const { cert } = splitCoachCourses(courses);
+              if (!cert.some((c: any) => c.id === detail.lesson.id)) return null;
+              const nextCert = cert.find((c: any) => c.id !== detail.lesson.id && !completedSet.has(c.id) && !((c.prerequisites ?? []) as string[]).some((p) => !completedSet.has(p)));
+              if (!nextCert) return null;
+              return (
+                <button type="button" onClick={() => { window.scrollTo({ top: 0 }); openLesson(nextCert.id); }}
+                  className="w-full min-h-[44px] rounded-[5px] text-[13px] font-semibold border border-[#DCD7C6] bg-[#F7F9FA] text-left px-4 flex items-center justify-between gap-2"
+                  style={{ color: '#061C2B' }}>
+                  <span className="min-w-0 truncate">Next · {nextCert.title}</span>
                   <ChevronRight size={15} className="shrink-0 text-[#55666E]" />
                 </button>
               );
@@ -1834,7 +1914,8 @@ function ToolsTab({ coach, emergencyPlan, students, boards, onGoToCourses }: {
   } | null;
   students?: { id: string; name: string }[];
   boards?: { id: string; code: string }[];
-  onGoToCourses: () => void;
+  /** Sin cursos (alcance 'none') no llega: la línea a Cursos no se muestra. */
+  onGoToCourses?: () => void;
 }) {
   const hasEmergency = !!emergencyPlan && (
     emergencyPlan.emergency_numbers || emergencyPlan.nearest_hospital ||
@@ -1852,14 +1933,17 @@ function ToolsTab({ coach, emergencyPlan, students, boards, onGoToCourses }: {
 
       {/* La STP Library se fue (Marcelo 2026-10-01: "se duplica con Teach the
           course"): pasos, drills, misiones y criterios viven en Cursos, en la
-          página de cada secuencia. Esta línea avisa adónde se mudaron. */}
-      <button type="button" onClick={onGoToCourses}
-        className="w-full text-left rounded-lg px-4 py-3 flex items-center gap-3"
-        style={{ background: '#E9E2D2', border: '1px solid #DCD7C6', color: '#061C2B' }}>
-        <BookOpen size={18} strokeWidth={1.75} className="shrink-0" style={{ color: '#00A8CC' }} />
-        <span className="min-w-0 flex-1 text-[13px] leading-snug">Drills, missions and their criteria now live in each sequence: <b>Cursos · Teach the course</b>.</span>
-        <ChevronRight size={15} className="text-[#55666E] shrink-0" />
-      </button>
+          página de cada secuencia. Esta línea avisa adónde se mudaron (sin
+          cursos — alcance 'none' — no se muestra, 2026-10-01). */}
+      {onGoToCourses && (
+        <button type="button" onClick={onGoToCourses}
+          className="w-full text-left rounded-lg px-4 py-3 flex items-center gap-3"
+          style={{ background: '#E9E2D2', border: '1px solid #DCD7C6', color: '#061C2B' }}>
+          <BookOpen size={18} strokeWidth={1.75} className="shrink-0" style={{ color: '#00A8CC' }} />
+          <span className="min-w-0 flex-1 text-[13px] leading-snug">Drills, missions and their criteria now live in each sequence: <b>Cursos · Teach the course</b>.</span>
+          <ChevronRight size={15} className="text-[#55666E] shrink-0" />
+        </button>
+      )}
 
       {/* ── FIELD TOOLS ── */}
       <h2 className="text-[23px] px-1 pt-3 leading-tight" style={{ ...F_DISPLAY, fontWeight: 900, color: '#10263B' }}>Field tools</h2>
@@ -1953,6 +2037,8 @@ function PlanTab({
   autoOpen = null,
   onAutoOpened,
   onBackHome,
+  teachRank,
+  onNotice,
 }: {
   upcoming: any[];
   past: any[];
@@ -1963,7 +2049,16 @@ function PlanTab({
   onAutoOpened?: () => void;
   /** La clase se abrió desde el Home ("Run today"): su Back vuelve al Home. */
   onBackHome?: () => void;
+  /** data.teachRank (0 = sin cursos): Teach it solo hasta ahí; arriba, la ruta da 404. */
+  teachRank?: number;
+  /** Aviso del planner que se ve aunque la clase se cierre (vive en el portal). */
+  onNotice?: (msg: string) => void;
 }) {
+  const router = useRouter();
+  // El calendario recuerda el mes y el día al abrir una clase y volver (Marcelo 2026-10-01).
+  // undefined = el calendario usa su default (este mes, hoy) hasta el primer toque.
+  const [calCursor, setCalCursor] = useState<Date | undefined>(undefined);
+  const [calSelected, setCalSelected] = useState<string | undefined>(undefined);
   const [selectedCampId, setSelectedCampId] = useState<string | null>(null);
   const [openedFromHome, setOpenedFromHomeState] = useState(false);
   // Ref al lado del estado: la URL se escribe en el mismo tick en que se abre.
@@ -2151,9 +2246,10 @@ function PlanTab({
             fromHome={openedFromHome}
             templatePlan={planData.templatePlan}
             templateMeta={planData.templateMeta}
+            teachRank={teachRank}
           />
         ) : (
-          <SessionPlanner data={planData} token={token} onBack={close} onSwitchDay={switchDay} fromHome={openedFromHome} />
+          <SessionPlanner data={planData} token={token} onBack={close} onSwitchDay={switchDay} fromHome={openedFromHome} teachRank={teachRank} onNotice={onNotice} onDayChanged={() => router.refresh()} />
         )}
       </div>
     );
@@ -2214,7 +2310,7 @@ function PlanTab({
 
       {upcoming.length > 0 && (
         <div className="md:max-w-[460px]">
-          <CoachMiniCalendar services={upcoming} onOpen={openPlanner} token={token} />
+          <CoachMiniCalendar services={upcoming} onOpen={openPlanner} token={token} cursor={calCursor} onCursorChange={setCalCursor} selected={calSelected} onSelectedChange={setCalSelected} />
         </div>
       )}
 

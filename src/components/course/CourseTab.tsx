@@ -181,6 +181,22 @@ export function CourseTab({ data, onExit }: {
   const saveStack = (top: string | null) => savePortalState(data.portalToken, { lessonStack: top && stackRef.current.length ? { top, stack: stackRef.current } : null });
   // Volver a la lista: no queda ni origen ni pila de antes.
   const forgetTrail = () => { stackRef.current = []; setLessonFrom(null); saveStack(null); };
+  // Los grupos abiertos de la lista (Marcelo 2026-10-01: continuidad). La lista
+  // se desmonta mientras se lee una lección: sin esto volvía con todo cerrado y
+  // el scroll guardado caía en otro lado. Sobrevive al remount (portal-state);
+  // se lee en un efecto, nunca en useState (hidratación).
+  const [openGroups, setOpenGroups] = useState<string[]>([]);
+  useEffect(() => {
+    const g = loadPortalState(data.portalToken)?.courseGroups;
+    if (Array.isArray(g)) setOpenGroups(g.filter((x): x is string => typeof x === 'string').slice(0, 40));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const toggleGroup = (key: string, isOpen: boolean) => setOpenGroups((cur) => {
+    const next = isOpen ? (cur.includes(key) ? cur : [...cur, key]) : cur.filter((k) => k !== key);
+    if (next.length !== cur.length) savePortalState(data.portalToken, { courseGroups: next });
+    return next.length !== cur.length ? next : cur;
+  });
+  const groupProps = (key: string) => ({ open: openGroups.includes(key), onToggle: (o: boolean) => toggleGroup(key, o) });
 
   const pathWithLesson = (id: string | null) => `${window.location.pathname}?tab=course${id ? `&lesson=${encodeURIComponent(id)}` : ''}`;
   const nextState = (extra: Record<string, unknown>) => {
@@ -769,6 +785,7 @@ export function CourseTab({ data, onExit }: {
           {pcSections.map((section, i) => (
             <SectionBlock
               key={section.id}
+              {...groupProps(`pc:${section.id}`)}
               number={String(i + 1).padStart(2, '0')}
               title={section.name}
               subtitle={null}
@@ -808,6 +825,7 @@ export function CourseTab({ data, onExit }: {
           />
 
           <SectionBlock
+            {...groupProps('shared')}
             title="Foundations & values (carried over)"
             subtitle="Prerequisites from your earlier belts"
             Icon={Compass}
@@ -836,6 +854,7 @@ export function CourseTab({ data, onExit }: {
             startGroups.map((section) => (
               <SectionBlock
                 key={section.id}
+                {...groupProps(`start:${section.id}`)}
                 title={section.name}
                 subtitle={null}
                 Icon={PC_SECTION_ICON[section.id] || Compass}
@@ -848,6 +867,7 @@ export function CourseTab({ data, onExit }: {
             ))
           ) : (
             <SectionBlock
+              {...groupProps(`onb:${activeCourse.key}`)}
               title={`${beltLabelShort} Onboarding`}
               subtitle="Bridge between awareness (Pre-Course) and action (Sequences)"
               Icon={Compass}
@@ -923,6 +943,7 @@ export function CourseTab({ data, onExit }: {
           {bluePrelude.map((g) => (
             <SectionBlock
               key={g.id}
+              {...groupProps(`prelude:${g.id}`)}
               title={g.name}
               subtitle={g.promise}
               Icon={WB_SEQUENCE_ICON[g.id] || BookOpen}
@@ -951,6 +972,7 @@ export function CourseTab({ data, onExit }: {
           {beltSequences.map((group) => (
             <SectionBlock
               key={group.id}
+              {...groupProps(`seq:${group.id}`)}
               title={(() => {
                 const p = sequencePrefix(group.id, group.order);
                 return p && !p.startsWith('#') ? `${p}: ${group.name}` : group.name;
@@ -1179,6 +1201,8 @@ function SectionBlock({
   onePageHref,
   number = null,
   desc = null,
+  open,
+  onToggle,
 }: {
   title: string;
   subtitle: string | null;
@@ -1193,6 +1217,9 @@ function SectionBlock({
   theme?: BeltTheme;
   /** Piloto 2026-09-09: la secuencia como UNA página (Think · Feel · Do · Review). */
   onePageHref?: string | null;
+  /** Abierto o cerrado lo decide CourseTab (sobrevive a abrir una lección, 2026-10-01). */
+  open?: boolean;
+  onToggle?: (open: boolean) => void;
 }) {
   // Only count PRODUCTIZED items toward progress (PROPOSED can't be completed)
   const productized = lessons.filter((l) => l.status_v1 !== 'PROPOSED');
@@ -1234,7 +1261,8 @@ function SectionBlock({
   }
 
   return (
-    <details className="group mx-2 rounded-[8px]" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6', color: '#10263B' }}>
+    <details className="group mx-2 rounded-[8px]" style={{ background: '#E9E2D2', border: '1px solid #DCD7C6', color: '#10263B' }}
+      open={open} onToggle={onToggle ? (e) => onToggle((e.currentTarget as HTMLDetailsElement).open) : undefined}>
       <summary className="px-3.5 py-3.5 cursor-pointer list-none">
         <div className="flex items-center gap-3">
           <Num />

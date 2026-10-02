@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { CheckSquare, Check, X, Repeat, ListChecks, Package } from 'lucide-react';
 import { getMyTasks, reportMyTask, saveMyTaskProcess, type AcademyTask } from '@/lib/actions/tasks';
 
@@ -18,9 +18,14 @@ function isOverdue(t: AcademyTask) {
   return new Date(t.due_date + 'T00:00:00') < today;
 }
 
-export function CoachTasks({ token, onOpenInventory }: { token: string; onOpenInventory?: () => void }) {
+export function CoachTasks({ token, onOpenInventory, initialOpenId = null }: {
+  token: string;
+  onOpenInventory?: (taskId: string) => void;
+  /** Volver del inventario (Marcelo 2026-10-01): la tarea que lo abrió, abierta. */
+  initialOpenId?: string | null;
+}) {
   const [tasks, setTasks] = useState<AcademyTask[] | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(initialOpenId);
   const [pending, start] = useTransition();
 
   useEffect(() => {
@@ -28,6 +33,16 @@ export function CoachTasks({ token, onOpenInventory }: { token: string; onOpenIn
     getMyTasks(token).then((t) => { if (alive) setTasks(t); }).catch(() => { if (alive) setTasks([]); });
     return () => { alive = false; };
   }, [token]);
+
+  // Volver del inventario: la tarea abierta, a la vista (se captura al montar:
+  // el padre suelta el id enseguida).
+  const [scrollTo] = useState(initialOpenId);
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (!tasks || !scrollTo || scrolled.current) return;
+    scrolled.current = true;
+    document.getElementById(`task-${scrollTo}`)?.scrollIntoView({ block: 'center' });
+  }, [tasks, scrollTo]);
 
   if (!tasks || tasks.length === 0) return null;
 
@@ -46,7 +61,7 @@ export function CoachTasks({ token, onOpenInventory }: { token: string; onOpenIn
 
       <ul className="space-y-1.5">
         {open.map((t) => (
-          <li key={t.id} className="rounded-[5px] bg-[#F7F9FA] border border-[#DCD7C6] overflow-hidden">
+          <li key={t.id} id={`task-${t.id}`} className="rounded-[5px] bg-[#F7F9FA] border border-[#DCD7C6] overflow-hidden">
             <button
               type="button"
               onClick={() => setOpenId(openId === t.id ? null : t.id)}
@@ -73,7 +88,7 @@ export function CoachTasks({ token, onOpenInventory }: { token: string; onOpenIn
               <div className="px-3 pt-3">
                 <button
                   type="button"
-                  onClick={onOpenInventory}
+                  onClick={() => onOpenInventory(t.id)}
                   className="w-full inline-flex items-center justify-center gap-1.5 rounded-[5px] py-2.5 text-sm font-bold"
                   style={{ background: '#00D2FF', color: '#061C2B' }}
                 >

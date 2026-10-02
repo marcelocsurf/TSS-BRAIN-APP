@@ -17,7 +17,7 @@ interface Props {
 // channel" solo se muestra en surf. La cabecera (título, fecha, coach) la pone
 // la tarjeta que la contiene (FeedbackTab); acá van solo las preguntas.
 // Diseño v10.1 compartido en src/components/survey/SurveyUi.tsx (2026-09-25).
-export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props & { serviceKind?: string | null; serviceName?: string | null }) {
+export function SurveyForm({ resultId, token, serviceKind, serviceName, onSent }: Props & { serviceKind?: string | null; serviceName?: string | null; onSent?: (unlocked: boolean) => void }) {
   const surveySet = surveyForService(serviceKind, serviceName);
   const labels = surveySet.questions.map((q) => q.label);
   const showFlow = surveySet.flow;
@@ -74,6 +74,10 @@ export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props 
         flow_channel: showFlow ? form.flow_channel : null,
         open_comment: form.open_comment.trim() || '',
       });
+      // Con onSent, el "Thank you" lo dibuja quien contiene el formulario: el
+      // refresh saca esta encuesta de las pendientes y este componente se
+      // desmonta (2026-10-01). Así el mensaje sobrevive al refresh.
+      if (onSent) { onSent(!!result.justUnlockedCoachProfile); router.refresh(); return; }
       setJustUnlocked(!!result.justUnlockedCoachProfile);
       setSubmitted(true);
       // Re-fetch the server components so the pending badge, the red dot,
@@ -93,7 +97,7 @@ export function SurveyForm({ resultId, token, serviceKind, serviceName }: Props 
           title="Thank you"
           lines={[
             <>Your honest feedback becomes part of your coach&apos;s record.</>,
-            <>Your session feedback is now open: go to <b>Sessions</b> to read what your coach wrote and what comes next.</>,
+            <>Your session feedback is now open: read what your coach wrote and what comes next in <b>My Sessions</b>.</>,
             ...(justUnlocked ? [<>The <b>My Coach</b> tab is open too — rating, certifications and your history together.</>] : []),
           ]}
         />
