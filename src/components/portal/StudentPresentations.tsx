@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { getMyStudentResources, type CoachResource } from '@/lib/actions/coach-resources';
 import { Presentation } from 'lucide-react';
 import { MaterialReader } from './MaterialReader';
+import { useBackCloses } from '@/lib/nav/overlay';
 
 // Shows the presentations an admin has granted to this student.
 //
@@ -21,6 +22,9 @@ export function StudentPresentations({ token, initial }: { token: string; initia
     getMyStudentResources(token).then(setItems).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
+  // El atrás del teléfono cierra el lector (src/lib/nav/overlay.ts, Marcelo
+  // 2026-10-02). Antes del return temprano: los hooks siempre en el mismo orden.
+  const closeReader = useBackCloses('presentation', !!reader, () => setReader(null));
 
   if (items.length === 0) return null;
 
@@ -59,7 +63,7 @@ export function StudentPresentations({ token, initial }: { token: string; initia
         </button>
         );
       })}
-      {reader && <MaterialReader token={token} resourceId={reader.id} title={reader.title} onClose={() => setReader(null)} />}
+      {reader && <MaterialReader token={token} resourceId={reader.id} title={reader.title} onClose={closeReader} />}
     </div>
   );
 }

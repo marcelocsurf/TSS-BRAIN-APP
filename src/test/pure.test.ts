@@ -784,3 +784,77 @@ describe('pasos compartidos · una secuencia sin trabajar no hereda estrellas', 
     }
   });
 });
+
+import { overlayMarks, isStaleEntry, overlayPop, overlayEntry, OVERLAY_KEY, marksWiped, underTab, UNDER_KEY } from '@/lib/nav/overlay';
+describe('nav · el atrás del teléfono cierra la capa (2026-10-02)', () => {
+  it('overlayMarks lee solo una lista de nombres', () => {
+    expect(overlayMarks({ tssOverlays: ['progress', 'roadmap'] })).toEqual(['progress', 'roadmap']);
+    expect(overlayMarks({ tssOverlays: ['progress', 3, null, 'water'] })).toEqual(['progress', 'water']);
+    expect(overlayMarks({ tssOverlays: 'progress' })).toEqual([]);
+    expect(overlayMarks({ __NA: true })).toEqual([]);
+    expect(overlayMarks(null)).toEqual([]);
+    expect(overlayMarks(undefined)).toEqual([]);
+    expect(overlayMarks('x')).toEqual([]);
+  });
+  it('overlayPop: cierra la de arriba, las pestañas no se mueven', () => {
+    // progress → What it takes → atrás: cierra What it takes, My progress sigue.
+    expect(overlayPop(['progress', 'roadmap'], ['progress'])).toEqual({ overlay: true, close: ['roadmap'], skip: false });
+    // Atrás desde My progress: la entrada de abajo no tiene marca.
+    expect(overlayPop(['progress'], [])).toEqual({ overlay: true, close: ['progress'], skip: false });
+    // Sin capas ni marcas: un atrás normal (pestaña, lección).
+    expect(overlayPop([], [])).toEqual({ overlay: false, close: [], skip: false });
+  });
+  it('overlayPop: una entrada vieja se salta', () => {
+    // progress → What it takes → un paso: la entrada de My progress quedó vieja.
+    expect(overlayPop([], ['progress'])).toEqual({ overlay: true, close: [], skip: true });
+    // Adelante (escritorio) sobre una capa ya cerrada: rebota.
+    expect(overlayPop(['progress'], ['progress', 'roadmap'])).toEqual({ overlay: true, close: [], skip: true });
+  });
+  it('isStaleEntry: nombra una capa que no está abierta', () => {
+    expect(isStaleEntry([], [])).toBe(false);
+    expect(isStaleEntry(['progress'], ['progress'])).toBe(false);
+    expect(isStaleEntry(['progress'], [])).toBe(true);
+    expect(isStaleEntry(['progress', 'roadmap'], ['progress'])).toBe(true);
+  });
+  it('overlayEntry: copia el estado de Next y del Course, sin tssBase', () => {
+    const st = { __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: ['t'], tssLesson: 'PC-PRE-10', tssDepth: 1, tssBase: true, tssOverlays: ['old'] };
+    const e = overlayEntry(st, ['progress', 'roadmap']);
+    expect(e).toEqual({ __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: ['t'], tssLesson: 'PC-PRE-10', tssDepth: 1, [OVERLAY_KEY]: ['progress', 'roadmap'] });
+    // Sin estado (o roto): igual lleva __NA, si no Next lo trata como navegación.
+    expect(overlayEntry(null, ['guide'])).toEqual({ __NA: true, tssOverlays: ['guide'] });
+    // La lista es una copia: la pila del módulo sigue cambiando después.
+    const open = ['inbox'];
+    const e2 = overlayEntry({}, open);
+    open.push('book');
+    expect(e2.tssOverlays).toEqual(['inbox']);
+  });
+});
+describe('nav · la entrada de abajo de las capas (2026-10-02)', () => {
+  it('marksWiped: Next borró la marca de la capa de abajo', () => {
+    // router.refresh con My progress abierto, después What it takes.
+    expect(marksWiped([], ['progress'])).toBe(true);
+    expect(marksWiped(['progress'], ['progress', 'roadmap'])).toBe(true);
+    // Con su marca, o sin capas abajo: se apila sin tocar nada.
+    expect(marksWiped(['progress'], ['progress'])).toBe(false);
+    expect(marksWiped([], [])).toBe(false);
+    // Vieja (nombra una capa cerrada): eso es isStaleEntry, no esto.
+    expect(marksWiped(['inbox'], ['progress'])).toBe(false);
+  });
+  it('underTab: la pestaña simple de la entrada de abajo, del mismo documento', () => {
+    const st = (href: string, doc = 'd1') => ({ __NA: true, [UNDER_KEY]: { href, doc } });
+    expect(underTab(st('https://x.app/portal/T?tab=home'), '/portal/T', 'd1')).toBe('home');
+    expect(underTab(st('https://x.app/portal/T?tab=sequence'), '/portal/T', 'd1')).toBe('sequence');
+    // La portada (sin ?tab=) es el Home.
+    expect(underTab(st('https://x.app/portal/T'), '/portal/T', 'd1')).toBe('home');
+    // Una lección abajo no es la lista del Course: no se vuelve con el atrás.
+    expect(underTab(st('https://x.app/portal/T?tab=course&lesson=PC-PRE-10'), '/portal/T', 'd1')).toBeNull();
+    // Otro documento (recarga), otra ruta, sin dato o roto: no se sabe.
+    expect(underTab(st('https://x.app/portal/T?tab=home', 'd0'), '/portal/T', 'd1')).toBeNull();
+    expect(underTab(st('https://x.app/portal/T?tab=home'), '/portal/T', undefined)).toBeNull();
+    expect(underTab(st('https://x.app/portal/OTRO?tab=home'), '/portal/T', 'd1')).toBeNull();
+    expect(underTab({ __NA: true }, '/portal/T', 'd1')).toBeNull();
+    expect(underTab({ [UNDER_KEY]: 'https://x.app/portal/T?tab=home' }, '/portal/T', 'd1')).toBeNull();
+    expect(underTab(st('no es una url'), '/portal/T', 'd1')).toBeNull();
+    expect(underTab(null, '/portal/T', 'd1')).toBeNull();
+  });
+});

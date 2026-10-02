@@ -116,7 +116,8 @@ export function BeltRoadmap({
 }: {
   token: string;
   onClose: () => void;
-  /** Abre el paso que frena una secuencia, en Let's Play. */
+  /** Abre el paso que frena una secuencia, en Let's Play. El padre cierra
+   *  esta guía (2026-10-02: ya no se cierra sola antes). */
   onOpenStep?: (stepId: string) => void;
   /** Abre el plan de Let's Play de una herramienta (Forward Momentum). */
   onTrainSequence?: (args: { sequenceId: string; mode: 'step_focus' }) => void;
@@ -307,10 +308,9 @@ export function BeltRoadmap({
                         s.trainSequenceId && onTrainSequence
                           ? () => onTrainSequence({ sequenceId: s.trainSequenceId!, mode: 'step_focus' })
                           : s.weakestStepId && onOpenStep
-                          ? () => {
-                              onClose();
-                              onOpenStep(s.weakestStepId!);
-                            }
+                          ? // El padre la cierra sin history.back: el atrás llegaría
+                            // después de la URL del paso y la desharía (2026-10-02).
+                            () => onOpenStep(s.weakestStepId!)
                           : undefined
                       }
                     />

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { LessonViewer } from './LessonViewer';
 import { parseFrom, encodeFrom, studentBack, type StudentFrom } from '@/lib/nav/origin';
+import { isOverlayPop } from '@/lib/nav/overlay';
 import { sequencePageFor } from '@/lib/sequence-pages';
 import { CourseFinalQuiz } from './CourseFinalQuiz';
 import { getSectionIntros, type SectionIntro } from '@/lib/actions/section-intros';
@@ -202,7 +203,9 @@ export function CourseTab({ data, onExit }: {
   const nextState = (extra: Record<string, unknown>) => {
     const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
     // tssBase no se hereda: solo la entrada de llegada por link lo lleva.
-    const { tssBase: _base, ...rest } = st as Record<string, unknown>;
+    // tssOverlays y tssUnder tampoco: una lección no es una capa ni está encima
+    // de una (src/lib/nav/overlay.ts, 2026-10-02).
+    const { tssBase: _base, tssOverlays: _ov, tssUnder: _under, ...rest } = st as Record<string, unknown>;
     return { ...rest, __NA: true, ...extra };
   };
   // Lee las marcas de una entrada del historial. La de llegada por link
@@ -307,6 +310,9 @@ export function CourseTab({ data, onExit }: {
   };
   useEffect(() => {
     const onPop = (e: PopStateEvent) => {
+      // Cerró una capa (el lector de una presentación, la guía…): la lección
+      // y la lista quedan como estaban (src/lib/nav/overlay.ts, 2026-10-02).
+      if (isOverlayPop(e)) return;
       const st = (e.state && typeof e.state === 'object') ? (e.state as any) : {};
       const id = st.tssLesson || null;
       // El atrás del teléfono a una lección de la pila: la pila se corta ahí.

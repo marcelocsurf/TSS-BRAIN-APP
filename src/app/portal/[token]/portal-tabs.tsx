@@ -38,6 +38,7 @@ import { loadPortalState, savePortalState, touchPortalState, loadCustomInProgres
 import { discardSession, getOpenSession, type OpenSession } from '@/lib/actions/lets-play';
 import { studentBack, withFrom, type StudentFrom } from '@/lib/nav/origin';
 import { leaveTo } from '@/lib/nav/leave';
+import { useBackCloses, isOverlayPop, backToUnder } from '@/lib/nav/overlay';
 import { isGoofy } from '@/lib/stance';
 import { LinkedTrainingFlow } from '@/components/sequence/LinkedTrainingFlow';
 import { SequenceTrainingFlow } from '@/components/sequence/SequenceTrainingFlow';
@@ -906,10 +907,18 @@ export function PortalTabs({
     } catch { /* la limpieza es cosmética, nunca debe romper el portal */ }
   }, []);
 
+  // goTab volvió con el atrás a la entrada de abajo de una capa (backToUnder):
+  // al aterrizar se piden los datos frescos que traía portalRouter.replace.
+  const freshOnLandRef = useRef(false);
   // Atrás del teléfono después de cambiar de pestaña por la barra: la pestaña
   // sigue a la URL (revisión 2026-09-25), así no queda una pulsación muerta.
   useEffect(() => {
-    const onPop = () => {
+    const onPop = (e: PopStateEvent) => {
+      // Cerró una capa (src/lib/nav/overlay.ts, 2026-10-02): la pestaña no cambia.
+      if (isOverlayPop(e)) return;
+      // Con setTimeout, después del restore de Next: un refresh despachado antes
+      // del restore queda descartado por él.
+      if (freshOnLandRef.current) { freshOnLandRef.current = false; setTimeout(() => portalRouter.refresh(), 0); }
       try {
         // Sin ?tab= la entrada es la portada: Home.
         const t = (new URLSearchParams(window.location.search).get('tab') || 'home') as Tab;
@@ -932,6 +941,12 @@ export function PortalTabs({
   // 2026-08-29). Se abre desde la fila del agua del Home y desde la puerta
   // dentro de What it takes.
   const [waterOpen, setWaterOpen] = useState(false);
+  // El atrás del teléfono cierra estas capas (src/lib/nav/overlay.ts, Marcelo
+  // 2026-10-02). Sus botones ✕ usan estos cierres; salir de ellas a otra
+  // pantalla usa el setter crudo (showTab borra la marca de la entrada).
+  const closeGuideBack = useBackCloses('guide', guideOpen, closeGuide);
+  const closeRoadmapBack = useBackCloses('roadmap', roadmapOpen, () => setRoadmapOpen(false));
+  const closeWaterBack = useBackCloses('water', waterOpen, () => setWaterOpen(false));
 
   // Abrir UN paso puntual en Let's Play. El estado del deep-link (?step=) ya
   // existía; lo que faltaba era usarlo desde adentro — por eso la tarjeta
@@ -958,13 +973,19 @@ export function PortalTabs({
     setStepFrom('play');
     if (flowDoneRef.current) { flowDoneRef.current = false; setPendingSequence(null); setPendingDrillMissionId(null); setFlowFrom(null); }
   };
-  const showTab = (t: Tab) => {
+  const showTab = (t: Tab, reuseUnder = true) => {
     if (t !== 'sequence') releasePlayOnLeave();
     setActiveTab(t);
     savePortalState(data.token, { tab: t, lesson: null, lessonFrom: null });
+    // Vuelve a la pestaña de abajo de una capa de la que salió (My progress →
+    // Log a session → la barra Home): el atrás consume esa entrada en vez de
+    // reescribirla; si no, el atrás siguiente no hacía nada (2026-10-02).
+    if (reuseUnder && backToUnder(t)) return;
     try {
       const st = (window.history.state && typeof window.history.state === 'object') ? window.history.state : {};
-      window.history.replaceState({ ...st, __NA: true, tssLesson: null }, '', `${window.location.pathname}?tab=${t}`);
+      // tssOverlays: [] → salir de una capa a otra pestaña: la entrada deja de
+      // ser de la capa (src/lib/nav/overlay.ts, 2026-10-02).
+      window.history.replaceState({ ...st, __NA: true, tssLesson: null, tssOverlays: [] }, '', `${window.location.pathname}?tab=${t}`);
     } catch { /* nada */ }
   };
   // "Read it in My Sessions" (encuesta enviada, Marcelo 2026-10-01): My progress
@@ -973,7 +994,9 @@ export function PortalTabs({
   const openMySessions = () => {
     if (data.canTrack === false) { showTab('sessions'); return; }
     setProgressAsk('sessions');
-    showTab('home');
+    // Sin backToUnder: My progress se abre en este mismo toque y su entrada se
+    // apilaría antes de que llegue el atrás (2026-10-02).
+    showTab('home', false);
   };
   const openStepInPlay = (stepId: string, from: 'home' | 'play' | 'roadmap' = 'play') => {
     resetPlay();
@@ -1025,6 +1048,9 @@ export function PortalTabs({
     if (t !== 'sequence') releasePlayOnLeave();
     setActiveTab(t);
     savePortalState(data.token, { tab: t, lesson: null, lessonFrom: null });
+    // Como showTab (sesión guardada → Home después de Log a session desde My
+    // progress): el atrás a la entrada de abajo y un refresh al aterrizar.
+    if (backToUnder(t)) { freshOnLandRef.current = true; return; }
     portalRouter.replace(`${window.location.pathname}?tab=${t}`);
   };
   // Después de GUARDAR una sesión: goTab solo puede salir de la caché de Next
@@ -1086,7 +1112,7 @@ export function PortalTabs({
           <LogoutButton portalToken={data.token} />
         </div>
 
-        {guideOpen && <AthleteGuide onClose={closeGuide} hpAccess={!!data.homeBundle?.hpAccess} />}
+        {guideOpen && <AthleteGuide onClose={closeGuideBack} hpAccess={!!data.homeBundle?.hpAccess} />}
         <div className="flex items-center justify-between gap-3 pr-6">
           <div className="flex items-center gap-2.5 min-w-0">
             {brand.logoUrl && (
@@ -1401,13 +1427,15 @@ export function PortalTabs({
         {roadmapOpen && (
           <BeltRoadmap
             token={data.token}
-            onClose={() => setRoadmapOpen(false)}
-            onOpenStep={(id) => openStepInPlay(id, 'roadmap')}
+            onClose={closeRoadmapBack}
+            // Sale a un paso: se cierra sin history.back (llegaría después de
+            // la URL nueva y la desharía; 2026-10-02).
+            onOpenStep={(id) => { setRoadmapOpen(false); openStepInPlay(id, 'roadmap'); }}
             onTrainSequence={(a) => { setRoadmapOpen(false); resetPlay(); setFlowFrom({ k: 'roadmap' }); setPendingSequence(a); showTab('sequence'); }}
             onOpenWater={() => setWaterOpen(true)}
           />
         )}
-        {waterOpen && <WaterLevel token={data.token} onClose={() => setWaterOpen(false)} />}
+        {waterOpen && <WaterLevel token={data.token} onClose={closeWaterBack} />}
       </div>
 
       {/* Bottom Tab Bar — active tab gets a 2px cyan rule on top so the
@@ -1618,6 +1646,12 @@ function HomeTab({
   // información"): cinta, horas, próxima cinta, flow y camino viven acá, no
   // duplicados en el Home. Se abre desde "View my progress".
   const [progressOpen, setProgressOpen] = useState(false);
+  // El atrás del teléfono cierra My progress, el buzón y el lector
+  // (src/lib/nav/overlay.ts, Marcelo 2026-10-02). onGoTo a otra pestaña no usa
+  // estos cierres: showTab borra la marca y el Home se desmonta.
+  const closeProgress = useBackCloses('progress', progressOpen, () => setProgressOpen(false));
+  const closeInbox = useBackCloses('inbox', inboxOpen, () => setInboxOpen(false));
+  const closeBook = useBackCloses('book', !!reader, () => setReader(null));
   useEffect(() => {
     if (!progressOpen) return;
     document.getElementById('progress-view')?.scrollTo(0, 0);
@@ -2129,7 +2163,7 @@ function HomeTab({
         );
       })()}
       {reader && (
-        <MaterialReader token={data.token} resourceId={reader.id} title={reader.title} onClose={() => setReader(null)} />
+        <MaterialReader token={data.token} resourceId={reader.id} title={reader.title} onClose={closeBook} />
       )}
       {/* ── Solo libro / lead sin curso ni membresía: nada de horas ni progreso.
           El Home le dice qué tiene y qué abre lo demás (blueprint 2026-09-04,
@@ -2267,13 +2301,13 @@ function HomeTab({
               style={{ background: '#061C2B', margin: 0, paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
               <div className="max-w-lg mx-auto px-4 py-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <button type="button" onClick={() => setInboxOpen(false)} className="text-[12px] font-mono uppercase tracking-wider py-2 pr-3" style={{ color: '#b3c4d1' }}>
+                  <button type="button" onClick={closeInbox} className="text-[12px] font-mono uppercase tracking-wider py-2 pr-3" style={{ color: '#b3c4d1' }}>
                     ← Home
                   </button>
                   <span className="text-[12px] font-mono uppercase tracking-wider" style={{ color: '#00D2FF' }}>
                     <Bell size={11} className="inline -mt-0.5" /> Notifications
                   </span>
-                  <button type="button" onClick={() => setInboxOpen(false)} aria-label="Close" className="p-2 -m-2" style={{ color: '#b3c4d1' }}>✕</button>
+                  <button type="button" onClick={closeInbox} aria-label="Close" className="p-2 -m-2" style={{ color: '#b3c4d1' }}>✕</button>
                 </div>
                 {inboxMsgs.length === 0 && (
                   <div className="rounded-2xl p-6 text-center" style={{ background: 'rgba(255,255,255,.04)', border: '1px solid rgba(255,255,255,.09)' }}>
@@ -2314,7 +2348,7 @@ function HomeTab({
             <div id="progress-view" className="fixed inset-0 z-[100] overflow-y-auto"
               style={{ background: '#061C2B', margin: 0, paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
               <div className="max-w-lg md:max-w-3xl mx-auto px-4 py-4 space-y-3">
-                <button type="button" onClick={() => setProgressOpen(false)} className="inline-flex items-center gap-2 text-[15px] font-semibold py-2" style={{ color: '#00D2FF' }}>
+                <button type="button" onClick={closeProgress} className="inline-flex items-center gap-2 text-[15px] font-semibold py-2" style={{ color: '#00D2FF' }}>
                   <ArrowLeft size={18} /> Home
                 </button>
                 <h1 className="text-[36px]" style={{ ...H_BIG, color: '#F7F9FA' }}>My progress</h1>
@@ -2502,7 +2536,7 @@ function HomeTab({
                   style={{ background: '#00D2FF', color: T_NAVY, letterSpacing: '0.035em', fontFamily: ARCHIVO }}>
                   Log a session <ArrowRight size={18} />
                 </button>
-                <button type="button" onClick={() => setProgressOpen(false)}
+                <button type="button" onClick={closeProgress}
                   className="w-full min-h-[44px] rounded-[5px] text-[15px] font-semibold" style={{ border: '1px solid rgba(0,210,255,.45)', color: '#F7F9FA' }}>
                   Back to Home
                 </button>
