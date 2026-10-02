@@ -18,13 +18,21 @@ import { loadCourseMedia, dedupeVideos, type CourseMedia } from './course-media'
 /** Los videos de cada movimiento de los Tres Círculos: los de SU lección
  *  (Posture → STP-018…). Los mismos para el alumno y el coach. */
 export function movementVideos(media: CourseMedia): Record<string, CourseVideo[]> {
-  return Object.fromEntries(MOVE_LESSON_IDS.map((id) => [id, media.ownVideosOfLesson(id)]));
+  return {
+    ...Object.fromEntries(MOVE_LESSON_IDS.map((id) => [id, media.ownVideosOfLesson(id)])),
+    // El video de CADA círculo (Marcelo 2026-10-02, Círculo 2): Library con el
+    // título "CIRCLE-BOARD · …" (o CIRCLE-BODY / CIRCLE-WAVE). Se carga sin deploy.
+    ...Object.fromEntries(CIRCLE_VIDEO_IDS.map((id) => [id, media.libraryVideos(id)])),
+  };
 }
+/** La clave de los videos de un círculo en movementVideos: 'board' → 'CIRCLE-BOARD'. */
+export const CIRCLE_VIDEO_IDS = ['CIRCLE-BODY', 'CIRCLE-BOARD', 'CIRCLE-WAVE'] as const;
+export const circleVideoKey = (key: 'body' | 'board' | 'wave') => `CIRCLE-${key.toUpperCase()}`;
 /** Todos los videos de los Tres Círculos (la barra del coach y el índice del
  *  curso, solo coach): Library YB-CIRCLES + la lección + los de cada movimiento
  *  con su material de coach (visual aids del paso y drills). */
 export function threeCirclesVideos(media: CourseMedia): CourseVideo[] {
-  return dedupeVideos([...media.libraryVideos('YB-CIRCLES'), ...media.videosOfLesson(THREE_CIRCLES_LESSON_ID), ...MOVE_LESSON_IDS.flatMap((id) => media.videosOfLesson(id))]);
+  return dedupeVideos([...media.libraryVideos('YB-CIRCLES'), ...CIRCLE_VIDEO_IDS.flatMap((id) => media.libraryVideos(id)), ...media.videosOfLesson(THREE_CIRCLES_LESSON_ID), ...MOVE_LESSON_IDS.flatMap((id) => media.videosOfLesson(id))]);
 }
 
 // Cada fila trae también TODOS sus videos (Marcelo 2026-09-29: "que tenga todo

@@ -167,6 +167,10 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
   const courseTab = coach ? 'courses' : 'course';
   const isIntro = key === 'intro';
   const cur = CIRCLES.find((c) => c.key === key) ?? CIRCLES[0];
+  // El video del círculo (Library "CIRCLE-BOARD · …", Marcelo 2026-10-02):
+  // arriba, debajo de la lámina. Sin video, nada.
+  const circleVids = moveVideos?.[`CIRCLE-${cur.key.toUpperCase()}`] ?? [];
+  const circleVideo = circleVids.length > 0 ? <div className="mb-3"><VideoList videos={circleVids} /></div> : null;
   const feet = cur.feet ?? [];
   const posRow = feet.find((f) => f.pos === pos) ?? feet[0];
 
@@ -256,6 +260,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
           <Card title="Think it · the four movements" color={CIRCLE_COLOR.body}>
             {/* El mapa del círculo antes de abrir los movimientos uno por uno. */}
             <Lamina src={circlePlate('circle-1').src} alt={circlePlate('circle-1').alt} />
+            {circleVideo}
             {/* La pregunta y la entrada del círculo vivían en la portada;
                 al separarla vuelven acá, plegadas como en los otros dos. */}
             <Acc title="Read it in words">
@@ -289,6 +294,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
           <>
             <Card color={CIRCLE_COLOR.board}>
               <Lamina src={circlePlate('circle-2-feet').src} alt={circlePlate('circle-2-feet').alt} />
+              {circleVideo}
               <Acc title="Read it in words">
               <p className="tss-intro">Your back foot changes the line.<br />Your front foot controls how the rail responds.</p>
               <p className="text-[14px] leading-[1.45] mb-3" style={{ color: INK }}>{cur.intro}</p>
@@ -355,6 +361,7 @@ export function ThreeCirclesPage({ token, pieces, canTrack, video, lessonId, mov
           <>
             <Card title="Think it" color={CIRCLE_COLOR.wave}>
               <Lamina src={circlePlate('circle-3').src} alt={circlePlate('circle-3').alt} />
+              {circleVideo}
               <Acc title="Read it in words">
               <p className="text-[14px] leading-[1.45] mb-3" style={{ color: INK }}>{cur.intro}</p>
               {cur.energy?.map((e, i) => {
