@@ -583,13 +583,17 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
     );
     if (running) {
       const [{ data: sess }, { count: totalDays }, { data: partRows }] = await Promise.all([
-        admin.from('camp_sessions').select('id, day_number').eq('camp_instance_id', running.id).eq('session_date', today).maybeSingle(),
+        admin.from('camp_sessions').select('id, day_number, session_status').eq('camp_instance_id', running.id).eq('session_date', today).maybeSingle(),
         admin.from('camp_sessions').select('*', { count: 'exact', head: true }).eq('camp_instance_id', running.id),
         admin.from('camp_participants').select('planned_departure, departed_on, finalized_at').eq('camp_instance_id', running.id).eq('enrollment_status', 'active'),
       ]);
       // El conteo de la tarjeta es de HOY, no del camp entero: con un camp
       // corto, el jueves ya no son los mismos que el lunes.
       const studentsCount = (partRows ?? []).filter((x: any) => participantPresentOn(x, today)).length;
+      // Día cancelado o sin nadie (todos se fueron antes, camp de Bauti
+      // 2026-10-02): no hay clase que dar. Sin tarjeta "Run today"; el Home
+      // muestra lo que sí falta (días sin cerrar, evaluación final).
+      const noClassToday = (sess as any)?.session_status === 'cancelled' || studentsCount === 0;
       let plan: any = null;
       if (sess) {
         const { data: pl } = await admin
@@ -599,7 +603,7 @@ export async function getCoachPortalData(token: string): Promise<CoachPortalData
           .maybeSingle();
         plan = pl;
       }
-      todayLogistics = {
+      if (!noClassToday) todayLogistics = {
         camp_id: running.id,
         is_test: !!running.is_test,
         camp_name: running.camp_name ?? null,
