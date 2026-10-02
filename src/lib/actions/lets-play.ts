@@ -34,6 +34,7 @@ import { MOMENTUM_SEQUENCE_ID, MOMENTUM_STAR_STEP } from '@/lib/sequence-pages/t
 import { THREE_CIRCLES_SEQUENCE_ID, gameContext } from '@/lib/sequence-pages/three-circles';
 import { SEQUENCE_PAGES } from '@/lib/sequence-pages';
 import { sequenceDisplayName } from '@/lib/sequence-pages/resolve';
+import { ratingCtx } from '@/lib/evaluation/rating-ctx';
 
 export type TrainingMode = 'sequence_run' | 'step_focus';
 
@@ -560,6 +561,8 @@ export async function saveSequenceSession(
       const now = new Date().toISOString();
       // UNA sola escritura para todos los pasos: entran todos o ninguno (antes
       // era un upsert por paso y un fallo a mitad dejaba la cadena a medias).
+      // Historial (00226): la corrida o el foco, con su secuencia y lado.
+      const ctx = ratingCtx(isRun ? 'lets_play_run' : 'lets_play_focus', { kind: 'self', sequence_id: seq.id, side: side ?? null, training_session_id: session.id });
       const { error: stepErr } = await admin.from('student_step_ratings').upsert(stepUpserts.map((u) => ({
         student_id: studentId,
         step_id: u.step_id,
@@ -568,6 +571,7 @@ export async function saveSequenceSession(
         self_source: 'executed',
         assessed_criteria: null,
         last_updated: now,
+        rating_ctx: ctx,
       })), { onConflict: 'student_id,step_id' });
       if (stepErr) { console.error('[lets-play] step rating failed', stepErr); return rollback('Could not save your step rating.'); }
       // Una tarea propia se cierra sola cuando el paso llega a 4★ en el agua.

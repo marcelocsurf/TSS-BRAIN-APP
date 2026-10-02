@@ -11,6 +11,7 @@ import { getCurrentCoach } from '@/lib/actions/auth';
 import { BELT_RANK, canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 import { waterRuleBlocker } from '@/lib/constants/graduation';
 import { revalidatePath } from 'next/cache';
+import { ratingCtx } from '@/lib/evaluation/rating-ctx';
 
 export async function closeStandaloneEvaluation(
   studentId: string,
@@ -31,7 +32,7 @@ export async function closeStandaloneEvaluation(
   const own = ratings.filter((r) => r.student_id === studentId);
   if (own.length) {
     const { error } = await admin.from('student_step_ratings').upsert(
-      own.map((r) => ({ student_id: studentId, step_id: r.step_id, coach_rating: r.rating, coach_rated_at: now, coach_rated_by: (coach as any).id, last_updated: now })),
+      own.map((r) => ({ student_id: studentId, step_id: r.step_id, coach_rating: r.rating, coach_rated_at: now, coach_rated_by: (coach as any).id, last_updated: now, rating_ctx: ratingCtx('standalone_eval', { kind: 'coach', coach_id: (coach as any).id }) })),
       { onConflict: 'student_id,step_id' },
     );
     if (error) return { ok: false, error: error.message };

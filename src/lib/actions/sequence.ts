@@ -16,6 +16,7 @@ import { sessionsSinceByStep, isReadyToConfirm, selfStarsThatCount, sequencesOfS
 import { sideBalance } from '@/lib/sequence-sides';
 import { effectiveStars, starsFromCriteria } from '@/lib/stars';
 import { isSequenceWorked, workedNumberedSequences, sharedStepTag, sequenceRowRan } from '@/lib/evaluation/shared-steps';
+import { ratingCtx } from '@/lib/evaluation/rating-ctx';
 
 // ─── Types ───
 
@@ -658,6 +659,7 @@ export async function updateStepRating(
       assessed_criteria: assessed,
       assessed_at: new Date().toISOString(),
       last_updated: new Date().toISOString(),
+      rating_ctx: ratingCtx('self_assessment', { kind: 'self' }),
     }, { onConflict: 'student_id,step_id' });
 
   if (error) return { ok: false, error: error.message };
@@ -862,6 +864,7 @@ export async function saveLinkedTrainingSession(
         self_source: 'executed',
         assessed_criteria: null,
         last_updated: new Date().toISOString(),
+        rating_ctx: ratingCtx('linked_mission', { kind: 'self', training_session_id: (session as any)?.id ?? null }),
       }, { onConflict: 'student_id,step_id' });
     // Una tarea propia se cierra sola cuando el paso llega a 4★ en el agua.
     if (executionRating >= SEQUENCE_PASS_STARS) {

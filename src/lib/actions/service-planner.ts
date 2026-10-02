@@ -15,6 +15,7 @@ import { participantPresentOn, participantLastDay, exigeCierreDeDias } from '@/l
 import { isVisibleSelfSession, selfSessionDetail, resolveStepTitles } from '@/lib/activity/build';
 import { stampNextFocus, focusLabels, noteAfterLabel } from '@/lib/activity/coach-focus';
 import { readyToConfirmForStudent, type ReadyStep } from '@/lib/activity/ready-to-confirm';
+import { ratingCtx } from '@/lib/evaluation/rating-ctx';
 
 // ─── Types ─────────────────────────────────────────────────────────
 
@@ -1817,6 +1818,8 @@ export async function closeCampFinal(
 
   // Batch-write the official STP ratings, if any
   if (ratings && ratings.length > 0) {
+    // Historial (00226): la evaluación final del camp (parcial = guardado por alumno).
+    const ctx = ratingCtx('final_eval', { kind: 'coach', coach_id: coach.id, camp_instance_id: campInstanceId, partial: !finalize || undefined });
     const rows = ratings.map((r) => ({
       student_id: r.student_id,
       step_id: r.step_id,
@@ -1824,6 +1827,7 @@ export async function closeCampFinal(
       coach_rated_at: new Date().toISOString(),
       coach_rated_by: coach.id,
       last_updated: new Date().toISOString(),
+      rating_ctx: ctx,
     }));
     await admin
       .from('student_step_ratings')
@@ -2288,6 +2292,7 @@ export async function saveOfficialStepRatingFromPortal(
         coach_rated_at: rating !== null ? new Date().toISOString() : null,
         coach_rated_by: rating !== null ? coach.id : null,
         last_updated: new Date().toISOString(),
+        rating_ctx: ratingCtx('camp_inline', { kind: 'coach', coach_id: coach.id, camp_session_id: campSessionId, camp_instance_id: session.camp_instance_id }),
       },
       { onConflict: 'student_id,step_id' }
     );
@@ -2321,13 +2326,15 @@ export async function rateSequenceFromPortal(
   const { data: participant } = await admin.from('camp_participants').select('id').eq('camp_instance_id', session.camp_instance_id).eq('student_id', studentId).maybeSingle();
   if (!participant) return { ok: false, error: 'Student not enrolled in this service.' };
   const now = new Date().toISOString();
+  // Historial (00226): la estrella del cierre del día, con su secuencia.
+  const ctx = ratingCtx('day_close_sequence', { kind: 'coach', coach_id: coach.id, sequence_id: sequenceId, camp_session_id: campSessionId, camp_instance_id: session.camp_instance_id });
   if (rating === null) {
     // Solo lo que ESTE coach puso en las últimas horas: una estrella oficial
     // vieja de otro camp no se toca.
     const since = new Date(Date.now() - 12 * 3600 * 1000).toISOString();
     const { error } = await admin
       .from('student_step_ratings')
-      .update({ coach_rating: null, coach_rated_at: null, coach_rated_by: null, last_updated: now })
+      .update({ coach_rating: null, coach_rated_at: null, coach_rated_by: null, last_updated: now, rating_ctx: ctx })
       .eq('student_id', studentId)
       .in('step_id', cfg.stepIds)
       .eq('coach_rated_by', coach.id)
@@ -2335,7 +2342,7 @@ export async function rateSequenceFromPortal(
     if (error) return { ok: false, error: error.message };
     return { ok: true };
   }
-  const rows = cfg.stepIds.map((stepId) => ({ student_id: studentId, step_id: stepId, coach_rating: rating, coach_rated_at: now, coach_rated_by: coach.id, last_updated: now }));
+  const rows = cfg.stepIds.map((stepId) => ({ student_id: studentId, step_id: stepId, coach_rating: rating, coach_rated_at: now, coach_rated_by: coach.id, last_updated: now, rating_ctx: ctx }));
   const { error } = await admin.from('student_step_ratings').upsert(rows, { onConflict: 'student_id,step_id' });
   if (error) return { ok: false, error: error.message };
   return { ok: true };

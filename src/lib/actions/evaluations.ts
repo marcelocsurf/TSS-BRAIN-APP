@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { ratingCtx } from '@/lib/evaluation/rating-ctx';
 
 // ═══════════════════════════════════════
 // EVALUATE STUDENT SEQUENCE
@@ -125,6 +126,10 @@ export async function setOfficialStepRating(input: {
   stepId: string;
   rating: number | null;  // null = clear official rating
   coachId: string;
+  /** La secuencia desde la que se calificó (historial, 2026-10-02). */
+  sequenceId?: string | null;
+  /** "No la vi": devuelve la nota que había. */
+  undo?: boolean;
 }) {
   const supabase = await createClient();
 
@@ -144,6 +149,8 @@ export async function setOfficialStepRating(input: {
         coach_rated_by: input.rating !== null ? input.coachId : null,
         // Don't touch current_rating — that's the student's space
         last_updated: new Date().toISOString(),
+        // Historial (00226): dónde y quién.
+        rating_ctx: ratingCtx('official_panel', { kind: 'coach', coach_id: input.coachId, sequence_id: input.sequenceId ?? null, undo: input.undo || undefined }),
       },
       { onConflict: 'student_id,step_id' }
     );
