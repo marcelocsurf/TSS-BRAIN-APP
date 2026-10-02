@@ -687,3 +687,100 @@ describe('topicOpenFor · Study it en la teoría del día', () => {
     expect(topicOpenFor('nope', who(['blue_belt']))).toBe(false);
   });
 });
+
+// Pasos compartidos (Marcelo 2026-10-02): una secuencia vale cuando se TRABAJÓ.
+import { STEP_HOMES, isSharedStep, ownStepIds, isSequenceWorked, workedNumberedSequences, seenInLabels, sharedStepTag, sequenceRowRan } from '@/lib/evaluation/shared-steps';
+import { sequenceVerdict, COURSE_SEQUENCE_ORDER } from '@/lib/constants/learning-blocks';
+describe('pasos compartidos · una secuencia sin trabajar no hereda estrellas', () => {
+  const verdictOf = (seqId: string, stars: Record<string, number>, ran = false) => {
+    const ids = SEQUENCE_PAGES[seqId].stepIds;
+    const of = (id: string) => stars[id] ?? null;
+    return sequenceVerdict(ids.map(of), { worked: isSequenceWorked(seqId, ids, of, { ran }) });
+  };
+  it('las casas de un paso: numeradas #1–#13 y los Tres Círculos, nunca entradas ni la herramienta', () => {
+    expect([...STEP_HOMES['STP-018']].sort()).toEqual(['BB-SEQ-08', 'BB-SEQ-09', 'BB-SEQ-10', 'BB-SEQ-11', 'BB-SEQ-12', 'BB-SEQ-13', 'CIRCLE-BODY', 'WB-SEQ-3']);
+    expect([...STEP_HOMES['STP-035']].sort()).toEqual(['BB-SEQ-08', 'BB-SEQ-09', 'BB-SEQ-10', 'BB-SEQ-11', 'BB-SEQ-12', 'BB-SEQ-13', 'CIRCLE-BOARD']);
+    expect([...STEP_HOMES['STP-047']].sort()).toEqual(['BB-SEQ-12', 'CIRCLE-BODY']);
+    expect(STEP_HOMES['STP-027']).toEqual(['YB-SEQ-6.0']); // BB-NAV y BB-CATCH no cuentan
+    expect(STEP_HOMES['STP-019']).toEqual(['CIRCLE-BODY']); // TOOL-MOMENTUM no cuenta
+    expect(isSharedStep('STP-018')).toBe(true);
+    expect(isSharedStep('STP-039')).toBe(true); // #10 y #12 comparten el bottom turn
+    expect(isSharedStep('STP-036')).toBe(false);
+  });
+  it('los pasos propios de cada secuencia', () => {
+    expect(ownStepIds('BB-SEQ-08', SEQUENCE_PAGES['BB-SEQ-08'].stepIds)).toEqual(['STP-036']);
+    expect(ownStepIds('BB-SEQ-10', SEQUENCE_PAGES['BB-SEQ-10'].stepIds)).toEqual(['STP-041', 'STP-042']);
+    expect(ownStepIds('BB-SEQ-12', SEQUENCE_PAGES['BB-SEQ-12'].stepIds)).toEqual(['STP-046']);
+    expect(ownStepIds('YB-SEQ-6.0', SEQUENCE_PAGES['YB-SEQ-6.0'].stepIds)).toEqual(['STP-027', 'STP-028', 'STP-029']);
+    expect(ownStepIds('WB-SEQ-4', SEQUENCE_PAGES['WB-SEQ-4'].stepIds)).toEqual(['STP-021']);
+  });
+  it('Blue con solo Posture (STP-018) calificado → sin empezar: sin estrella ni freno', () => {
+    const v = verdictOf('BB-SEQ-10', { 'STP-018': 3 });
+    expect(v).toEqual({ state: 'unrated', min: null, blockerIndex: -1 });
+    expect(verdictOf('BB-SEQ-09', { 'STP-035': 4, 'STP-018': 3 }).state).toBe('unrated');
+  });
+  it('la misma secuencia con un paso propio calificado → vale su paso más flojo', () => {
+    const v = verdictOf('BB-SEQ-10', { 'STP-018': 3, 'STP-041': 4 });
+    expect(v.min).toBe(3);
+    expect(v.state).toBe('partial');
+    expect(v.blockerIndex).toBe(1); // Posture sigue siendo el freno adentro
+    expect(verdictOf('BB-SEQ-09', { 'STP-035': 4, 'STP-018': 3, 'STP-038': 4 }).min).toBe(3);
+  });
+  it('solo una fila con estrella de secuencia es un run; un foco "working" no', () => {
+    expect(sequenceRowRan({ current_rating: null, held_back_step_id: 'STP-018' } as any)).toBe(false);
+    expect(sequenceRowRan(undefined)).toBe(false);
+    expect(sequenceRowRan({ current_rating: 3 })).toBe(true);
+    expect(sequenceRowRan({ current_rating: null, rating_fs: 4, rating_bs: null })).toBe(true);
+  });
+  it('un run del alumno la cuenta como trabajada aunque solo haya marcado Posture', () => {
+    expect(verdictOf('BB-SEQ-08', { 'STP-018': 3 }, true).min).toBe(3);
+    expect(isSequenceWorked('BB-SEQ-08', SEQUENCE_PAGES['BB-SEQ-08'].stepIds, () => null, { ran: true })).toBe(true);
+  });
+  it('círculos, herramienta y entradas con solo pasos compartidos: como siempre', () => {
+    expect(verdictOf('CIRCLE-BODY', { 'STP-018': 3 })).toEqual({ state: 'partial', min: 3, blockerIndex: 0 });
+    expect(verdictOf('CIRCLE-BOARD', { 'STP-035': 4 }).state).toBe('owned');
+    expect(verdictOf('TOOL-MOMENTUM', { 'STP-019': 3 })).toEqual({ state: 'working', min: 3, blockerIndex: 0 });
+    expect(verdictOf('BB-CATCH', { 'STP-010': 4 }).min).toBe(4);
+    expect(isSequenceWorked('THREE-CIRCLES', ['STP-018'], () => null)).toBe(true);
+  });
+  it('sin `worked`, sequenceVerdict es el de siempre', () => {
+    expect(sequenceVerdict([4, 3, null])).toEqual({ state: 'partial', min: 3, blockerIndex: 1 });
+    expect(sequenceVerdict([4, 3, null], { worked: true })).toEqual({ state: 'partial', min: 3, blockerIndex: 1 });
+    expect(sequenceVerdict([4, 4], { worked: false })).toEqual({ state: 'unrated', min: null, blockerIndex: -1 });
+  });
+  it('el rótulo del paso compartido: dónde se vio, o "shared step"', () => {
+    const stars: Record<string, number> = { 'STP-035': 4, 'STP-018': 3, 'STP-036': 4 };
+    const worked = workedNumberedSequences((id) => stars[id] ?? null);
+    expect([...worked]).toEqual(['BB-SEQ-08']);
+    expect(seenInLabels('STP-018', 'BB-SEQ-09', worked)).toEqual(['#8']);
+    expect(sharedStepTag('STP-018', 'BB-SEQ-09', worked)).toBe('seen in #8');
+    expect(sharedStepTag('STP-018', 'BB-SEQ-09', worked, 'es')).toBe('visto en #8');
+    // En la misma #8 no hay otra trabajada: origen desconocido.
+    expect(sharedStepTag('STP-018', 'BB-SEQ-08', worked)).toBe('shared step');
+    expect(sharedStepTag('STP-018', 'BB-SEQ-08', worked, 'es')).toBe('paso compartido');
+    // Varias, en orden: Posture vista en White #3 y en #8.
+    const more = workedNumberedSequences((id) => ({ ...stars, 'STP-015': 4 } as Record<string, number>)[id] ?? null);
+    expect(sharedStepTag('STP-018', 'BB-SEQ-10', more)).toBe('seen in #3 · #8');
+    // Un run cuenta como trabajada.
+    expect(sharedStepTag('STP-018', 'BB-SEQ-10', workedNumberedSequences(() => null, new Set(['BB-SEQ-12'])))).toBe('seen in #12');
+    // Dentro de una secuencia que TAMBIÉN se trabajó, la estrella pudo ponerse
+    // ahí mismo: "paso compartido", nunca "visto en" la otra.
+    const both = workedNumberedSequences((id) => ({ ...stars, 'STP-038': 4 } as Record<string, number>)[id] ?? null);
+    expect(sharedStepTag('STP-018', 'BB-SEQ-08', both)).toBe('shared step');
+    expect(sharedStepTag('STP-018', 'BB-SEQ-09', both, 'es')).toBe('paso compartido');
+    expect(sharedStepTag('STP-018', 'BB-SEQ-10', both)).toBe('seen in #8 · #9');
+    // Paso propio, o secuencia fuera de la regla: sin rótulo.
+    expect(sharedStepTag('STP-036', 'BB-SEQ-08', worked)).toBeNull();
+    expect(sharedStepTag('STP-018', 'CIRCLE-BODY', worked)).toBeNull();
+    expect(sharedStepTag('STP-019', 'TOOL-MOMENTUM', worked)).toBeNull();
+  });
+  it('COURSE_SEQUENCE_ORDER y las páginas dicen los mismos pasos (dos fuentes, una cadena)', () => {
+    const toStp = (k: string) => {
+      const n = Number(k.split(':')[1]);
+      return n === 396 ? 'STP-039B' : `STP-${String(n).padStart(3, '0')}`;
+    };
+    for (const id of ['BB-SEQ-08', 'BB-SEQ-09', 'BB-SEQ-10', 'BB-SEQ-11', 'BB-SEQ-12', 'BB-SEQ-13', 'YB-SEQ-6.0', 'YB-SEQ-7.0']) {
+      expect(COURSE_SEQUENCE_ORDER[id].map(toStp), id).toEqual(SEQUENCE_PAGES[id].stepIds);
+    }
+  });
+});

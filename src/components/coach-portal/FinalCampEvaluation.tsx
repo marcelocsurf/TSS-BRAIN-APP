@@ -22,6 +22,7 @@ import { OCEAN_LEVELS, OCEAN_LEVEL_INFO } from '@/lib/constants/ocean-levels';
 import { SequenceEvaluation } from '@/components/evaluation/SequenceEvaluation';
 import { groupBySequence, sequenceVerdict, isMethodSequence } from '@/lib/constants/learning-blocks';
 import { withToolSequences } from '@/lib/sequence-pages/tools-seq';
+import { isSequenceWorked } from '@/lib/evaluation/shared-steps';
 import { CIRCLE_SEQUENCES } from '@/lib/sequence-pages';
 
 interface Props {
@@ -218,12 +219,18 @@ export function FinalCampEvaluation({
   // La regla NO cambia — sigue siendo 4★ en cada parte — pero contarlo en
   // pasos cuando él decide por secuencia era hablarle en otro idioma. Y las
   // "sin evaluar" se dicen aparte: no las vio, no es que las reprobó.
-  const readinessSummary = (studentId: string): string => {
+  // `onScreen` (Marcelo 2026-10-02): en pantalla, una secuencia con nota solo
+  // en pasos compartidos cuenta como "sin evaluar", igual que la lista de
+  // abajo (SequenceEvaluation). Lo que se GUARDA (readiness_summary del
+  // payload) se calcula como siempre: la regla no cambia lo que se escribe.
+  const readinessSummary = (studentId: string, opts: { onScreen?: boolean } = {}): string => {
     const r = ratings[studentId] ?? {};
     let owned = 0;
     let unseen = 0;
     for (const g of seqGroups) {
-      const v = sequenceVerdict(g.rows.map((x) => r[x.step_id] ?? null));
+      const stars = g.rows.map((x) => r[x.step_id] ?? null);
+      const worked = opts.onScreen ? isSequenceWorked(g.id, g.rows.map((x) => x.step_id), (id) => r[id] ?? null) : undefined;
+      const v = sequenceVerdict(stars, { worked });
       if (v.state === 'owned') owned++;
       else if (v.state === 'unrated') unseen++;
     }
@@ -549,7 +556,7 @@ export function FinalCampEvaluation({
                         {s.display_name}
                       </p>
                       <p className="text-[10px] text-gray-500">
-                        {readinessSummary(s.student_id)}
+                        {readinessSummary(s.student_id, { onScreen: true })}
                       </p>
                     </div>
                   </div>
@@ -821,7 +828,7 @@ export function FinalCampEvaluation({
                         {ok ? `Ready · ${rule.beltLabel}` : 'In progress'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-gray-500 pl-1">{readinessSummary(s.student_id)}</p>
+                    <p className="text-[11px] text-gray-500 pl-1">{readinessSummary(s.student_id, { onScreen: true })}</p>
                     {promotable && (
                       <label className="flex items-center gap-2 pl-1 text-[12px] text-[var(--tss-navy)] cursor-pointer">
                         <input

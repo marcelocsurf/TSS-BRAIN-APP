@@ -800,13 +800,18 @@ export function groupBySequence<T extends SequenceGroupable>(
   return { groups, orphans: rows.filter((r) => !r.sequence_id) };
 }
 
-/** El estado de una secuencia a partir de las notas de sus pasos. */
-export function sequenceVerdict(stars: (number | null)[]): {
+/** El estado de una secuencia a partir de las notas de sus pasos.
+ *  `worked: false` (Marcelo 2026-10-02): la secuencia no se trabajó — solo
+ *  tiene notas en pasos compartidos con otra (isSequenceWorked en
+ *  lib/evaluation/shared-steps) — y queda sin evaluar: sin estrella ni freno.
+ *  Sin `worked`, igual que siempre. */
+export function sequenceVerdict(stars: (number | null)[], opts: { worked?: boolean } = {}): {
   state: 'owned' | 'working' | 'partial' | 'unrated';
   min: number | null;
   /** Índice del paso más TEMPRANO que no llega a la barra. -1 si ninguno. */
   blockerIndex: number;
 } {
+  if (opts.worked === false) return { state: 'unrated', min: null, blockerIndex: -1 };
   const rated = stars.filter((v): v is number => v !== null);
   const min = rated.length ? Math.min(...rated) : null;
   const blockerIndex = stars.findIndex(

@@ -17,6 +17,7 @@ import { entryPageForCourse } from '@/lib/sequence-pages/bb-entry';
 import { getStudentAccess } from '@/lib/portal/access';
 import { SequencePage, type LessonBits, type PieceRow } from '@/components/portal/sequence-page/SequencePage';
 import { pickSequenceVideos, resolveSequenceVideo } from '@/lib/sequence-pages/videos';
+import { isSequenceWorked, workedNumberedSequences, sharedStepTag, sequenceRowRan } from '@/lib/evaluation/shared-steps';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -106,7 +107,7 @@ export default async function SequencePageRoute({ params, searchParams }: { para
   const trainCfg = cfg.trainAs?.[viewKey] ? sequencePageFor(cfg.trainAs[viewKey]) : null;
   const trainAs = trainCfg ? { id: trainCfg.id, number: trainCfg.number, stepIds: trainCfg.stepIds } : null;
 
-  const [{ data: lessonRows }, { data: pieceRows }, access, { data: videoRows }, { data: seqRating }, { data: stepRatings }] = await Promise.all([
+  const [{ data: lessonRows }, { data: pieceRows }, access, { data: videoRows }, { data: seqRatingRows }, { data: stepRatings }] = await Promise.all([
     admin.from('lessons').select('id, title, description_md').in('id', cfg.stepIds),
     admin.from('drills_missions').select('id, type, title, description_md, key_words, time_estimate, reps_recommended').eq('active', true).eq('student_visible', true).in('step_id', cfg.stepIds),
     getStudentAccess((student as any).id),
@@ -116,9 +117,12 @@ export default async function SequencePageRoute({ params, searchParams }: { para
     admin.from('coach_resources').select('title, file_url').eq('kind', 'video').eq('active', true).ilike('title', `${cfg.id}%`).order('created_at', { ascending: false }).limit(6),
     // Lo que Let's Play sabe de esta secuencia (Marcelo 2026-09-09: "que se
     // comunique lo de los cursos con lo que sale en la secuencia").
-    admin.from('student_sequence_ratings').select('current_rating, held_back_step_id, rating_fs, rating_bs').eq('student_id', (student as any).id).eq('sequence_id', cfg.id).maybeSingle(),
-    admin.from('student_step_ratings').select('step_id, current_rating, coach_rating').eq('student_id', (student as any).id).in('step_id', cfg.stepIds),
+    // Todas las del alumno (pocas filas): para saber qué OTRAS secuencias se
+    // trabajaron y decir dónde se vio un paso compartido (Marcelo 2026-10-02).
+    admin.from('student_sequence_ratings').select('sequence_id, current_rating, held_back_step_id, rating_fs, rating_bs').eq('student_id', (student as any).id),
+    admin.from('student_step_ratings').select('step_id, current_rating, coach_rating').eq('student_id', (student as any).id),
   ]);
+  const seqRating = ((seqRatingRows ?? []) as any[]).find((r) => r.sequence_id === cfg.id) ?? null;
 
   const videos = pickSequenceVideos(videoRows as any, cfg.id);
   const lessons: Record<string, LessonBits> = {};
@@ -151,7 +155,11 @@ export default async function SequencePageRoute({ params, searchParams }: { para
     if ((r as any).coach_rating != null) coachByStep.set((r as any).step_id, Number((r as any).coach_rating));
   }
   const rated = cfg.stepIds.filter((id) => ratingByStep.has(id));
-  const weakestId = cfg.stepIds.find((id) => ratingByStep.has(id) && ratingByStep.get(id)! < 4) ?? null;
+  // Sin empezar (Marcelo 2026-10-02): nota solo en pasos compartidos con otra
+  // secuencia (Posture, FP1…) — sin estrella de la secuencia ni "Work on".
+  const notStarted = !isSequenceWorked(cfg.id, cfg.stepIds, (id) => ratingByStep.get(id), { ran: sequenceRowRan(seqRating) });
+  const workedSeqs = workedNumberedSequences((id) => ratingByStep.get(id), new Set(((seqRatingRows ?? []) as any[]).filter((r) => sequenceRowRan(r)).map((r) => r.sequence_id as string)));
+  const weakestId = notStarted ? null : cfg.stepIds.find((id) => ratingByStep.has(id) && ratingByStep.get(id)! < 4) ?? null;
   const progress = {
     lastRun: (seqRating as any)?.current_rating ?? null,
     side: sequenceSide(cfg.id),
@@ -160,10 +168,11 @@ export default async function SequencePageRoute({ params, searchParams }: { para
     heldBackTitle: (seqRating as any)?.held_back_step_id ? (lessons[(seqRating as any).held_back_step_id]?.title ?? null) : null,
     ratedSteps: rated.length,
     totalSteps: cfg.stepIds.length,
-    minRating: rated.length ? Math.min(...rated.map((id) => ratingByStep.get(id)!)) : null,
+    minRating: !notStarted && rated.length ? Math.min(...rated.map((id) => ratingByStep.get(id)!)) : null,
     weakestId,
     weakestTitle: weakestId ? (lessons[weakestId]?.title ?? null) : null,
-    steps: cfg.stepIds.map((id) => ({ id, title: lessons[id]?.title ?? id, rating: ratingByStep.get(id) ?? null, selfRating: selfByStep.get(id) ?? null, coachRating: coachByStep.get(id) ?? null })),
+    notStarted,
+    steps: cfg.stepIds.map((id) => ({ id, title: lessons[id]?.title ?? id, rating: ratingByStep.get(id) ?? null, selfRating: selfByStep.get(id) ?? null, coachRating: coachByStep.get(id) ?? null, seenIn: ratingByStep.has(id) ? sharedStepTag(id, cfg.id, workedSeqs, 'en') : null })),
   };
 
   return (

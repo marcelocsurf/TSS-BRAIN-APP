@@ -15,6 +15,7 @@ import {
 import { sessionsSinceByStep, isReadyToConfirm, selfStarsThatCount, sequencesOfStep } from '@/lib/activity/ready-to-confirm';
 import { sideBalance } from '@/lib/sequence-sides';
 import { effectiveStars, starsFromCriteria } from '@/lib/stars';
+import { isSequenceWorked, workedNumberedSequences, sharedStepTag, sequenceRowRan } from '@/lib/evaluation/shared-steps';
 
 // ─── Types ───
 
@@ -123,6 +124,10 @@ export type SequenceData = {
     side: SequenceSide | null;
     /** Solo secuencias de dos lados: tu última nota por lado. */
     sideRatings: { fs: number | null; bs: number | null } | null;
+    /** Pasos compartidos con estrella (Marcelo 2026-10-02): paso → "seen in
+     *  #8" / "shared step". Vive en la secuencia, no en el ítem: el mismo
+     *  ítem se reusa en varias secuencias (shared-steps.ts). */
+    sharedStepTags?: Record<string, string>;
   }[];
 };
 
@@ -345,6 +350,15 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
     });
   }
 
+  // Pasos compartidos (Marcelo 2026-10-02): la estrella efectiva de cualquier
+  // paso, igual que la del ítem, y qué secuencias numeradas se trabajaron
+  // de verdad (nota en un paso propio, o un run en Let's Play).
+  const effOfStep = (id: string): number | null => {
+    const r = ratingMap.get(id);
+    return r ? effectiveStars({ coach_rating: r.coach_rating ?? null, rating: r.current_rating || null, self_source: r.self_source === 'assessed' ? 'assessed' : 'executed' }) : null;
+  };
+  const workedSeqs = workedNumberedSequences(effOfStep, new Set([...seqRatingMap.entries()].filter(([, r]) => sequenceRowRan(r)).map(([id]) => id)));
+
   const sequences = Array.from(seqMeta.entries())
     .map(([seqId, meta]) => {
       const order = TRAINING_SEQUENCE_ORDER[seqId] ?? COURSE_SEQUENCE_ORDER[seqId] ?? preludeOrder[seqId];
@@ -391,12 +405,23 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
           };
         })
         .filter((i): i is SequenceItem => Boolean(i));
+      const sr = seqRatingMap.get(seqId);
+      // ¿Se trabajó? (Marcelo 2026-10-02) Con nota solo en pasos compartidos
+      // (Posture, FP1 de #8) la secuencia está "sin empezar": sin estrella,
+      // sin freno. Fuera de la regla (entradas, círculos, herramienta) o sin
+      // pasos propios, siempre true.
+      const worked = isSequenceWorked(seqId, seqItems.map((i) => i.step_id), (id) => {
+        const it = seqItems.find((x) => x.step_id === id);
+        return it ? effectiveStars(it) : null;
+      }, { ran: sequenceRowRan(sr) });
       // La secuencia vale lo que vale su paso más flojo (canon: 4★ en cada
       // parte). Así el alumno ve QUÉ lo frena, no un promedio que esconde el
       // hueco.
-      const withRating = seqItems
-        .map((i) => ({ i, v: effectiveStars(i) }))
-        .filter((x): x is { i: SequenceItem; v: number } => x.v !== null);
+      const withRating = worked
+        ? seqItems
+            .map((i) => ({ i, v: effectiveStars(i) }))
+            .filter((x): x is { i: SequenceItem; v: number } => x.v !== null)
+        : [];
       const minRating = withRating.length
         ? Math.min(...withRating.map((x) => x.v))
         : null;
@@ -407,8 +432,12 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
       // Misma regla que "The path" (getNextMove): un paso SIN calificar cuenta
       // igual que uno bajo la barra (auditoría 2026-09-15: antes esta lista
       // saltaba los pasos sin calificar y decía otro paso que el Home).
-      const weakest =
-        seqItems.find((i) => { const v = effectiveStars(i); return v == null || v < SEQUENCE_PASS_STARS; }) ?? null;
+      // Sin empezar: "Start here" es el primer paso de la cadena todavía sin
+      // estrella (siempre hay uno: sus pasos propios no tienen nota), nunca
+      // el compartido que se vio en otra secuencia.
+      const weakest = worked
+        ? seqItems.find((i) => { const v = effectiveStars(i); return v == null || v < SEQUENCE_PASS_STARS; }) ?? null
+        : seqItems.find((i) => effectiveStars(i) == null) ?? seqItems[0] ?? null;
       const state: 'owned' | 'working' | 'partial' | 'unrated' =
         withRating.length === 0
           ? 'unrated'
@@ -417,13 +446,18 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
             : minRating! >= SEQUENCE_PASS_STARS
               ? 'owned'
               : 'working';
-      const sr = seqRatingMap.get(seqId);
       const heldBack = sr?.held_back_step_id ? seqItems.find((i) => i.step_id === sr.held_back_step_id) ?? null : null;
       // Tu nota del MISMO paso que fija el mínimo (y solo si ese mínimo es del
       // coach): "coach 3★ · you 5★" habla de un paso, no de dos.
       const minItem = withRating.length ? withRating.reduce((a, b) => (b.v < a.v ? b : a)).i : null;
       const selfMinRating = minItem?.coach_rating != null ? selfStarsThatCount(minItem.rating, minItem.self_source) : null;
-      const readySteps = seqItems.filter((i) => i.ready_to_confirm).map((i) => ({ step_id: i.step_id, title: i.step_title }));
+      const readySteps = worked ? seqItems.filter((i) => i.ready_to_confirm).map((i) => ({ step_id: i.step_id, title: i.step_title })) : [];
+      const sharedStepTags: Record<string, string> = {};
+      for (const i of seqItems) {
+        if (effectiveStars(i) == null) continue;
+        const tag = sharedStepTag(i.step_id, seqId, workedSeqs, 'en');
+        if (tag) sharedStepTags[i.step_id] = tag;
+      }
       return {
         id: seqId,
         // 17 Elements va justo antes de la #8, después de Getting to the wave (como en el curso).
@@ -445,6 +479,7 @@ async function mySequenceForStudent(studentId: string, belt: string = 'white'): 
         heldBackTitle: heldBack?.step_title ?? null,
         side: sequenceSide(seqId),
         sideRatings: sequenceSide(seqId) === 'both' ? { fs: sr?.rating_fs ?? null, bs: sr?.rating_bs ?? null } : null,
+        sharedStepTags,
       };
     })
     .filter((s) => s.items.length > 0)
@@ -975,8 +1010,12 @@ export async function getNextMove(
     // Un paso que ya trabajaste después de la nota del coach y te ponés en 4★+
     // está "listo para confirmar": la sugerencia lo salta (Marcelo 2026-09-25)
     // y, si toda la secuencia está así, pasa a la siguiente.
+    // Sin empezar (Marcelo 2026-10-02): el mismo paso que "Start here" de Let's
+    // Play (weakestStepId), nunca el compartido con estrella de otra secuencia.
     const gapOf = (s: (typeof pool)[number]) =>
-      s.items.find((i) => { if (i.ready_to_confirm) return false; const v = eff(i); return v == null || v < SEQUENCE_PASS_STARS; }) ?? null;
+      s.state === 'unrated'
+        ? s.items.find((i) => i.step_id === s.weakestStepId) ?? null
+        : s.items.find((i) => { if (i.ready_to_confirm) return false; const v = eff(i); return v == null || v < SEQUENCE_PASS_STARS; }) ?? null;
     const candidates = [...pool.filter((s) => s.state !== 'owned' && !isAside(s)), ...pool.filter((s) => s.state !== 'owned' && isAside(s))];
     let seq: (typeof pool)[number] | null = null;
     let firstNotAtBar: SequenceItem | null = null;

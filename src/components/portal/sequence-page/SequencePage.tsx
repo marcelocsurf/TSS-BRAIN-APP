@@ -74,7 +74,11 @@ export interface SequenceProgress {
   minRating: number | null;
   weakestId: string | null;
   weakestTitle: string | null;
-  steps: { id: string; title: string; rating: number | null; selfRating?: number | null; coachRating?: number | null }[];
+  /** Sin empezar (Marcelo 2026-10-02): solo tiene nota en pasos compartidos
+   *  con otra secuencia — no lleva estrella ni "Work on". */
+  notStarted?: boolean;
+  /** seenIn: "seen in #8" / "shared step" en un paso compartido con estrella. */
+  steps: { id: string; title: string; rating: number | null; selfRating?: number | null; coachRating?: number | null; seenIn?: string | null }[];
 }
 
 export function SequencePage({
@@ -751,6 +755,7 @@ function WhereYouAre({ progress, portal, tool = false }: { progress?: SequencePr
   return (
     <Card title="Where you are · from Let's Play" color={GOLD_BRIGHT} collapsible defaultOpen={false}>
       <div className="flex flex-wrap gap-x-5 gap-y-1 text-[14px]" style={{ color: INK }}>
+        {progress.notStarted && <span><b>Not started yet</b> · some of its steps carry stars from other sequences</span>}
         {progress.minRating !== null && <span><b>{progress.minRating}★</b> the sequence is worth its weakest step</span>}
         {progress.side === 'both' && progress.sideRatings ? (
           <span>frontside <b>{progress.sideRatings.fs ?? '—'}{progress.sideRatings.fs != null ? '★' : ''}</b> · backside <b>{progress.sideRatings.bs ?? '—'}{progress.sideRatings.bs != null ? '★' : ''}</b></span>
@@ -760,11 +765,11 @@ function WhereYouAre({ progress, portal, tool = false }: { progress?: SequencePr
       <div className="mt-2 flex flex-wrap gap-1.5">
         {progress.steps.map((st) => (
           <span key={st.id} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold" style={{ background: WHITE, border: `1px solid ${BORDER}`, color: st.rating === null ? MUTED : st.rating >= 4 ? GREEN : GOLD }}>
-            {st.title.replace(/ Operationalized at Blue Belt/, '')} {st.rating === null ? '·' : `${st.rating}★`}{st.selfRating != null && st.coachRating != null && st.selfRating !== st.coachRating ? ` · you ${st.selfRating}★` : ''}
+            {st.title.replace(/ Operationalized at Blue Belt/, '')} {st.rating === null ? '·' : `${st.rating}★`}{st.selfRating != null && st.coachRating != null && st.selfRating !== st.coachRating ? ` · you ${st.selfRating}★` : ''}{st.seenIn ? <span className="font-normal italic" style={{ color: MUTED }}> · {st.seenIn}</span> : null}
           </span>
         ))}
       </div>
-      {(progress.heldBackTitle || progress.weakestTitle) && (
+      {!progress.notStarted && (progress.heldBackTitle || progress.weakestTitle) && (
         <Callout label="Work on">
           {(() => {
             const w = progress.steps.find((st) => st.id === progress.weakestId);

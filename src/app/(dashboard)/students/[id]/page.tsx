@@ -23,6 +23,7 @@ import { PlanSessionButton } from '@/components/student/PlanSessionButton';
 import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
 import { groupBySequence, sequenceVerdict, sequenceLabel } from '@/lib/constants/learning-blocks';
 import { withToolSequences } from '@/lib/sequence-pages/tools-seq';
+import { isSequenceWorked } from '@/lib/evaluation/shared-steps';
 import { WaterTestsPanel } from '@/components/student/WaterTestsPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
@@ -328,8 +329,13 @@ export default async function StudentProfilePage({ params, searchParams }: Props
   });
   const focusSeq = (() => {
     const { groups } = groupBySequence(withToolSequences(officialEvalRows) as any[]);
+    const coachOf = new Map(officialEvalRows.map((r: any) => [r.step_id as string, r.coach_rating as number | null]));
     for (const g of groups) {
       const stars = g.rows.map((r: any) => r.coach_rating ?? null);
+      // (Marcelo 2026-10-02) Una secuencia con nota solo en pasos compartidos
+      // no se trabajó: se salta, y el paso flojo sale en la que sí se vio.
+      // Una sin ninguna nota sigue como antes.
+      if (stars.some((x: number | null) => x != null) && !isSequenceWorked(g.id, g.rows.map((r: any) => r.step_id), (id) => coachOf.get(id))) continue;
       const v = sequenceVerdict(stars);
       if (v.state === 'owned') continue;
       const label = sequenceLabel(g.id, g.order, g.name);

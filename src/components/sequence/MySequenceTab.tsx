@@ -310,8 +310,10 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
           <p className="text-[12px]" style={{ ...F_M, letterSpacing: '0.08em', color: '#55666E' }}>Your sequences · {beltWord} Belt</p>
           {levelSeqs.every((sq) => sq.state === 'unrated') ? (
             <>
-              {/* Primer uso (auditoría 2026-09-10): "0 of 9" se lee como fracaso. */}
-              <p className="text-[23px] mt-1" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>Nothing rated yet — start here</p>
+              {/* Primer uso (auditoría 2026-09-10): "0 of 9" se lee como fracaso.
+                  (2026-10-02) Puede haber pasos compartidos con estrella sin
+                  ninguna secuencia empezada: se dice "started", no "rated". */}
+              <p className="text-[23px] mt-1" style={{ ...F_D, fontWeight: 900, color: '#10263B' }}>No sequence started yet — start here</p>
               {onTrainSequence && levelSeqs[0] && (
                 <button type="button" onClick={() => onTrainSequence({ sequenceId: levelSeqs[0].id, mode: 'sequence_run' })}
                   className="mt-2.5 h-12 w-full rounded-[5px] text-[15px] font-black uppercase" style={{ fontFamily: 'var(--font-archivo), Archivo, sans-serif', letterSpacing: '0.035em', background: CYAN, color: INK }}>
@@ -520,6 +522,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
               heldBackTitle={seq.heldBackTitle}
               side={seq.side}
               sideRatings={seq.sideRatings}
+              sharedStepTags={seq.sharedStepTags}
               defaultOpen={seq.id === focusSequenceId}
               items={seq.items}
               onOpenStep={(id) => openFromList(id)}
@@ -564,6 +567,7 @@ export function MySequenceTab({ portalToken, belt = 'white', onPracticeDrill, on
                 heldBackTitle={seq.heldBackTitle}
                 side={seq.side}
                 sideRatings={seq.sideRatings}
+                sharedStepTags={seq.sharedStepTags}
                 defaultOpen={false}
                 items={seq.items}
                 onOpenStep={(id) => openFromList(id)}
@@ -619,6 +623,7 @@ function BlockSection({
   heldBackTitle = null,
   side = null,
   sideRatings = null,
+  sharedStepTags = undefined,
   pageHref = null,
   items,
   onOpenStep,
@@ -653,6 +658,8 @@ function BlockSection({
   /** El lado (fs · bs · both) y, en las de dos lados, la nota por lado. */
   side?: SequenceSide | null;
   sideRatings?: { fs: number | null; bs: number | null } | null;
+  /** Pasos compartidos con estrella → "seen in #8" / "shared step" (2026-10-02). */
+  sharedStepTags?: Record<string, string>;
   /** La página de la secuencia (Think · Feel · Do · Review), si existe. */
   pageHref?: string | null;
   items: SequenceItem[];
@@ -717,6 +724,10 @@ function BlockSection({
               que esconde el hueco. Es la regla del canon: 4★ en cada parte. */}
           {asSequence && state === 'owned' ? (
             <div className="text-[12px] font-semibold" style={{ color: CYAN }}>✓ Owned</div>
+          ) : asSequence && state === 'unrated' ? (
+            // Sin empezar (Marcelo 2026-10-02): ni estrella ni promedio, aunque
+            // sus pasos compartidos traigan nota de otra secuencia.
+            <div className="text-[11px]" style={{ color: 'rgba(247,249,250,.45)' }}>Not started yet</div>
           ) : asSequence && minRating !== null ? (
             <>
               <div className="text-[15px] font-semibold" style={{ color: PAPER }}>
@@ -835,6 +846,7 @@ function BlockSection({
             key={item.step_id}
             item={item}
             moments={moments[item.step_id]}
+            sharedTag={asSequence ? sharedStepTags?.[item.step_id] ?? null : null}
             highlight={asSequence && item.step_id === startId && state !== 'owned'}
             picking={picking}
             onOpen={() => {
@@ -873,6 +885,7 @@ function SelfStarLine({ item }: { item: SequenceItem }) {
 function StepRow({
   item,
   moments,
+  sharedTag = null,
   onOpen,
   highlight = false,
   picking = false,
@@ -880,6 +893,8 @@ function StepRow({
   item: SequenceItem;
   /** Los momentos de la línea que cubre esta lección. */
   moments?: Moment[];
+  /** Paso compartido con estrella: "seen in #8" / "shared step" (2026-10-02). */
+  sharedTag?: string | null;
   onOpen: () => void;
   /** El paso que frena la secuencia: se marca para que no haya que buscarlo. */
   highlight?: boolean;
@@ -905,6 +920,7 @@ function StepRow({
           <div className="font-medium text-sm mt-0.5 truncate">
             {item.step_title}
           </div>
+          {sharedTag && <div className="text-[11px] italic text-[#55666E] mt-0.5">{sharedTag}</div>}
           <MomentChips list={moments} />
           {hasSubtitle && (
             <div className="flex items-center gap-2 text-[12px] text-[#55666E] mt-0.5">

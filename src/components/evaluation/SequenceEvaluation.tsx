@@ -60,6 +60,7 @@ import {
 import { momentsByStep } from '@/lib/sequence-pages/moments';
 import { withToolSequences, isToolSequenceId } from '@/lib/sequence-pages/tools-seq';
 import { sequenceStarChanges } from '@/lib/evaluation/sequence-stars';
+import { isSequenceWorked, workedNumberedSequences, sharedStepTag } from '@/lib/evaluation/shared-steps';
 import { COMMAND_COLORS } from '@/lib/sequence-pages/wave-kit';
 
 export interface EvalRow extends SequenceGroupable {
@@ -151,11 +152,18 @@ export function SequenceEvaluation({
     onRate(changes);
   };
 
+  // Pasos compartidos (Marcelo 2026-10-02): Posture o FP1 en 3★ desde #8 ya
+  // no pintan de 3★ las otras cinco de Blue. Una secuencia sin nota en
+  // ninguno de SUS pasos queda "sin evaluar"; adentro, el paso compartido
+  // conserva su estrella con "visto en #8". Solo cambia la lectura: los
+  // botones escriben igual que siempre.
+  const workedSeqs = workedNumberedSequences(starsOf);
+
   return (
     <div className="space-y-2.5">
       {groups.filter((g) => isMethodSequence(g.id)).map((g) => {
         const stars = g.rows.map((r) => starsOf(r.step_id));
-        const v = sequenceVerdict(stars);
+        const v = sequenceVerdict(stars, { worked: isSequenceWorked(g.id, ids(g.rows), starsOf) });
         const isOpen = open[g.id] ?? v.state === 'working';
         const label = sequenceLabel(g.id, g.order, g.name);
         // Coherente con el curso (Marcelo 2026-09-10): el lado y, bajo cada
@@ -256,6 +264,8 @@ export function SequenceEvaluation({
                 {g.rows.map((r, i) => {
                   const val = starsOf(r.step_id);
                   const blocks = i === v.blockerIndex;
+                  // De dónde viene la estrella de un paso compartido (2026-10-02).
+                  const shared = val !== null ? sharedStepTag(r.step_id, g.id, workedSeqs, 'es') : null;
                   return (
                     <div
                       key={`${g.id}:${r.step_id}`}
@@ -278,6 +288,9 @@ export function SequenceEvaluation({
                               </span>
                             ))}
                           </div>
+                        )}
+                        {shared && (
+                          <p className="text-[10px] italic text-[#55666E] mt-0.5">{shared}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
