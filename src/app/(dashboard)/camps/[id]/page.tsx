@@ -18,6 +18,9 @@ import { CancelCampButton } from '@/components/camp/CancelCampButton';
 import { ScheduledEvaluationsPanel } from '@/components/camp/ScheduledEvaluationsPanel';
 import { CampCompleteButton } from '@/components/camp/CampCompleteButton';
 import { CampDayManager } from '@/components/camp/CampDayManager';
+import { CopyBookingLinkButton } from '@/components/camp/CopyBookingLinkButton';
+import { createAdminClient } from '@/lib/supabase/admin';
+import { campEnrollmentClosed } from '@/lib/utils/camp-window';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
@@ -76,6 +79,20 @@ export default async function CampDetailPage({ params }: Props) {
   })();
   const canUndoLastDay =
     sessions.length > 1 && !lastSession?.template_day_id && lastSession?.session_status === 'planned';
+
+  // Link directo de reserva (pedido de Rick 2026-10-02): el mismo del front
+  // desk, /join/<academia>?class=<servicio>. Sin link si el servicio no admite
+  // inscripciones: cancelado, terminado o camp de varios días ya empezado.
+  let bookingPath: string | null = null;
+  try {
+    const academyId = (instance as any).academy_id as string | null;
+    const openForBooking = instance.status !== 'cancelled' && instance.status !== 'completed' && !campEnrollmentClosed(instance as any);
+    if (academyId && openForBooking) {
+      const { data: ac } = await createAdminClient().from('academies').select('slug').eq('id', academyId).maybeSingle();
+      const slug = (ac as any)?.slug as string | undefined;
+      if (slug) bookingPath = `/join/${encodeURIComponent(slug)}?class=${instance.id}`;
+    }
+  } catch { /* sin slug, sin botón */ }
 
   // Check if all final evaluations are submitted for all students
   const allFinalEvalsDone = totalStudents > 0 && evaluatedCount >= totalStudents;
@@ -149,6 +166,7 @@ export default async function CampDetailPage({ params }: Props) {
             <span>Created by: {creatorCoach.display_name}</span>
           )}
         </div>
+        {bookingPath && <CopyBookingLinkButton path={bookingPath} />}
       </div>
 
       {/* Staff — assistants + photographer/filmmaker with accept/reject */}
