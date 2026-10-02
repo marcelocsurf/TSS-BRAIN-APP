@@ -1937,22 +1937,24 @@ function HomeTab({
         </div>
       )}
 
-      {/* ═══ FLOW CHANNEL COMO DIAL (Marcelo 2026-10-01 eligió la opción 3):
-          gris = boredom, verde = el canal, rojo = anxiety; la aguja es su
+      {/* ═══ FLOW CHANNEL · "ORBIT" (Marcelo 2026-10-02, opción C del canvas
+          v10.1): anillo de 270° con el canal en cyan y la perilla en su
           promedio. Mismas zonas y frases que My progress. Abre My progress. ═══ */}
       {data.canTrack !== false && (() => {
         const fc = data.flowChannel;
         const n = fc?.count ?? 0;
-        const has = !!fc && fc.avg != null && n >= FLOW_MIN_RATINGS;
         return (
           <button type="button" onClick={() => setProgressOpen(true)}
-            className="w-full rounded-lg px-3.5 pt-3.5 pb-4 flex flex-col gap-1.5 items-center"
+            className="w-full text-left rounded-lg px-4 pt-3.5 pb-4 flex flex-col"
             style={{ background: HOME_CARD, border: `1px solid ${HOME_LINE}`, color: '#F7F9FA' }}>
-            <span className="flex items-center justify-between w-full">
-              <span style={{ ...HOME_MONO, color: '#8FB3C4' }}>Flow channel</span>
-              {has && <span className="text-[12px]" style={{ color: '#8FB3C4' }}>{n} rated sessions</span>}
+            {/* Cabecera "rail" del manual v10.1: rótulo mono + anotación a la derecha sobre una raya fina. */}
+            <span className="flex items-baseline justify-between gap-3 w-full pb-2.5" style={{ borderBottom: `1px solid ${HOME_LINE}` }}>
+              <span style={{ ...HOME_MONO, fontSize: 12, letterSpacing: '0.18em', color: '#C9D6DD' }}>Flow channel</span>
+              {n > 0 && <span style={{ ...HOME_MONO, fontSize: 12, letterSpacing: '0.18em', color: '#8FB3C4' }}>{n} rated session{n === 1 ? '' : 's'}</span>}
             </span>
-            <FlowDial avg={fc?.avg ?? null} count={n} minRatings={FLOW_MIN_RATINGS} />
+            <span className="block w-full mt-3.5">
+              <FlowDial avg={fc?.avg ?? null} count={n} minRatings={FLOW_MIN_RATINGS} />
+            </span>
           </button>
         );
       })()}

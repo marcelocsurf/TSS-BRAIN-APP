@@ -599,6 +599,13 @@ describe('Home visuals · water ring and flow dial', () => {
     const hard = renderToStaticMarkup(React.createElement(FlowDial, { avg: 4.2, count: 5 }));
     expect(hard).toContain('Above the channel');
     expect(hard).toContain('lower the challenge');
+    // Orbit (2026-10-02): fuera del canal hay un camino punteado de vuelta; adentro, no.
+    expect(hard).toContain('stroke-dasharray');
+    const inside = renderToStaticMarkup(React.createElement(FlowDial, { avg: 3, count: 5 }));
+    expect(inside).toContain('In the flow channel');
+    expect(inside).not.toContain('stroke-dasharray');
+    // 2.46 se muestra 2.5 y entonces está en el canal: número y zona dicen lo mismo.
+    expect(renderToStaticMarkup(React.createElement(FlowDial, { avg: 2.46, count: 3 }))).toContain('In the flow channel');
   });
 });
 
