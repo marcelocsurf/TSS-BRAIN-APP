@@ -578,7 +578,11 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
     timeToFinalize
       ? openDays
       : [];
-  const finalPendingCount = students.filter((s) => !finalSaved.has(s.student_id)).length;
+  // La evaluación final es del camp entero (2026-10-02, camp de Bauti): los que
+  // ya se fueron también se evalúan, se abra el día que se abra. Los presentes
+  // hoy van con su versión viva (el cierre del día actualiza su próximo foco).
+  const finalStudents = (data.finalRoster ?? students).map((r) => students.find((s) => s.student_id === r.student_id) ?? r);
+  const finalPendingCount = finalStudents.filter((s) => !finalSaved.has(s.student_id)).length;
   // Con los días cerrados y el camp sin finalizar SIEMPRE hay puerta al cierre.
   // Antes exigía alumnos sin evaluar: el coach que los guardaba uno por uno y
   // salía se quedaba sin banner y sin botón — el camp no se finalizaba nunca y
@@ -587,7 +591,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
     allDaysClosed &&
     (data.camp as any).status !== 'completed' &&
     usesBeltEvaluation(data.camp.service_kind) &&
-    students.length > 0;
+    finalStudents.length > 0;
 
   // M47 — Drill / mission detail modal. Tapping a drill name anywhere in
   // the planner opens this with the full canonical content (description,
@@ -768,7 +772,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
             </p>
             <p className="text-[11px] text-amber-700 mt-0.5">
               {finalPendingCount > 0
-                ? `${finalPendingCount} de ${students.length} alumno${students.length === 1 ? '' : 's'} sin evaluar — tu avance se guarda alumno por alumno.`
+                ? `${finalPendingCount} de ${finalStudents.length} alumno${finalStudents.length === 1 ? '' : 's'} sin evaluar — tu avance se guarda alumno por alumno.`
                 : 'Todos evaluados. Cerrá el camp para que salgan las encuestas y quede el registro oficial.'}
             </p>
           </div>
@@ -898,7 +902,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
           savedIds={Array.from(finalSaved)}
           onStudentSaved={(id: string) => setFinalSaved((prev) => new Set(prev).add(id))}
           campName={data.camp.camp_name}
-          students={students}
+          students={finalStudents}
           stpCatalog={data.graduationCatalog}
           preCourse={data.preCourseByStudent}
           initialRatings={coachRatings}

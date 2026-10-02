@@ -53,6 +53,8 @@ export interface ServicePlanData {
   };
   // M153 — students whose official final evaluation is already saved.
   finalEvaluatedIds: string[];
+  /** Todos los alumnos activos del camp (no solo los presentes el día abierto): la evaluación final. */
+  finalRoster?: ServicePlanStudent[];
   /** Cierre en una línea (2026-09-20): lo que la plantilla ya tiene para
    *  mañana, por alumno (la primera secuencia de agua del día siguiente).
    *  null = no hay mañana. */
@@ -508,6 +510,10 @@ export async function getServicePlan(
   );
 
   const studentIds = (participants ?? []).map((p: any) => p.student_id);
+  // La evaluación FINAL es del camp entero, no del día abierto (camp de Bauti
+  // 2026-10-02: el camp abría en el día 5, sin nadie, y la evaluación de los 4
+  // no salía). Historial y estrellas se leen para todo el roster activo.
+  const rosterIds = Array.from(new Set((participantsRaw ?? []).map((p: any) => p.student_id as string)));
 
   // M45 — All blocks for the SELECTED day, grouped per student.
   const { data: blocks } = await admin
@@ -526,12 +532,12 @@ export async function getServicePlan(
   // (student_session_results) + self-training (self_training_sessions),
   // merged and sorted so the coach sees the full picture.
   const recentByStudent: Record<string, RecentSessionEntry[]> = {};
-  if (studentIds.length > 0) {
+  if (rosterIds.length > 0) {
     const [coachSessRes, selfSessRes] = await Promise.all([
       admin
         .from('student_session_results')
         .select('student_id, created_at, status, mission, coach_feedback, internal_notes, whats_next, standalone_sessions(mission)')
-        .in('student_id', studentIds)
+        .in('student_id', rosterIds)
         .order('created_at', { ascending: false }),
       // Misma regla que la bitácora de la ficha (src/lib/activity/build.ts):
       // solo sesiones cerradas (status done) y sin los puentes de horas del
@@ -539,7 +545,7 @@ export async function getServicePlan(
       admin
         .from('self_training_sessions')
         .select('*')
-        .in('student_id', studentIds)
+        .in('student_id', rosterIds)
         .eq('status', 'done')
         .order('created_at', { ascending: false }),
     ]);
@@ -592,11 +598,11 @@ export async function getServicePlan(
   // show the current cyan star value the coach already gave.
   const ratingsByStudent: Record<string, { self: number[]; coach: number[] }> = {};
   const coachRatingByStudentStep: Record<string, Record<string, number>> = {};
-  if (studentIds.length > 0) {
+  if (rosterIds.length > 0) {
     const { data: ratings } = await admin
       .from('student_step_ratings')
       .select('student_id, step_id, current_rating, coach_rating')
-      .in('student_id', studentIds);
+      .in('student_id', rosterIds);
     for (const r of ratings ?? []) {
       const e = (ratingsByStudent[r.student_id] ??= { self: [], coach: [] });
       if (r.current_rating && r.current_rating > 0) e.self.push(r.current_rating);
@@ -647,7 +653,7 @@ export async function getServicePlan(
     }
   }
 
-  const students: ServicePlanStudent[] = (participants ?? []).map((p: any) => {
+  const toPlanStudent = (p: any): ServicePlanStudent => {
     const s = Array.isArray(p.students) ? p.students[0] : p.students;
     const studentBlocks = blocksByStudent.get(p.student_id) ?? [];
     const rr = ratingsByStudent[p.student_id] ?? { self: [], coach: [] };
@@ -748,7 +754,10 @@ export async function getServicePlan(
         next_focus_moments: b.next_focus_moments ?? null,
       })),
     };
-  });
+  };
+  const students: ServicePlanStudent[] = (participants ?? []).map(toPlanStudent);
+  // Todos los activos del camp, estén o no el día abierto: la evaluación final.
+  const finalRoster: ServicePlanStudent[] = (participantsRaw ?? []).map(toPlanStudent);
 
   // Cierre en una línea (2026-09-20): lo que la plantilla ya tiene para mañana,
   // por alumno — la línea "Tomorrow" del cierre sale de acá cuando hoy fue 4★+.
@@ -837,7 +846,7 @@ export async function getServicePlan(
       .in('course_section', SHARED_PRE_COURSE_SECTIONS as unknown as string[])
       .eq('active', true);
     const pcIds = (pcLessons ?? []).map((l: any) => l.id);
-    const studentIds = students.map((s) => s.student_id);
+    const studentIds = finalRoster.map((s) => s.student_id);
     if (pcIds.length && studentIds.length) {
       const { data: prog } = await admin
         .from('lesson_progress')
@@ -946,6 +955,7 @@ export async function getServicePlan(
     daySummaries,
     selectedDay,
     students,
+    finalRoster,
     finalEvaluatedIds,
     tomorrow,
     availableDrills: availableDrills as any[],
