@@ -18,7 +18,7 @@ import { ImpersonateBanner } from '@/components/admin/ImpersonateBanner';
 import { PortalTabs } from './portal-tabs';
 import { parseFrom } from '@/lib/nav/origin';
 import { getCoachSideForStudent } from '@/lib/actions/dual-profile';
-import { getThreeCirclesProgress, getHomeSequenceData } from '@/lib/actions/sequence';
+import { getThreeCirclesProgress, getHomeSequenceData, getMyFundamentals } from '@/lib/actions/sequence';
 import { getOpenSession, getTasks } from '@/lib/actions/lets-play';
 import { RenewalGate } from './RenewalGate';
 import { TermsGate } from './TermsGate';
@@ -171,7 +171,7 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
   // en serie sumaban 1–2 s a cada carga del portal). Todas dependen solo del
   // token, del alumno o del curso activo, que ya están resueltos.
   const beltForHome = activeCourse?.belt ?? 'white';
-  const [termsPending, access, courseLocks, homeSeq, coachSide, membershipInfo, circlesProg, openSession, tasks] = await Promise.all([
+  const [termsPending, access, courseLocks, homeSeq, coachSide, membershipInfo, circlesProg, openSession, tasks, myFundamentals] = await Promise.all([
     isImpersonatingThisStudent ? Promise.resolve(false) : needsTermsAcceptance(student.id),
     // Registro y progreso = curso o membresía (blueprint). El libro solo, no.
     getStudentAccess(student.id),
@@ -183,6 +183,9 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
     (beltForHome === 'yellow' || beltForHome === 'blue') ? getThreeCirclesProgress(token).catch(() => [] as Awaited<ReturnType<typeof getThreeCirclesProgress>>) : Promise.resolve([] as Awaited<ReturnType<typeof getThreeCirclesProgress>>),
     getOpenSession(token),
     getTasks(token),
+    // Tus fundamentos (Marcelo 2026-10-03): la estrella del coach por paso de
+    // técnica, para la tarjeta de My progress. Si falla, el portal sigue.
+    getMyFundamentals(token).catch(() => null),
   ]);
   const gateNeeds = termsPending ? await termsGateNeeds(student.id).catch(() => ({ minor: false, needsGuardian: false, needsHealth: false })) : null;
   const activeLock = activeCourse ? courseLocks[activeCourse.key] ?? null : null;
@@ -267,6 +270,8 @@ export default async function StudentPortalPage({ params, searchParams }: Props)
           // Tus puntajes por secuencia (Marcelo 2026-09-21): reemplazan la
           // sugerencia del coach en el Home; el alumno ve y decide.
           sequenceScores: homeSeq.scores,
+          // Tus fundamentos (2026-10-03): la tarjeta de My progress.
+          fundamentals: myFundamentals,
           // The Lineup: el canal de la comunidad. Si falla, el portal sigue.
           lineup: lineupRes,
         }}

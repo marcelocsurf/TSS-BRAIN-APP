@@ -37,7 +37,25 @@ export async function closeStandaloneEvaluation(
     );
     if (error) return { ok: false, error: error.message };
   }
-  const meetsBar = own.length === 0 || own.every((r) => r.rating >= 4);
+  // El guardia mira EXACTAMENTE el catálogo que califica la ficha (lessons de
+  // white · yellow · blue, la misma consulta de students/[id]/page.tsx), igual
+  // que la pantalla (studentApproved). Los fundamentos fuera del catálogo
+  // (FND-*, STP-052; Marcelo 2026-10-03) se guardan igual pero no entran en
+  // la aprobación — y un 3★ en un paso del catálogo sí la tumba. Si la base
+  // no respondió, se cuenta todo como antes: el guardia solo baja, nunca sube.
+  let forBar = own;
+  if (own.length) {
+    const { data: catalogLessons } = await admin
+      .from('lessons')
+      .select('id')
+      .in('course_section', ['white_belt', 'yellow_belt', 'blue_belt'])
+      .eq('active', true);
+    if (catalogLessons) {
+      const catalogIds = new Set((catalogLessons as any[]).map((l) => l.id as string));
+      forBar = own.filter((r) => catalogIds.has(r.step_id));
+    }
+  }
+  const meetsBar = forBar.length === 0 || forBar.every((r) => r.rating >= 4);
 
   // 2. Acta
   const promo = promotions.find((p) => p.student_id === studentId) ?? null;

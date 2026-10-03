@@ -24,6 +24,7 @@ import { OceanLevelPanel } from '@/components/student/OceanLevelPanel';
 import { groupBySequence, sequenceVerdict, sequenceLabel } from '@/lib/constants/learning-blocks';
 import { withToolSequences } from '@/lib/sequence-pages/tools-seq';
 import { isSequenceWorked } from '@/lib/evaluation/shared-steps';
+import { FUNDAMENTAL_STEP_IDS } from '@/lib/evaluation/fundamentals';
 import { WaterTestsPanel } from '@/components/student/WaterTestsPanel';
 import { SessionHistoryPanel } from '@/components/student/SessionHistoryPanel';
 import { CourseProgressPanel } from '@/components/student/CourseProgressPanel';
@@ -145,6 +146,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
     multiBlockResult,
     stpLessonsResult,
     finalQuizResult,
+    fundLessonsResult,
   ] = await Promise.all([
     getStudentLevelAccess(id),
     // Standalone session results
@@ -228,6 +230,18 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       .eq('student_id', id)
       .order('created_at', { ascending: false })
       .limit(30),
+    // Fundamentos (Marcelo 2026-10-03): los pasos de la sección 'fundamentals'
+    // (FND-CE y los tres de la ola) y cualquier otro fundamento fuera del
+    // catálogo de la cinta (STP-052, Purple). Lista APARTE: no entra en
+    // officialEvalRows ni en los conteos de la evaluación.
+    supabase
+      .from('lessons')
+      .select(
+        'id, title, step_number, course_section, wb_sequence_id, wb_sequence_name, wb_sequence_order, sequence_step_order'
+      )
+      .in('id', FUNDAMENTAL_STEP_IDS as string[])
+      .eq('active', true)
+      .order('display_order'),
   ]);
 
   // Let's Play por secuencia (2026-09-04): la nota del ALUMNO para cada
@@ -327,6 +341,27 @@ export default async function StudentProfilePage({ params, searchParams }: Props
       coach_rated_at: r?.coach_rated_at ?? null,
     };
   });
+  // Fundamentos fuera del catálogo de la cinta, con su nota (misma forma que
+  // officialEvalRows). Los compartidos (Posture, FP1…) ya viven arriba.
+  const inCatalog = new Set(officialEvalRows.map((r) => r.step_id));
+  const fundamentalRows = (fundLessonsResult?.data ?? [])
+    .filter((l: any) => !inCatalog.has(l.id))
+    .map((l: any) => {
+      const r = stepRatingsMap.get(l.id);
+      return {
+        step_id: l.id,
+        step_title: l.title ?? null,
+        course_section: l.course_section ?? null,
+        step_number: l.step_number ?? null,
+        sequence_id: l.wb_sequence_id ?? null,
+        sequence_name: l.wb_sequence_name ?? null,
+        sequence_order: l.wb_sequence_order ?? null,
+        sequence_step_order: l.sequence_step_order ?? null,
+        student_self_rating: r?.current_rating ?? null,
+        coach_rating: r?.coach_rating ?? null,
+        coach_rated_at: r?.coach_rated_at ?? null,
+      };
+    });
   const focusSeq = (() => {
     const { groups } = groupBySequence(withToolSequences(officialEvalRows) as any[]);
     const coachOf = new Map(officialEvalRows.map((r: any) => [r.step_id as string, r.coach_rating as number | null]));
@@ -544,6 +579,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         <LevelEvaluationLauncher
           student={{ id: student.id, first_name: student.first_name ?? null, last_name: student.last_name ?? null, photo_url: (student as any).photo_url ?? null, belt_level: student.belt_level }}
           rows={officialEvalRows as any}
+          fundamentalsRows={fundamentalRows as any}
           coach={{ id: coach.id, role: coach.role ?? null, max_belt_permission: coach.max_belt_permission ?? null }}
         />
       )}
@@ -822,6 +858,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
         <LevelEvaluationLauncher
           student={{ id: student.id, first_name: student.first_name ?? null, last_name: student.last_name ?? null, photo_url: (student as any).photo_url ?? null, belt_level: student.belt_level }}
           rows={officialEvalRows as any}
+          fundamentalsRows={fundamentalRows as any}
           coach={{ id: coach.id, role: coach.role ?? null, max_belt_permission: coach.max_belt_permission ?? null }}
         />
       )}
@@ -844,6 +881,7 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               studentId={id}
               coachId={coach.id}
               rows={officialEvalRows}
+              fundamentals={fundamentalRows}
               studentSequenceRatings={studentSequenceRatings}
             />
           </CollapsibleSection>

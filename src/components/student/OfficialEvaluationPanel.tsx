@@ -8,6 +8,7 @@ import { closeStudentEvaluation } from '@/lib/actions/student-evaluation';
 import { NextFocusPicker, focusLabel, EMPTY_FOCUS, type NextFocusValue, type NextFocusGroup } from '@/components/evaluation/NextFocusPicker';
 import { groupBySequence, isMethodSequence } from '@/lib/constants/learning-blocks';
 import { withToolSequences } from '@/lib/sequence-pages/tools-seq';
+import { FundamentalsBlock } from '@/components/evaluation/FundamentalsBlock';
 
 // Coach-facing panel on /students/[id]. Lets the coach assign OFFICIAL
 // stars (1-5) to any active STP for the student. Persisted in
@@ -34,11 +35,20 @@ interface Props {
   rows: StepRow[];
   /** La nota del alumno por secuencia (su último run en Let's Play). */
   studentSequenceRatings?: Record<string, { rating: number | null; heldBackStepId: string | null; at: string }>;
+  /** Fundamentos (Marcelo 2026-10-03): los pasos de fundamentos que NO están
+   *  en `rows` (FND-CE, los de la ola, STP-052 de Purple), con su nota. Se
+   *  califican por el mismo camino; no cuentan en "x/y rated". */
+  fundamentals?: StepRow[];
 }
 
-export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSequenceRatings }: Props) {
+// Referencia estable: un `[]` nuevo por render sería una dependencia nueva del
+// useEffect de abajo en cada render (bucle).
+const NO_FUNDAMENTALS: StepRow[] = [];
+
+export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSequenceRatings, fundamentals = NO_FUNDAMENTALS }: Props) {
   const router = useRouter();
   const [local, setLocal] = useState<StepRow[]>(rows);
+  const [fundLocal, setFundLocal] = useState<StepRow[]>(fundamentals);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState('');
@@ -58,12 +68,14 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSeque
 
   // Re-sync if parent passes new rows after refresh
   useEffect(() => setLocal(rows), [rows]);
+  useEffect(() => setFundLocal(fundamentals), [fundamentals]);
 
   const ratedCount = local.filter((r) => r.coach_rating !== null).length;
 
   const rate = (stepId: string, rating: number | null) => {
     setSavingId(stepId);
-    setLocal((prev) =>
+    // El paso vive en una de las dos listas; mapear las dos es inocuo.
+    const patch = (prev: StepRow[]) =>
       prev.map((r) =>
         r.step_id === stepId
           ? {
@@ -72,8 +84,9 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSeque
               coach_rated_at: rating !== null ? new Date().toISOString() : null,
             }
           : r
-      )
-    );
+      );
+    setLocal(patch);
+    setFundLocal(patch);
     startTransition(async () => {
       try {
         await setOfficialStepRating({ studentId, stepId, rating, coachId });
@@ -82,11 +95,17 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSeque
         setError(e.message || 'Failed to save');
         // Rollback on error
         setLocal(rows);
+        setFundLocal(fundamentals);
       } finally {
         setSavingId(null);
       }
     });
   };
+  // Fundamentos: las estrellas de los pasos compartidos (Posture…) salen de
+  // `local`; las de los pasos propios (FND-*, STP-052) de `fundLocal`.
+  const fundamentalRatings: Record<string, number | null> = Object.fromEntries(
+    [...local, ...fundLocal].map((r) => [r.step_id, r.coach_rating]),
+  );
 
   return (
     <div className="space-y-3">
@@ -122,6 +141,14 @@ export function OfficialEvaluationPanel({ studentId, coachId, rows, studentSeque
         studentId={studentId}
         studentSequenceRatings={studentSequenceRatings}
         onFocusSaved={(_stepId, f) => { if (f) setFocusSel((prev) => ({ ...prev, note: f })); }}
+      />
+
+      {/* Fundamentos (Marcelo 2026-10-03): la técnica aparte de las
+          secuencias. Cada estrella se guarda al instante por el mismo camino
+          (setOfficialStepRating); no entra en la aprobación de la cinta. */}
+      <FundamentalsBlock
+        ratings={fundamentalRatings}
+        onRate={(changes) => changes.forEach((c) => rate(c.stepId, c.stars))}
       />
 
       {/* Cerrar la evaluación. Lo mismo que se pide al cerrar un camp: un

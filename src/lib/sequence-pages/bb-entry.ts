@@ -144,7 +144,7 @@ export const BB_LINE: SequencePageConfig = {
 
 1. **Cobra.** Chest up, hands at the ribs, eyes forward down the wave.
 2. **Pick the line.** Redirect the nose down the line you chose. Cobra + correct line = time.
-3. **Pop-up.** One movement, about two seconds: both feet land together, never the back foot first. Hips down, head up on landing.
+3. **Pop-up.** One movement, about two seconds. Hips down, head up on landing, and the weight on the front foot when you let go of the board.
 4. **Back foot where you decided.** FP2 by default — the balance point. FP1 on purpose when the first move is a tight turn. Shuffle if the line asks for it.
 5. **Posture.** Shoulders pointing where the nose points, weight on the front foot, low. You are running the line — and the circle begins.`,
     rulesMarkdown: `- The line is chosen in the cobra, before you stand. Never the other way round.

@@ -24,6 +24,7 @@ import { groupBySequence, sequenceVerdict, isMethodSequence } from '@/lib/consta
 import { withToolSequences } from '@/lib/sequence-pages/tools-seq';
 import { isSequenceWorked } from '@/lib/evaluation/shared-steps';
 import { CIRCLE_SEQUENCES } from '@/lib/sequence-pages';
+import { FundamentalsBlock } from '@/components/evaluation/FundamentalsBlock';
 
 interface Props {
   token: string;
@@ -31,6 +32,11 @@ interface Props {
   campName: string;
   students: ServicePlanStudent[];
   stpCatalog: ServicePlanData['stpCatalog'];
+  /** Fundamentos (Marcelo 2026-10-03): los pasos de la sección 'fundamentals'
+   *  (FND-CE…), APARTE del catálogo. Completan las filas de los Tres Círculos
+   *  (el Círculo 1 lleva FND-CE); NUNCA entran en stpCatalog ni en la
+   *  aprobación. Sin ellos la pantalla sigue igual que hasta hoy. */
+  fundamentalsCatalog?: ServicePlanData['fundamentalsCatalog'];
   /** Progreso del pre-curso por alumno — requisito, pero no bloquea. */
   preCourse?: ServicePlanData['preCourseByStudent'];
   // Coach ratings already given across the camp days (student → step →
@@ -59,6 +65,7 @@ export function FinalCampEvaluation({
   campName,
   students,
   stpCatalog,
+  fundamentalsCatalog = [],
   preCourse = {},
   initialRatings,
   targetBelt,
@@ -122,6 +129,18 @@ export function FinalCampEvaluation({
       [studentId]: { ...(prev[studentId] ?? {}), [stepId]: rating },
     }));
   };
+  // Lo que escriben SequenceEvaluation y el bloque de Fundamentos: el mismo
+  // mapa (null = borrar la nota). closeCampFinal escribe cualquier paso que
+  // venga acá; la aprobación solo mira el catálogo (studentApproved).
+  const applyChanges = (studentId: string, changes: { stepId: string; stars: number | null }[]) =>
+    setRatings((prev) => {
+      const mine = { ...(prev[studentId] ?? {}) };
+      for (const c of changes) {
+        if (c.stars === null) delete mine[c.stepId];
+        else mine[c.stepId] = c.stars;
+      }
+      return { ...prev, [studentId]: mine };
+    });
 
   // In-water level the coach assesses (per student). Seeded from the
   // student's current ocean level. Written to the bitácora on finalize.
@@ -200,12 +219,25 @@ export function FinalCampEvaluation({
     sequence_order: stp.wb_sequence_order ?? null,
     sequence_step_order: stp.sequence_step_order ?? null,
   }));
+  // Los pasos de fundamentos (FND-CE…), fuera del catálogo: solo para
+  // completar las filas de los círculos. No se suman a catalogRows.
+  const fundamentalRows = (fundamentalsCatalog as any[]).map((stp) => ({
+    step_id: stp.id as string,
+    step_title: stp.title as string,
+    course_section: stp.course_section as string,
+    step_number: stp.step_number as number,
+    sequence_id: null as string | null,
+    sequence_name: null as string | null,
+    sequence_order: null as number | null,
+    sequence_step_order: null as number | null,
+  }));
   // Los Tres Círculos como tres filas más (Marcelo 2026-09-19): mismas
   // estrellas que los pasos reales (Posture = STP-018, etc.), otra lente.
   // Solo cuando el catálogo trae todos los pasos del círculo (Novice y arriba).
+  // El Círculo 1 lleva FND-CE (2026-10-03), que viene en fundamentalsCatalog.
   const circleRows = CIRCLE_SEQUENCES.flatMap((c, ci) => {
     const rows = c.stepIds.map((id, i) => {
-      const base = catalogRows.find((r) => r.step_id === id);
+      const base = catalogRows.find((r) => r.step_id === id) ?? fundamentalRows.find((r) => r.step_id === id);
       return base ? { ...base, sequence_id: c.id, sequence_name: c.title, sequence_order: 90 + ci, sequence_step_order: i + 1 } : null;
     });
     return rows.every(Boolean) ? (rows as typeof catalogRows) : [];
@@ -646,16 +678,15 @@ export function FinalCampEvaluation({
                       portalToken={token}
                       campInstanceId={campInstanceId}
                       ratings={ratings[s.student_id] ?? {}}
-                      onRate={(changes) =>
-                        setRatings((prev) => {
-                          const mine = { ...(prev[s.student_id] ?? {}) };
-                          for (const c of changes) {
-                            if (c.stars === null) delete mine[c.stepId];
-                            else mine[c.stepId] = c.stars;
-                          }
-                          return { ...prev, [s.student_id]: mine };
-                        })
-                      }
+                      onRate={(changes) => applyChanges(s.student_id, changes)}
+                    />
+
+                    {/* Fundamentos (Marcelo 2026-10-03): las estrellas de
+                        técnica aparte de las secuencias. Mismo mapa, mismo
+                        guardado; no entran en la aprobación. */}
+                    <FundamentalsBlock
+                      ratings={ratings[s.student_id] ?? {}}
+                      onRate={(changes) => applyChanges(s.student_id, changes)}
                     />
 
                     {/* Canon principles — part of the level graduation check */}

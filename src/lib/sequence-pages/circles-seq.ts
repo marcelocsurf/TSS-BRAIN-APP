@@ -2,10 +2,13 @@
 // Hasta ahora eran una lista de seis juegos. Ahora cada círculo es una
 // secuencia con el mismo molde que #3 o #8: el paso es el elemento (Posture,
 // Rotation…), el juego es su Do it, y las estrellas caen en la lección real
-// (STP-018 Power Posture, STP-022 Turn, STP-019 Forward Momentum, STP-047
-// Hold, STP-035 Foot Position, STP-033 Reading Wave Stages). Así la plantilla,
-// el plan, el cierre y la evaluación final los tratan igual que a una
-// secuencia. Las páginas /circles y los juegos no cambian: se conectan.
+// (STP-018 Power Posture, STP-022 Turn, FND-CE Compression · extension,
+// STP-047 Hold, STP-035 Foot Position, STP-033 Reading Wave Stages). Así la
+// plantilla, el plan, el cierre y la evaluación final los tratan igual que a
+// una secuencia. Las páginas /circles y los juegos no cambian: se conectan.
+// Marcelo 2026-10-03: compresión · extensión dejó de compartir la estrella de
+// Forward Momentum (STP-019, ahora solo herramienta): tiene su paso FND-CE
+// (sección 'fundamentals', fuera del catálogo de la cinta).
 import type { SequencePageConfig } from './types';
 
 const ind = (ok: string, no: string, fix: string) => [{ ok, no, fix }];
@@ -18,8 +21,8 @@ export const CIRCLE_BODY: SequencePageConfig = {
   courseKey: 'yellow_belt',
   number: 1,
   title: 'Circle 1 · Body',
-  stepIds: ['STP-018', 'STP-022', 'STP-019', 'STP-047'],
-  games: { 'STP-018': 'GAME-3C-POSTURE', 'STP-022': 'GAME-3C-RAIL', 'STP-019': 'GAME-3C-COMPACT', 'STP-047': 'GAME-3C-HOLD' },
+  stepIds: ['STP-018', 'STP-022', 'FND-CE', 'STP-047'],
+  games: { 'STP-018': 'GAME-3C-POSTURE', 'STP-022': 'GAME-3C-RAIL', 'FND-CE': 'GAME-3C-COMPACT', 'STP-047': 'GAME-3C-HOLD' },
   think: {
     whatIs: { headline: 'How do I control my body and use it in my favour?', line: 'Four movements: posture, rotation, compression and extension, hold. P · R · C · H.', where: 'After the pop-up, on every wave.', whatFor: 'With them your body takes you where you want to go, with stability.' },
     bodyFromLesson: 'YB-FND-01',
@@ -30,7 +33,7 @@ export const CIRCLE_BODY: SequencePageConfig = {
   details: [
     { key: 'posture', command: 'posture', title: 'Posture', symptom: 'Standing tall, weight back, loose arms.', indicators: ind('Shoulders to the nose, weight on the front leg, flexed, back knee forward, arms active.', 'Tall, weight back, spaghetti arms.', 'Shoulders · weight · knee · compact · exhale.'), deeper: { label: 'Power Stance / Posture', lessonId: 'STP-018', drillId: 'DRL-WB-018-A', missionId: 'GAME-3C-POSTURE' } },
     { key: 'rotation', command: 'rail', title: 'Rotation · the rail', symptom: 'You lean but the board does not change rail.', indicators: ind('Eyes → head → shoulders → hips: the oblique turns the lean into a rotation and puts you on the rail.', 'You lean from the waist; the board runs straight.', 'Look where you want to go; the oblique turns you.'), deeper: { label: 'Turn Frontside · Turn Backside', lessonId: 'STP-022', drillId: 'DRL-WB-022-A', missionId: 'GAME-3C-RAIL' } },
-    { key: 'compression', command: 'projection', title: 'Compression · extension', symptom: 'You compress and never extend; the board dies.', indicators: ind('Flex, touch, push, extend: what you load, you spend on the next line.', 'You stay low or stay tall; no projection.', 'Flex · touch · push · extend.'), deeper: { label: 'Forward Momentum', lessonId: 'STP-019', drillId: 'DRL-WB-019-A', missionId: 'GAME-3C-COMPACT' } },
+    { key: 'compression', command: 'projection', title: 'Compression · extension', symptom: 'You compress and never extend; the board dies.', indicators: ind('Flex, touch, push, extend: what you load, you spend on the next line.', 'You stay low or stay tall; no projection.', 'Flex · touch · push · extend.'), deeper: { label: 'Compression · extension', lessonId: 'FND-CE', drillId: 'DRL-WB-019-A', missionId: 'GAME-3C-COMPACT' } },
     { key: 'hold', command: 'rail', title: 'Hold', symptom: 'You start the turn and let it go; the line breaks.', indicators: ind('You keep the lean and the line until the moment you chose to release.', 'You fall out of the turn early or over-lean and fall.', 'Understand how far; there, hold.'), deeper: { label: 'Hold', lessonId: 'STP-047', drillId: 'DRL-BB-047', missionId: 'GAME-3C-HOLD' } },
   ],
   review: { howItFeels: 'Your body answers before you think: posture, rotation, compression, hold.' },

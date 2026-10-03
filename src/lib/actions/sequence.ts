@@ -17,6 +17,7 @@ import { sideBalance } from '@/lib/sequence-sides';
 import { effectiveStars, starsFromCriteria } from '@/lib/stars';
 import { isSequenceWorked, workedNumberedSequences, sharedStepTag, sequenceRowRan } from '@/lib/evaluation/shared-steps';
 import { ratingCtx } from '@/lib/evaluation/rating-ctx';
+import { FUNDAMENTAL_STEP_IDS } from '@/lib/evaluation/fundamentals';
 
 // ─── Types ───
 
@@ -1234,6 +1235,37 @@ export async function getThreeCirclesProgress(portalToken: string): Promise<Thre
     const g = map.get(id)!; const runs = byGame.get(id) ?? []; const last = runs[0] ?? null;
     return { id, title: g.title, belt: g.belt, lastStars: last?.execution_rating ?? null, lastFlow: last?.flow_channel ?? null, lastAt: last?.created_at ?? null, plays: runs.length };
   });
+}
+
+// ═══ FUNDAMENTOS · My progress (Marcelo 2026-10-03) ═══
+// La estrella del coach (y la propia, con su origen) de cada paso que es un
+// fundamento (lib/evaluation/fundamentals.ts). Una sola consulta; la vista la
+// arma fundamentalsView en el teléfono. null = sin ficha.
+
+export interface MyFundamentals {
+  /** step_id → estrellas de ESE paso. Solo los pasos con fila. */
+  stars: Record<string, { coach: number | null; coachAt: string | null; self: number | null; selfSource: string | null }>;
+}
+
+export async function getMyFundamentals(portalToken: string): Promise<MyFundamentals | null> {
+  const studentId = await studentIdFromPortalToken(portalToken);
+  if (!studentId) return null;
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from('student_step_ratings')
+    .select('step_id, coach_rating, coach_rated_at, current_rating, self_source')
+    .eq('student_id', studentId)
+    .in('step_id', FUNDAMENTAL_STEP_IDS as string[]);
+  const stars: MyFundamentals['stars'] = {};
+  for (const r of (data ?? []) as any[]) {
+    stars[r.step_id] = {
+      coach: r.coach_rating ?? null,
+      coachAt: r.coach_rated_at ?? null,
+      self: r.current_rating ?? null,
+      selfSource: r.self_source ?? null,
+    };
+  }
+  return { stars };
 }
 
 /** La secuencia virtual "The Three Circles" para el flujo de Let's Play:

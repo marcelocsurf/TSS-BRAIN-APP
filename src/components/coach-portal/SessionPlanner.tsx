@@ -872,6 +872,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
           campName={data.camp.camp_name}
           students={students.filter((st) => st.student_id === earlyStudentId)}
           stpCatalog={data.graduationCatalog}
+          fundamentalsCatalog={data.fundamentalsCatalog}
           preCourse={data.preCourseByStudent}
           initialRatings={coachRatings}
           targetBelt={data.camp.target_belt}
@@ -904,6 +905,7 @@ export function SessionPlanner({ data, token, onBack, onSwitchDay, fromHome = fa
           campName={data.camp.camp_name}
           students={finalStudents}
           stpCatalog={data.graduationCatalog}
+          fundamentalsCatalog={data.fundamentalsCatalog}
           preCourse={data.preCourseByStudent}
           initialRatings={coachRatings}
           targetBelt={data.camp.target_belt}

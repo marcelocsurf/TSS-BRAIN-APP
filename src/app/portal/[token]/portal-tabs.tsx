@@ -64,7 +64,8 @@ import { AppointmentCard } from '@/components/portal/AppointmentCard';
 import { SeasonCard } from '@/components/portal/SeasonCard';
 import { BeltJourney } from '@/components/portal/BeltJourney';
 import { BeltRoadmap } from '@/components/portal/BeltRoadmap';
-import { sequenceLabel, sequencePrefix } from '@/lib/constants/learning-blocks';
+import { sequenceLabel, sequencePrefix, SIDE_SHORT } from '@/lib/constants/learning-blocks';
+import { fundamentalsView, fundamentalDotColor } from '@/lib/evaluation/fundamentals';
 import { OCEAN_LEVEL_INFO, type OceanLevel } from '@/lib/constants/ocean-levels';
 import { LineupTab } from '@/components/portal/LineupTab';
 import { WaterLevel } from '@/components/portal/WaterLevel';
@@ -240,6 +241,8 @@ interface PortalData {
   lineup?: import('@/lib/actions/community').LineupData | null;
   /** Tus puntajes por secuencia (2026-09-21): qué vale cada una de tu cinta. */
   sequenceScores?: Awaited<ReturnType<typeof import('@/lib/actions/sequence').getSequenceScores>>;
+  /** Tus fundamentos (2026-10-03): la estrella del coach por paso de técnica (My progress). */
+  fundamentals?: import('@/lib/actions/sequence').MyFundamentals | null;
   nextMove?: {
     sequenceId?: string;
     sequenceOrder: number;
@@ -2413,6 +2416,10 @@ function HomeTab({
             );
           })()}
 
+          {/* Tus fundamentos (Marcelo 2026-10-03): la técnica que el coach ya
+              calificó, por círculo. Solo sale con alguna estrella. */}
+          <FundamentalsCard fundamentals={data.fundamentals} />
+
           {data.flowChannel && data.flowChannel.avg != null && data.flowChannel.count > 0 && (
             <FlowChannelCard flow={data.flowChannel} />
           )}
@@ -2551,6 +2558,58 @@ function HomeTab({
 
 
     </div>
+  );
+}
+
+// ═══════════════════════════════════════
+// Your fundamentals (Marcelo 2026-10-03)
+// ═══════════════════════════════════════
+// Las estrellas de TÉCNICA que el coach puso, agrupadas como las enseña el
+// método (Tres Círculos · Infinite Circle · Tools), aparte de las secuencias.
+// Cada fila es un paso real por lado y la estrella es la de ese paso
+// (lib/evaluation/fundamentals.ts). Un grupo sin ninguna estrella no sale (el
+// alumno de White no ve el Infinite Circle vacío); sin ninguna, la tarjeta
+// entera tampoco — el mismo criterio que el Flow Channel.
+function FundamentalsCard({ fundamentals }: { fundamentals?: import('@/lib/actions/sequence').MyFundamentals | null }) {
+  if (!fundamentals) return null;
+  const coach = Object.fromEntries(Object.entries(fundamentals.stars).map(([id, s]) => [id, s.coach]));
+  const view = fundamentalsView(coach, { hideEmpty: true });
+  if (view.rated === 0) return null;
+  return (
+    <SandCard label="Your fundamentals" right={<span className="text-[12px]" style={{ color: T_MUTED }}>From your coach</span>}>
+      <div className="space-y-3">
+        {view.groups.map((g) => (
+          <div key={g.key}>
+            <p style={{ ...T_MONO_SM, fontSize: 11, color: T_MUTED, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{g.label.en}</p>
+            <div className="mt-1 space-y-1">
+              {g.items.map((item) => {
+                const anyStar = item.sides.some((s) => s.coach != null);
+                return (
+                  <div key={item.key} className="flex items-center justify-between gap-3 flex-wrap rounded-lg px-2.5 py-2" style={{ background: T_PAPER, border: `1px solid ${T_BORDER}` }}>
+                    <p className="min-w-0 flex-1 text-[14px] font-semibold flex items-center gap-2" style={{ color: T_INK }}>
+                      <i className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: fundamentalDotColor(item) }} />
+                      <span className="truncate">{item.name.en}</span>
+                    </p>
+                    <div className="shrink-0 flex items-center gap-2.5">
+                      {anyStar ? item.sides.map((s) => (
+                        <span key={s.stepId} className="inline-flex items-baseline gap-1">
+                          {s.side !== 'one' && <span style={{ ...T_MONO_SM, fontSize: 11, color: T_MUTED }}>{SIDE_SHORT[s.side]}</span>}
+                          {s.coach != null
+                            ? <span className="text-[14px] font-black" style={{ color: T_INK }}>{s.coach}★</span>
+                            : <span className="text-[12px]" style={{ color: T_MUTED }}>not rated yet</span>}
+                        </span>
+                      )) : (
+                        <span className="text-[12px]" style={{ color: T_MUTED }}>Not rated yet</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </SandCard>
   );
 }
 

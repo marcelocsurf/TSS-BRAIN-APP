@@ -425,7 +425,7 @@ describe('TOOL-MOMENTUM · a tool, not a sequence', () => {
     expect(pageForStep({ stepId: 'STP-019' }, null)?.id).toBe('TOOL-MOMENTUM');
     expect(pageForStep({ stepId: 'STP-016' }, 'white_belt')?.id).toBe('WB-SEQ-3');
     expect(pageForStep({ stepId: 'STP-001' }, null)).toBeNull(); // Venue Analysis: abre su lección
-    expect(pageForStep({ sequenceId: 'CIRCLE-BODY', stepId: 'STP-019' }, null)?.id).toBe('CIRCLE-BODY');
+    expect(pageForStep({ sequenceId: 'CIRCLE-BODY', stepId: 'FND-CE' }, null)?.id).toBe('CIRCLE-BODY');
   });
   it('offers "all three moments" and never "start the next one"', async () => {
     const { focusOptionsForSequence } = await import('@/lib/sequence-pages/focus-options');
@@ -702,7 +702,10 @@ describe('pasos compartidos · una secuencia sin trabajar no hereda estrellas', 
     expect([...STEP_HOMES['STP-035']].sort()).toEqual(['BB-SEQ-08', 'BB-SEQ-09', 'BB-SEQ-10', 'BB-SEQ-11', 'BB-SEQ-12', 'BB-SEQ-13', 'CIRCLE-BOARD']);
     expect([...STEP_HOMES['STP-047']].sort()).toEqual(['BB-SEQ-12', 'CIRCLE-BODY']);
     expect(STEP_HOMES['STP-027']).toEqual(['YB-SEQ-6.0']); // BB-NAV y BB-CATCH no cuentan
-    expect(STEP_HOMES['STP-019']).toEqual(['CIRCLE-BODY']); // TOOL-MOMENTUM no cuenta
+    // 2026-10-03: compresión · extensión tiene paso propio (FND-CE) en el
+    // Círculo 1; STP-019 es solo la herramienta, y TOOL-MOMENTUM no es casa.
+    expect(STEP_HOMES['FND-CE']).toEqual(['CIRCLE-BODY']);
+    expect(STEP_HOMES['STP-019']).toBeUndefined();
     expect(isSharedStep('STP-018')).toBe(true);
     expect(isSharedStep('STP-039')).toBe(true); // #10 y #12 comparten el bottom turn
     expect(isSharedStep('STP-036')).toBe(false);
@@ -856,5 +859,102 @@ describe('nav · la entrada de abajo de las capas (2026-10-02)', () => {
     expect(underTab({ [UNDER_KEY]: 'https://x.app/portal/T?tab=home' }, '/portal/T', 'd1')).toBeNull();
     expect(underTab(st('no es una url'), '/portal/T', 'd1')).toBeNull();
     expect(underTab(null, '/portal/T', 'd1')).toBeNull();
+  });
+});
+
+// ═══ FUNDAMENTOS · las estrellas de técnica, aparte de las secuencias (Marcelo 2026-10-02/03) ═══
+import { FUNDAMENTALS, FUNDAMENTAL_STEP_IDS, fundamentalsView, isFundamentalStep } from '@/lib/evaluation/fundamentals';
+import { CIRCLE_BODY, CIRCLE_BOARD, CIRCLE_WAVE } from '@/lib/sequence-pages/circles-seq';
+import { CIRCLES } from '@/lib/sequence-pages/three-circles';
+import { LOOP_SIDES } from '@/lib/sequence-pages/infinite-circle';
+import { TOOL_MOMENTUM, MOMENTUM_STAR_STEP } from '@/lib/sequence-pages/tools-seq';
+describe('fundamentos · una lente sobre las mismas estrellas (2026-10-03)', () => {
+  const group = (k: string) => FUNDAMENTALS.find((g) => g.key === k)!;
+  const idsOf = (k: string) => group(k).items.flatMap((i) => i.stars.map((s) => s.stepId));
+  const side = (k: string, item: string, s: 'fs' | 'bs' | 'one') => group(k).items.find((i) => i.key === item)!.stars.find((x) => x.side === s)?.stepId;
+
+  it('Círculo 1 y 2: los pasos de los círculos como secuencias están todos', () => {
+    for (const id of CIRCLE_BODY.stepIds) expect(idsOf('body'), id).toContain(id);
+    for (const id of CIRCLE_BOARD.stepIds) expect(idsOf('board'), id).toContain(id);
+    // Compresión · extensión es FND-CE en los dos lugares; STP-019 ya no es del círculo.
+    expect(CIRCLE_BODY.stepIds).toEqual(['STP-018', 'STP-022', 'FND-CE', 'STP-047']);
+    expect(CIRCLE_BODY.games?.['FND-CE']).toBe('GAME-3C-COMPACT');
+    expect(CIRCLE_BODY.details.find((d) => d.key === 'compression')?.deeper?.lessonId).toBe('FND-CE');
+    expect(CIRCLES[0].moves?.find((m) => m.key === 'compression')?.lessonId).toBe('FND-CE');
+    expect(side('body', 'compression', 'one')).toBe('FND-CE');
+    // Los lados que Marcelo sumó (2026-10-03).
+    expect(side('body', 'posture', 'bs')).toBe('STP-038');
+    expect(side('body', 'rotation', 'fs')).toBe('STP-022');
+    expect(side('body', 'rotation', 'bs')).toBe('STP-021');
+    expect(side('body', 'hold', 'bs')).toBe('STP-049');
+  });
+  it('Círculo 3: tres pasos propios; leer la ola (STP-033) es entendimiento, no fundamento', () => {
+    expect(idsOf('wave')).toEqual(['FND-WAVE-ENERGY', 'FND-WAVE-FLAT', 'FND-WAVE-POCKET']);
+    expect(CIRCLE_WAVE.stepIds).toEqual(['STP-033']);
+    expect(FUNDAMENTAL_STEP_IDS).not.toContain('STP-033');
+  });
+  it('Infinite Circle: proyección · cambio de riel · cierre, por lado, como en la página del loop', () => {
+    const loopIds = (k: 'fs' | 'bs', cmd: string) => LOOP_SIDES.find((s) => s.key === k)!.steps.filter((st) => st.command === cmd).map((st) => st.lessonId);
+    expect([side('loop', 'projection', 'fs')]).toEqual(loopIds('fs', 'projection'));
+    expect([side('loop', 'projection', 'bs')]).toEqual(loopIds('bs', 'projection'));
+    expect([side('loop', 'railchange', 'fs')]).toEqual(loopIds('fs', 'maneuver'));
+    expect([side('loop', 'railchange', 'bs')]).toEqual(loopIds('bs', 'maneuver'));
+    expect([side('loop', 'closure', 'fs')]).toEqual(loopIds('fs', 'closure'));
+    expect([side('loop', 'closure', 'bs')]).toEqual(loopIds('bs', 'closure'));
+    // Pump y bottom turn no son fundamentos: viven en las secuencias.
+    for (const id of ['STP-036', 'STP-037', 'STP-039', 'STP-039B']) expect(FUNDAMENTAL_STEP_IDS).not.toContain(id);
+  });
+  it('Herramientas: Forward Momentum es STP-019 y SOLO ahí; Tocar la tabla es STP-052', () => {
+    expect(TOOL_MOMENTUM.stepIds).toEqual([side('tools', 'momentum', 'one')]);
+    expect(side('tools', 'momentum', 'one')).toBe(MOMENTUM_STAR_STEP);
+    expect(side('tools', 'touch', 'one')).toBe('STP-052');
+    const where = FUNDAMENTALS.filter((g) => g.items.some((i) => i.stars.some((s) => s.stepId === 'STP-019'))).map((g) => g.key);
+    expect(where).toEqual(['tools']);
+  });
+  it('sin repetidos salvo los declarados como compartidos; los FND-* están todos', () => {
+    const all = FUNDAMENTALS.flatMap((g) => g.items.flatMap((i) => i.stars));
+    const undeclared = all.filter((s) => !s.sharedWith).map((s) => s.stepId);
+    expect(new Set(undeclared).size).toBe(undeclared.length);
+    expect(FUNDAMENTAL_STEP_IDS.length).toBe(new Set(FUNDAMENTAL_STEP_IDS).size);
+    for (const id of ['FND-CE', 'FND-WAVE-ENERGY', 'FND-WAVE-FLAT', 'FND-WAVE-POCKET']) expect(isFundamentalStep(id)).toBe(true);
+    expect(isFundamentalStep('STP-036')).toBe(false);
+    expect(isFundamentalStep(null)).toBe(false);
+    expect(FUNDAMENTAL_STEP_IDS.length).toBe(19);
+  });
+  it('la vista cuenta "con nota" por paso, sin inventar una estrella del fundamento', () => {
+    const empty = fundamentalsView({});
+    expect(empty.rated).toBe(0);
+    expect(empty.total).toBe(19);
+    expect(empty.groups.map((g) => g.key)).toEqual(['body', 'board', 'wave', 'loop', 'tools']);
+    expect(fundamentalsView({}, { hideEmpty: true }).groups).toEqual([]);
+
+    const v = fundamentalsView({ 'STP-018': 4, 'STP-041': 3, 'STP-019': 0, 'STP-035': null });
+    expect(v.rated).toBe(2);
+    const body = v.groups.find((g) => g.key === 'body')!;
+    expect(body.rated).toBe(1);
+    expect(body.total).toBe(7);
+    const posture = body.items.find((i) => i.key === 'posture')!;
+    expect(posture.sides.map((s) => [s.side, s.coach])).toEqual([['fs', 4], ['bs', null]]);
+    expect(posture.rated).toBe(1);
+    expect(posture.total).toBe(2);
+    expect((posture as any).coach).toBeUndefined(); // ninguna estrella a nivel de ítem
+    expect(v.groups.find((g) => g.key === 'tools')!.rated).toBe(0); // 0 no es nota
+    expect(fundamentalsView({ 'STP-018': 4, 'STP-041': 3 }, { hideEmpty: true }).groups.map((g) => g.key)).toEqual(['body', 'loop']);
+  });
+  it('la estrella del alumno pasa por la regla del agua (autoevaluación ≤ 3★)', () => {
+    const v = fundamentalsView({}, { self: { 'STP-018': { stars: 5, source: 'assessed' }, 'STP-038': { stars: 5, source: 'executed' } } });
+    const posture = v.groups[0].items[0];
+    expect(posture.sides.map((s) => s.self)).toEqual([3, 5]);
+    expect(v.rated).toBe(0); // la propia no cuenta como "con nota"
+  });
+  it('es pura: no toca lo que recibe y devuelve lo mismo dos veces', () => {
+    const coach = Object.freeze({ 'STP-018': 4, 'STP-047': 2 });
+    const self = Object.freeze({ 'STP-018': Object.freeze({ stars: 3, source: 'executed' }) });
+    const before = JSON.stringify([coach, self]);
+    const a = fundamentalsView(coach, { self, hideEmpty: true });
+    const b = fundamentalsView(coach, { self, hideEmpty: true });
+    expect(JSON.stringify([coach, self])).toBe(before);
+    expect(a).toEqual(b);
+    expect(FUNDAMENTALS[0].items[0].stars[0]).not.toHaveProperty('coach');
   });
 });

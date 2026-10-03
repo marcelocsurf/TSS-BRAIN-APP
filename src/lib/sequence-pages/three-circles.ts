@@ -146,7 +146,10 @@ export const CIRCLES: Circle[] = [
         think: ['Compressing without extending stores energy you never use.', 'Flex · touch · push · extend: from posture, the knees bend, the chest goes toward them, and the extension sends you forward.', 'This is the engine of the projection: what you load in a turn is what you spend on the next line.'],
         feel: ['DRL-WB-019-A'],
         play: ['GAME-3C-COMPACT'],
-        lessonId: 'STP-019', lessonLabel: 'Forward Momentum',
+        // Marcelo 2026-10-03: compresión · extensión es del Círculo 1 y tiene
+        // paso propio (FND-CE, migración 00227). Forward Momentum (STP-019)
+        // queda solo como herramienta; el drill de tierra sigue siendo el mismo.
+        lessonId: 'FND-CE', lessonLabel: 'Compression · extension',
       },
       {
         key: 'hold', command: 'rail', hold: true, name: 'Hold',

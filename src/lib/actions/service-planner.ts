@@ -119,6 +119,11 @@ export interface ServicePlanData {
   stpCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number; course_section: string; step_number: number; wb_sequence_id: string | null; wb_sequence_name: string | null; wb_sequence_order: number | null; sequence_step_order: number | null }>;
   // Belt-specific sequence rated in the FINAL evaluation (graduation check).
   graduationCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number; course_section: string; step_number: number; wb_sequence_id: string | null; wb_sequence_name: string | null; wb_sequence_order: number | null; sequence_step_order: number | null }>;
+  /** Fundamentos (Marcelo 2026-10-03): los pasos de la sección `fundamentals`
+   *  (FND-CE y los tres de la ola, migración 00227), APARTE del catálogo. No
+   *  entran en stpCatalog ni en la aprobación: sirven para las filas de los
+   *  Tres Círculos y el bloque de Fundamentos de la evaluación final. */
+  fundamentalsCatalog: Array<{ id: string; title: string; pillar: string | null; display_order: number; course_section: string; step_number: number; wb_sequence_id: string | null; wb_sequence_name: string | null; wb_sequence_order: number | null; sequence_step_order: number | null }>;
   /** Progreso del PRE-CURSO por alumno. Es requisito para avanzar de cinta,
    *  pero NO bloquea el cierre: se muestra para que el coach y el alumno sepan
    *  qué falta. */
@@ -833,6 +838,20 @@ export async function getServicePlan(
   // corte, así que reutiliza el catálogo de arriba.
   const gradRows = stpRows;
 
+  // Fundamentos (Marcelo 2026-10-03): la sección 'fundamentals' NO está en
+  // GRADUATION_RULES.sections, así que nunca cae en stpRows. Se carga APARTE:
+  // el Círculo 1 lleva FND-CE (compresión · extensión) y la evaluación final
+  // lo muestra y lo califica sin tocar el catálogo ni la aprobación.
+  const { data: fundamentalsRaw } = await admin
+    .from('lessons')
+    .select(
+      'id, title, pillar, display_order, course_section, step_number, ' +
+        'wb_sequence_id, wb_sequence_name, wb_sequence_order, sequence_step_order'
+    )
+    .eq('course_section', 'fundamentals')
+    .eq('active', true)
+    .order('display_order');
+
   // Los Learning Blocks son SOLO para Blue Belt. White y Yellow conservan su
   // organización de siempre.
   const graduationUsesBlocks = tpl?.includes_course_key === 'blue_belt';
@@ -964,6 +983,7 @@ export async function getServicePlan(
     graduationCatalog: (graduationUsesBlocks
       ? sortByBlocks((gradRows ?? stpRows ?? []) as any[])
       : (gradRows ?? stpRows ?? [])) as any[],
+    fundamentalsCatalog: (fundamentalsRaw ?? []) as any[],
     graduationUsesBlocks,
     preCourseByStudent,
     availableBoards,
@@ -1844,8 +1864,34 @@ export async function closeCampFinal(
     // submitted ratings (every rated STP >= 4 stars). The UI already derives
     // approval this way — this only blocks hand-crafted requests from writing
     // an approved=true record for a student whose ratings don't meet the bar.
+    // El guardia mira EXACTAMENTE el catálogo de la cinta del camp (las
+    // secciones de GRADUATION_RULES, el mismo corte que stpCatalog en
+    // getServicePlan), igual que la pantalla (studentApproved). Lo que viaje
+    // en el payload fuera de ese catálogo — los fundamentos (FND-*, STP-052;
+    // Marcelo 2026-10-03) o una estrella vieja de otra cinta — no entra en la
+    // aprobación: un 3★ en "Surfear el pocket" no tumba un "approved", y un
+    // 3★ en Posture (STP-018, del catálogo) sí lo tumba.
+    const { data: campTpl } = await admin
+      .from('camp_instances')
+      .select('camp_templates:template_id(includes_course_key)')
+      .eq('id', campInstanceId)
+      .maybeSingle();
+    const tplFinal: any = Array.isArray((campTpl as any)?.camp_templates)
+      ? (campTpl as any).camp_templates[0]
+      : (campTpl as any)?.camp_templates;
+    const gradSectionsFinal: string[] =
+      (tplFinal?.includes_course_key && GRADUATION_RULES[tplFinal.includes_course_key]?.sections) || ['white_belt'];
+    const { data: catalogLessons } = await admin
+      .from('lessons')
+      .select('id')
+      .in('course_section', gradSectionsFinal)
+      .eq('active', true);
+    // Si la base no respondió (error), se cuenta todo como antes: el guardia
+    // solo puede bajar un "approved", nunca subirlo.
+    const catalogIds = catalogLessons ? new Set((catalogLessons as any[]).map((l) => l.id as string)) : null;
     const ratingsByStudent = new Map<string, number[]>();
     for (const r of ratings ?? []) {
+      if (catalogIds && !catalogIds.has(r.step_id)) continue;
       const list = ratingsByStudent.get(r.student_id) ?? [];
       list.push(r.rating);
       ratingsByStudent.set(r.student_id, list);

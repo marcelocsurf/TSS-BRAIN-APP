@@ -153,7 +153,7 @@ export const WB_SEQ_3: SequencePageConfig = {
     bodyMarkdown: `**The pop-up pattern**
 
 1. **Cobra, pick the line.** Chest up, hands at the ribs, eyes on the direction you chose — and say it.
-2. **Pop-up.** One movement, about two seconds: both feet land together, never the back foot first. Hips down, head up. Hands release only when centred and stable.
+2. **Pop-up.** One movement, about two seconds. Hips down, head up. Hands release only when centred and stable, with the weight on the front foot.
 3. **Feet in the centre:** back foot in FP2, front foot centred on the stringer with the toes across the board.
 4. **Power Posture:** shoulders pointing where the nose points · weight on the front leg · front hand toward the nose, the other arm with the shoulder back and the elbow on the ribs · flex · back knee toward where you go · arms active · eyes forward · exhale.
 5. **Starfish dismount** when it is time to go down: decide before you lose balance, bend, open wide, fall into the foam.`,

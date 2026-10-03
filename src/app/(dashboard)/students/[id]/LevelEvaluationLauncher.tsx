@@ -9,9 +9,15 @@ import { BELT_RANK, canCoachBelt, type BeltLevel } from '@/lib/constants/belts';
 
 const ORDER: BeltLevel[] = ['white_belt', 'yellow_belt', 'blue_belt', 'purple_belt', 'brown_belt', 'black_belt'];
 
-export function LevelEvaluationLauncher({ student, rows, coach }: {
+type EvalRow = { step_id: string; step_title: string | null; course_section: string | null; step_number: number | null; sequence_id: string | null; sequence_name: string | null; sequence_order: number | null; sequence_step_order: number | null; coach_rating: number | null };
+
+export function LevelEvaluationLauncher({ student, rows, fundamentalsRows = [], coach }: {
   student: { id: string; first_name: string | null; last_name: string | null; photo_url: string | null; belt_level: string };
-  rows: Array<{ step_id: string; step_title: string | null; course_section: string | null; step_number: number | null; sequence_id: string | null; sequence_name: string | null; sequence_order: number | null; sequence_step_order: number | null; coach_rating: number | null }>;
+  rows: Array<EvalRow>;
+  /** Fundamentos (Marcelo 2026-10-03): los pasos fuera del catálogo (FND-CE…),
+   *  con su nota. Van APARTE del catálogo (no cuentan para la aprobación) y
+   *  siembran sus estrellas para que el bloque de Fundamentos las muestre. */
+  fundamentalsRows?: Array<EvalRow>;
   coach: { id: string; role: string | null; max_belt_permission: string | null };
 }) {
   const [open, setOpen] = useState(false);
@@ -19,6 +25,10 @@ export function LevelEvaluationLauncher({ student, rows, coach }: {
   const target = ORDER[Math.min(ORDER.indexOf(cur) + 1, ORDER.length - 1)];
   const canAccredit = coach.role === 'admin' || canCoachBelt(((coach.max_belt_permission as BeltLevel) || 'black_belt'), target);
   const name = `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || 'Student';
+  const toCatalog = (r: EvalRow) => ({
+    id: r.step_id, title: r.step_title ?? r.step_id, pillar: null, display_order: r.step_number ?? 0, course_section: r.course_section ?? '',
+    step_number: r.step_number, wb_sequence_id: r.sequence_id, wb_sequence_name: r.sequence_name, wb_sequence_order: r.sequence_order, sequence_step_order: r.sequence_step_order,
+  });
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)}
@@ -35,11 +45,9 @@ export function LevelEvaluationLauncher({ student, rows, coach }: {
         campInstanceId=""
         campName="Level evaluation"
         students={[{ student_id: student.id, display_name: name, photo_url: student.photo_url, belt_level: student.belt_level, blocks: [], profile: {}, recentSessions: [], stepRatings: { selfRatedCount: 0, coachRatedCount: 0 } } as any]}
-        stpCatalog={rows.map((r) => ({
-          id: r.step_id, title: r.step_title ?? r.step_id, pillar: null, display_order: r.step_number ?? 0, course_section: r.course_section ?? '',
-          step_number: r.step_number, wb_sequence_id: r.sequence_id, wb_sequence_name: r.sequence_name, wb_sequence_order: r.sequence_order, sequence_step_order: r.sequence_step_order,
-        })) as any}
-        initialRatings={{ [student.id]: Object.fromEntries(rows.filter((r) => r.coach_rating != null).map((r) => [r.step_id, r.coach_rating as number])) } as any}
+        stpCatalog={rows.map(toCatalog) as any}
+        fundamentalsCatalog={fundamentalsRows.map(toCatalog) as any}
+        initialRatings={{ [student.id]: Object.fromEntries([...rows, ...fundamentalsRows].filter((r) => r.coach_rating != null).map((r) => [r.step_id, r.coach_rating as number])) } as any}
         targetBelt={target}
         canAccreditTarget={canAccredit}
         onCancel={() => setOpen(false)}
