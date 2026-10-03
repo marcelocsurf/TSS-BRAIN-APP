@@ -134,6 +134,12 @@ export default async function StudentProfilePage({ params, searchParams }: Props
 
   // Relationship / loyalty — visits (trips), total days, first/last seen.
   const visitStats = await getStudentVisitStats(id);
+  // La tarea del coach (next focus) con quién la dejó: en Progresión salía
+  // solo "La frena" (cálculo por estrellas) y Marcelo buscaba la tarea de la
+  // evaluación final sin encontrarla (2026-10-03).
+  const focusCoachName: string | null = (student as any).next_focus_set_by
+    ? ((await supabase.from('coaches').select('display_name').eq('id', (student as any).next_focus_set_by).maybeSingle()).data as any)?.display_name ?? null
+    : null;
 
   const [
     levelAccess,
@@ -849,7 +855,16 @@ export default async function StudentProfilePage({ params, searchParams }: Props
               pasos calificados por su coach igual leía "Sequence #1".
               Ahora sale lo que sí sabemos, derivado de esas notas — lo mismo
               que el alumno ve en su portal. */}
-          {focusSeq?.blocker && <Row label="La frena" value={focusSeq.blocker} highlight />}
+          {/* Lo que el coach DEJÓ (evaluación final / cierre del día), con fecha y
+              quién; abajo, lo que las estrellas dicen que frena (automático). */}
+          {(student as any).next_recommended_focus && (
+            <Row
+              label="Tarea del coach"
+              value={`${(student as any).next_recommended_focus}${(student as any).next_focus_set_at ? ` · ${new Date((student as any).next_focus_set_at).toLocaleDateString('es-SV', { day: 'numeric', month: 'short', timeZone: 'America/El_Salvador' })}` : ''}${focusCoachName ? ` · ${focusCoachName}` : ''}`}
+              highlight
+            />
+          )}
+          {focusSeq?.blocker && <Row label="La frena (por estrellas)" value={focusSeq.blocker} highlight />}
         </div>
       </Card>
 
