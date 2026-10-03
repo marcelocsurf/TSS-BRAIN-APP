@@ -35,8 +35,9 @@ export const BB_SEQ_09: SequencePageConfig = {
     bodyFromLesson: 'STP-037',
     keyWords: [
       { label: 'Body', words: ['Feet', 'Power stance', 'Rotation', 'Projection', 'Elbow strike', 'Back to posture'] },
-      // Marcelo 2026-09-09: en backside la maniobra es el codazo, la M (no la Cruz).
-      { label: 'Method', words: ['Posture', 'Rotation / rail', 'Projection', 'Maneuver (the elbow strike · the M)', 'Back to posture'] },
+      // Marcelo 2026-10-03 (regla 7da1d718, supersede la del 09-09): en backside la
+      // maniobra es el Tapaloco; el codazo, la M, es el CIERRE. Como en #11 y #13.
+      { label: 'Method', words: ['Posture', 'Rotation / rail', 'Projection', 'Maneuver (the Tapaloco)', 'Closure (the elbow strike · the M)', 'Back to posture'] },
     ],
     board: BB_SEQ_08.think.board,
   },
