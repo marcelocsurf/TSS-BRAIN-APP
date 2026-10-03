@@ -362,6 +362,13 @@ export function FinalCampEvaluation({
       alert(`Write the "Next focus" for ${s.display_name.split(' ')[0]} — what should they keep working on after this camp? (Tip: tap "Use suggestion" to start from the weak STPs.)`);
       return;
     }
+    // Nivel en el agua: OBLIGATORIO (Marcelo 2026-10-03: en Novice la mitad
+    // quedaba sin responder). Es la autonomía: ¿solo o con asistencia?
+    if (!oceanLevel[s.student_id]) {
+      alert(`Falta el nivel en el agua de ${s.display_name.split(' ')[0]}: ¿autónomo o necesita asistencia? Elegilo en "In-water level".`);
+      setTimeout(() => document.getElementById(`ocean-level-${s.student_id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+      return;
+    }
     const { ratingsPayload, result, promos } = buildStudentPayload(s);
     setSavingId(s.student_id);
     startTransition(async () => {
@@ -404,6 +411,16 @@ export function FinalCampEvaluation({
         el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         (el as HTMLTextAreaElement | null)?.focus();
       }, 150);
+      return;
+    }
+    // Nivel en el agua: OBLIGATORIO para todos antes de cerrar (2026-10-03).
+    const missingWater = students.filter((s) => !oceanLevel[s.student_id]);
+    if (missingWater.length > 0) {
+      const first = missingWater[0];
+      setOpenStudent(first.student_id);
+      setConfirming(false);
+      alert(`Falta el nivel en el agua de: ${missingWater.map((s) => s.display_name.split(' ')[0]).join(', ')}.\n\n¿Autónomo o necesita asistencia? Te llevo al campo.`);
+      setTimeout(() => document.getElementById(`ocean-level-${first.student_id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
       return;
     }
     const payload: Array<{ student_id: string; step_id: string; rating: number }> = [];
@@ -714,9 +731,10 @@ export function FinalCampEvaluation({
                     {/* In-water level — coach assessment for the bitácora */}
                     <div className="pt-3 mt-1 border-t border-gray-100">
                       <label className="block text-[11px] font-mono uppercase tracking-wider text-gray-500 mb-1">
-                        In-water level (self-sufficiency)
+                        In-water level (self-sufficiency) · <span className="text-amber-700">obligatorio</span>
                       </label>
                       <select
+                        id={`ocean-level-${s.student_id}`}
                         value={oceanLevel[s.student_id] ?? ''}
                         onChange={(e) =>
                           setOceanLevel((prev) => ({ ...prev, [s.student_id]: e.target.value }))

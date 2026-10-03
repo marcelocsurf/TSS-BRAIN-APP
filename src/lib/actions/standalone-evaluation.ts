@@ -25,6 +25,8 @@ export async function closeStandaloneEvaluation(
   const result = results.find((r) => r.student_id === studentId);
   if (!result) return { ok: false, error: 'Nothing to save.' };
   if ((result.next_focus ?? '').trim().length < 5) return { ok: false, error: 'Write the next focus — the student sees it.' };
+  // Nivel en el agua obligatorio (Marcelo 2026-10-03), igual que en el camp.
+  if (!(result.ocean_level ?? '').trim()) return { ok: false, error: 'Falta el nivel en el agua: ¿autónomo o necesita asistencia?' };
   const waterPending: string[] = [];
   const now = new Date().toISOString();
 

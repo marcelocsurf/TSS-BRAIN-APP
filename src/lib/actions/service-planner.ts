@@ -1728,6 +1728,18 @@ export async function closeCampFinal(
         '. Es obligatorio: el alumno lo ve y el próximo coach planea con eso.',
     };
   }
+  // El nivel en el agua también es obligatorio (Marcelo 2026-10-03): es la
+  // autonomía — solo o con asistencia — y en Novice la mitad quedaba vacío.
+  const sinAgua = (results ?? []).filter((r) => !(r.ocean_level ?? '').trim());
+  if (sinAgua.length > 0) {
+    return {
+      ok: false,
+      error:
+        'Falta el nivel en el agua en ' +
+        (sinAgua.length === 1 ? '1 alumno' : `${sinAgua.length} alumnos`) +
+        '. Es obligatorio: ¿autónomo o necesita asistencia?',
+    };
+  }
 
   const admin = createAdminClient();
 
